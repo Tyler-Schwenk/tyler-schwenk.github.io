@@ -2,24 +2,24 @@
 <html>
 <head>
     <meta charset='utf-8' />
-    <title>San Diego Neighborhoods Map</title>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css' rel='stylesheet' />
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js'></script>
+    <title>Pac-Tyler</title>
     <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        header { text-align: center; padding: 20px; background: #f5f5f5; }
+        #map-container { margin: 20px; }
+        iframe { border: none; width: 100%; height: 400px; }
+        #description { text-align: center; padding: 20px; background: #f5f5f5; }
     </style>
 </head>
 <body>
-    <div id='map'></div>
-    <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoidHlsZXJzY2h3ZW5rIiwiYSI6ImNseTI5Zjk4NjE0eTcyanB2MGtjc3RvdTYifQ.NLk6kJgcFvyrjL6ivdNtMw';
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/tylerschwenk/cly273wd9007001pxf4hab4rg' 
-        });
-
-        map.addControl(new mapboxgl.NavigationControl());
-    </script>
+    <header>
+        <h1>Pac-Tyler</h1>
+    </header>
+    <div id="map-container">
+        <iframe src="https://api.mapbox.com/styles/v1/tylerschwenk/cly273wd9007001pxf4hab4rg.html?title=false&access_token=pk.eyJ1IjoidHlsZXJzY2h3ZW5rIiwiYSI6ImNseGNid3pxZTBhY3kyaW9uZmo2dGwwOXMifQ.vNZf8b6hiCPTE_NglBo5Gg&zoomwheel=false#12.35/32.73661/-117.15952" title="San Diego Neighborhoods Map"></iframe>
+    </div>
+    <div id="description">
+        <p>This is incomplete. will be finished soon</p>
+    </div>
 </body>
 </html>
