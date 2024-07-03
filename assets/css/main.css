@@ -6,6 +6,26 @@
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 */
+@font-face {
+    font-family: 'RedAlertLAN';
+    src: url('../webfonts/C&C Red Alert [LAN].ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'RedAlertINET';
+    src: url('../webfonts/C&C Red Alert [INET].ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+.custom-font {
+    font-family: 'RedAlertLAN', Arial, sans-serif;
+}
+
+.custom-font-inet {
+    font-family: 'RedAlertINET', Arial, sans-serif;
+}
 
 html, body, div, span, applet, object,
 iframe, h1, h2, h3, h4, h5, h6, p, blockquote,
