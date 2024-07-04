@@ -11,6 +11,24 @@
             color: #fff; /* White text color for better contrast */
         }
         #nav ul.container li a span { color: #E3B800; }
+	#nav ul.container {
+	        display: flex;
+	        justify-content: space-between;
+	        list-style-type: none;
+	        padding: 0;
+	    }
+	
+	    #nav ul.container li {
+	        margin: 0;
+	    }
+	
+	    #nav ul.container li:first-child {
+	        margin-right: auto; /* Push first item (1UP) to the left */
+	    }
+	
+	    #nav ul.container li:last-child {
+	        margin-left: auto; /* Push last item (Mi SCORE: 1236) to the right */
+	    }
         #main-container { 
             display: flex; 
             flex-wrap: wrap; 
@@ -52,7 +70,7 @@
             <li><a href="index.html#home"><span>Home</span></a></li>
             <li><a href="index.html#portfolio"><span>Portfolio</span></a></li>
             <li><a href="#contact"><span>Contact</span></a></li>
-		<li><p class="custom-font">Mi SCORE: 1236</p></li>
+		<li><p class="custom-font">MI SCORE: 1236</p></li>
         </ul>
     </nav>
 
