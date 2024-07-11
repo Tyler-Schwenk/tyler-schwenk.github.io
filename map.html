@@ -21,6 +21,7 @@
         #description { 
             flex: 1; 
             padding: 20px; 
+            color: #E3B800;
             background-color: #333; /* Slightly lighter background for description */
         }
         #map-container { 
@@ -62,9 +63,13 @@
     <!-- Main content -->
     <div id="main-container">
         <div id="description">
-            <p>Biking the length of every single street in San Diego, current progress is shown to the right. This page is under development.</p>
-            <p class="custom-font">This paragraph uses the custom LAN font.</p>
-            <p class="custom-font-inet">This paragraph uses the custom INET font.</p>
+            <p>This is an ongoing project where I am attempting to bike the length of every street in San Diego, and have developed software to 
+                track my progress. 
+            </p>
+            <p>I use Strava to track my bike rides around the city. A custom script downloads my rides from Strava as 
+                GeoJSON files before cleaning the data to reduce file size which is fed to Mapbox for display.
+            </p>
+            
         </div>
         <div id="map-container">
             <iframe src="https://api.mapbox.com/styles/v1/tylerschwenk/cly273wd9007001pxf4hab4rg.html?title=false&access_token=pk.eyJ1IjoidHlsZXJzY2h3ZW5rIiwiYSI6ImNseGNid3pxZTBhY3kyaW9uZmo2dGwwOXMifQ.vNZf8b6hiCPTE_NglBo5Gg&zoomwheel=false#12.35/32.73661/-117.15952" title="San Diego Neighborhoods Map"></iframe>
@@ -86,15 +91,9 @@
 								<li><a href="https://github.com/Tyler-Schwenk" class="icon"><img src="images/pic08.jpg" alt="" width="38" height="38"/><span class="label">Github</span></a></li>
 								<!--
 								<li><a href="#" class="icon solid fa-rss"><span>RSS</span></a></li>
-								<li><a href="#" class="icon brands fa-instagram"><span>Instagram</span></a></li>
-								<li><a href="#" class="icon brands fa-foursquare"><span>Foursquare</span></a></li>
-								<li><a href="#" class="icon brands fa-skype"><span>Skype</span></a></li>
-								<li><a href="#" class="icon brands fa-soundcloud"><span>Soundcloud</span></a></li>
-								<li><a href="#" class="icon brands fa-youtube"><span>YouTube</span></a></li>
-								<li><a href="#" class="icon brands fa-blogger"><span>Blogger</span></a></li>
-								<li><a href="#" class="icon brands fa-flickr"><span>Flickr</span></a></li>
-								<li><a href="#" class="icon brands fa-vimeo"><span>Vimeo</span></a></li>
 								-->
+                                <!-- <p class="custom-font">This paragraph uses the custom LAN font.</p>
+                                     <p class="custom-font-inet">This paragraph uses the custom INET font.</p> -->
 							</ul>
 							<hr />
 						</div>
