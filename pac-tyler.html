@@ -17,6 +17,15 @@
 	        list-style-type: none;
 	        padding: 0;
 	    }
+        a {
+            color: inherit; /* Use the same color as surrounding text */
+            text-decoration: none; /* Remove underline */
+        }
+
+        /* Add hover styling if desired */
+        a:hover {
+            color: #E3B800; /* Optional hover color */
+        }
 	
 	    #nav ul.container li {
 	        margin: 0;
@@ -84,14 +93,14 @@
     <div id="main-container">
         <div id="description">
             <p>This is an ongoing project where I am attempting to bike the length of every street in San Diego, and have developed software to 
-                track my progress. 
+                track my progress. Its like Pac-Man but instead of a man, its Tyler, snd instead of ghosts trying to kill you cars are.
             </p>
-            <p>I use Strava to track my bike rides around the city. A custom script downloads my rides from Strava as 
-                GeoJSON files before cleaning the data to reduce file size which is fed to Mapbox for display.
+            <p>I use Strava to track my bike rides around the city. A custom python tool downloads my rides from Strava as 
+                GeoJSON files before cleaning the data to remove errors and reduce file size. This data is fed to Mapbox for display.
            <p>View the source code on <a href="https://github.com/Tyler-Schwenk/Pac-Tyler" class="icon">
                 <img src="images/pic08.jpg" alt="GitHub" width="28" height="28"/>
-                <span class="label">GitHub</span>
-            </a><a href="https://github.com/Tyler-Schwenk/Pac-Tyler">GitHub</a>
+                <span class="label">GitHub</span></a>
+            <a href="https://github.com/Tyler-Schwenk/Pac-Tyler">GitHub</a>
             
         </p>
             
