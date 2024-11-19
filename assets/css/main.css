@@ -2144,6 +2144,14 @@ input, select, textarea {
 			margin-top: 0.35em;
 		}
 
+		#top.ribbit-radar-bg {
+			position: relative;
+			background: url('images/bullfrog.png') no-repeat right center;
+			background-size: contain;
+			min-height: 300px; /* Adjust height if necessary */
+		}
+		
+
 		#top p {
 			font-size: 1.5em;
 			line-height: 1.75em;
@@ -2194,6 +2202,28 @@ input, select, textarea {
 			#copyright a:hover {
 				color: #777;
 			}
+
+	/* Collaboration Logos Section */
+	.collaboration-logos {
+		display: flex;
+		justify-content: center;
+		gap: 20px; /* Adjust for spacing between logos */
+		flex-wrap: wrap;
+		margin-top: 20px;
+	}
+
+	.logo img {
+		height: 100px; /* Standardized logo height */
+		width: auto; /* Maintain aspect ratio */
+		object-fit: contain;
+		filter: grayscale(100%); /* Optional: Grayscale logos for uniformity */
+		transition: filter 0.3s ease-in-out;
+	}
+
+	.logo img:hover {
+		filter: none; /* Restore original color on hover */
+	}
+
 
 /* Large */
 
@@ -2463,3 +2493,5 @@ input, select, textarea {
 					}
 
 	}
+
+	
