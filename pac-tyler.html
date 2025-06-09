@@ -160,7 +160,7 @@ main
   }).addTo(map);
 
   // Load your GeoJSON from GitHub
-  fetch('https://raw.githubusercontent.com/Tyler-Schwenk/Pac-Tyler/main/data/cleaned_output.geojson')
+  fetch('https://raw.githubusercontent.com/Tyler-Schwenk/Pac-Tyler/blob/main/cleaned_output.geojson')
     .then(response => response.json())
     .then(data => {
       L.geoJSON(data, {
