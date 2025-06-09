@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset='utf-8' />
+    <meta charset="utf-8" />
     <title>Trade Routes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <link rel="stylesheet" href="assets/css/main.css" />
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
 </head>
@@ -18,47 +19,118 @@
 </nav>
 
 <!-- Header -->
-<header class="wrapper style1">
+<article id="top" class="wrapper style1">
     <div class="container">
-        <h1><strong>Trade Routes</strong></h1>
-        <p>A peer-to-peer marketplace for collectible card trading, built with community and clarity in mind.</p>
-    </div>
-</header>
 
-<!-- Marketplace Section -->
-<article class="wrapper style2">
-    <div class="container">
-        <header>
-            <h2>The Marketplace</h2>
-        </header>
-        <p>Trade Routes is a California-based general partnership co-founded by Tyler Schwenk and Kyle Pereira. We built Trade Routes to help Magic: The Gathering players trade, buy, and sell cards through a modern, accessible, and community-oriented platform. With robust search tools, clear listing data, and a design focused on usability, the site aims to improve how collectors connect and transact.</p>
-        <p><a href="https://traderoutestcg.com">Visit the Marketplace</a></p>
-        <div class="video-container" style="margin-top: 2rem; text-align: center;">
-            <video
-              width="90%"
-              autoplay
-              muted
-              loop
-              playsinline
-              style="border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.1);"
-            >
-              <source src="video/search_listing_example_compres.mp4" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-        </div> 
+        <!-- Logo -->
+        <div style="text-align: center; margin: 1.5rem 0;">
+            <img src="images/trade-routes-logo-official-clear-background.png" alt="Trade Routes Logo" width="250" style="border-radius: 8px;" />
+        </div>
+
+        <h3>
+            A peer-to-peer marketplace for collectible cards with a robust database that allows intuitive searching & filtering of listings.
+        </h3>		  
     </div>
 </article>
 
-<!-- Role Section -->
+<!-- Marketplace Overview -->
 <article class="wrapper style3">
     <div class="container">
         <header>
-            <h2>My Role</h2>
+            <h1><strong>The Marketplace</strong></h1>
         </header>
-        <p>I co-founded Trade Routes and lead development across all parts of the platform. From early architecture decisions to UI design and infrastructure setup, I built the marketplace from the ground up using a modern full-stack toolset. I also manage day-to-day operations, technical planning, and long-term product direction.</p>
-        <p><strong>Tech Stack:</strong> Next.js, TypeScript, PostgreSQL, Django, GraphQL, Docker, Git, AWS</p>
+        <h3>
+            <a href="https://traderoutestcg.com" style="color: hsl(18, 68%, 48%); ">Trade Routes</a> hits a niche in the trading card market 
+            that was previously unfilled. It provides the ability to buy and sell peer-to-peer, but with
+            robust search otherwise only available from authorized retailers.
+
+        </h3>
+        <h3>
+            Features include advanced card filtering, direct communication with sellers, and a backend optimized for
+            precise card matching — so users spend less time browsing and more time collecting.
+        </h3>
+        <div class="video-container" style="margin-top: 2rem; text-align: center;">
+            <video
+                width="90%"
+                autoplay
+                muted
+                loop
+                playsinline
+                style="border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.1);"
+            >
+                <source src="video/search_listing_example_compres.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+            </video>
+        </div>
     </div>
 </article>
+
+<!-- My Role -->
+<article class="wrapper style2">
+  <div class="container">
+    <header>
+      <h1><strong>My Role</strong></h1>
+    </header>
+    <h3>
+      I co-founded Trade Routes and have led both the technical and business sides of the company since its inception. 
+    </h3>
+    <h3>
+      On the engineering side, I architected and implemented the platform using a modern stack — including Next.js, PostgreSQL on AWS RDS, Docker, and GitHub-based CI/CD pipelines.
+      I designed the database schema, built out frontend and backend features, deployed infrastructure with AWS, and managed integrations with external APIs.
+    </h3>
+    <h3>
+      In parallel, I’ve managed all business operations, and now lead efforts around monetization strategies as we grow our user base.
+    </h3>
+  </div>
+</article>
+
+
+<!-- Technology -->
+<article class="wrapper style3">
+  <div class="container">
+    <header>
+      <h1><strong>Technology</strong></h1>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+      <div style="flex: 1; min-width: 250px;">
+        <h3 style="color: hsl(18, 68%, 48%); margin-bottom: 0.5rem;"><strong>Frontend</strong></h3>
+        <ul style="list-style: none; padding-left: 0;">
+          <li>Next.js</li>
+          <li>TypeScript</li>
+          <li>Vercel (CI/CD)</li>
+        </ul>
+      </div>
+
+      <div style="flex: 1; min-width: 250px;">
+        <h3 style="color: hsl(18, 68%, 48%); margin-bottom: 0.5rem;"><strong>Backend</strong></h3>
+        <ul style="list-style: none; padding-left: 0;">
+          <li>Django + GraphQL</li>
+          <li>PostgreSQL (AWS RDS)</li>
+        </ul>
+      </div>
+
+      <div style="flex: 1; min-width: 250px;">
+        <h3 style="color: hsl(18, 68%, 48%); margin-bottom: 0.5rem;"><strong>DevOps</strong></h3>
+        <ul style="list-style: none; padding-left: 0;">
+          <li>Docker (DockerHub)</li>
+          <li>AWS Elastic Beanstalk</li>
+          <li>GitHub Actions & Docker CI/CD</li>
+        </ul>
+      </div>
+
+      <div style="flex: 1; min-width: 250px;">
+        <h3 style="color: hsl(18, 68%, 48%); margin-bottom: 0.5rem;"><strong>Integrations</strong></h3>
+        <ul style="list-style: none; padding-left: 0;">
+          <li>WhatsApp API (buyer-seller chat)</li>
+          <li>Scryfall API (card metadata)</li>
+          <li>Amazon S3 (image & file storage)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</article>
+
 
 <!-- Contact -->
 <article id="contact" class="wrapper style4">
@@ -70,10 +142,18 @@
         <div class="row">
             <div class="col-12">
                 <hr />
-                <h3>Find us on ...</h3>
+                <h3>Find me on ...</h3>
                 <ul class="social">
-                    <li><a href="https://www.linkedin.com/in/tyler-schwenk-939570224/" class="icon"><img src="images/pic07.jpg" alt="LinkedIn" width="40" height="40"/></a></li>
-                    <li><a href="https://github.com/Tyler-Schwenk" class="icon"><img src="images/pic08.jpg" alt="GitHub" width="38" height="38"/></a></li>
+                    <li>
+                        <a href="https://www.linkedin.com/in/tyler-schwenk-939570224/" class="icon">
+                            <img src="images/pic07.jpg" alt="LinkedIn" width="40" height="40"/>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/Tyler-Schwenk" class="icon">
+                            <img src="images/pic08.jpg" alt="GitHub" width="38" height="38"/>
+                        </a>
+                    </li>
                 </ul>
                 <hr />
             </div>
