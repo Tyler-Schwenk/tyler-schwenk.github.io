@@ -154,17 +154,21 @@ main
 	<script>
   const map = L.map('map').setView([32.7157, -117.1611], 12);
 
-  // Add OpenStreetMap base layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18
-  }).addTo(map);
+  
+
+  L.tileLayer('https://api.mapbox.com/styles/v1/tylerschwenk/cly273wd9007001pxf4hab4rg/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoidHlsZXJzY2h3ZW5rIiwiYSI6ImNseGNid3pxZTBhY3kyaW9uZmo2dGwwOXMifQ.vNZf8b6hiCPTE_NglBo5Gg', {
+    tileSize: 512,
+    zoomOffset: -1,
+    attribution: '© Mapbox © OpenStreetMap'
+}).addTo(map);
+
 
   // Load your GeoJSON from GitHub
-  fetch('https://raw.githubusercontent.com/Tyler-Schwenk/Pac-Tyler/blob/main/cleaned_output.geojson')
+fetch('https://raw.githubusercontent.com/Tyler-Schwenk/Pac-Tyler/main/cleaned_output.geojson')
     .then(response => response.json())
     .then(data => {
       L.geoJSON(data, {
-        style: { color: "#E3B800", weight: 3 }
+        style: { color: "hsl(248, 86%, 53%)", weight: 2 }
       }).addTo(map);
     })
     .catch(err => console.error("Failed to load GeoJSON:", err));
