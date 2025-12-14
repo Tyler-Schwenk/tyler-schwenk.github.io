@@ -3,94 +3,124 @@
 	Miniport by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+	
+	Modified by Tyler Schwenk - Portfolio Website
 -->
-<html>
+<html lang="en">
 	<head>
-		<title>Tyler Schwenk Portfolio</title>
+		<!-- Meta Information -->
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<meta name="description" content="Tyler Schwenk - Full-stack software developer specializing in sustainable software development through Trade Routes" />
+		<meta name="author" content="Tyler Schwenk" />
+		
+		<!-- Page Title -->
+		<title>Tyler Schwenk Portfolio</title>
+		
+		<!-- Stylesheets -->
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico" />
 	</head>
 	<body class="is-preload">
 
-		<!-- Audio Player -->
-		<div id="audio-player">
-			<audio id="music-player" preload="auto"></audio>
+		<!-- ============================================================ -->
+		<!-- MUSIC PLAYER - Background album playback                     -->
+		<!-- ============================================================ -->
+		<aside id="audio-player" role="complementary" aria-label="Music Player">
+			<audio id="music-player" preload="auto" aria-label="Album player"></audio>
 			<div class="player-controls">
-				<img src="images/walias.jpg" alt="Album Art" id="album-art">
+				<img src="images/walias.jpg" alt="Hailu Mergia & The Walias Band - Tezeta Album Art" id="album-art">
 				<div class="album-info">
 					<div class="artist-name">Hailu Mergia & The Walias Band</div>
 					<div class="album-name">Tezeta</div>
 					<div id="track-info">Loading...</div>
 				</div>
 				<div class="playback-controls">
-					<button id="prev-btn" title="Previous Track">⏮</button>
-					<button id="play-pause-btn" title="Play/Pause">▶</button>
-					<button id="next-btn" title="Next Track">⏭</button>
+					<button id="prev-btn" title="Previous Track" aria-label="Previous Track">⏮</button>
+					<button id="play-pause-btn" title="Play/Pause" aria-label="Play or Pause">▶</button>
+					<button id="next-btn" title="Next Track" aria-label="Next Track">⏭</button>
 				</div>
-				<input type="range" id="volume-slider" min="0" max="100" value="50" title="Volume">
+				<input type="range" id="volume-slider" min="0" max="100" value="50" title="Volume" aria-label="Volume control">
 			</div>
-		</div>
+		</aside>
 
-		<!-- Nav -->
-			<nav id="nav">
+		<!-- ============================================================ -->
+		<!-- NAVIGATION - Main site navigation                            -->
+		<!-- ============================================================ -->
+		<!-- ============================================================ -->
+		<!-- NAVIGATION - Main site navigation                            -->
+		<!-- ============================================================ -->
+			<nav id="nav" role="navigation" aria-label="Main navigation">
 				<ul class="container">
-					<li><a href="#home"><span style="color: hsl(18, 68%, 48%)">Home</span></a></li>
-					<li><a href="#portfolio"><span style="color: hsl(18, 68%, 48%)">Overview</span></a></li>
-					<li><a href="#contact"><span style="color: hsl(18, 68%, 48%)">Contact</span></a></li>
+					<li><a href="#home" aria-label="Navigate to Home section"><span style="color: hsl(18, 68%, 48%)">Home</span></a></li>
+					<li><a href="#portfolio" aria-label="Navigate to Overview section"><span style="color: hsl(18, 68%, 48%)">Overview</span></a></li>
+					<li><a href="#contact" aria-label="Navigate to Contact section"><span style="color: hsl(18, 68%, 48%)">Contact</span></a></li>
 				</ul>
 			</nav>
 
-		<!-- Home -->
+		<!-- ============================================================ -->
+		<!-- HOME SECTION - Introduction and profile                      -->
+		<!-- ============================================================ -->
 			<article id="top" class="wrapper style1">
 				<div class="container">
 					<div class="row">
 						<div class="col-4 col-5-large col-12-medium">
-							<span class="image fit"><img src="images/pic00.jpeg" alt="" /></span>
+							<span class="image fit"><img src="images/pic00.jpeg" alt="Tyler Schwenk profile photo" /></span>
 						</div>
 						<div class="col-5 col-5-large col-12-medium">
 							<header>
-								<h1><strong>Tyler Schwenk</strong>.</h1>
+								<h1><strong>Tyler Schwenk</strong></h1>
 							</header>
 							<h3>
 								<span style="color: hsl(18, 68%, 48%)">Sustainable,</span> full-stack software development.
-							  </h3>
-							  <h3>
+							</h3>
+							<h3>
 								Providing services through my California General Partnership; 
-								<a href="https://traderoutestcg.com/about" style="color: hsl(18, 68%, 48%);">Trade&nbsp;Routes</a>
-								</h3>
-
-							  
-							<!-- <h2><a href="https://docs.google.com/document/d/1U28UJMuJtPJ2HTlBRdwuR8YRDd04tyS3/edit?usp=sharing&ouid=111247284743190559367&rtpof=true&sd=true">View my Resume</a></h2> -->
-							
+								<a href="https://traderoutestcg.com/about" style="color: hsl(18, 68%, 48%);" target="_blank" rel="noopener noreferrer">Trade&nbsp;Routes</a>
+							</h3>
 						</div>
 					</div>
 				</div>
 			</article>
 
-			<!-- Attmp 0 -->
-
+		<!-- ============================================================ -->
+		<!-- ============================================================ -->
+		<!-- PORTFOLIO SECTION - Project showcase                         -->
+		<!-- ============================================================ -->
 			<article id="portfolio" class="wrapper style3">
 				<div class="container">
 					<header>
 						<h2>Recent Projects</h2>
-						
 					</header>
 					<div class="row">
+						<!-- Ribbit Radar Project -->
 						<div class="col-4 col-6-medium col-12-small">
 							<article class="box style2">
-								<a href="ribbit-radar.html" class="image featured"><img src="images/pic19.jpg" alt="" /></a>
-								<h3><a href ="ribbit-radar.html">Ribbit Radar</a></h3>
+								<a href="ribbit-radar.html" class="image featured" aria-label="View Ribbit Radar project details">
+									<img src="images/pic19.jpg" alt="Ribbit Radar - Bioacoustic ML Algorithm project" />
+								</a>
+								<h3><a href="ribbit-radar.html">Ribbit Radar</a></h3>
 								<p>Bioacoustic ML Algorithm developed for the conservation of endangered frog species</p>
 							</article>
 						</div>
+						
+						<!-- Trade Routes Project -->
 						<div class="col-4 col-6-medium col-12-small">
 							<article class="box style2">
-								<a href="trade-routes.html" class="image featured"><img src="images/trade-routes-logo.png" alt="" /></a>
+								<a href="trade-routes.html" class="image featured" aria-label="View Trade Routes project details">
+									<img src="images/trade-routes-logo.png" alt="Trade Routes - Peer-to-peer marketplace" />
+								</a>
+								<h3><a href="trade-routes.html">Trade Routes</a></h3>
 								<p>Peer-to-peer marketplace for collectible card trading</p>
 							</article>
 						</div>
+						
+						<!-- Other Projects -->
+						<div class="col-4 col-6-medium col-12-small">
+							<article class="box style2">
+								<a href="others.html" class="image featured" aria-label="View other projects">
+									<img src="images/funkyness.jpg" alt="Additional projects showcase" />
+								
 						<div class="col-4 col-6-medium col-12-small">
 							<article class="box style2">
 								<a href="others.html" class="image featured"><img src="images/funkyness.jpg" alt="" /></a>
@@ -359,40 +389,50 @@
 						</div>
 
 						<div class="col-4 col-12-narrower">
-							<a href="https://www.mountainproject.com/route/105912416/regular-northwest-face-of-half-dome-rnwf" class="image featured"><img src="images/pic17.jpg" alt="" /></a>
-							<header>
-								<h3><a href="https://www.mountainproject.com/route/105912416/regular-northwest-face-of-half-dome-rnwf">Half Dome</a></h3>
-							</header>
-						</div>
-
-						<div class="col-4 col-12-narrower">
-							<a href="https://www.mountainproject.com/route/106008982/matthes-crest-traverse-south-to-north" class="image featured"><img src="images/pic18.jpg" alt="" /></a>
-							<header>
-								<h3><a href="https://www.mountainproject.com/route/106008982/matthes-crest-traverse-south-to-north">Matthes Crest</a></h3>
-							</header>
-						</div>
-
-					</div>
-				</section>
-			</article> -->
-
-		<!-- Contact -->
+							============================================================ -->
+		<!-- CONTACT SECTION - Contact information and social links       -->
+		<!-- ============================================================ -->
 			<article id="contact" class="wrapper style4">
 				<div class="container medium">
 					<header>
 						<h2>Reach out.</h2>
-						<p>Contact me at <span style="color: hsl(18, 68%, 48%)">tylerschwenk1@yahoo.com</span></p>
+						<p>Contact me at <a href="mailto:tylerschwenk1@yahoo.com" style="color: hsl(18, 68%, 48%)">tylerschwenk1@yahoo.com</a></p>
 					</header>
 					<div class="row">
-						
 						<div class="col-12">
 							<hr />
 							<h3>Find me on ...</h3>
 							<ul class="social">
-								<li><a href="https://www.linkedin.com/in/tyler-schwenk-939570224/" class="icon"><img src="images/pic07.jpg" alt="" width="40" height="40"/><span class="label">LinkedIn</span></a></li>
-								<li><a href="https://github.com/Tyler-Schwenk" class="icon"><img src="images/pic08.jpg" alt="" width="38" height="38"/><span class="label">Github</span></a></li>
-								<!--
-								<li><a href="#" class="icon solid fa-rss"><span>RSS</span></a></li>
+								<li>
+									<a href="https://www.linkedin.com/in/tyler-schwenk-939570224/" 
+									   class="icon" 
+									   target="_blank" 
+									   rel="noopener noreferrer"
+									   aria-label="Visit Tyler Schwenk's LinkedIn profile">
+										<img src="images/pic07.jpg" alt="LinkedIn" width="40" height="40"/>
+										<span class="label">LinkedIn</span>
+									</a>
+								</li>
+								<li>
+									<a href="https://github.com/Tyler-Schwenk" 
+									   class="icon" 
+									   target="_blank" 
+									   rel="noopener noreferrer"
+									   aria-label="Visit Tyler Schwenk's GitHub profile">
+										<img src="images/pic08.jpg" alt="GitHub" width="38" height="38"/>
+										<span class="label">Github</span>
+									</a>
+								</li>
+							</ul>
+							<hr />
+						</div>
+					</div>
+				</div>
+			</article>
+
+		<!-- ============================================================ -->
+		<!-- SCRIPTS - JavaScript dependencies and initialization         -->
+		<!-- ============================================================ href="#" class="icon solid fa-rss"><span>RSS</span></a></li>
 								<li><a href="#" class="icon brands fa-instagram"><span>Instagram</span></a></li>
 								<li><a href="#" class="icon brands fa-foursquare"><span>Foursquare</span></a></li>
 								<li><a href="#" class="icon brands fa-skype"><span>Skype</span></a></li>

@@ -5,7 +5,17 @@
 	Miniport by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+	
+	Modified by Tyler Schwenk
+	Custom sections: Custom Fonts, Music Player
 */
+
+/* ============================================================
+   CUSTOM FONTS
+   Custom typefaces for branding and special elements
+   ============================================================ */
+
+/* Red Alert LAN Font - Primary custom font */
 @font-face {
     font-family: 'RedAlertLAN';
     src: url('../webfonts/C&C Red Alert [LAN].ttf') format('truetype');
@@ -13,12 +23,15 @@
     font-style: normal;
 }
 
+/* Red Alert INET Font - Alternative custom font */
 @font-face {
     font-family: 'RedAlertINET';
     src: url('../webfonts/C&C Red Alert [INET].ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
+
+/* Custom font utility classes */
 .custom-font {
     font-family: 'RedAlertLAN', Arial, sans-serif;
 }
@@ -26,6 +39,11 @@
 .custom-font-inet {
     font-family: 'RedAlertINET', Arial, sans-serif;
 }
+
+/* ============================================================
+   CSS RESET
+   Normalize default browser styles
+   ============================================================ */
 
 html, body, div, span, applet, object,
 iframe, h1, h2, h3, h4, h5, h6, p, blockquote,
@@ -1544,6 +1562,7 @@ input, select, textarea {
 		-ms-transition: background .2s ease-in-out, box-shadow .2s ease-in-out;
 		transition: background .2s ease-in-out, box-shadow .2s ease-in-out;
 		-webkit-appearance: none;
+		appearance: none;
 		display: block;
 		border: 0;
 		padding: 0.75em;
@@ -1694,6 +1713,7 @@ input, select, textarea {
 		-ms-transition: background-color .2s ease-in-out;
 		transition: background-color .2s ease-in-out;
 		-webkit-appearance: none;
+		appearance: none;
 		position: relative;
 		display: inline-block;
 		color: #fff !important;
@@ -2494,7 +2514,13 @@ input, select, textarea {
 
 	}
 
-/* Audio Player Styles */
+/* ============================================================
+   MUSIC PLAYER COMPONENT
+   Fixed bottom audio player with album controls
+   Author: Tyler Schwenk
+   ============================================================ */
+
+/* Player Container - Fixed position at bottom of viewport */
 #audio-player {
 	position: fixed;
 	bottom: 0;
@@ -2508,6 +2534,7 @@ input, select, textarea {
 	border-top: 2px solid hsl(18, 68%, 48%);
 }
 
+/* Player Controls Layout */
 .player-controls {
 	display: flex;
 	align-items: center;
@@ -2518,6 +2545,7 @@ input, select, textarea {
 	flex-wrap: wrap;
 }
 
+/* Album Artwork */
 #album-art {
 	height: 60px;
 	width: 60px;
@@ -2527,6 +2555,7 @@ input, select, textarea {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Album Information Display */
 .album-info {
 	display: flex;
 	flex-direction: column;
@@ -2535,23 +2564,27 @@ input, select, textarea {
 	flex: 1;
 }
 
+/* Artist Name Styling */
 .artist-name {
 	color: hsl(18, 68%, 48%);
 	font-weight: 600;
 	font-size: 14px;
 }
 
+/* Album Name Styling */
 .album-name {
 	color: #ccc;
 	font-size: 12px;
 	font-style: italic;
 }
 
+/* Playback Control Buttons Container */
 .playback-controls {
 	display: flex;
 	gap: 10px;
 }
 
+/* Button Styling */
 .player-controls button {
 	background: hsl(18, 68%, 48%);
 	color: white;
@@ -2563,53 +2596,68 @@ input, select, textarea {
 	transition: all 0.3s ease;
 }
 
+/* Button Hover State */
 .player-controls button:hover {
 	background: hsl(18, 68%, 58%);
 	transform: scale(1.05);
 }
 
+/* Button Active State */
 .player-controls button:active {
 	transform: scale(0.95);
 }
 
+/* Track Information Display */
 #track-info {
 	color: white;
 	font-size: 13px;
 	margin-top: 3px;
 }
 
+/* Volume Slider */
 #volume-slider {
 	width: 100px;
 	cursor: pointer;
 }
 
+/* Volume Slider Thumb - WebKit browsers */
 #volume-slider::-webkit-slider-thumb {
 	background: hsl(18, 68%, 48%);
 }
 
+/* Volume Slider Thumb - Firefox */
 #volume-slider::-moz-range-thumb {
 	background: hsl(18, 68%, 48%);
 }
 
+/* ============================================================
+   MUSIC PLAYER - RESPONSIVE MOBILE STYLES
+   Optimized layout for smaller screens
+   ============================================================ */
 @media (max-width: 736px) {
+	/* Reduce padding on mobile */
 	#audio-player {
 		padding: 10px;
 	}
 	
+	/* Tighter spacing between controls */
 	.player-controls {
 		gap: 8px;
 	}
 	
+	/* Smaller album art on mobile */
 	#album-art {
 		height: 50px;
 		width: 50px;
 	}
 	
+	/* Adjusted album info width */
 	.album-info {
 		min-width: 180px;
 		flex: 1;
 	}
 	
+	/* Smaller text on mobile */
 	.artist-name {
 		font-size: 12px;
 	}
