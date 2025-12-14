@@ -14,18 +14,21 @@ import dynamic from "next/dynamic";
  */
 
 // Dynamically import Leaflet map to avoid SSR issues
-const MapComponent = dynamic(() => import("./PacTylerMapClient"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[600px] rounded-lg border-4 border-[#E3B800] bg-[#1a1a1a] flex items-center justify-center">
-      <div className="text-center">
-        <div className="inline-block animate-pulse text-[#E3B800] text-xl font-mono">
-          Loading map...
+const MapComponent = dynamic(
+  () => import("./PacTylerMapClient").then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[600px] rounded-lg border-4 border-[#E3B800] bg-[#1a1a1a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-pulse text-[#E3B800] text-xl font-mono">
+            Loading map...
+          </div>
         </div>
       </div>
-    </div>
-  ),
-});
+    ),
+  }
+);
 
 export default function PacTylerMap() {
   return <MapComponent />;
