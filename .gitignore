@@ -50,15 +50,26 @@ $RECYCLE.BIN/
 [._]sw[a-p]
 
 # ============================================================
-# NODE / NPM (if ever added)
+# NODE / NPM
 # ============================================================
 
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 .npm
 .yarn-integrity
+.pnpm-store/
+
+# ============================================================
+# NEXT.JS
+# ============================================================
+
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
 
 # ============================================================
 # BUILD / DIST FILES
@@ -85,7 +96,10 @@ build/
 
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
 secrets.json
 config.local.json
 
@@ -103,5 +117,6 @@ config.local.json
 
 .sass-cache/
 .browserslistrc
+.vercel
 
 _legacy-reference/

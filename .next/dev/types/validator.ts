@@ -36,10 +36,46 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 }
 
 
+// Validate ../../../app/pac-tyler/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/pac-tyler">> = Specific
+  const handler = {} as typeof import("../../../app/pac-tyler/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/">> = Specific
   const handler = {} as typeof import("../../../app/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/projects/others/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/projects/others">> = Specific
+  const handler = {} as typeof import("../../../app/projects/others/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/projects/ribbit-radar/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/projects/ribbit-radar">> = Specific
+  const handler = {} as typeof import("../../../app/projects/ribbit-radar/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/projects/trade-routes/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/projects/trade-routes">> = Specific
+  const handler = {} as typeof import("../../../app/projects/trade-routes/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -55,6 +91,15 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 {
   type __IsExpected<Specific extends LayoutConfig<"/">> = Specific
   const handler = {} as typeof import("../../../app/layout.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/pac-tyler/layout.tsx
+{
+  type __IsExpected<Specific extends LayoutConfig<"/pac-tyler">> = Specific
+  const handler = {} as typeof import("../../../app/pac-tyler/layout.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
