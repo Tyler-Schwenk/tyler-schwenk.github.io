@@ -21,7 +21,7 @@ Professional portfolio website highlighting sustainable, full-stack software dev
 ### Key Projects
 - **Ribbit Radar**: Bioacoustic ML algorithm for endangered frog species conservation
 - **Trade Routes**: Peer-to-peer marketplace for collectible card trading
-- **Pac-Tyler**: Gamified personal challenge mapping every street in San Diego
+- **Pac-Tyler**: Gamified personal challenge mapping every street in San Diego (see [Pac-Tyler Details](#pac-tyler-integration))
 - **Others**: RoboSub autonomous submarine, Hamming code implementation, and more
 
 ## ✨ Features
@@ -133,6 +133,60 @@ npm run build
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
+## 🎮 Pac-Tyler Integration
+
+The Pac-Tyler page demonstrates integration with external data sources and retro-styled UI design.
+
+### Architecture
+
+**Frontend (This Repo)**
+- React component with Leaflet.js maps
+- Fetches GeoJSON from GitHub API
+- Real-time statistics calculation
+- Retro Pac-Man themed UI (#E3B800 gold, dark theme)
+
+**Backend (Separate Repo)**
+- Python scripts for Strava API integration
+- GeoJSON data cleaning and processing
+- Automated activity updates
+- Repository: [Tyler-Schwenk/Pac-Tyler](https://github.com/Tyler-Schwenk/Pac-Tyler)
+
+### Data Flow
+
+```
+Strava API → Python Scripts → GeoJSON (GitHub) → Next.js Component → Interactive Map
+```
+
+### Key Components
+
+1. **`app/pac-tyler/page.tsx`**: Main page layout with header, description, map, and technical details
+2. **`components/PacTylerMap.tsx`**: Interactive Leaflet map component with statistics dashboard
+3. **Data Source**: `https://raw.githubusercontent.com/Tyler-Schwenk/Pac-Tyler/main/cleaned_output.geojson`
+
+### Features
+
+- **Live Activity Data**: Automatically loads latest rides from GitHub
+- **Interactive Map**: Click routes for activity details (date, distance, type)
+- **Statistics Dashboard**: Total miles, activities, longest ride, date range
+- **Error Handling**: Graceful fallback for loading/error states
+- **Responsive Design**: Mobile-friendly map and stats layout
+
+### Local Development
+
+The Pac-Tyler page works out of the box with no additional setup:
+
+```bash
+npm run dev
+# Visit http://localhost:3000/pac-tyler
+```
+
+To update the GeoJSON data (requires Strava API access):
+1. Clone the Pac-Tyler repo
+2. Set up Strava API credentials
+3. Run Python scripts to fetch/process activities
+4. Commit updated `cleaned_output.geojson` to GitHub
+5. Frontend automatically fetches latest data
 
 ## 📝 License
 
