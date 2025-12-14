@@ -103,3 +103,5 @@ config.local.json
 
 .sass-cache/
 .browserslistrc
+
+_legacy-reference/
