@@ -27,14 +27,14 @@ export default function Home() {
                 <span className="text-orange-500">Sustainable,</span> full-stack software development
               </h2>
               <p className="text-lg text-slate-400">
-                Providing services through my California General Partnership;{" "}
+                Providing services through{" "}
                 <a
-                  href="https://traderoutestcg.com/about"
+                  href="https://tylerschwenktechnical.github.io/"
                   className="text-orange-500 hover:text-orange-400 transition-colors underline"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Trade Routes
+                  Tyler Schwenk Technical
                 </a>
               </p>
             </div>

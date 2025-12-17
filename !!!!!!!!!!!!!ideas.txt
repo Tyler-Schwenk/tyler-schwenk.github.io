@@ -1,0 +1,4 @@
+add points of interest on map
+    - half pipe, texas street, presidio, ob bike path
+Add friends data! have them run the script or just give me their login, 
+add it to map as different layer. also do stats andthings and maybe compete. build out collective map
