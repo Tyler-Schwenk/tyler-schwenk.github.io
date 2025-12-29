@@ -74,6 +74,38 @@ export default function Home() {
         </div>
       </section>
 
+      {/* More Sections */}
+      <section className="py-20 bg-slate-800/50">
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-white text-center mb-16">
+            Explore More
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <ProjectCard
+              title="Pac-Tyler"
+              description="My cross-country bike journey from Pacific to Atlantic"
+              href="/pac-tyler"
+              image="/images/bikes/black-bike.jpg"
+              imageAlt="Pac-Tyler - Cross-country bike journey"
+            />
+            <ProjectCard
+              title="Gallery"
+              description="A collection of photos and memories from my adventures"
+              href="/gallery"
+              image="/images/pic00.jpeg"
+              imageAlt="Photo gallery"
+            />
+            <ProjectCard
+              title="Things I Enjoy"
+              description="Hobbies, interests, and activities that bring me joy"
+              href="/interests"
+              image="/images/funkyness.jpg"
+              imageAlt="Things I enjoy"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* About Section */}
       <section className="py-20">
         <div className="container mx-auto px-6">

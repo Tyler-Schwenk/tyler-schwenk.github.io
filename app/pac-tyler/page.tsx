@@ -129,6 +129,10 @@ export default function PacTyler() {
           <PacTylerMap />
         </section>
 
+        {/* Bike Quiver Section */}
+        <section className="mt-12">
+          <BikeQuiver bikes={BIKES} />
+        </section>
         {/* Technical Details */}
         <section className="mt-12">
           <div className="bg-[#1a1a1a] border-2 border-[#E3B800] rounded-lg p-8">
@@ -166,11 +170,7 @@ export default function PacTyler() {
             </div>
           </div>
         </section>
-
-        {/* Bike Quiver Section */}
-        <section className="mt-12">
-          <BikeQuiver bikes={BIKES} />
-        </section>
+        
       </div>
     </main>
   );
