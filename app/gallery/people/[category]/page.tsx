@@ -40,13 +40,57 @@ const categoryPhotos: Record<string, {
     photos: [
       { src: "/images/gallery/palestinepals/8ee28ed5-c2f3-4781-94.jpg", alt: "Palestine Pals", caption: "" },
       { src: "/images/gallery/palestinepals/Climbers for Palestine_crop-0002.jpeg", alt: "Palestine Pals", caption: "" },
+      { src: "/images/gallery/palestinepals/IMG_4761.jpg", alt: "Palestine Pals", caption: "" },
       { src: "/images/gallery/palestinepals/IMG_5658.jpg", alt: "Palestine Pals", caption: "" },
+      { src: "/images/gallery/palestinepals/IMG_6646.jpg", alt: "Palestine Pals", caption: "" },
+      { src: "/images/gallery/palestinepals/IMG_7078_Original.jpg", alt: "Palestine Pals", caption: "" },
+      { src: "/images/gallery/palestinepals/IMG_9262.jpg", alt: "Palestine Pals", caption: "" },
+      { src: "/images/gallery/palestinepals/IMG_9921.jpg", alt: "Palestine Pals", caption: "" },
     ]
   },
   family: {
     title: "Family",
     description: "Family moments",
-    photos: []
+    photos: [
+      { src: "/images/gallery/family/IMG_3024.jpg", alt: "Family", caption: "" },
+      { src: "/images/gallery/family/IMG_3524.jpg", alt: "Family", caption: "" },
+      { src: "/images/gallery/family/IMG_3785.jpg", alt: "Family", caption: "" },
+      { src: "/images/gallery/family/IMG_3791.jpg", alt: "Family", caption: "" },
+    ]
+  },
+  college: {
+    title: "College",
+    description: "College memories at SDSU",
+    photos: [
+      { src: "/images/gallery/college/20181021_115353.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/20190405_185644.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_0142.JPG", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1161.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1225.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1263.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1296.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1473.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1481.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1492.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1645.jpeg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1782.JPG", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_1973.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_3025.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_3187.JPG", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_3202.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_3536.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_3895.JPG", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_4819.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_5148.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_5789.JPG", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_6366.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_6641.JPG", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_6690.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_7143.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_7187.JPG", alt: "College", caption: "" },
+      { src: "/images/gallery/college/IMG_8478.jpg", alt: "College", caption: "" },
+      { src: "/images/gallery/college/Screenshot_20180602-133417_Photos.jpg", alt: "College", caption: "" },
+    ]
   }
 };
 
