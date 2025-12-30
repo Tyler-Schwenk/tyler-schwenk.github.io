@@ -14,6 +14,7 @@ interface Gallery {
   coverImage: string;
   photos: Photo[];
   externalUrl?: string;
+  externalLinkText?: string;
 }
 
 interface GalleryModalProps {
@@ -71,7 +72,7 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
               <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-orange-500 transition-colors">
                 {gallery.title}
               </h3>
-              <p className="text-slate-400 mb-2">{gallery.description}</p>
+              <p className="text-slate-400 mb-2 whitespace-pre-line">{gallery.description}</p>
               <p className="text-orange-500 text-sm">{gallery.photos.length} photos</p>
             </div>
           </button>
@@ -93,7 +94,9 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
           {/* External link overlay */}
           {currentGallery.externalUrl ? (
             <div className="flex flex-col items-center justify-center gap-8">
-              <h2 className="text-4xl font-bold text-white">Check out Vishal&apos;s Photos</h2>
+              <h2 className="text-4xl font-bold text-white">
+                {currentGallery.externalLinkText || "Check out Vishal's Photos"}
+              </h2>
               <a
                 href={currentGallery.externalUrl}
                 target="_blank"
@@ -114,8 +117,21 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
                     fill
                     className="object-contain"
                     priority
+                    sizes="(max-width: 1536px) 100vw, 1536px"
                   />
                 </div>
+
+                {/* Preload next/prev images */}
+                {currentGallery.photos.length > 1 && (
+                  <>
+                    {currentIndex > 0 && (
+                      <link rel="preload" as="image" href={currentGallery.photos[currentIndex - 1].src} />
+                    )}
+                    {currentIndex < currentGallery.photos.length - 1 && (
+                      <link rel="preload" as="image" href={currentGallery.photos[currentIndex + 1].src} />
+                    )}
+                  </>
+                )}
 
                 {/* Navigation arrows */}
                 {currentGallery.photos.length > 1 && (
@@ -146,24 +162,35 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
               {/* Thumbnail strip */}
               <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-4 overflow-x-auto">
                 <div className="flex gap-3 justify-center min-w-max mx-auto">
-                  {currentGallery.photos.map((photo, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentIndex(index)}
-                      className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden transition-all ${
-                        index === currentIndex
-                          ? "ring-4 ring-orange-500 scale-110"
-                          : "ring-2 ring-white/20 hover:ring-white/40 opacity-60 hover:opacity-100"
-                      }`}
-                    >
-                      <Image
-                        src={photo.src}
-                        alt={photo.alt}
-                        fill
-                        className="object-cover"
-                      />
-                    </button>
-                  ))}
+                  {currentGallery.photos.map((photo, index) => {
+                    // Only load thumbnails that are near the current index for performance
+                    const shouldLoad = Math.abs(index - currentIndex) <= 5;
+                    
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentIndex(index)}
+                        className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden transition-all ${
+                          index === currentIndex
+                            ? "ring-4 ring-orange-500 scale-110"
+                            : "ring-2 ring-white/20 hover:ring-white/40 opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        {shouldLoad ? (
+                          <Image
+                            src={photo.src}
+                            alt={photo.alt}
+                            fill
+                            className="object-cover"
+                            loading={index === currentIndex ? "eager" : "lazy"}
+                            sizes="80px"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-slate-700" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </>
