@@ -29,18 +29,18 @@ const tripConfig: Record<string, {
 }> = {
   epc: {
     title: "El Potrero Chico",
-    description: "Climbing in Mexico",
+    description: "From a few trips across multiple years",
     folderPath: "/images/gallery/epc"
   },
   elcap: {
     title: "El Cap",
-    description: "Yosemite climbing",
+    description: "Via triple direct",
     folderPath: "/images/gallery/elcap",
     externalUrl: "https://vish.ventures/triple-direct"
   },
   halfdome: {
     title: "Half Dome",
-    description: "Yosemite climbing",
+    description: "Via Regular Northwest Face",
     folderPath: "/images/gallery/halfdome",
     externalUrl: "https://vish.ventures/yosemite-05-24/rnwf"
   }
@@ -50,22 +50,22 @@ const tripConfig: Record<string, {
 const peopleConfig = {
   friends: {
     title: "Friends",
-    description: "Memories with friends",
+    description: "",
     folderPath: "/images/gallery/friends"
   },
   college: {
     title: "College",
-    description: "College memories at SDSU",
+    description: "Trash house",
     folderPath: "/images/gallery/college"
   },
   palestinepals: {
     title: "Palestine Pals",
-    description: "Climbing for a cause",
+    description: "Free Palestine",
     folderPath: "/images/gallery/palestinepals"
   },
   family: {
     title: "Family",
-    description: "Family moments",
+    description: "and Funtown",
     folderPath: "/images/gallery/family"
   }
 };
