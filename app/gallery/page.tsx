@@ -128,9 +128,38 @@ export default function GalleryPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-6 py-20">
-        <h1 className="text-5xl font-bold text-white text-center mb-16 pt-16">
-          Who needs instagram
-        </h1>
+        {/* Friends' Websites */}
+        <section className="mb-16 text-center">
+          <p className="text-xl text-gray-300 mb-6">
+            Lots of these photos were taken by my more talented friends:
+          </p>
+          <div className="flex flex-wrap justify-center gap-6">
+            <a 
+              href="https://frankyhanen.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 font-mono transition-all hover:scale-105"
+            >
+              Franky
+            </a>
+            <a 
+              href="https://tavakessler.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 font-mono transition-all hover:scale-105"
+            >
+              Tava
+            </a>
+            <a 
+              href="https://vish.ventures/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 font-mono transition-all hover:scale-105"
+            >
+              Vishal
+            </a>
+          </div>
+        </section>
 
         {/* Trips Section */}
         <section className="mb-20">
