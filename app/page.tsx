@@ -83,21 +83,21 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <ProjectCard
               title="Pac-Tyler"
-              description="My cross-country bike journey from Pacific to Atlantic"
+              description="Biking the length of every street in San Diego"
               href="/pac-tyler"
-              image="/images/bikes/black-bike.jpg"
-              imageAlt="Pac-Tyler - Cross-country bike journey"
+              image="/images/logo-Pac-Tyler.png"
+              imageAlt="Pac-Tyler - Biking the length of every street in San Diego"
             />
             <ProjectCard
               title="Gallery"
-              description="A collection of photos and memories from my adventures"
+              description="my photos"
               href="/gallery"
-              image="/images/pic00.jpeg"
+              image="/images/gallery/friends/DSC00356.jpeg"
               imageAlt="Photo gallery"
             />
             <ProjectCard
-              title="Things I Enjoy"
-              description="Hobbies, interests, and activities that bring me joy"
+              title="Misc"
+              description="Things I'd like to share with the world"
               href="/interests"
               image="/images/funkyness.jpg"
               imageAlt="Things I enjoy"
