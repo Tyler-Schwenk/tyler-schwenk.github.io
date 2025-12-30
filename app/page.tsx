@@ -70,17 +70,6 @@ export default function Home() {
               image="/images/funkyness.jpg"
               imageAlt="Additional projects showcase"
             />
-          </div>
-        </div>
-      </section>
-
-      {/* More Sections */}
-      <section className="py-20 bg-slate-800/50">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-white text-center mb-16">
-            Explore More
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <ProjectCard
               title="Pac-Tyler"
               description="Biking the length of every street in San Diego"
@@ -106,22 +95,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* About Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <h2 className="text-3xl font-bold text-white">About Me</h2>
-            <p className="text-lg text-slate-300 leading-relaxed">
-              I earned my <span className="text-orange-500">B.S. in Computer Science</span> with a Sustainability minor from San Diego State University.
-              During that time I gained experience as a math and computer science tutor, and developed projects including
-              Natural Language Processing ML models and ML object detection for autonomous vehicles in{" "}
-              <a href="https://robonation.org/programs/robosub/" className="text-orange-500 hover:text-orange-400 underline" target="_blank" rel="noopener noreferrer">
-                RoboSub 2023
-              </a>.
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

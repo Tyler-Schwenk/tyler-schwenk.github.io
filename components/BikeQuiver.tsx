@@ -11,7 +11,8 @@ export interface Bike {
   name: string;
   thumbnail: string; // Path to thumbnail image
   images: string[]; // Array of image paths for gallery
-  yearsOwned: string; // e.g., "2018-2020" or "2021-Present"
+  acquired: string; // Date acquired (e.g., "2020-05-15" or "May 2020")
+  decommissioned?: string; // Date decommissioned (e.g., "2022-08-20" or "Aug 2022"), undefined for current bikes
   totalMiles: number;
   description: string;
   specs?: {
@@ -136,9 +137,15 @@ function BikeCard({ bike, onClick }: BikeCardProps) {
       {/* Stats Grid */}
       <div className="space-y-2 text-sm font-mono">
         <div className="flex justify-between">
-          <span className="text-gray-400">Years:</span>
-          <span className="text-[#E3B800]">{bike.yearsOwned}</span>
+          <span className="text-gray-400">Acquired:</span>
+          <span className="text-[#E3B800]">{bike.acquired}</span>
         </div>
+        {bike.decommissioned && (
+          <div className="flex justify-between">
+            <span className="text-gray-400">Retired:</span>
+            <span className="text-[#E3B800]">{bike.decommissioned}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-gray-400">Miles:</span>
           <span className="text-[#E3B800]">{bike.totalMiles.toLocaleString()}</span>
@@ -244,7 +251,9 @@ function BikeModal({
               {bike.name}
             </h2>
             <div className="flex items-center gap-3 text-sm font-mono">
-              <span className="text-gray-400">{bike.yearsOwned}</span>
+              <span className="text-gray-400">
+                {bike.acquired}{bike.decommissioned ? ` - ${bike.decommissioned}` : ' - Present'}
+              </span>
               <span className="text-gray-600">•</span>
               <span className="text-[#E3B800]">
                 {bike.totalMiles.toLocaleString()} miles

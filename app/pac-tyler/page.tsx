@@ -16,19 +16,20 @@ import BikeQuiver, { type Bike } from "@/components/BikeQuiver";
  * - Data source: https://github.com/Tyler-Schwenk/Pac-Tyler
  */
 
-// Placeholder bike data - Update with actual bike information
+// Bike data 
 const BIKES: Bike[] = [
   {
     id: "bike-1",
     name: "Kyle's mom's Gary Fisher",
     thumbnail: "/images/bikes/garyfisher.jpg",
     images: ["/images/bikes/garyfisher.jpg"],
-    yearsOwned: "2020-2022",
+    acquired: "2020",
+    decommissioned: "2022",
     totalMiles: 500,
     description:
-      "When I lost my job andcame to San Diego Kyle let me borrow his mom's old Gary Fisher she rode in college. It served me vary well while I sorted my life out",
+      "When I lost my job and came to San Diego Kyle let me borrow his mom's old Gary Fisher she rode in college. It served me very well while I sorted my life out",
     specs: {
-      brand: "gary Fisher",
+      brand: "Gary Fisher",
       model: "IDK",
       year: 1995,
       type: "Mountain",
@@ -40,7 +41,8 @@ const BIKES: Bike[] = [
     name: "Dave Scott",
     thumbnail: "/images/bikes/davescott.jpg",
     images: ["/images/bikes/davescott.jpg","/images/bikes/davescoottridde.jpg","/images/bikes/davescottride.jpg"],
-    yearsOwned: "2020-2022",
+    acquired: "2020",
+    decommissioned: "2022",
     totalMiles: 500,
     description:
       "The Dave Scott was beautiful - and it put up being ridden very hard in my early days of biking. It rode down 3000 ft of rocks descent in Red Rocks without a complaint. Still, the mighty must fall. It eventually succumbed to a failure at the bottom bracket. Still - its pedals lived to see many more bikes.",
@@ -57,7 +59,8 @@ const BIKES: Bike[] = [
     name: "MilkMan",
     thumbnail: "/images/bikes/milkman.jpg",
     images: ["/images/bikes/milkman.jpg","/images/bikes/milkman2.jpg","/images/bikes/redbike.jpg"],
-    yearsOwned: "2020-2022",
+    acquired: "2020",
+    decommissioned: "2022",
     totalMiles: 500,
     description:
       "The MilkMan was my first introduction to weightmaxing on a commuter bike and I never looked back. It's also when I really began to love biking for the joy of it, and hit my stride in being able to support myself with maintenance. It had a perpetual squeak that persisted even though a full cleaning and regrease of the bottom bracket. Originally a milk crate based cargo system, it evolved to see a new life with bullhorns on the cruizer bars for maximum aerodyamics, and my first custom frame bag. Some say it may be refurbished to see a thrid iteration.",
@@ -67,7 +70,7 @@ const BIKES: Bike[] = [
       year: 1988,
       type: "Road",
     },
-    decommissionReason: "Retired at broken wheel - weird off size",
+    decommissionReason: "Retired at bend rear axle",
   },
   // Add more bikes here...
 ];
