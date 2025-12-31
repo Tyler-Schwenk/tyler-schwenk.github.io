@@ -2,3 +2,7 @@ add points of interest on map
     - half pipe, texas street, presidio, ob bike path
 Add friends data! have them run the script or just give me their login, 
 add it to map as different layer. also do stats andthings and maybe compete. build out collective map
+
+brad video:
+https://www.google.com/search?sca_esv=202def80b516af86&sxsrf=AE3TifPkPTEOgk-vI8nQO0oGwwSmYTYRKw:1767190601708&q=california+red+legged+frog&source=lnms&fbs=AIIjpHxEM2g5NLr6Yg6sZdDot2WWlrt5xPzHbIbVnNtZV7GujIjEmerVUfhocMLdFYRXf1jQblI4QnzIZwwFy9AntU3EjlYwfAruLbN0ZJ4PVZwWZxMxA87q9lGcgWxNOWYT-mvBGbkhdtauKNdYF6eaqJUGzyHlLciNA9Z_nulljM0q2GJOMQVNfT-pqdQDYnTT2qOATULvezpxVZ7ZwrUV5JW4Pfd5txKN3kNM2deZaig6IlACmUM&sa=X&ved=2ahUKEwjKysKAguiRAxUu1vACHS23GmYQ0pQJegQIChAB&biw=1536&bih=791&dpr=2.5#fpstate=ive&vld=cid:18964aa4,vid:nC1va8pe0BQ,st:0
+then also put the npr segment

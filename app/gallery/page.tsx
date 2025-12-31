@@ -56,6 +56,11 @@ const tripConfig: Record<string, {
     folderPath: "/images/gallery/halfdome",
     externalUrl: "https://vish.ventures/yosemite-05-24/rnwf"
   },
+  enchantments: {
+    title: "The Enchantments",
+    description: "Backpacking & Aasgard Sentinel\nJuly 2021",
+    folderPath: "/images/gallery/enchantments"
+  },
   
 };
 

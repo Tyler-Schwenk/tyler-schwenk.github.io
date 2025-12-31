@@ -1,3 +1,9 @@
+"""
+HEIC to JPG Converter for Gallery Images
+Converts all .heic and .HEIC files in the gallery folders to .jpg format
+Then deletes the original HEIC files after successful conversion
+"""
+
 from PIL import Image
 import pillow_heif
 import os
@@ -15,6 +21,8 @@ heic_files = list(gallery_dir.rglob("*.heic")) + list(gallery_dir.rglob("*.HEIC"
 print(f"Found {len(heic_files)} HEIC files to convert")
 
 converted_count = 0
+deleted_count = 0
+
 for heic_path in heic_files:
     try:
         # Open and convert to RGB
@@ -27,10 +35,16 @@ for heic_path in heic_files:
         
         # Save as JPG
         img.save(jpg_path, 'JPEG', quality=95)
-        print(f"Converted: {heic_path.name} -> {jpg_path.name}")
+        print(f"✓ Converted: {heic_path.name} -> {jpg_path.name}")
         converted_count += 1
         
+        # Delete the original HEIC file
+        heic_path.unlink()
+        print(f"  Deleted: {heic_path.name}")
+        deleted_count += 1
+        
     except Exception as e:
-        print(f"Error converting {heic_path}: {e}")
+        print(f"✗ Error converting {heic_path}: {e}")
 
-print(f"\nSuccessfully converted {converted_count} files")
+print(f"\n✓ Successfully converted {converted_count} files")
+print(f"✓ Deleted {deleted_count} HEIC files")
