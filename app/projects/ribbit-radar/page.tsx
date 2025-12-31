@@ -35,6 +35,37 @@ export default function RibbitRadar() {
               Initially developed to aid in monitoring the endangered California Red-Legged Frog as it is reintroduced to ponds in Southern California,
               Ribbit Radar was later expanded to identify the invasive American Bullfrog, a major threat to native biodiversity.
             </p>
+            
+            {/* YouTube Video */}
+            <div className="mt-8">
+              <div className="aspect-video w-full rounded-lg overflow-hidden shadow-2xl">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/nC1va8pe0BQ"
+                  title="California Red-Legged Frog"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+              </div>
+            </div>
+
+            {/* Spotify Podcast */}
+            <div className="mt-8">
+              <iframe 
+                data-testid="embed-iframe" 
+                style={{ borderRadius: '12px' }} 
+                src="https://open.spotify.com/embed/episode/3a3fDYMteSBaYuWL7zarBr?utm_source=generator" 
+                width="100%" 
+                height="352" 
+                frameBorder="0" 
+                allowFullScreen 
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                loading="lazy"
+              ></iframe>
+            </div>
           </div>
         </div>
       </section>
@@ -78,6 +109,41 @@ export default function RibbitRadar() {
               <span className="text-orange-500 font-semibold">autonomous real-time monitoring system</span>{" "}
               capable of remotely alerting biologists to bullfrog vocalizations detected in the field.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Technical Documentation Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <h2 className="text-4xl font-bold text-white">Technical Documentation</h2>
+            <p className="text-lg text-slate-300 leading-relaxed">
+              For comprehensive technical details on acoustic frog monitoring methodology, deployment guides, and best practices, 
+              explore our detailed documentation on GitBook.
+            </p>
+            
+            {/* Documentation Link Card */}
+            <a
+              href="https://tnc-conservation-technology.gitbook.io/acoustic-frog-monitoring"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mt-8 p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-orange-500/30 rounded-lg shadow-xl hover:border-orange-500 hover:shadow-orange-500/20 transition-all duration-300 group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-white group-hover:text-orange-400 transition-colors">
+                    📚 Acoustic Frog Monitoring Guide
+                  </div>
+                  <div className="text-slate-400 text-lg">
+                    Technical documentation, deployment guides, and best practices
+                  </div>
+                </div>
+                <div className="text-4xl text-orange-500 group-hover:translate-x-2 transition-transform">
+                  →
+                </div>
+              </div>
+            </a>
           </div>
         </div>
       </section>

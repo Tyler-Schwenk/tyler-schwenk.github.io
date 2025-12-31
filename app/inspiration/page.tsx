@@ -69,7 +69,7 @@ export default function Inspiration() {
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                 <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                  🔍
+                  
                 </span>
               </div>
             </div>

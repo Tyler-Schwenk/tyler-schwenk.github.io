@@ -44,7 +44,7 @@ export default function Home() {
                 <MenuOption href="/projects/ribbit-radar" iconSrc="/images/8bit/crlf_8bit.png">
                   RIBBIT RADAR
                 </MenuOption>
-                <MenuOption href="https://www.traderoutestcg.com/mallard.html" external iconSrc="/images/8bit/mallard_8bit.png">
+                <MenuOption href="/mallard" iconSrc="/images/8bit/mallard_8bit.png">
                   MALLARD COUNTER
                 </MenuOption>
                 <MenuOption href="/projects/trade-routes" iconSrc="/images/8bit/traderoutes.png">
