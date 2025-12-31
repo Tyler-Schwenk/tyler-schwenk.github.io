@@ -2,6 +2,7 @@ import Image from "next/image";
 import { readdirSync } from "fs";
 import { join } from "path";
 import GalleryModal from "@/components/GalleryModal";
+import PageWrapper from "@/components/PageWrapper";
 
 // Helper function to get all images from a folder
 function getImagesFromFolder(folderPath: string, altText: string) {
@@ -131,6 +132,7 @@ export default function GalleryPage() {
   }, {} as Record<string, { title: string; description: string; coverImage: string; photos: Array<{ src: string; alt: string }>; externalUrl?: string; externalLinkText?: string }>);
 
   return (
+    <PageWrapper>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-6 py-20">
         {/* Friends' Websites */}
@@ -186,5 +188,6 @@ export default function GalleryPage() {
         </section>
       </div>
     </div>
+    </PageWrapper>
   );
 }

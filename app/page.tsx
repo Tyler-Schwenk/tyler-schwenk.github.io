@@ -20,16 +20,16 @@ export default function Home() {
                    style={{backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #000 2px, #000 4px)'}} />
               
               {/* Title Bar */}
-              <div className="border-4 border-yellow-400 bg-blue-900 p-3 mb-4 shadow-lg flex-shrink-0">
-                <h1 className="text-2xl md:text-4xl font-bold text-yellow-400 text-center pixel-font tracking-wider drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
-                  TYLER SCHWENK
+              <div className="border-4 border-black bg-[#3850A0] p-3 mb-4 shadow-lg flex-shrink-0">
+                <h1 className="text-2xl md:text-4xl font-bold text-[#F8D030] text-center pixel-font tracking-wider drop-shadow-[2px_2px_0_rgba(0,0,0,0.8)]">
+                  MAIN MENU
                 </h1>
               </div>
 
               {/* Main Menu - Scrollable */}
-              <div className="border-4 border-cyan-400 bg-blue-900/80 p-4 space-y-2 shadow-lg flex-1 overflow-y-auto mb-4">
+              <div className="border-4 border-black bg-[#3850A0]/90 p-4 space-y-2 shadow-lg flex-1 overflow-y-auto mb-4">
                 <div className="mb-3 text-center">
-                  <p className="text-yellow-300 pixel-font text-sm animate-pulse">
+                  <p className="text-[#F8D030] pixel-font text-sm animate-pulse drop-shadow-[2px_2px_0_rgba(0,0,0,0.8)]">
                     ▼ SELECT OPTION ▼
                   </p>
                 </div>
@@ -53,6 +53,9 @@ export default function Home() {
                 <MenuOption href="/gallery" iconSrc="/images/8bit/camera.png">
                   GALLERY
                 </MenuOption>
+                <MenuOption href="/cookbook" iconSrc="/images/8bit/chef.png">
+                  COOKBOOK
+                </MenuOption>
                 <MenuOption href="/inspiration" iconSrc="/images/8bit/lightbulb.png">
                   INSPIRATION
                 </MenuOption>
@@ -63,9 +66,9 @@ export default function Home() {
 
               {/* Status Bar */}
               <div className="flex-shrink-0">
-                <div className="border-4 border-yellow-400 bg-blue-900 p-2 flex justify-between items-center shadow-lg">
-                  <span className="text-yellow-300 pixel-font text-xs">PRESS START</span>
-                  <span className="text-green-400 pixel-font text-xs animate-pulse">●</span>
+                <div className="border-4 border-black bg-[#3850A0] p-2 flex justify-between items-center shadow-lg">
+                  <span className="text-[#F8D030] pixel-font text-xs drop-shadow-[2px_2px_0_rgba(0,0,0,0.8)]">PRESS START</span>
+                  <span className="text-[#F8D030] pixel-font text-xs animate-pulse">●</span>
                 </div>
               </div>
             </div>
@@ -98,7 +101,7 @@ function MenuOption({
   external?: boolean;
 }) {
   const content = (
-    <div className="group border-2 border-cyan-400 bg-blue-950 p-3 hover:bg-cyan-400 hover:text-blue-950 transition-all cursor-pointer flex items-center gap-3 shadow-md">
+    <div className="group border-2 border-black bg-[#2840A0] p-3 hover:bg-[#F8D030] hover:text-[#3850A0] transition-all cursor-pointer flex items-center gap-3 shadow-md">
       {iconSrc ? (
         <div className="w-12 h-12 relative flex-shrink-0 group-hover:animate-bounce">
           <Image 
@@ -112,8 +115,8 @@ function MenuOption({
       ) : (
         <span className="text-xl group-hover:animate-bounce">{icon}</span>
       )}
-      <span className="pixel-font text-sm flex-1 text-yellow-300 group-hover:text-blue-950">{children}</span>
-      <span className="text-yellow-300 group-hover:text-blue-950 pixel-font text-xs">▶</span>
+      <span className="pixel-font text-sm flex-1 text-white group-hover:text-[#3850A0] drop-shadow-[1px_1px_0_rgba(0,0,0,0.8)]">{children}</span>
+      <span className="text-white group-hover:text-[#3850A0] pixel-font text-xs">▶</span>
     </div>
   );
 

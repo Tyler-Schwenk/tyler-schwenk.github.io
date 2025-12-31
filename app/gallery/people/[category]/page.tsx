@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PeopleGalleryClient from "./PeopleGalleryClient";
+import PageWrapper from "@/components/PageWrapper";
 
 // Photo data for each category
 const categoryPhotos: Record<string, {
@@ -102,7 +103,11 @@ export default async function PeopleGallery({ params }: { params: Promise<{ cate
     notFound();
   }
 
-  return <PeopleGalleryClient gallery={gallery} />;
+  return (
+    <PageWrapper>
+      <PeopleGalleryClient gallery={gallery} />
+    </PageWrapper>
+  );
 }
 
 // Generate static params for all categories

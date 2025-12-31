@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import PageWrapper from "@/components/PageWrapper";
 
 // Trip gallery data - add your photos for each trip here
 const tripGalleries: Record<string, {
@@ -36,6 +37,7 @@ export default async function TripGallery({ params }: { params: Promise<{ trip: 
   }
 
   return (
+    <PageWrapper>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-6 py-20">
         {/* Back button */}
@@ -90,6 +92,7 @@ export default async function TripGallery({ params }: { params: Promise<{ trip: 
         </div>
       </div>
     </div>
+    </PageWrapper>
   );
 }
 

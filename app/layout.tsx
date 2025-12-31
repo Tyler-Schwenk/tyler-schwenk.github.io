@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Press_Start_2P } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,9 +35,7 @@ export default function RootLayout({
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
       <body className={`${inter.variable} ${pressStart2P.variable} font-sans antialiased`}>
-        <Navigation />
         {children}
-        <Footer />
       </body>
     </html>
   );

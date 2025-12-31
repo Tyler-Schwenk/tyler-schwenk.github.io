@@ -1,6 +1,7 @@
 import Image from "next/image";
 import PacTylerMap from "@/components/PacTylerMap";
 import BikeQuiver, { type Bike } from "@/components/BikeQuiver";
+import PageWrapper from "@/components/PageWrapper";
 
 /**
  * Pac-Tyler Project Page
@@ -77,6 +78,7 @@ const BIKES: Bike[] = [
 
 export default function PacTyler() {
   return (
+    <PageWrapper>
     <main className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black">
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Header with Logo */}
@@ -176,6 +178,7 @@ export default function PacTyler() {
         
       </div>
     </main>
+    </PageWrapper>
   );
 }
 

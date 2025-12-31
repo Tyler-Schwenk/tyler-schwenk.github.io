@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import PageWrapper from "@/components/PageWrapper";
 
 export const metadata: Metadata = {
   title: "Other Projects | Tyler Schwenk",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 
 export default function Others() {
   return (
+    <PageWrapper>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Hero Section */}
       <section className="pt-32 pb-12">
@@ -136,5 +138,6 @@ export default function Others() {
         </div>
       </section>
     </div>
+    </PageWrapper>
   );
 }
