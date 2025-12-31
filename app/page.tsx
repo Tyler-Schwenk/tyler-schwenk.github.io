@@ -13,28 +13,31 @@ export default function Home() {
           {/* Screen */}
           <div className="bg-black p-4 rounded-lg shadow-inner">
             {/* Inner Screen Content */}
-            <div className="bg-blue-950 border-4 border-blue-600 p-6 aspect-[4/3] relative overflow-hidden">
+            <div className="bg-blue-950 border-4 border-blue-600 p-6 relative flex flex-col min-h-[600px] max-h-[80vh]">
               
               {/* Scanline Effect */}
               <div className="absolute inset-0 pointer-events-none opacity-10" 
                    style={{backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #000 2px, #000 4px)'}} />
               
               {/* Title Bar */}
-              <div className="border-4 border-yellow-400 bg-blue-900 p-3 mb-4 shadow-lg">
+              <div className="border-4 border-yellow-400 bg-blue-900 p-3 mb-4 shadow-lg flex-shrink-0">
                 <h1 className="text-2xl md:text-4xl font-bold text-yellow-400 text-center pixel-font tracking-wider drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
                   TYLER SCHWENK
                 </h1>
               </div>
 
-              {/* Main Menu */}
-              <div className="border-4 border-cyan-400 bg-blue-900/80 p-4 space-y-3 shadow-lg">
-                <div className="mb-4 text-center">
+              {/* Main Menu - Scrollable */}
+              <div className="border-4 border-cyan-400 bg-blue-900/80 p-4 space-y-2 shadow-lg flex-1 overflow-y-auto mb-4">
+                <div className="mb-3 text-center">
                   <p className="text-yellow-300 pixel-font text-sm animate-pulse">
                     ▼ SELECT OPTION ▼
                   </p>
                 </div>
 
                 {/* Menu Items */}
+                <MenuOption href="https://tylerschwenktechnical.github.io/" external iconSrc="/images/8bit/work.png">
+                  PROFESSIONAL SERVICES
+                </MenuOption>
                 <MenuOption href="/pac-tyler" iconSrc="/images/8bit/pacman.png">
                   PAC-TYLER
                 </MenuOption>
@@ -44,10 +47,10 @@ export default function Home() {
                 <MenuOption href="https://www.traderoutestcg.com/mallard.html" external iconSrc="/images/8bit/mallard_8bit.png">
                   MALLARD COUNTER
                 </MenuOption>
-                <MenuOption href="/projects/trade-routes" icon="🎴">
+                <MenuOption href="/projects/trade-routes" iconSrc="/images/8bit/traderoutes.png">
                   TRADE ROUTES
                 </MenuOption>
-                <MenuOption href="/gallery" icon="📷">
+                <MenuOption href="/gallery" iconSrc="/images/8bit/camera.png">
                   GALLERY
                 </MenuOption>
                 <MenuOption href="/inspiration" iconSrc="/images/8bit/lightbulb.png">
@@ -56,13 +59,10 @@ export default function Home() {
                 <MenuOption href="/projects/others" icon="⚡">
                   OTHER PROJECTS
                 </MenuOption>
-                <MenuOption href="https://tylerschwenktechnical.github.io/" external icon="💼">
-                  SERVICES
-                </MenuOption>
               </div>
 
               {/* Status Bar */}
-              <div className="absolute bottom-2 left-2 right-2">
+              <div className="flex-shrink-0">
                 <div className="border-4 border-yellow-400 bg-blue-900 p-2 flex justify-between items-center shadow-lg">
                   <span className="text-yellow-300 pixel-font text-xs">PRESS START</span>
                   <span className="text-green-400 pixel-font text-xs animate-pulse">●</span>
