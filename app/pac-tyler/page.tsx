@@ -94,12 +94,7 @@ export default function PacTyler() {
             />
           </div>
 
-          {/* Retro Title Bar */}
-          <div className="inline-flex items-center gap-8 bg-black border-4 border-[#E3B800] px-8 py-3 rounded font-mono text-[#E3B800] shadow-[0_0_20px_rgba(227,184,0,0.5)]">
-            <span className="text-sm">1UP</span>
-            <span className="text-xl font-bold">PAC-TYLER</span>
-            <span className="text-sm">HI SCORE: 1236 MI</span>
-          </div>
+          
         </header>
 
         {/* Project Description */}
@@ -116,6 +111,25 @@ export default function PacTyler() {
             <div className="mt-6 pt-6 border-t border-[#E3B800]/30">
               <p className="text-sm text-gray-400 font-mono">
                 Inspired by{" "}
+                <a
+                  href="https://myhalfbakedideas.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#E3B800] hover:text-[#ffd700] underline transition-colors"
+                >
+                  Jeff. 
+                </a>
+
+                 One day, as I was moving back to San Diego and Jeff was looking to move away,
+                he described part of his motivation to leave. He compared living in a city for a long 
+                time to be like being in a cottage in the woods after a snowfall. At first the options
+                are limitless, as you must blaze a trail in every direction. But after some time you stamp down 
+                your main paths, and end up sticking to them out of convenience. This is an attempt to 
+                continue exploring throughout my daily life.
+
+              </p>
+              <p className="text-sm text-gray-400 font-mono">
+                Also Inspired by{" "}
                 <a
                   href="https://www.youtube.com/watch?v=1c8i5SABqwU"
                   target="_blank"

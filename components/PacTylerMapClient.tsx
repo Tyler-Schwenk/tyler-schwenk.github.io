@@ -253,7 +253,7 @@ export default function PacTylerMapClient() {
       {/* Map Container */}
       <div
         ref={mapContainerRef}
-        className="w-full h-[600px] rounded-lg border-4 border-[#E3B800] shadow-[0_0_20px_rgba(227,184,0,0.3)]"
+        className="w-full h-[600px] rounded-lg border-4 border-[#E3B800] shadow-[0_0_20px_rgba(227,184,0,0.3)] relative z-0"
         style={{ background: "#1a1a1a" }}
       />
 
