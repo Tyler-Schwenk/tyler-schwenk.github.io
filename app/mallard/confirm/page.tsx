@@ -107,13 +107,10 @@ export default function MallardConfirm() {
                     </div>
                     
                     <p><strong>ARTICLE V: FORCE MAJEURE</strong></p>
-                    <p>5.1 Neither party shall be liable for failure to perform due to Acts of God, acts of waterfowl, duck migrations, avian flu outbreaks, or the sudden and inexplicable disappearance of all mallards from the face of the Earth.</p>
+                    <p>5.1 Neither party shall be liable for failure to perform due to Acts of God, acts of waterfowl, duck migrations, or avian flu outbreaks.</p>
                     
                     <p><strong>ARTICLE VI: AMENDMENTS</strong></p>
                     <p>6.1 Kyle and Tyler reserve the right to modify these terms at any time, for any reason, or without reason. User&apos;s continued use of the Mallard Counter constitutes acceptance of any and all modifications, past, present, and future.</p>
-                    
-                    <p><strong>ARTICLE VII: GOVERNING LAW</strong></p>
-                    <p>7.1 This Agreement shall be governed by the laws of Duckberg and any disputes shall be resolved by trial by combat with rubber ducks at dawn.</p>
                     
                     <p className="font-bold text-white mt-6">BY CHECKING THE BOX BELOW, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO BE BOUND BY THESE TERMS, AND THAT YOU ARE OF SOUND MIND AND LEGAL AGE TO COUNT MALLARDS IN YOUR JURISDICTION.</p>
                   </div>
