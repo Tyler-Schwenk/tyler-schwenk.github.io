@@ -22,8 +22,8 @@ const BIKES: Bike[] = [
   {
     id: "bike-1",
     name: "Kyle's mom's Gary Fisher",
-    thumbnail: "/images/bikes/garyfisher.jpg",
-    images: ["/images/bikes/garyfisher.jpg"],
+    thumbnail: "/images/bikes/garyfsher1.jpg",
+    images: ["/images/bikes/garyfsher1.jpg", "/images/bikes/garyfisher.jpg"],
     acquired: "2020",
     decommissioned: "2022",
     totalMiles: 500,
