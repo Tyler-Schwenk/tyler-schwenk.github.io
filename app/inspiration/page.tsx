@@ -15,7 +15,7 @@ export default function Inspiration() {
         {/* Title */}
         <div className="mb-12 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            💡 Inspiration
+            🌐 Community Board
           </h1>
           <p className="text-slate-400 text-lg">
             People and projects that inspire my work
@@ -33,6 +33,7 @@ export default function Inspiration() {
               <LinkCard href="https://tavakessler.com/" name="Tava" />
               <LinkCard href="https://vish.ventures/" name="Vishal" />
               <LinkCard href="https://frankyhanen.com/" name="Franky" />
+              <LinkCard href="https://fiona-sullivan.github.io/" name="Fiona" />
             </div>
           </div>
         </section>

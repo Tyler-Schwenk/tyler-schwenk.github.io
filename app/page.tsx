@@ -40,7 +40,7 @@ export default function Home() {
                   PAC-TYLER
                 </MenuOption>
                 <MenuOption href="/projects/ribbit-radar" iconSrc="/images/8bit/crlf_8bit.png">
-                  RIBBIT RADAR
+                  FROG WORK
                 </MenuOption>
                 <MenuOption href="/mallard" iconSrc="/images/8bit/mallard_8bit.png">
                   MALLARD COUNTER
@@ -54,11 +54,11 @@ export default function Home() {
                 <MenuOption href="/cookbook" iconSrc="/images/8bit/chef.png">
                   COOKBOOK
                 </MenuOption>
-                <MenuOption href="/inspiration" iconSrc="/images/8bit/lightbulb.png">
-                  INSPIRATION
+                <MenuOption href="/inspiration" iconSrc="/images/8bit/community.png">
+                  COMMUNITY BOARD
                 </MenuOption>
-                <MenuOption href="/projects/others" icon="⚡">
-                  OTHER PROJECTS
+                <MenuOption href="/projects/others" iconSrc="/images/8bit/lightbulb.png">
+                  INSPIRATION/MISC
                 </MenuOption>
               </div>
             </div>
