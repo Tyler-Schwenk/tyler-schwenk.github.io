@@ -1,12 +1,8 @@
 "use client";
 
 import PageWrapper from "@/components/PageWrapper";
-import Image from "next/image";
-import { useState } from "react";
 
 export default function Inspiration() {
-  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-
   return (
     <PageWrapper>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-20">
@@ -51,55 +47,7 @@ export default function Inspiration() {
           </div>
         </section>
 
-        {/* Earthrise Section */}
-        <section>
-          <div className="bg-slate-800/50 backdrop-blur-sm p-8 rounded-lg border border-slate-700 shadow-xl">
-            <h2 className="text-3xl font-bold text-white mb-6">
-              🌍 Earthrise
-            </h2>
-            <div 
-              className="relative cursor-pointer group overflow-hidden rounded-lg"
-              onClick={() => setFullscreenImage("/images/earthride.jpg")}
-            >
-              <Image 
-                src="/images/earthride.jpg" 
-                alt="Earthrise" 
-                width={1200} 
-                height={800}
-                className="w-full h-auto transition-transform group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                  
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
       </div>
-
-      {/* Fullscreen Modal */}
-      {fullscreenImage && (
-        <div 
-          className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
-          onClick={() => setFullscreenImage(null)}
-        >
-          <button 
-            className="absolute top-4 right-4 text-white text-4xl hover:text-orange-500 transition-colors"
-            onClick={() => setFullscreenImage(null)}
-          >
-            ×
-          </button>
-          <Image 
-            src={fullscreenImage} 
-            alt="Fullscreen view" 
-            width={1920} 
-            height={1080}
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
-      )}
     </div>
     </PageWrapper>
   );
