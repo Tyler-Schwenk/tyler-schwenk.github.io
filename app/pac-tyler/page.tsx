@@ -46,7 +46,7 @@ const BIKES: Bike[] = [
     decommissioned: "2022",
     totalMiles: 500,
     description:
-      "The Dave Scott was beautiful - and it put up being ridden very hard in my early days of biking. It rode down 3000 ft of rocks descent in Red Rocks without a complaint. Still, the mighty must fall. It eventually succumbed to a failure at the bottom bracket. Still - its pedals lived to see many more bikes.",
+      "The Dave Scott was beautiful - and it put up being ridden very hard in my early days of biking. It rode down 3000 ft of rocky descent in Red Rocks without a complaint. Still, the mighty must fall. It eventually succumbed to a failure at the bottom bracket. Its pedals lived to see many more bikes.",
     specs: {
       brand: "Centurion",
       model: "Dave Scott Expert", // https://www.vintagecenturion.com/models/competition/ironman/87-89_expert.shtml
