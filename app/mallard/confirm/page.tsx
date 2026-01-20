@@ -45,6 +45,15 @@ export default function MallardConfirm() {
                 />
                 <span className="text-lg text-white">
                   I will only count <span className="font-bold text-yellow-500">real mallards</span>
+                  <a 
+                    href="https://www.allaboutbirds.org/guide/Mallard/id" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block text-sm text-blue-400 hover:text-blue-300 mt-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    → Learn how to identify a mallard
+                  </a>
                 </span>
               </label>
 

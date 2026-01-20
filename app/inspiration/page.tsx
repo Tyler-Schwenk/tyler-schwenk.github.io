@@ -30,6 +30,7 @@ export default function Inspiration() {
               <LinkCard href="https://vish.ventures/" name="Vishal" />
               <LinkCard href="https://frankyhanen.com/" name="Franky" />
               <LinkCard href="https://fiona-sullivan.github.io/" name="Fiona" />
+              <LinkCard href="https://soundcloud.com/byrdmp3/spectrum-techno-presents-live-from-the-techno-jungle-w-tommypips" name="Tommy (DJ TommyPips)" description="Spectrum Techno - Live from the Techno Jungle" />
             </div>
           </div>
         </section>
