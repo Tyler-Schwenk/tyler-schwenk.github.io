@@ -169,10 +169,9 @@ export default function RibbitRadar() {
           <div className="max-w-4xl mx-auto space-y-6">
             <h2 className="text-4xl font-bold text-white">Custom ML Training Framework</h2>
             <p className="text-lg text-slate-300 leading-relaxed">
-              To it aid in my model development I have been building this application to improve the full process
-               of ML model development, from data collection to deployment. 
+              To aid in my model development I have been building this application. 
               It automates the full ML pipeline - from data prep through hyperparameter sweeps, training, inference, and model evaluation. 
-              You can just set a single config and then click "go" and let it train and evaluate hundreds of models while you sleep. 
+              You can just set a single config and then click "go". It will train and evaluate hundreds of models while you sleep. 
               I'm pretty stoked on it, and plan to package it to send out to the bioacoustic community in 2026.
             </p>
             
@@ -260,7 +259,7 @@ export default function RibbitRadar() {
             <p className="text-lg text-slate-300 leading-relaxed">
               This is an archive of the first ML audio detecton system I got working for the California Red-legged Frog.
               It used an audio-spectrogram transformer, and I built a simple GUI for it. The model wasnt great, and neither was 
-              the applicaiton, but I wasnt getting paid yet so wat can you expect.
+              the application, but I wasnt getting paid yet so what can you expect.
             </p>
             
             {/* GitHub Link Card */}
