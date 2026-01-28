@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+export const dynamic = "force-static";
+
 const SITE_URL = "https://tyler-schwenk.github.io";
 const USER_AGENT = "*";
 const ALLOW_ALL = "/";
