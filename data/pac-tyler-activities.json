@@ -1,0 +1,4214 @@
+{
+    "generated_at": "2026-01-28T22:35:23+00:00",
+    "activity_count": 526,
+    "activities": [
+        {
+            "activity_id": null,
+            "name": "Hot",
+            "date": "2023-06-16T11:51:04",
+            "distance_m": 7924.9,
+            "distance_mi": 4.924316800676054,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike to get my car",
+            "date": "2023-06-25T10:34:04",
+            "distance_m": 7650.2,
+            "distance_mi": 4.753625709918352,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Trail Run",
+            "date": "2023-06-26T08:54:22",
+            "distance_m": 4693.5,
+            "distance_mi": 2.916412939465868,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Dude scared the shit out of me",
+            "date": "2023-06-28T18:06:44",
+            "distance_m": 7975.6,
+            "distance_mi": 4.9558203984241995,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Waiting on buffalo dip",
+            "date": "2023-07-02T19:34:32",
+            "distance_m": 4869.5,
+            "distance_mi": 3.0257745411162342,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Still hot",
+            "date": "2023-07-03T08:43:35",
+            "distance_m": 8260.4,
+            "distance_mi": 5.132787353822064,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Forgot my shirt",
+            "date": "2023-07-03T09:48:12",
+            "distance_m": 1234.5,
+            "distance_mi": 0.7670846433941865,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Trail Run",
+            "date": "2023-07-11T11:56:56",
+            "distance_m": 5288.4,
+            "distance_mi": 3.286067580498838,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "New daily driver",
+            "date": "2023-07-21T14:30:27",
+            "distance_m": 32375.8,
+            "distance_mi": 20.117439447226815,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "1777 war house",
+            "date": "2023-07-23T12:17:12",
+            "distance_m": 55767.1,
+            "distance_mi": 34.652155542023436,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To virgina on my george washington shit",
+            "date": "2023-07-26T09:56:35",
+            "distance_m": 8327.4,
+            "distance_mi": 5.174419327177601,
+            "type": "Kayaking"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike and forest romp",
+            "date": "2023-07-28T09:20:42",
+            "distance_m": 13064.1,
+            "distance_mi": 8.11767556886674,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Grocery run",
+            "date": "2023-07-29T08:53:19",
+            "distance_m": 12634.5,
+            "distance_mi": 7.850733841201984,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Parent\u2019s anniversary bike to lunch",
+            "date": "2023-07-30T14:22:00",
+            "distance_m": 8008.3,
+            "distance_mi": 4.976139286912648,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Hangover cure",
+            "date": "2023-08-02T11:46:01",
+            "distance_m": 33882.7,
+            "distance_mi": 21.053786024084406,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Visiting my favorite tree",
+            "date": "2023-08-03T09:47:37",
+            "distance_m": 45998.4,
+            "distance_mi": 28.58215168951247,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Who let these kids go to war",
+            "date": "2023-08-06T08:56:08",
+            "distance_m": 32068.5,
+            "distance_mi": 19.92649160525433,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Long ride",
+            "date": "2023-08-08T08:44:15",
+            "distance_m": 81944.0,
+            "distance_mi": 50.91776753203177,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Family ride to pville",
+            "date": "2023-08-11T12:56:02",
+            "distance_m": 16081.3,
+            "distance_mi": 9.992481389886537,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Ride",
+            "date": "2023-08-14T09:35:18",
+            "distance_m": 32020.1,
+            "distance_mi": 19.89641716480048,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Grocery run",
+            "date": "2023-08-15T09:15:35",
+            "distance_m": 11453.6,
+            "distance_mi": 7.116954776492228,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Photos printed",
+            "date": "2023-08-18T08:42:56",
+            "distance_m": 33010.3,
+            "distance_mi": 20.511700448631117,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Taking cooper on a walk",
+            "date": "2023-08-25T13:19:56",
+            "distance_m": 838.8,
+            "distance_mi": 0.5212074515018579,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Gonna make tomato soup",
+            "date": "2023-08-26T09:16:13",
+            "distance_m": 31628.1,
+            "distance_mi": 19.65283905203375,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Decided to check out the asphalt plant i always ride by",
+            "date": "2023-08-28T09:52:50",
+            "distance_m": 17685.0,
+            "distance_mi": 10.988976847651832,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Showing eva the trails!",
+            "date": "2023-08-31T10:28:55",
+            "distance_m": 28800.7,
+            "distance_mi": 17.89596977643009,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike to beers",
+            "date": "2023-09-02T13:51:39",
+            "distance_m": 33960.1,
+            "distance_mi": 21.101880273901102,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "The big apple",
+            "date": "2023-09-04T18:13:03",
+            "distance_m": 4757.2,
+            "distance_mi": 2.9559943827904607,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Trying to keep up with eva",
+            "date": "2023-09-15T17:52:24",
+            "distance_m": 3660.0,
+            "distance_mi": 2.274224216138293,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride to book store",
+            "date": "2023-09-26T16:46:35",
+            "distance_m": 3775.2,
+            "distance_mi": 2.3458063554003505,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride to park and asian grocer",
+            "date": "2023-09-27T11:19:44",
+            "distance_m": 12343.6,
+            "distance_mi": 7.669976512110555,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Anniversary run",
+            "date": "2023-10-10T16:51:14",
+            "distance_m": 3523.3,
+            "distance_mi": 2.1892825630382644,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Feels good to run down a hill",
+            "date": "2023-10-11T18:31:29",
+            "distance_m": 3395.3,
+            "distance_mi": 2.1097468527470893,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Visiting annika",
+            "date": "2023-10-16T08:51:11",
+            "distance_m": 10717.6,
+            "distance_mi": 6.65962444231797,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Running along in die forst",
+            "date": "2023-10-22T16:57:44",
+            "distance_m": 7101.1,
+            "distance_mi": 4.4124299402239435,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Family bike to gumbo limbo",
+            "date": "2023-11-22T10:37:07",
+            "distance_m": 30155.3,
+            "distance_mi": 18.737681285495917,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Back to ol reliable",
+            "date": "2023-11-25T11:41:44",
+            "distance_m": 4566.4,
+            "distance_mi": 2.8374364646376775,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Retrieving audio recorders",
+            "date": "2023-11-26T10:19:01",
+            "distance_m": 4547.9,
+            "distance_mi": 2.825941069009656,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Testing out new rei garage sale shoes",
+            "date": "2023-12-03T12:58:52",
+            "distance_m": 5254.7,
+            "distance_mi": 3.2651273192737396,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Starting my sardine journey",
+            "date": "2023-12-19T11:13:54",
+            "distance_m": 15951.3,
+            "distance_mi": 9.911702934122063,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mackerel mission",
+            "date": "2023-12-26T12:56:30",
+            "distance_m": 45282.9,
+            "distance_mi": 28.137559496439536,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "2 pigs napping in the sun",
+            "date": "2023-12-29T11:28:57",
+            "distance_m": 35195.5,
+            "distance_mi": 21.869524152758274,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Getting baklava ingredients then to the gym",
+            "date": "2023-12-30T13:03:30",
+            "distance_m": 6521.3,
+            "distance_mi": 4.052158027514385,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Too damn cold",
+            "date": "2024-01-04T14:27:38",
+            "distance_m": 24053.5,
+            "distance_mi": 14.946189121006128,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Maiden voyage with Gary",
+            "date": "2024-01-26T08:15:15",
+            "distance_m": 4088.1,
+            "distance_mi": 2.540233884698075,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike about",
+            "date": "2024-01-26T16:29:07",
+            "distance_m": 6928.3,
+            "distance_mi": 4.305056731330857,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-01-28T14:01:45",
+            "distance_m": 22731.0,
+            "distance_mi": 14.124423676786758,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Superbowl",
+            "date": "2024-02-11T12:48:38",
+            "distance_m": 5367.8,
+            "distance_mi": 3.335404575788833,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike to the store",
+            "date": "2024-02-18T08:53:52",
+            "distance_m": 4742.8,
+            "distance_mi": 2.9470466153827037,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "El toro with jeff",
+            "date": "2024-02-23T09:27:58",
+            "distance_m": 8420.9,
+            "distance_mi": 5.232517678054358,
+            "type": "Hike"
+        },
+        {
+            "activity_id": null,
+            "name": "Lime run with tava",
+            "date": "2024-02-24T18:21:19",
+            "distance_m": 4418.8,
+            "distance_mi": 2.7457218487081665,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Wet aid practice",
+            "date": "2024-03-03T09:27:26",
+            "distance_m": 3421.5,
+            "distance_mi": 2.126026818447314,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To mesa rim and back",
+            "date": "2024-03-07T12:13:14",
+            "distance_m": 12389.6,
+            "distance_mi": 7.698559657996446,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike night",
+            "date": "2024-03-08T18:15:29",
+            "distance_m": 37078.5,
+            "distance_mi": 23.039569015869862,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Meeting with the pals",
+            "date": "2024-03-10T16:04:04",
+            "distance_m": 13190.0,
+            "distance_mi": 8.195906396410951,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Keeping up with Anna",
+            "date": "2024-03-12T09:10:57",
+            "distance_m": 17012.8,
+            "distance_mi": 10.571290094075833,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike night",
+            "date": "2024-03-12T19:00:00",
+            "distance_m": 15301.2,
+            "distance_mi": 9.507748518026023,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "First ride on the new whip",
+            "date": "2024-03-17T14:56:10",
+            "distance_m": 13678.0,
+            "distance_mi": 8.499136291896058,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Testing a new route to mesa",
+            "date": "2024-03-18T09:04:32",
+            "distance_m": 16502.2,
+            "distance_mi": 10.254017174742442,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "First day of marathon training",
+            "date": "2024-03-20T08:16:33",
+            "distance_m": 10832.0,
+            "distance_mi": 6.730709483390707,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Bday bike night",
+            "date": "2024-03-22T21:44:01",
+            "distance_m": 21772.0,
+            "distance_mi": 13.528527222339592,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Beautiful run with anna",
+            "date": "2024-03-23T11:48:49",
+            "distance_m": 11414.1,
+            "distance_mi": 7.09241055339456,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Exploring mission hills",
+            "date": "2024-03-25T06:43:55",
+            "distance_m": 14476.6,
+            "distance_mi": 8.995364559384592,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Shooting for 2 hours",
+            "date": "2024-03-28T08:24:44",
+            "distance_m": 19427.7,
+            "distance_mi": 12.071843115811452,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Run",
+            "date": "2024-04-01T08:06:28",
+            "distance_m": 18446.5,
+            "distance_mi": 11.46215218661066,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "This thing rips!",
+            "date": "2024-04-01T12:15:43",
+            "distance_m": 16655.8,
+            "distance_mi": 10.349460027091851,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rolling around with sam",
+            "date": "2024-04-03T11:39:29",
+            "distance_m": 32250.4,
+            "distance_mi": 20.03951930605093,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rolling around with sam",
+            "date": "2024-04-03T11:39:29",
+            "distance_m": 32250.4,
+            "distance_mi": 20.03951930605093,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rolling around with sam",
+            "date": "2024-04-03T11:39:29",
+            "distance_m": 32250.4,
+            "distance_mi": 20.03951930605093,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Showing anna the local",
+            "date": "2024-04-04T09:43:43",
+            "distance_m": 7822.2,
+            "distance_mi": 4.860501820622119,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Run",
+            "date": "2024-04-06T09:38:04",
+            "distance_m": 14857.4,
+            "distance_mi": 9.23198329750084,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Good time",
+            "date": "2024-04-07T13:13:48",
+            "distance_m": 51548.0,
+            "distance_mi": 32.03052182882424,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To the mexican market",
+            "date": "2024-04-10T07:31:56",
+            "distance_m": 8908.4,
+            "distance_mi": 5.535436887171138,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "To the boulders!",
+            "date": "2024-04-12T08:58:36",
+            "distance_m": 20122.7,
+            "distance_mi": 12.503697167783068,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Jaunt to jazz",
+            "date": "2024-04-17T20:01:57",
+            "distance_m": 8619.8,
+            "distance_mi": 5.356108715374004,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Idk man",
+            "date": "2024-04-18T17:24:01",
+            "distance_m": 7850.4,
+            "distance_mi": 4.878024531795643,
+            "type": "Hike"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike night",
+            "date": "2024-04-26T20:35:55",
+            "distance_m": 13715.5,
+            "distance_mi": 8.522437769520424,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Sunny day of riding",
+            "date": "2024-04-28T09:50:39",
+            "distance_m": 60251.6,
+            "distance_mi": 37.4387015795295,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To ucsd encampment",
+            "date": "2024-05-01T13:59:24",
+            "distance_m": 7418.7,
+            "distance_mi": 4.609777921383921,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Jeepers cripes",
+            "date": "2024-05-04T10:10:26",
+            "distance_m": 61233.7,
+            "distance_mi": 38.048951744193275,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Impromptu bike night",
+            "date": "2024-05-07T19:37:55",
+            "distance_m": 14967.4,
+            "distance_mi": 9.300334298532318,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To the beach",
+            "date": "2024-05-09T10:11:57",
+            "distance_m": 35015.6,
+            "distance_mi": 21.757739197434972,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike night",
+            "date": "2024-05-21T20:48:58",
+            "distance_m": 13969.4,
+            "distance_mi": 8.68020430735581,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bday beers in ob",
+            "date": "2024-05-25T18:25:26",
+            "distance_m": 35924.8,
+            "distance_mi": 22.322691289596982,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Hell of a time",
+            "date": "2024-05-27T10:30:13",
+            "distance_m": 24226.0,
+            "distance_mi": 15.053375918078219,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride to a bar",
+            "date": "2024-05-28T19:54:50",
+            "distance_m": 11563.7,
+            "distance_mi": 7.1853679147973715,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Hardware store, bike store, then beer house",
+            "date": "2024-05-30T16:33:28",
+            "distance_m": 14810.8,
+            "distance_mi": 9.203027327972958,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Free palestine",
+            "date": "2024-06-01T18:42:57",
+            "distance_m": 8038.5,
+            "distance_mi": 4.994904743559472,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-06-03T10:54:46",
+            "distance_m": 16887.0,
+            "distance_mi": 10.493121403805286,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Forgot to restart on way home",
+            "date": "2024-06-04T14:04:24",
+            "distance_m": 12668.9,
+            "distance_mi": 7.872109063342737,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike-pack for cowbells",
+            "date": "2024-06-05T08:47:32",
+            "distance_m": 105977.0,
+            "distance_mi": 65.85121851193658,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Please give me kudos",
+            "date": "2024-06-06T10:29:54",
+            "distance_m": 52227.3,
+            "distance_mi": 32.452620328830456,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-06-07T14:27:50",
+            "distance_m": 16265.4,
+            "distance_mi": 10.106876110703768,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-06-08T07:13:33",
+            "distance_m": 16221.2,
+            "distance_mi": 10.079411435743847,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Whats up in balboa park?",
+            "date": "2024-06-08T21:55:57",
+            "distance_m": 13038.3,
+            "distance_mi": 8.101644152261175,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Got me stoked on life!",
+            "date": "2024-06-09T11:49:30",
+            "distance_m": 24047.9,
+            "distance_mi": 14.94270943368089,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Taco tuesday",
+            "date": "2024-06-11T17:34:47",
+            "distance_m": 12113.9,
+            "distance_mi": 7.5272471945020945,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work from homies",
+            "date": "2024-06-12T10:02:45",
+            "distance_m": 30727.1,
+            "distance_mi": 19.092982216312276,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-06-13T11:39:28",
+            "distance_m": 16417.9,
+            "distance_mi": 10.201635453042863,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-06-14T08:44:10",
+            "distance_m": 15848.2,
+            "distance_mi": 9.847639404973469,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-06-14T22:16:32",
+            "distance_m": 29009.7,
+            "distance_mi": 18.0258366783899,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-06-14T22:16:32",
+            "distance_m": 29009.7,
+            "distance_mi": 18.0258366783899,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ticking off new roads",
+            "date": "2024-06-16T07:20:35",
+            "distance_m": 13827.1,
+            "distance_mi": 8.591782966930543,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Every single street",
+            "date": "2024-06-17T10:53:48",
+            "distance_m": 16573.6,
+            "distance_mi": 10.298383188139237,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "I cannot stress this enough:",
+            "date": "2024-06-18T18:38:38",
+            "distance_m": 19538.9,
+            "distance_mi": 12.14093976412691,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Showing mom my favorite tree",
+            "date": "2024-06-21T09:13:23",
+            "distance_m": 23908.5,
+            "distance_mi": 14.856090074191906,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Beach",
+            "date": "2024-06-29T10:00:44",
+            "distance_m": 41704.2,
+            "distance_mi": 25.91385288379087,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride home felt like a horror movie",
+            "date": "2024-07-01T11:04:45",
+            "distance_m": 16312.4,
+            "distance_mi": 10.136080629326308,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Pac tyler",
+            "date": "2024-07-02T05:18:18",
+            "distance_m": 15593.5,
+            "distance_mi": 9.689375768948763,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Velodrome",
+            "date": "2024-07-02T19:42:01",
+            "distance_m": 7368.7,
+            "distance_mi": 4.578709284551431,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Working at a new library",
+            "date": "2024-07-03T08:59:59",
+            "distance_m": 15372.2,
+            "distance_mi": 9.55186598232816,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "4th",
+            "date": "2024-07-04T05:19:34",
+            "distance_m": 32831.2,
+            "distance_mi": 20.400412591497133,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-07-04T21:43:30",
+            "distance_m": 5516.3,
+            "distance_mi": 3.427678427181329,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Homeward bound",
+            "date": "2024-07-05T08:12:24",
+            "distance_m": 12268.7,
+            "distance_mi": 7.623435694135485,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride to coronado +a few extensions",
+            "date": "2024-07-06T07:20:45",
+            "distance_m": 86381.9,
+            "distance_mi": 53.67535760000994,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work day at kyles",
+            "date": "2024-07-07T08:51:18",
+            "distance_m": 31798.4,
+            "distance_mi": 19.758658829085217,
+            "type": "EBikeRide"
+        },
+        {
+            "activity_id": null,
+            "name": "Every single street",
+            "date": "2024-07-10T13:03:03",
+            "distance_m": 17105.8,
+            "distance_mi": 10.629077758584264,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "All around",
+            "date": "2024-07-11T12:24:40",
+            "distance_m": 36423.3,
+            "distance_mi": 22.632445598816908,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-07-16T08:49:18",
+            "distance_m": 18706.5,
+            "distance_mi": 11.62370909813961,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Going after losh",
+            "date": "2024-07-17T13:05:52",
+            "distance_m": 17349.8,
+            "distance_mi": 10.780692706326818,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Worst route to mesa rim!",
+            "date": "2024-07-20T09:19:24",
+            "distance_m": 33005.2,
+            "distance_mi": 20.5085314476742,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-07-21T12:24:56",
+            "distance_m": 17202.4,
+            "distance_mi": 10.689102364944636,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-07-22T17:02:11",
+            "distance_m": 10606.9,
+            "distance_mi": 6.590838480370835,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "A few things to show you",
+            "date": "2024-07-30T17:18:16",
+            "distance_m": 8889.8,
+            "distance_mi": 5.523879354269452,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-07-31T10:58:58",
+            "distance_m": 8184.5,
+            "distance_mi": 5.085625163110343,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work from kyles and bike races",
+            "date": "2024-08-02T08:33:17",
+            "distance_m": 49703.0,
+            "distance_mi": 30.884089129705348,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Ride",
+            "date": "2024-08-03T07:14:18",
+            "distance_m": 44229.7,
+            "distance_mi": 27.48312973019996,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Donkeys ride at dawn",
+            "date": "2024-08-04T05:39:46",
+            "distance_m": 44559.8,
+            "distance_mi": 27.688244870568063,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Ride",
+            "date": "2024-08-05T15:59:39",
+            "distance_m": 8254.4,
+            "distance_mi": 5.129059117402165,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Pals in the park to bbq",
+            "date": "2024-08-07T19:32:18",
+            "distance_m": 5703.0,
+            "distance_mi": 3.5436887171138483,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-08-08T12:35:52",
+            "distance_m": 16332.1,
+            "distance_mi": 10.14832167223831,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-08-09T14:31:33",
+            "distance_m": 13667.6,
+            "distance_mi": 8.492674015434899,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Yes im getting political on strava",
+            "date": "2024-08-10T13:44:25",
+            "distance_m": 17388.4,
+            "distance_mi": 10.804677693961501,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-08-11T18:53:38",
+            "distance_m": 19621.7,
+            "distance_mi": 12.192389426721514,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-08-12T11:58:32",
+            "distance_m": 17176.1,
+            "distance_mi": 10.672760261970746,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Really hot",
+            "date": "2024-08-13T10:00:30",
+            "distance_m": 15656.5,
+            "distance_mi": 9.7285222513577,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Dentist to dinner",
+            "date": "2024-08-13T16:55:08",
+            "distance_m": 14921.1,
+            "distance_mi": 9.271564740825433,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work",
+            "date": "2024-08-14T05:11:37",
+            "distance_m": 16478.9,
+            "distance_mi": 10.239539189978501,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Pals in the park and bbq",
+            "date": "2024-08-14T18:29:44",
+            "distance_m": 14035.0,
+            "distance_mi": 8.720966358880037,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-08-15T12:23:03",
+            "distance_m": 16173.5,
+            "distance_mi": 10.04977195620565,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-08-19T12:22:56",
+            "distance_m": 16156.7,
+            "distance_mi": 10.039332894229934,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Around town",
+            "date": "2024-08-20T12:20:27",
+            "distance_m": 22844.1,
+            "distance_mi": 14.194700933301851,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike bike bike ride",
+            "date": "2024-08-23T09:10:34",
+            "distance_m": 33512.7,
+            "distance_mi": 20.823878111523978,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike night",
+            "date": "2024-08-24T18:35:38",
+            "distance_m": 4739.6,
+            "distance_mi": 2.9450582226254243,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Meeting with pals",
+            "date": "2024-08-25T11:48:18",
+            "distance_m": 13243.7,
+            "distance_mi": 8.229274112369046,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "All sorts of stuff",
+            "date": "2024-08-26T13:51:21",
+            "distance_m": 28781.6,
+            "distance_mi": 17.88410155716008,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Taco tuesday",
+            "date": "2024-08-27T12:18:43",
+            "distance_m": 25802.6,
+            "distance_mi": 16.033032174680304,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Post plane ride",
+            "date": "2024-08-28T19:29:40",
+            "distance_m": 7295.4,
+            "distance_mi": 4.533162662955,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Kayaking",
+            "date": "2024-09-01T11:33:43",
+            "distance_m": 1298.4,
+            "distance_mi": 0.8067903612661091,
+            "type": "Kayaking"
+        },
+        {
+            "activity_id": null,
+            "name": "Going to the spam store",
+            "date": "2024-09-08T11:29:19",
+            "distance_m": 12109.3,
+            "distance_mi": 7.524388879913505,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Taco tues",
+            "date": "2024-09-10T15:28:11",
+            "distance_m": 17719.4,
+            "distance_mi": 11.010352069792587,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-09-11T11:31:47",
+            "distance_m": 15118.8,
+            "distance_mi": 9.394410130861099,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Back and forth from mesa a few times this week",
+            "date": "2024-09-12T16:57:18",
+            "distance_m": 36793.3,
+            "distance_mi": 22.86235351137734,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-09-17T15:15:10",
+            "distance_m": 14119.1,
+            "distance_mi": 8.773223806032288,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Big ol ride all over",
+            "date": "2024-09-18T14:20:57",
+            "distance_m": 43887.1,
+            "distance_mi": 27.270247430623733,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Ride",
+            "date": "2024-09-19T10:28:34",
+            "distance_m": 8385.9,
+            "distance_mi": 5.210769632271615,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-09-20T12:20:33",
+            "distance_m": 16075.5,
+            "distance_mi": 9.98887742801397,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Trade routes work day w kyle",
+            "date": "2024-09-21T09:50:27",
+            "distance_m": 22586.8,
+            "distance_mi": 14.034821728161855,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-09-22T13:19:04",
+            "distance_m": 11116.2,
+            "distance_mi": 6.907303615146582,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-09-23T10:42:32",
+            "distance_m": 21616.2,
+            "distance_mi": 13.431717349969555,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Dapper bike night",
+            "date": "2024-09-24T18:24:09",
+            "distance_m": 35232.2,
+            "distance_mi": 21.89232853219332,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Sending afif off with the hard cock",
+            "date": "2024-09-25T18:44:07",
+            "distance_m": 9010.4,
+            "distance_mi": 5.598816906309419,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-09-26T13:59:25",
+            "distance_m": 13673.5,
+            "distance_mi": 8.496340114581134,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Absolute banger of a day",
+            "date": "2024-09-27T08:08:33",
+            "distance_m": 36659.4,
+            "distance_mi": 22.779151701939927,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Absolute banger of a day",
+            "date": "2024-09-27T08:08:33",
+            "distance_m": 36659.4,
+            "distance_mi": 22.779151701939927,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-09-28T12:48:28",
+            "distance_m": 16564.2,
+            "distance_mi": 10.29254228441473,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Blew up my tire at mesa, then biked to aid practice",
+            "date": "2024-09-29T08:25:51",
+            "distance_m": 15157.9,
+            "distance_mi": 9.418705804864105,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-09-30T12:08:12",
+            "distance_m": 16641.8,
+            "distance_mi": 10.340760808778754,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Taco tues",
+            "date": "2024-10-01T15:26:50",
+            "distance_m": 11641.6,
+            "distance_mi": 7.233772850982391,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-10-02T05:10:08",
+            "distance_m": 52236.9,
+            "distance_mi": 32.45858550710229,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To the big game",
+            "date": "2024-10-05T09:30:10",
+            "distance_m": 4251.2,
+            "distance_mi": 2.6415797780456587,
+            "type": "Walk"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike night",
+            "date": "2024-10-08T08:18:49",
+            "distance_m": 36748.4,
+            "distance_mi": 22.83445387550176,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-10-09T14:22:54",
+            "distance_m": 12597.8,
+            "distance_mi": 7.827929461766935,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-10-10T09:31:30",
+            "distance_m": 25984.2,
+            "distance_mi": 16.14587346365591,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-10-11T08:23:25",
+            "distance_m": 16261.1,
+            "distance_mi": 10.104204207936172,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-10-12T09:49:31",
+            "distance_m": 14378.6,
+            "distance_mi": 8.934470031192912,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Visiting sam at his triathalon",
+            "date": "2024-10-13T08:47:49",
+            "distance_m": 29182.5,
+            "distance_mi": 18.133209887282987,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-10-14T10:07:52",
+            "distance_m": 16649.8,
+            "distance_mi": 10.345731790671952,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Fucking great disruption",
+            "date": "2024-10-15T11:35:03",
+            "distance_m": 34259.0,
+            "distance_mi": 21.28760858488573,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-10-16T09:04:02",
+            "distance_m": 7430.5,
+            "distance_mi": 4.617110119676389,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-10-16T19:50:36",
+            "distance_m": 4453.6,
+            "distance_mi": 2.7673456199435797,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-10-17T05:11:09",
+            "distance_m": 18362.2,
+            "distance_mi": 11.409770464911082,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-10-21T13:53:58",
+            "distance_m": 16327.4,
+            "distance_mi": 10.145401220376055,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "I fell off my bike again",
+            "date": "2024-10-22T09:35:41",
+            "distance_m": 23864.1,
+            "distance_mi": 14.828501124684653,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work",
+            "date": "2024-10-23T05:11:31",
+            "distance_m": 16161.8,
+            "distance_mi": 10.042501895186847,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2024-10-24T13:47:50",
+            "distance_m": 16659.2,
+            "distance_mi": 10.351572694396461,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work from homies",
+            "date": "2024-10-25T09:00:33",
+            "distance_m": 7358.7,
+            "distance_mi": 4.572495557184933,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-10-27T12:53:59",
+            "distance_m": 24526.3,
+            "distance_mi": 15.239974150894156,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Leg workout",
+            "date": "2024-10-28T16:53:25",
+            "distance_m": 11300.5,
+            "distance_mi": 7.021822610511141,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Halloween is happening in university heights",
+            "date": "2024-10-29T12:05:41",
+            "distance_m": 62154.0,
+            "distance_mi": 38.62080107373209,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Working with tava and dyno comp",
+            "date": "2024-11-01T09:53:51",
+            "distance_m": 23467.1,
+            "distance_mi": 14.58181614823468,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Hb ride to farmers market and brekky",
+            "date": "2024-11-03T08:26:54",
+            "distance_m": 27411.2,
+            "distance_mi": 17.032572358855184,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Walk",
+            "date": "2024-11-03T15:13:16",
+            "distance_m": 1790.3,
+            "distance_mi": 1.112443610424149,
+            "type": "Walk"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-11-04T08:37:31",
+            "distance_m": 16823.6,
+            "distance_mi": 10.453726372301688,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-11-04T18:24:44",
+            "distance_m": 12728.9,
+            "distance_mi": 7.909391427541725,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Election cancelled",
+            "date": "2024-11-05T09:54:00",
+            "distance_m": 24005.3,
+            "distance_mi": 14.916238955099606,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ymca, last day at mesa, jazz",
+            "date": "2024-11-06T08:19:49",
+            "distance_m": 24825.1,
+            "distance_mi": 15.425640324605117,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Sticker walk",
+            "date": "2024-11-07T11:29:04",
+            "distance_m": 13358.8,
+            "distance_mi": 8.300794114357439,
+            "type": "Walk"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-11-07T15:01:31",
+            "distance_m": 3743.1,
+            "distance_mi": 2.3258602905538917,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2024-11-08T10:18:20",
+            "distance_m": 7753.5,
+            "distance_mi": 4.817813513614277,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Action at fleet week",
+            "date": "2024-11-09T13:22:34",
+            "distance_m": 8274.1,
+            "distance_mi": 5.141300160314167,
+            "type": "Walk"
+        },
+        {
+            "activity_id": null,
+            "name": "Franky film premiere and bog",
+            "date": "2024-11-09T17:17:12",
+            "distance_m": 22952.3,
+            "distance_mi": 14.26193346340736,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee, work on trade routes, taco bell",
+            "date": "2024-11-10T09:44:01",
+            "distance_m": 32314.6,
+            "distance_mi": 20.079411435743847,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2024-11-12T16:31:02",
+            "distance_m": 33025.3,
+            "distance_mi": 20.521021039680864,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2024-11-12T16:31:02",
+            "distance_m": 33025.3,
+            "distance_mi": 20.521021039680864,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Jazz night",
+            "date": "2024-11-13T18:45:54",
+            "distance_m": 7358.1,
+            "distance_mi": 4.572122733542944,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mesa",
+            "date": "2024-11-14T12:18:07",
+            "distance_m": 16272.2,
+            "distance_mi": 10.111101445312986,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Leg day",
+            "date": "2024-11-15T11:42:36",
+            "distance_m": 19063.1,
+            "distance_mi": 11.845290616028931,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Volleyball!",
+            "date": "2024-11-16T10:30:18",
+            "distance_m": 25064.4,
+            "distance_mi": 15.574334820485419,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Never biked faster in my life",
+            "date": "2024-11-16T18:29:48",
+            "distance_m": 24714.1,
+            "distance_mi": 15.35666795083699,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bica",
+            "date": "2024-11-18T09:54:21",
+            "distance_m": 14736.1,
+            "distance_mi": 9.156610784545219,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Subterranean and taco tuesday",
+            "date": "2024-11-19T09:36:41",
+            "distance_m": 19142.3,
+            "distance_mi": 11.894503336771596,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop and jazz",
+            "date": "2024-11-20T08:33:09",
+            "distance_m": 17858.5,
+            "distance_mi": 11.096785017460574,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-11-21T08:35:28",
+            "distance_m": 4422.6,
+            "distance_mi": 2.7480830651074357,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2024-11-26T15:57:37",
+            "distance_m": 29875.0,
+            "distance_mi": 18.56351050741298,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop",
+            "date": "2024-11-27T09:22:56",
+            "distance_m": 12759.5,
+            "distance_mi": 7.92840543328321,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Thanksgiving ride",
+            "date": "2024-11-28T19:25:07",
+            "distance_m": 21711.2,
+            "distance_mi": 13.490747759951285,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Check in for Arthur",
+            "date": "2024-11-29T14:46:01",
+            "distance_m": 10497.3,
+            "distance_mi": 6.522736028434016,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Arthur check in and volleyball",
+            "date": "2024-12-01T10:58:12",
+            "distance_m": 35940.6,
+            "distance_mi": 22.332508978836046,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work day with joel",
+            "date": "2024-12-02T09:20:19",
+            "distance_m": 22034.4,
+            "distance_mi": 13.691575428436504,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-12-03T11:43:56",
+            "distance_m": 11787.4,
+            "distance_mi": 7.324368995985933,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2024-12-04T17:21:13",
+            "distance_m": 22772.6,
+            "distance_mi": 14.150272782631388,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Echos in the alleys",
+            "date": "2024-12-05T09:06:19",
+            "distance_m": 56193.5,
+            "distance_mi": 34.91710887693092,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike december nite",
+            "date": "2024-12-06T18:19:59",
+            "distance_m": 24541.9,
+            "distance_mi": 15.249667565585893,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Hike",
+            "date": "2024-12-07T11:02:48",
+            "distance_m": 16736.5,
+            "distance_mi": 10.399604806939491,
+            "type": "Hike"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Hike",
+            "date": "2024-12-08T07:41:41",
+            "distance_m": 7245.3,
+            "distance_mi": 4.502031888848845,
+            "type": "Hike"
+        },
+        {
+            "activity_id": null,
+            "name": "Work day",
+            "date": "2024-12-09T10:42:46",
+            "distance_m": 8939.4,
+            "distance_mi": 5.554699442007283,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2024-12-10T08:21:50",
+            "distance_m": 29717.7,
+            "distance_mi": 18.465768575937965,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Hike",
+            "date": "2024-12-11T07:46:11",
+            "distance_m": 9382.1,
+            "distance_mi": 5.829781152522153,
+            "type": "Hike"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2024-12-11T17:38:07",
+            "distance_m": 16857.1,
+            "distance_mi": 10.474542358979457,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Family walk to the ymca",
+            "date": "2024-12-14T13:28:58",
+            "distance_m": 1250.9,
+            "distance_mi": 0.7772751562752434,
+            "type": "Walk"
+        },
+        {
+            "activity_id": null,
+            "name": "Working on trade route",
+            "date": "2024-12-17T08:46:23",
+            "distance_m": 6862.6,
+            "distance_mi": 4.264232542532964,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ymca",
+            "date": "2024-12-23T15:15:28",
+            "distance_m": 3194.3,
+            "distance_mi": 1.984850932680478,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike with my neighbor",
+            "date": "2024-12-30T10:57:32",
+            "distance_m": 64090.0,
+            "distance_mi": 39.82377869188612,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop & volleyball",
+            "date": "2025-01-05T08:43:32",
+            "distance_m": 35904.2,
+            "distance_mi": 22.309891011221993,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tragedy strikes",
+            "date": "2025-01-06T12:32:27",
+            "distance_m": 12578.4,
+            "distance_mi": 7.81587483067593,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Back from crack night",
+            "date": "2025-01-06T21:43:35",
+            "distance_m": 7722.4,
+            "distance_mi": 4.798488821504468,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mesa meetup",
+            "date": "2025-01-07T09:24:38",
+            "distance_m": 19193.7,
+            "distance_mi": 11.926441895435397,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Trade routes & taco tuesday",
+            "date": "2025-01-07T17:35:21",
+            "distance_m": 7682.9,
+            "distance_mi": 4.773944598406801,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Great night out",
+            "date": "2025-01-08T08:34:24",
+            "distance_m": 77825.0,
+            "distance_mi": 48.35833322977121,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Learning new things",
+            "date": "2025-01-09T10:19:34",
+            "distance_m": 21058.3,
+            "distance_mi": 13.085053500192625,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work day",
+            "date": "2025-01-10T08:58:12",
+            "distance_m": 11357.0,
+            "distance_mi": 7.056930170131856,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Home from game night",
+            "date": "2025-01-11T08:30:07",
+            "distance_m": 12034.9,
+            "distance_mi": 7.478158748306759,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-01-12T09:03:11",
+            "distance_m": 35799.4,
+            "distance_mi": 22.244771148421094,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-01-13T08:57:54",
+            "distance_m": 23675.9,
+            "distance_mi": 14.71155877564716,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work day in ob",
+            "date": "2025-01-14T10:11:30",
+            "distance_m": 30828.3,
+            "distance_mi": 19.155865137261237,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-01-15T13:01:47",
+            "distance_m": 27423.3,
+            "distance_mi": 17.040090968968645,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Gone fishing",
+            "date": "2025-01-16T09:55:27",
+            "distance_m": 36293.2,
+            "distance_mi": 22.551605005778764,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mesa rim",
+            "date": "2025-01-17T09:34:06",
+            "distance_m": 16251.8,
+            "distance_mi": 10.098425441485329,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To che cafe",
+            "date": "2025-01-18T15:45:03",
+            "distance_m": 38286.3,
+            "distance_mi": 23.7900630071955,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-01-20T08:45:30",
+            "distance_m": 18895.0,
+            "distance_mi": 11.740837858998098,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Biking to heal the brain",
+            "date": "2025-01-21T10:41:15",
+            "distance_m": 37893.0,
+            "distance_mi": 23.54567710987113,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-01-22T08:05:17",
+            "distance_m": 33506.6,
+            "distance_mi": 20.820087737830416,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bar",
+            "date": "2025-01-23T20:43:13",
+            "distance_m": 13103.5,
+            "distance_mi": 8.142157654690743,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ob day",
+            "date": "2025-01-24T09:00:14",
+            "distance_m": 25192.4,
+            "distance_mi": 15.653870530776594,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To 5k",
+            "date": "2025-01-25T08:11:48",
+            "distance_m": 6457.4,
+            "distance_mi": 4.0124523096424625,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Free Palestine",
+            "date": "2025-01-25T09:22:11",
+            "distance_m": 5174.1,
+            "distance_mi": 3.2150446766997653,
+            "type": "Run"
+        },
+        {
+            "activity_id": null,
+            "name": "Keg bike",
+            "date": "2025-01-25T09:59:25",
+            "distance_m": 56905.8,
+            "distance_mi": 35.35971267724658,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "It was raining and i hopped on the bus",
+            "date": "2025-01-26T11:58:00",
+            "distance_m": 5582.3,
+            "distance_mi": 3.4686890278002167,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mesa rimed",
+            "date": "2025-01-28T09:20:29",
+            "distance_m": 20452.1,
+            "distance_mi": 12.708377347235512,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "El cajon",
+            "date": "2025-01-29T09:34:47",
+            "distance_m": 2485.3,
+            "distance_mi": 1.544297662395765,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Jazz!",
+            "date": "2025-01-29T19:29:27",
+            "distance_m": 9072.1,
+            "distance_mi": 5.6371556041607125,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop",
+            "date": "2025-01-30T08:45:18",
+            "distance_m": 15013.0,
+            "distance_mi": 9.328668895323549,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mesa rim",
+            "date": "2025-02-03T15:41:44",
+            "distance_m": 16927.7,
+            "distance_mi": 10.518411274186935,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike advocacy night",
+            "date": "2025-02-04T08:04:38",
+            "distance_m": 27477.1,
+            "distance_mi": 17.073520822200404,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Climbing and jazz",
+            "date": "2025-02-05T14:55:10",
+            "distance_m": 24489.8,
+            "distance_mi": 15.217294046006439,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-02-06T15:47:25",
+            "distance_m": 3319.8,
+            "distance_mi": 2.0628332111300285,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Didnt record texas street",
+            "date": "2025-02-07T17:31:28",
+            "distance_m": 13082.5,
+            "distance_mi": 8.129108827221097,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "We stumbled upon a metal show",
+            "date": "2025-02-08T12:15:58",
+            "distance_m": 24991.9,
+            "distance_mi": 15.529285297078307,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Great day around town",
+            "date": "2025-02-09T08:57:16",
+            "distance_m": 39401.9,
+            "distance_mi": 24.483266432202022,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Joel birthday",
+            "date": "2025-02-10T09:06:47",
+            "distance_m": 32492.5,
+            "distance_mi": 20.189953645593846,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop",
+            "date": "2025-02-11T09:10:12",
+            "distance_m": 11247.5,
+            "distance_mi": 6.988889855468702,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coming off sickness",
+            "date": "2025-02-14T09:12:43",
+            "distance_m": 32344.6,
+            "distance_mi": 20.09805261784334,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Ride",
+            "date": "2025-02-15T12:09:11",
+            "distance_m": 3286.8,
+            "distance_mi": 2.042327910820585,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-02-17T10:58:52",
+            "distance_m": 12306.5,
+            "distance_mi": 7.646923583580847,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-02-18T08:13:53",
+            "distance_m": 11437.8,
+            "distance_mi": 7.107137087253159,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Jazz night",
+            "date": "2025-02-19T18:54:42",
+            "distance_m": 15377.2,
+            "distance_mi": 9.55497284601141,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-02-20T08:48:03",
+            "distance_m": 45560.6,
+            "distance_mi": 28.310114705407187,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-02-21T10:49:10",
+            "distance_m": 15380.7,
+            "distance_mi": 9.557147650589684,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Happy birthday syd",
+            "date": "2025-02-22T10:44:16",
+            "distance_m": 27690.1,
+            "distance_mi": 17.205873215106813,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-02-23T09:46:33",
+            "distance_m": 24049.7,
+            "distance_mi": 14.94382790460686,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Muri got coffee",
+            "date": "2025-02-24T10:10:03",
+            "distance_m": 7940.1,
+            "distance_mi": 4.933761666273131,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride to the beach and mesa",
+            "date": "2025-02-27T11:02:50",
+            "distance_m": 33789.6,
+            "distance_mi": 20.995936222302312,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tb test and fingerprinting",
+            "date": "2025-02-28T12:10:16",
+            "distance_m": 16574.0,
+            "distance_mi": 10.298631737233897,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "All over the place",
+            "date": "2025-03-01T14:13:09",
+            "distance_m": 48343.4,
+            "distance_mi": 30.03927075695627,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Ride",
+            "date": "2025-03-03T07:56:31",
+            "distance_m": 3617.4,
+            "distance_mi": 2.247753737557011,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride to bigwall practice",
+            "date": "2025-03-03T10:22:16",
+            "distance_m": 4631.5,
+            "distance_mi": 2.87788782979358,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Cpr and first aid training",
+            "date": "2025-03-04T08:18:30",
+            "distance_m": 21125.1,
+            "distance_mi": 13.126561199000832,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Trivia taco tuesday",
+            "date": "2025-03-04T18:27:38",
+            "distance_m": 11988.5,
+            "distance_mi": 7.449327053326209,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rainy",
+            "date": "2025-03-05T08:44:44",
+            "distance_m": 24412.8,
+            "distance_mi": 15.169448345284403,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Great day out",
+            "date": "2025-03-07T14:18:16",
+            "distance_m": 39161.4,
+            "distance_mi": 24.333826289037745,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "First day of work",
+            "date": "2025-03-09T09:42:15",
+            "distance_m": 37082.1,
+            "distance_mi": 23.0418059577218,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Wet commute",
+            "date": "2025-03-11T07:29:11",
+            "distance_m": 10689.8,
+            "distance_mi": 6.642350280239104,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute",
+            "date": "2025-03-12T07:44:06",
+            "distance_m": 9772.9,
+            "distance_mi": 6.072613618004897,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work and climb",
+            "date": "2025-03-13T14:31:56",
+            "distance_m": 21063.1,
+            "distance_mi": 13.088036089328545,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ould sod",
+            "date": "2025-03-14T18:54:54",
+            "distance_m": 10207.2,
+            "distance_mi": 6.342475797531908,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Big ol bike around silver strand",
+            "date": "2025-03-15T07:45:03",
+            "distance_m": 68408.8,
+            "distance_mi": 42.5073632669293,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mesa and photo shoot with franky",
+            "date": "2025-03-16T09:46:29",
+            "distance_m": 34013.6,
+            "distance_mi": 21.135123715311867,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Green monday",
+            "date": "2025-03-17T09:34:28",
+            "distance_m": 44379.5,
+            "distance_mi": 27.5762113661501,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Beautiful day",
+            "date": "2025-03-18T13:44:30",
+            "distance_m": 22120.0,
+            "distance_mi": 13.744764934693727,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Climb & jazz",
+            "date": "2025-03-19T11:18:52",
+            "distance_m": 27169.1,
+            "distance_mi": 16.882138019312265,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Impromptu dentist appointment",
+            "date": "2025-03-20T12:09:38",
+            "distance_m": 13356.7,
+            "distance_mi": 8.299489231610474,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-03-23T17:14:17",
+            "distance_m": 25073.2,
+            "distance_mi": 15.579802900567936,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Ob farmers market",
+            "date": "2025-03-26T17:33:39",
+            "distance_m": 20347.2,
+            "distance_mi": 12.64319534716095,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Vishal event",
+            "date": "2025-03-27T15:46:37",
+            "distance_m": 50535.5,
+            "distance_mi": 31.40138193296631,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Balboa romp & Eid",
+            "date": "2025-03-30T14:10:55",
+            "distance_m": 8556.5,
+            "distance_mi": 5.316775821144072,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Lunch Ride",
+            "date": "2025-04-03T08:09:53",
+            "distance_m": 16550.8,
+            "distance_mi": 10.284215889743622,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commutes",
+            "date": "2025-04-07T09:30:31",
+            "distance_m": 27343.2,
+            "distance_mi": 16.990319012763,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Stoked on new bike",
+            "date": "2025-04-08T06:59:48",
+            "distance_m": 15484.0,
+            "distance_mi": 9.621335454285608,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Good day",
+            "date": "2025-04-09T07:23:05",
+            "distance_m": 26953.4,
+            "distance_mi": 16.748107920016903,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2025-04-10T15:13:36",
+            "distance_m": 27046.5,
+            "distance_mi": 16.805957721799,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work",
+            "date": "2025-04-11T08:31:04",
+            "distance_m": 11716.5,
+            "distance_mi": 7.2803136689574615,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-04-13T12:39:36",
+            "distance_m": 50821.3,
+            "distance_mi": 31.578970261100828,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work and tacos",
+            "date": "2025-04-15T06:51:59",
+            "distance_m": 16316.6,
+            "distance_mi": 10.138690394820237,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work and spear fishing",
+            "date": "2025-04-16T09:41:19",
+            "distance_m": 22185.7,
+            "distance_mi": 13.785589123491619,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work & climb",
+            "date": "2025-04-17T09:39:44",
+            "distance_m": 26226.4,
+            "distance_mi": 16.296369940472495,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To sams for anza",
+            "date": "2025-04-18T09:17:39",
+            "distance_m": 10281.2,
+            "distance_mi": 6.388457380043994,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Hike",
+            "date": "2025-04-19T06:57:40",
+            "distance_m": 25137.9,
+            "distance_mi": 15.620005716629178,
+            "type": "Hike"
+        },
+        {
+            "activity_id": null,
+            "name": "Ride home from sams house",
+            "date": "2025-04-19T15:28:49",
+            "distance_m": 14249.6,
+            "distance_mi": 8.854312948165086,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Sewing party and mesa",
+            "date": "2025-04-20T10:11:26",
+            "distance_m": 24044.7,
+            "distance_mi": 14.94072104092361,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Portaledge day",
+            "date": "2025-04-21T08:42:57",
+            "distance_m": 3666.3,
+            "distance_mi": 2.2781388643791867,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Awesome day at work",
+            "date": "2025-04-22T12:40:49",
+            "distance_m": 17075.0,
+            "distance_mi": 10.60993947829545,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute",
+            "date": "2025-04-23T11:40:53",
+            "distance_m": 12103.3,
+            "distance_mi": 7.520660643493606,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Fun day",
+            "date": "2025-04-24T06:54:44",
+            "distance_m": 27653.5,
+            "distance_mi": 17.18313097294543,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Big day",
+            "date": "2025-04-26T07:12:47",
+            "distance_m": 46934.4,
+            "distance_mi": 29.16375657101669,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Last practice day",
+            "date": "2025-04-27T13:46:57",
+            "distance_m": 15318.4,
+            "distance_mi": 9.5184361290964,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rock climb",
+            "date": "2025-04-29T11:05:02",
+            "distance_m": 17574.1,
+            "distance_mi": 10.920066611157369,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work & jazz",
+            "date": "2025-04-30T07:07:07",
+            "distance_m": 13994.8,
+            "distance_mi": 8.695987174866715,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tandem ride",
+            "date": "2025-05-02T13:50:03",
+            "distance_m": 20831.9,
+            "distance_mi": 12.944374712615112,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work & bike nite",
+            "date": "2025-05-03T07:12:41",
+            "distance_m": 21757.5,
+            "distance_mi": 13.51951731765817,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shopping",
+            "date": "2025-05-04T09:47:27",
+            "distance_m": 30644.8,
+            "distance_mi": 19.041843240086,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute",
+            "date": "2025-05-05T07:57:45",
+            "distance_m": 8671.2,
+            "distance_mi": 5.388047274037805,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop & taco tuesday",
+            "date": "2025-05-06T08:15:16",
+            "distance_m": 20235.4,
+            "distance_mi": 12.5737258752035,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work and ob",
+            "date": "2025-05-07T08:41:17",
+            "distance_m": 29355.7,
+            "distance_mi": 18.240831645270735,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Final preparations",
+            "date": "2025-05-08T11:29:26",
+            "distance_m": 24539.9,
+            "distance_mi": 15.248424820112595,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "To the doctor and pizza",
+            "date": "2025-05-19T12:48:14",
+            "distance_m": 28485.0,
+            "distance_mi": 17.699802403469747,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Beautiful day",
+            "date": "2025-05-20T08:56:07",
+            "distance_m": 54905.8,
+            "distance_mi": 34.11696720394696,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute",
+            "date": "2025-05-21T10:20:53",
+            "distance_m": 11035.9,
+            "distance_mi": 6.8574073843936025,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Feeling like summer",
+            "date": "2025-05-22T08:59:32",
+            "distance_m": 40333.4,
+            "distance_mi": 25.062075136391318,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-05-23T09:07:24",
+            "distance_m": 49509.6,
+            "distance_mi": 30.763915642437272,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tangerine slip n slide",
+            "date": "2025-05-24T08:23:34",
+            "distance_m": 24309.9,
+            "distance_mi": 15.105509090683139,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute and kate sessions",
+            "date": "2025-05-25T07:16:45",
+            "distance_m": 24274.3,
+            "distance_mi": 15.083388221258405,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Apple mania",
+            "date": "2025-05-26T10:40:37",
+            "distance_m": 36909.7,
+            "distance_mi": 22.934681297923373,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute moment",
+            "date": "2025-05-27T06:41:11",
+            "distance_m": 9709.8,
+            "distance_mi": 6.033404998322293,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shops, hanglide, and jazz",
+            "date": "2025-05-28T06:54:56",
+            "distance_m": 22694.8,
+            "distance_mi": 14.101929983720035,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2025-05-29T09:42:36",
+            "distance_m": 42068.9,
+            "distance_mi": 26.140467520847057,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike to beers",
+            "date": "2025-05-31T14:22:11",
+            "distance_m": 10997.9,
+            "distance_mi": 6.83379522040091,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shopping, mesa and jazz",
+            "date": "2025-06-04T07:54:33",
+            "distance_m": 37252.3,
+            "distance_mi": 23.147563597499598,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute",
+            "date": "2025-06-05T07:46:44",
+            "distance_m": 9813.0,
+            "distance_mi": 6.097530664744554,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "El cajon ave day",
+            "date": "2025-06-06T12:00:35",
+            "distance_m": 21300.9,
+            "distance_mi": 13.23579852610387,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Lretty good day if i do say so myself",
+            "date": "2025-06-07T09:50:51",
+            "distance_m": 47799.6,
+            "distance_mi": 29.701368262766103,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Hungover coffee shopping with jeff",
+            "date": "2025-06-08T11:44:30",
+            "distance_m": 9913.0,
+            "distance_mi": 6.159667938409535,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Climbers for palestine meet",
+            "date": "2025-06-09T17:56:49",
+            "distance_m": 21663.1,
+            "distance_mi": 13.460859731318429,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2025-06-10T17:33:31",
+            "distance_m": 17975.5,
+            "distance_mi": 11.169485627648601,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Climb and work",
+            "date": "2025-06-11T07:26:22",
+            "distance_m": 25998.8,
+            "distance_mi": 16.154945505610996,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Extended commute & visiting garden",
+            "date": "2025-06-12T09:08:05",
+            "distance_m": 45879.6,
+            "distance_mi": 28.508332608398476,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Idk man",
+            "date": "2025-06-13T08:22:30",
+            "distance_m": 34113.6,
+            "distance_mi": 21.197260988976847,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute",
+            "date": "2025-06-14T07:32:31",
+            "distance_m": 9621.7,
+            "distance_mi": 5.978662060223447,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work and showing family balboa park",
+            "date": "2025-06-16T08:19:14",
+            "distance_m": 14061.7,
+            "distance_mi": 8.737557010948588,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work and garden",
+            "date": "2025-06-17T07:12:28",
+            "distance_m": 17370.2,
+            "distance_mi": 10.793368710154475,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Overwhelmed with zucchini",
+            "date": "2025-06-18T07:31:46",
+            "distance_m": 26706.2,
+            "distance_mi": 16.59450457951707,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Eviscerated my tubes on the way to mesa",
+            "date": "2025-06-19T09:43:54",
+            "distance_m": 26231.5,
+            "distance_mi": 16.299538941429407,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shops and things",
+            "date": "2025-06-20T07:24:26",
+            "distance_m": 26653.1,
+            "distance_mi": 16.561509687200964,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-06-21T09:11:41",
+            "distance_m": 33774.2,
+            "distance_mi": 20.9863670821579,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden & climbers for palestine meet",
+            "date": "2025-06-22T08:28:46",
+            "distance_m": 25516.3,
+            "distance_mi": 15.855133160177465,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Wonderful summer day",
+            "date": "2025-06-23T08:06:35",
+            "distance_m": 29724.2,
+            "distance_mi": 18.469807498726187,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work & franky film screening",
+            "date": "2025-06-24T07:53:50",
+            "distance_m": 26332.3,
+            "distance_mi": 16.362173313283705,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden work jazz",
+            "date": "2025-06-25T08:43:49",
+            "distance_m": 26443.8,
+            "distance_mi": 16.43145637342016,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop, work, climb",
+            "date": "2025-06-26T08:14:43",
+            "distance_m": 22302.3,
+            "distance_mi": 13.858041184584986,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden & coffee shop",
+            "date": "2025-06-27T08:40:42",
+            "distance_m": 12029.2,
+            "distance_mi": 7.474616923707856,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Laguna romp with tava",
+            "date": "2025-06-28T08:52:13",
+            "distance_m": 14366.0,
+            "distance_mi": 8.926640734711125,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Ride",
+            "date": "2025-06-29T07:58:31",
+            "distance_m": 25909.4,
+            "distance_mi": 16.099394782954505,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Izola and volleyball",
+            "date": "2025-06-30T08:50:05",
+            "distance_m": 39117.6,
+            "distance_mi": 24.306610163172483,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Joel nite",
+            "date": "2025-07-01T08:08:28",
+            "distance_m": 52418.2,
+            "distance_mi": 32.5712403842569,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work and jazz",
+            "date": "2025-07-02T10:56:26",
+            "distance_m": 17819.5,
+            "distance_mi": 11.072551480731232,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden updates",
+            "date": "2025-07-03T08:03:40",
+            "distance_m": 17255.9,
+            "distance_mi": 10.722345806355403,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden & coffee shop",
+            "date": "2025-07-07T08:13:08",
+            "distance_m": 20833.7,
+            "distance_mi": 12.94549318354108,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden & coffee shop",
+            "date": "2025-07-07T08:13:08",
+            "distance_m": 20833.7,
+            "distance_mi": 12.94549318354108,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop climb & bike nite",
+            "date": "2025-07-08T08:42:54",
+            "distance_m": 31245.5,
+            "distance_mi": 19.41510184299154,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden work dinner",
+            "date": "2025-07-09T07:42:55",
+            "distance_m": 28439.2,
+            "distance_mi": 17.671343532131186,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Garden & work",
+            "date": "2025-07-10T08:35:33",
+            "distance_m": 13913.1,
+            "distance_mi": 8.645221022282428,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Free slurpee day",
+            "date": "2025-07-11T09:45:05",
+            "distance_m": 21440.3,
+            "distance_mi": 13.322417885592852,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-07-12T09:40:15",
+            "distance_m": 25908.9,
+            "distance_mi": 16.09908409658618,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Work & visiting UH homies",
+            "date": "2025-07-14T07:15:19",
+            "distance_m": 19211.7,
+            "distance_mi": 11.937626604695094,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-07-15T08:22:04",
+            "distance_m": 31590.4,
+            "distance_mi": 19.62941329986206,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Various workplaces",
+            "date": "2025-07-18T09:55:31",
+            "distance_m": 16525.0,
+            "distance_mi": 10.268184473138056,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Great day riding",
+            "date": "2025-07-26T09:29:14",
+            "distance_m": 73768.3,
+            "distance_mi": 45.83761044900395,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Another eventful day riding",
+            "date": "2025-07-27T09:09:05",
+            "distance_m": 36285.1,
+            "distance_mi": 22.546571886611904,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "You can make this shit up",
+            "date": "2025-07-28T13:42:31",
+            "distance_m": 12058.9,
+            "distance_mi": 7.493071693986355,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2025-07-29T07:41:35",
+            "distance_m": 17861.9,
+            "distance_mi": 11.098897684765184,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Commute",
+            "date": "2025-07-30T07:33:18",
+            "distance_m": 10536.6,
+            "distance_mi": 6.547155976984355,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Activism evening",
+            "date": "2025-07-31T16:20:16",
+            "distance_m": 26947.1,
+            "distance_mi": 16.74419327177601,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Cheeky pint",
+            "date": "2025-08-01T14:52:28",
+            "distance_m": 27780.2,
+            "distance_mi": 17.261858898678963,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bye franky",
+            "date": "2025-08-02T11:19:52",
+            "distance_m": 19865.2,
+            "distance_mi": 12.343693688095742,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-08-04T10:24:48",
+            "distance_m": 6092.3,
+            "distance_mi": 3.785589123491618,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "City bike style",
+            "date": "2025-08-10T18:56:37",
+            "distance_m": 5794.5,
+            "distance_mi": 3.6005443225173055,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Were so back",
+            "date": "2025-08-13T10:04:19",
+            "distance_m": 16758.4,
+            "distance_mi": 10.413212869872122,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-08-14T18:36:55",
+            "distance_m": 12228.8,
+            "distance_mi": 7.598642921943156,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-08-15T12:38:36",
+            "distance_m": 3277.5,
+            "distance_mi": 2.036549144369742,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bird watching and pirate party",
+            "date": "2025-08-16T09:40:49",
+            "distance_m": 55398.3,
+            "distance_mi": 34.42299327674699,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "The big day",
+            "date": "2025-08-17T09:40:15",
+            "distance_m": 22860.8,
+            "distance_mi": 14.205077858003902,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Riding my bike around",
+            "date": "2025-08-18T09:16:25",
+            "distance_m": 25902.6,
+            "distance_mi": 16.095169448345285,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-08-19T09:36:52",
+            "distance_m": 17752.3,
+            "distance_mi": 11.030795232828364,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-08-20T12:00:03",
+            "distance_m": 20473.1,
+            "distance_mi": 12.721426174705158,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-08-21T08:42:46",
+            "distance_m": 29501.5,
+            "distance_mi": 18.331427790274276,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Yummy food and cool bugs",
+            "date": "2025-08-22T18:16:45",
+            "distance_m": 17283.5,
+            "distance_mi": 10.739495693886935,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Alley cat",
+            "date": "2025-08-23T07:26:16",
+            "distance_m": 96803.0,
+            "distance_mi": 60.15074502591125,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tj & sdsu",
+            "date": "2025-08-24T08:42:59",
+            "distance_m": 56126.6,
+            "distance_mi": 34.87553904084904,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Burrito moment",
+            "date": "2025-08-25T11:46:17",
+            "distance_m": 8741.2,
+            "distance_mi": 5.431543365603291,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tacos and mt joy",
+            "date": "2025-08-26T17:43:22",
+            "distance_m": 21200.2,
+            "distance_mi": 13.173226291523234,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Jazz and stuff",
+            "date": "2025-08-27T08:39:34",
+            "distance_m": 26650.2,
+            "distance_mi": 16.559707706264682,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rainy",
+            "date": "2025-08-28T08:05:46",
+            "distance_m": 5776.2,
+            "distance_mi": 3.589173201436614,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Grabbing nuts",
+            "date": "2025-08-29T14:50:50",
+            "distance_m": 5586.2,
+            "distance_mi": 3.4711123814731506,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-08-30T14:31:01",
+            "distance_m": 31153.7,
+            "distance_mi": 19.358059825767086,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Ride",
+            "date": "2025-08-31T06:54:08",
+            "distance_m": 98219.5,
+            "distance_mi": 61.0309195073757,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Biked to mesa and ran into a bunch of friends",
+            "date": "2025-09-01T15:54:56",
+            "distance_m": 13428.4,
+            "distance_mi": 8.344041656828265,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-09-02T09:03:34",
+            "distance_m": 17488.3,
+            "distance_mi": 10.866752830352816,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Trying out joels new soundsystem",
+            "date": "2025-09-03T07:31:00",
+            "distance_m": 35088.6,
+            "distance_mi": 21.80309940721041,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Dentist",
+            "date": "2025-09-04T10:52:46",
+            "distance_m": 17921.2,
+            "distance_mi": 11.135745088048518,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tried a new taco tuesday spot",
+            "date": "2025-09-09T18:53:19",
+            "distance_m": 11564.7,
+            "distance_mi": 7.185989287534021,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-09-10T16:12:43",
+            "distance_m": 20378.6,
+            "distance_mi": 12.662706451091752,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop & sdccd board meeting",
+            "date": "2025-09-11T08:31:17",
+            "distance_m": 24217.7,
+            "distance_mi": 15.048218524364026,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-09-12T07:49:28",
+            "distance_m": 15109.0,
+            "distance_mi": 9.38832067804193,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tommy pips set",
+            "date": "2025-09-13T08:30:42",
+            "distance_m": 41580.2,
+            "distance_mi": 25.836802664446296,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "New & improved bike",
+            "date": "2025-09-14T10:29:41",
+            "distance_m": 24907.6,
+            "distance_mi": 15.476903575378726,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "New & improved bike",
+            "date": "2025-09-14T10:29:41",
+            "distance_m": 24907.6,
+            "distance_mi": 15.476903575378726,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Mesa",
+            "date": "2025-09-15T16:23:56",
+            "distance_m": 12378.8,
+            "distance_mi": 7.691848832440628,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tacos and stuff",
+            "date": "2025-09-16T08:26:52",
+            "distance_m": 23215.3,
+            "distance_mi": 14.425354493146259,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Colimas for justin",
+            "date": "2025-09-17T11:06:55",
+            "distance_m": 12705.2,
+            "distance_mi": 7.894664893683125,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite situation",
+            "date": "2025-09-18T13:58:33",
+            "distance_m": 16475.2,
+            "distance_mi": 10.237240110852897,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Margo party and stuff",
+            "date": "2025-09-19T10:10:13",
+            "distance_m": 21582.7,
+            "distance_mi": 13.410901363291785,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-09-20T10:47:47",
+            "distance_m": 51209.4,
+            "distance_mi": 31.820125020194617,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-09-20T10:47:47",
+            "distance_m": 51209.4,
+            "distance_mi": 31.820125020194617,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-09-21T13:35:15",
+            "distance_m": 16703.1,
+            "distance_mi": 10.378850957535386,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rock climb",
+            "date": "2025-09-22T01:03:08",
+            "distance_m": 18314.5,
+            "distance_mi": 11.380130985372887,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-09-23T09:05:34",
+            "distance_m": 18831.8,
+            "distance_mi": 11.701567102041832,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-09-24T11:59:04",
+            "distance_m": 22273.9,
+            "distance_mi": 13.840394198864132,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Jazz rides",
+            "date": "2025-09-25T09:40:04",
+            "distance_m": 30794.2,
+            "distance_mi": 19.13467632694148,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Big fast ride",
+            "date": "2025-09-26T16:35:21",
+            "distance_m": 67140.1,
+            "distance_mi": 41.719027675941696,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Trade routes & record stores",
+            "date": "2025-09-27T08:42:06",
+            "distance_m": 20434.4,
+            "distance_mi": 12.697379049796814,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike thief",
+            "date": "2025-09-28T08:51:01",
+            "distance_m": 66702.9,
+            "distance_mi": 41.44736351547839,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Dentist",
+            "date": "2025-09-29T09:31:25",
+            "distance_m": 21758.9,
+            "distance_mi": 13.520387239489482,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop, tacos, and rock climb",
+            "date": "2025-09-30T09:23:57",
+            "distance_m": 22481.4,
+            "distance_mi": 13.969329041718968,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-10-01T09:41:13",
+            "distance_m": 28296.3,
+            "distance_mi": 17.582549368063926,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Climber for palestine meet -> tommypips set",
+            "date": "2025-10-02T13:26:52",
+            "distance_m": 21549.9,
+            "distance_mi": 13.390520337529672,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Ride",
+            "date": "2025-10-03T17:13:15",
+            "distance_m": 5575.3,
+            "distance_mi": 3.464339418643668,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Pre meeting romp",
+            "date": "2025-10-06T17:04:12",
+            "distance_m": 11706.6,
+            "distance_mi": 7.274162078864628,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop rock climb taco",
+            "date": "2025-10-07T09:06:06",
+            "distance_m": 32052.8,
+            "distance_mi": 19.916736053288925,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Afternoon Ride",
+            "date": "2025-10-08T10:28:16",
+            "distance_m": 10563.5,
+            "distance_mi": 6.563870903600234,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Rock climb, dentist, mashed potato monday",
+            "date": "2025-10-13T10:12:13",
+            "distance_m": 44614.0,
+            "distance_mi": 27.72192327289448,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop and Lebanese food",
+            "date": "2025-10-14T08:44:37",
+            "distance_m": 17201.5,
+            "distance_mi": 10.688543129481651,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Climbers for palestine meeting",
+            "date": "2025-10-15T12:57:01",
+            "distance_m": 25473.5,
+            "distance_mi": 15.828538407048853,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2025-10-16T09:54:55",
+            "distance_m": 25159.2,
+            "distance_mi": 15.633240955919819,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-10-17T10:49:15",
+            "distance_m": 22344.6,
+            "distance_mi": 13.884325251345272,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Surprise ramen",
+            "date": "2025-10-20T19:00:03",
+            "distance_m": 9978.3,
+            "distance_mi": 6.200243578112767,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-10-21T08:46:57",
+            "distance_m": 30109.5,
+            "distance_mi": 18.709222414157356,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee and jazz",
+            "date": "2025-10-22T08:36:41",
+            "distance_m": 12323.2,
+            "distance_mi": 7.6573005082828995,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-10-23T08:18:33",
+            "distance_m": 50794.6,
+            "distance_mi": 31.562379609032273,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Gyro sandwich and library",
+            "date": "2025-10-27T12:48:45",
+            "distance_m": 10814.0,
+            "distance_mi": 6.719524774131011,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "2 coffee shops, 1 colimas, 1 rock climb",
+            "date": "2025-10-28T07:59:53",
+            "distance_m": 28490.1,
+            "distance_mi": 17.70297140442666,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Dentist and rock climb",
+            "date": "2025-10-30T12:24:05",
+            "distance_m": 30282.9,
+            "distance_mi": 18.816968446692435,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Morning Ride",
+            "date": "2025-10-31T08:35:20",
+            "distance_m": 15544.7,
+            "distance_mi": 9.659052779400252,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Bike nite",
+            "date": "2025-11-01T08:33:47",
+            "distance_m": 46435.6,
+            "distance_mi": 28.853815849975767,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Powered by NTS",
+            "date": "2025-11-02T08:27:22",
+            "distance_m": 52218.9,
+            "distance_mi": 32.4474007978426,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-11-03T07:58:47",
+            "distance_m": 17251.1,
+            "distance_mi": 10.719363217219481,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Party at the coffee shop",
+            "date": "2025-11-04T07:47:09",
+            "distance_m": 29132.5,
+            "distance_mi": 18.102141250450497,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Dentist and jazz with matt",
+            "date": "2025-11-05T08:28:37",
+            "distance_m": 34001.6,
+            "distance_mi": 21.127667242472068,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shoo rock climb C4P",
+            "date": "2025-11-06T08:03:53",
+            "distance_m": 32671.5,
+            "distance_mi": 20.301179365454164,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop party and mexico prep",
+            "date": "2025-11-07T07:46:52",
+            "distance_m": 8886.9,
+            "distance_mi": 5.522077373333167,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "False start on mexico",
+            "date": "2025-11-09T07:31:21",
+            "distance_m": 9809.5,
+            "distance_mi": 6.09535586016628,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Test ride",
+            "date": "2025-11-10T13:55:26",
+            "distance_m": 19268.5,
+            "distance_mi": 11.972920576136802,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Climb da mountain",
+            "date": "2025-11-10T18:04:57",
+            "distance_m": 9149.1,
+            "distance_mi": 5.685001304882747,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Tacos",
+            "date": "2025-11-12T14:23:50",
+            "distance_m": 3304.8,
+            "distance_mi": 2.053512620080282,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Beer run",
+            "date": "2025-11-14T17:52:53",
+            "distance_m": 3149.3,
+            "distance_mi": 1.9568891595312365,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Soup run",
+            "date": "2025-11-15T16:55:33",
+            "distance_m": 4244.5,
+            "distance_mi": 2.637416580710105,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Evening Ride",
+            "date": "2025-11-16T18:24:43",
+            "distance_m": 13004.9,
+            "distance_mi": 8.080890302857073,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Fart bike\u2019s last ride",
+            "date": "2025-11-18T07:27:51",
+            "distance_m": 26873.5,
+            "distance_mi": 16.69846023835858,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Errands",
+            "date": "2025-11-19T12:21:00",
+            "distance_m": 12246.1,
+            "distance_mi": 7.609392670287199,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "New bike ride",
+            "date": "2025-11-20T12:30:54",
+            "distance_m": 23273.7,
+            "distance_mi": 14.461642660966609,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Discussion w/ the panther party",
+            "date": "2025-11-22T08:34:31",
+            "distance_m": 29224.9,
+            "distance_mi": 18.15955609131694,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Awesome bike ride and friendsgiving",
+            "date": "2025-11-23T08:01:46",
+            "distance_m": 55841.6,
+            "distance_mi": 34.69844781090385,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Romp about",
+            "date": "2025-11-24T14:03:22",
+            "distance_m": 22117.6,
+            "distance_mi": 13.743273640125766,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-11-25T08:42:26",
+            "distance_m": 28032.1,
+            "distance_mi": 17.41838269104105,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee walk",
+            "date": "2025-11-28T08:49:32",
+            "distance_m": 1074.6,
+            "distance_mi": 0.6677271428038823,
+            "type": "Walk"
+        },
+        {
+            "activity_id": null,
+            "name": "Hike with the parents",
+            "date": "2025-11-30T11:51:03",
+            "distance_m": 6393.3,
+            "distance_mi": 3.97262231722321,
+            "type": "Hike"
+        },
+        {
+            "activity_id": null,
+            "name": "Were so back",
+            "date": "2025-12-05T09:23:59",
+            "distance_m": 29619.4,
+            "distance_mi": 18.40468763592529,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Trade routes work & art collective thing",
+            "date": "2025-12-06T13:22:13",
+            "distance_m": 25676.8,
+            "distance_mi": 15.954863484409758,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16671668438",
+            "name": "Trade routes work & art collective thing",
+            "date": "2025-12-06T13:22:13",
+            "distance_m": 25676.8,
+            "distance_mi": 15.954863484409758,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Coffee shop",
+            "date": "2025-12-08T08:25:27",
+            "distance_m": 12114.4,
+            "distance_mi": 7.527557880870419,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16690038776",
+            "name": "Coffee shop",
+            "date": "2025-12-08T08:25:27",
+            "distance_m": 12114.4,
+            "distance_mi": 7.527557880870419,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Triple coffee shop action!",
+            "date": "2025-12-09T08:18:06",
+            "distance_m": 27382.2,
+            "distance_mi": 17.01455254949234,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16700362405",
+            "name": "Triple coffee shop action!",
+            "date": "2025-12-09T08:18:06",
+            "distance_m": 27382.2,
+            "distance_mi": 17.01455254949234,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Saw tava out on the town",
+            "date": "2025-12-10T08:02:26",
+            "distance_m": 16895.1,
+            "distance_mi": 10.49815452297215,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16710223279",
+            "name": "Saw tava out on the town",
+            "date": "2025-12-10T08:02:26",
+            "distance_m": 16895.1,
+            "distance_mi": 10.49815452297215,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Good bye kyle",
+            "date": "2025-12-11T08:50:38",
+            "distance_m": 27783.0,
+            "distance_mi": 17.263598742341582,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16720034269",
+            "name": "Good bye kyle",
+            "date": "2025-12-11T08:50:38",
+            "distance_m": 27783.0,
+            "distance_mi": 17.263598742341582,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Hangover ride",
+            "date": "2025-12-12T09:47:23",
+            "distance_m": 30357.4,
+            "distance_mi": 18.863260715572846,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16727252252",
+            "name": "Hangover ride",
+            "date": "2025-12-12T09:47:23",
+            "distance_m": 30357.4,
+            "distance_mi": 18.863260715572846,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16727252252",
+            "name": "Hangover ride",
+            "date": "2025-12-12T09:47:23",
+            "distance_m": 30357.4,
+            "distance_mi": 18.863260715572846,
+            "type": "Ride"
+        },
+        {
+            "activity_id": null,
+            "name": "Night Ride",
+            "date": "2025-12-13T11:06:20",
+            "distance_m": 20687.0,
+            "distance_mi": 12.854337803074554,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16736786778",
+            "name": "Night Ride",
+            "date": "2025-12-13T11:06:20",
+            "distance_m": 20687.0,
+            "distance_mi": 12.854337803074554,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16754391098",
+            "name": "Bike parts & business registration",
+            "date": "2025-12-15T13:18:41",
+            "distance_m": 9454.7,
+            "distance_mi": 5.874892813202929,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16764206820",
+            "name": "Coffee shop, taco tuesday, rock climb",
+            "date": "2025-12-16T08:28:43",
+            "distance_m": 19422.6,
+            "distance_mi": 12.068674114854536,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16773456751",
+            "name": "Jazz",
+            "date": "2025-12-17T16:53:45",
+            "distance_m": 9626.3,
+            "distance_mi": 5.9815203748120345,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16782790104",
+            "name": "Night Ride",
+            "date": "2025-12-18T12:33:56",
+            "distance_m": 50768.4,
+            "distance_mi": 31.546099643332052,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16789246414",
+            "name": "Afternoon Ride",
+            "date": "2025-12-19T08:49:06",
+            "distance_m": 17450.6,
+            "distance_mi": 10.843327078181117,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16798877724",
+            "name": "Night Ride",
+            "date": "2025-12-20T15:15:21",
+            "distance_m": 14357.4,
+            "distance_mi": 8.921296929175936,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16807711639",
+            "name": "Evening Ride",
+            "date": "2025-12-21T16:09:51",
+            "distance_m": 24665.6,
+            "distance_mi": 15.326531373109473,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "16854230765",
+            "name": "Snow walk",
+            "date": "2025-12-27T08:13:01",
+            "distance_m": 1081.0,
+            "distance_mi": 0.6717039283184412,
+            "type": "Walk"
+        },
+        {
+            "activity_id": "16939297316",
+            "name": "Walk around capitol hill",
+            "date": "2026-01-04T10:56:03",
+            "distance_m": 9249.2,
+            "distance_mi": 5.747200715821394,
+            "type": "Run"
+        },
+        {
+            "activity_id": "16986412115",
+            "name": "Running",
+            "date": "2026-01-08T19:02:16",
+            "distance_m": 1630.8,
+            "distance_mi": 1.0133346589285048,
+            "type": "Run"
+        },
+        {
+            "activity_id": "17004207969",
+            "name": "Tava showed me around chico",
+            "date": "2026-01-10T09:05:26",
+            "distance_m": 17337.4,
+            "distance_mi": 10.77298768439236,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17018828867",
+            "name": "Prepping to move",
+            "date": "2026-01-11T08:14:49",
+            "distance_m": 23236.7,
+            "distance_mi": 14.438651869710565,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17018828867",
+            "name": "Prepping to move",
+            "date": "2026-01-11T08:14:49",
+            "distance_m": 23236.7,
+            "distance_mi": 14.438651869710565,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17030054989",
+            "name": "Moving day",
+            "date": "2026-01-12T07:11:40",
+            "distance_m": 9697.0,
+            "distance_mi": 6.025451427293176,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17030054989",
+            "name": "Moving day",
+            "date": "2026-01-12T07:11:40",
+            "distance_m": 9697.0,
+            "distance_mi": 6.025451427293176,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17054805268",
+            "name": "To the DMV and other places",
+            "date": "2026-01-14T14:21:47",
+            "distance_m": 9939.4,
+            "distance_mi": 6.17607217865709,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17073654340",
+            "name": "Fattoush",
+            "date": "2026-01-16T12:09:14",
+            "distance_m": 6495.9,
+            "distance_mi": 4.036375160003479,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17119228384",
+            "name": "Craft day",
+            "date": "2026-01-19T07:17:30",
+            "distance_m": 14586.3,
+            "distance_mi": 9.063529148595077,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17132594715",
+            "name": "Delah coffee",
+            "date": "2026-01-21T08:08:37",
+            "distance_m": 18175.9,
+            "distance_mi": 11.294008724073224,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17150969993",
+            "name": "Morning Ride",
+            "date": "2026-01-22T08:33:25",
+            "distance_m": 10962.2,
+            "distance_mi": 6.811612213702513,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17163438534",
+            "name": "Pcrf 5k",
+            "date": "2026-01-24T08:36:14",
+            "distance_m": 5143.8,
+            "distance_mi": 3.196217082779276,
+            "type": "Run"
+        },
+        {
+            "activity_id": "17167182754",
+            "name": "Look what we have here",
+            "date": "2026-01-24T13:21:59",
+            "distance_m": 25271.4,
+            "distance_mi": 15.702958976971928,
+            "type": "Ride"
+        },
+        {
+            "activity_id": "17176001222",
+            "name": "Morning Walk",
+            "date": "2026-01-25T07:43:40",
+            "distance_m": 1569.3,
+            "distance_mi": 0.9751202356245418,
+            "type": "Walk"
+        },
+        {
+            "activity_id": "17177888356",
+            "name": "Afternoon Walk",
+            "date": "2026-01-25T15:30:49",
+            "distance_m": 784.0,
+            "distance_mi": 0.4871562255334485,
+            "type": "Walk"
+        },
+        {
+            "activity_id": "17200550983",
+            "name": "Working with ethan",
+            "date": "2026-01-27T09:04:10",
+            "distance_m": 24786.0,
+            "distance_mi": 15.40134465060211,
+            "type": "Ride"
+        }
+    ]
+}

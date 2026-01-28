@@ -22,9 +22,10 @@ Inspired by Pac-Tom: [Watch Here](https://www.youtube.com/watch?v=1c8i5SABqwU).
 This script automates the data retrieval process, so the user only needs to log in to Strava and grant authentication permission.
 
 ### Features
-- **Automated Data Retrieval**: The script downloads all activities from Strava, resampling to use fewer GPS points for a more manageable file size.
+- **Automated Data Retrieval**: The script downloads all activities from Strava and can optionally reduce GPS point density through configuration to control file size.
 - **Idempotent Updates**: New activities are automatically added without duplicating data.
-- **Error Correction**: The script cleans errors in the data provided by Strava. If a user pauses their activity, moves, and then unpauses, it may draw a straight line between the points, creating a false path. The script identifies and removes these false paths.
+- **Error Correction**: The script cleans errors in the data provided by Strava. If a user pauses their activity, moves, and then unpauses, it may draw a straight line between the points, creating a false path. The script splits tracks when the distance between consecutive points exceeds the pause threshold.
+- **Analytics Export**: The script exports a normalized activity dataset to `public/data/pac-tyler-activities.json` in the website repository.
 
 ## Usage
 
@@ -38,4 +39,5 @@ This script automates the data retrieval process, so the user only needs to log 
 4. A small lookback window is used to avoid missing recent activities; duplicates are removed automatically
 5. Activity types and dates are normalized
 6. Coordinates are validated; simplification is optional via configuration
-7. Optional override: set `PAC_TYLER_LOOKBACK_DAYS` to change the lookback window
+7. The script also writes `public/data/pac-tyler-activities.json` for frontend analytics
+8. Optional override: set `PAC_TYLER_LOOKBACK_DAYS` to change the lookback window

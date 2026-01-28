@@ -49,21 +49,25 @@ Client-side map implementation with full Leaflet integration.
 **Responsibilities**:
 - Initialize Leaflet map centered on San Diego
 - Fetch GeoJSON data from GitHub
+- Fetch derived activity dataset for analytics
 - Calculate statistics from activity data
 - Render GPS tracks in Pac-Man gold (#E3B800)
 - Display interactive popups with activity details
 - Show retro-styled statistics dashboard
+- Render a monthly distance chart
 
 **Data Flow**:
 ```
 1. Component mounts → useEffect triggers
 2. Initialize Leaflet map with dark tiles
 3. Fetch GeoJSON from GitHub
-4. Parse and validate data
-5. Calculate statistics (distance, activities, dates)
-6. Render GeoJSON layer on map
-7. Update state with stats
-8. Display dashboard and legend
+4. Fetch derived activity dataset from GitHub
+5. Parse and validate data
+6. Calculate statistics (distance, activities, dates)
+7. Render GeoJSON layer on map
+8. Build monthly distance series
+9. Update state with stats and chart data
+10. Display dashboard, chart, and legend
 ```
 
 ## Data Structure
@@ -91,6 +95,27 @@ interface ActivityFeature {
 }
 ```
 
+### Derived Activity Dataset
+The updater also writes a normalized dataset for analytics at `public/data/pac-tyler-activities.json`.
+The frontend loads this dataset from `/data/pac-tyler-activities.json` for charts.
+
+```typescript
+interface ActivityDataset {
+  generated_at: string; // ISO 8601 timestamp
+  activity_count: number;
+  activities: ActivityDatasetEntry[];
+}
+
+interface ActivityDatasetEntry {
+  activity_id: string | null;
+  name?: string;
+  date: string; // ISO 8601 date
+  distance_m: number;
+  distance_mi: number;
+  type?: string;
+}
+```
+
 ### Statistics Calculated
 - **Total Distance**: Sum of all activity distances (converted to miles)
 - **Total Activities**: Count of features in GeoJSON
@@ -109,7 +134,7 @@ interface ActivityFeature {
 
 ### Retro Elements
 - Monospace fonts (Courier New, font-mono)
-- Emoji icons for visual interest
+- Text labels for stat icons
 - Border glow effects with CSS box-shadow
 - Arcade-style stat cards
 - "1UP" and "HI SCORE" references
@@ -167,9 +192,10 @@ The build process:
 3. Authorize in the browser when prompted by Strava OAuth
 4. The script reads the most recent activity timestamp in `cleaned_output.geojson`, applies a small lookback window plus a time offset, and fetches newer activities from Strava
   - Optional override: set `PAC_TYLER_LOOKBACK_DAYS` to change the lookback window
-5. It adds only new activities (based on `activity_id` when available), splits large pauses, normalizes fields, and writes `cleaned_output.geojson` at the Pac-Tyler repo root
-6. Commit and push the updated `cleaned_output.geojson` to GitHub
-7. The frontend automatically fetches new data on the next page load
+5. It adds only new activities (based on `activity_id` when available), splits large gaps using a distance threshold, normalizes fields, and writes `cleaned_output.geojson` at the Pac-Tyler repo root
+6. It also exports `public/data/pac-tyler-activities.json` for frontend analytics
+7. Commit and push the updated `cleaned_output.geojson` and derived dataset to GitHub
+8. The frontend automatically fetches new data on the next page load
 
 No website rebuild is required.
 
@@ -214,6 +240,7 @@ If GeoJSON structure is incorrect:
 - Activity `type` values are normalized (e.g., `root='Run'` becomes `Run`)
 - Dates are normalized to ISO 8601 format
 - Coordinates are validated and can optionally be simplified by setting a minimum distance threshold
+- Activity tracks are split only when the distance between consecutive points exceeds the configured pause threshold
 
 ## Future Enhancements
 

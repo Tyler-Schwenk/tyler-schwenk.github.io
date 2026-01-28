@@ -21,6 +21,7 @@ from config import (
     SILENCE_TOKEN_WARNINGS_ENV_VAR,
 )
 from src.utils.file_utils import load_existing_geojson, save_geojson
+from src.utils.activity_dataset import save_activity_dataset
 from src.utils.oauth_server import run_server
 from src.utils.geojson_cleaner import clean_geojson
 from src.utils.separate_pauses import split_activities
@@ -283,6 +284,7 @@ def process_activity_batch(
     )
     cleaned_geojson = clean_geojson(final_geojson)
     save_geojson(cleaned_geojson)
+    save_activity_dataset(cleaned_geojson)
     return len(new_features)
 
 def update_geojson(
@@ -361,6 +363,7 @@ def update_geojson(
         )
         cleaned_geojson = clean_geojson(final_geojson)
         save_geojson(cleaned_geojson)
+        save_activity_dataset(cleaned_geojson)
         logging.info("Saved cleaned GeoJSON with %s features.", len(cleaned_geojson["features"]))
 
     return combined_geojson

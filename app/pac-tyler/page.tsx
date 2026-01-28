@@ -241,11 +241,11 @@ export default function PacTyler() {
               </p>
             </div>
           </div>
-        </section>
 
-        {/* Interactive Map and Stats */}
-        <section>
-          <PacTylerMap />
+          {/* Interactive Map and Stats */}
+          <div className="mt-12">
+            <PacTylerMap />
+          </div>
         </section>
 
         {/* Bike Quiver Section */}

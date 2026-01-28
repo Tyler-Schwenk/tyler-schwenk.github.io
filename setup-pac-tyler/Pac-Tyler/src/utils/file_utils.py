@@ -33,6 +33,21 @@ def save_geojson(geojson: Dict[str, Any], filename: Path = GEOJSON_FILE) -> None
         json.dump(geojson, file_handle, indent=JSON_INDENT)
     logging.info("Saved GeoJSON to %s", filename)
 
+def save_json_data(data: Dict[str, Any], filename: Path) -> None:
+    """Save JSON data to disk.
+
+    Args:
+        data (dict): JSON content to save.
+        filename (Path): Destination file path.
+
+    Returns:
+        None
+    """
+    ensure_parent_dir(filename)
+    with filename.open("w", encoding="utf-8") as file_handle:
+        json.dump(data, file_handle, indent=JSON_INDENT)
+    logging.info("Saved JSON data to %s", filename)
+
 def load_existing_geojson(filename: Path = GEOJSON_FILE) -> Dict[str, Any]:
     """Load an existing GeoJSON file if it exists.
 
