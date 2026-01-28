@@ -86,6 +86,7 @@ interface ActivityFeature {
     date: string;        // ISO 8601 date
     distance: number;    // Meters
     type: string;        // "Ride", "Run", etc.
+    activity_id?: number; // Strava activity ID when available
   };
 }
 ```
@@ -161,12 +162,14 @@ The build process:
 4. Creates static export for GitHub Pages
 
 ### Updating Activity Data
-1. Ensure Strava credentials are available in the environment or a `.env` file as `CLIENT_ID` and `CLIENT_SECRET`
+1. Ensure Strava credentials are available in the environment or a `.env` file (supported locations: `setup-pac-tyler/Pac-Tyler/.env` and `setup-pac-tyler/.env`) as `CLIENT_ID` and `CLIENT_SECRET`
 2. Run the updater in `setup-pac-tyler/Pac-Tyler/startup.py`
 3. Authorize in the browser when prompted by Strava OAuth
-4. The script fetches new activities, splits large pauses, and writes `cleaned_output.geojson` at the Pac-Tyler repo root
-5. Commit and push the updated `cleaned_output.geojson` to GitHub
-6. The frontend automatically fetches new data on the next page load
+4. The script reads the most recent activity timestamp in `cleaned_output.geojson`, applies a small lookback window plus a time offset, and fetches newer activities from Strava
+  - Optional override: set `PAC_TYLER_LOOKBACK_DAYS` to change the lookback window
+5. It adds only new activities (based on `activity_id` when available), splits large pauses, normalizes fields, and writes `cleaned_output.geojson` at the Pac-Tyler repo root
+6. Commit and push the updated `cleaned_output.geojson` to GitHub
+7. The frontend automatically fetches new data on the next page load
 
 No website rebuild is required.
 
@@ -206,6 +209,11 @@ If GeoJSON structure is incorrect:
 - Statistics calculated once after data fetch
 - Memoized in component state
 - No redundant calculations on re-renders
+
+### Data Cleaning
+- Activity `type` values are normalized (e.g., `root='Run'` becomes `Run`)
+- Dates are normalized to ISO 8601 format
+- Coordinates are validated and can optionally be simplified by setting a minimum distance threshold
 
 ## Future Enhancements
 

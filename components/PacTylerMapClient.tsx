@@ -4,6 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+const EARTH_RADIUS_METERS = 6371000;
+const METERS_PER_KM = 1000;
+const DISPLAY_MERGE_THRESHOLD_KM = 2;
+const DISPLAY_MERGE_THRESHOLD_METERS =
+  DISPLAY_MERGE_THRESHOLD_KM * METERS_PER_KM;
+
+type LineCoordinates = [number, number][];
+type MultiLineCoordinates = [number, number][][];
+
 /**
  * GeoJSON Feature properties from Strava activities
  */
@@ -12,17 +21,27 @@ interface ActivityProperties {
   date: string;
   distance: number;
   type: string;
+  activity_id?: number;
 }
+
+interface LineStringGeometry {
+  type: "LineString";
+  coordinates: LineCoordinates;
+}
+
+interface MultiLineStringGeometry {
+  type: "MultiLineString";
+  coordinates: MultiLineCoordinates;
+}
+
+type ActivityGeometry = LineStringGeometry | MultiLineStringGeometry;
 
 /**
  * GeoJSON Feature representing a single bike ride
  */
 interface ActivityFeature {
   type: "Feature";
-  geometry: {
-    type: "LineString";
-    coordinates: [number, number][];
-  };
+  geometry: ActivityGeometry;
   properties: ActivityProperties;
 }
 
@@ -30,6 +49,11 @@ interface ActivityFeature {
  * GeoJSON FeatureCollection of all activities
  */
 interface GeoJSONData {
+  type: "FeatureCollection";
+  features: ActivityFeature[];
+}
+
+interface DisplayGeoJSONData {
   type: "FeatureCollection";
   features: ActivityFeature[];
 }
@@ -45,6 +69,123 @@ interface PacTylerStats {
   firstActivity: string;
   lastActivity: string;
 }
+
+const toRadians = (value: number): number => (value * Math.PI) / 180;
+
+const haversineMeters = (
+  start: [number, number],
+  end: [number, number]
+): number => {
+  const [startLon, startLat] = start;
+  const [endLon, endLat] = end;
+  const deltaLat = toRadians(endLat - startLat);
+  const deltaLon = toRadians(endLon - startLon);
+  const startLatRad = toRadians(startLat);
+  const endLatRad = toRadians(endLat);
+
+  const sinLat = Math.sin(deltaLat / 2);
+  const sinLon = Math.sin(deltaLon / 2);
+  const aValue =
+    sinLat * sinLat +
+    Math.cos(startLatRad) * Math.cos(endLatRad) * sinLon * sinLon;
+  const cValue = 2 * Math.atan2(Math.sqrt(aValue), Math.sqrt(1 - aValue));
+  return EARTH_RADIUS_METERS * cValue;
+};
+
+const buildActivityKey = (props: ActivityProperties): string => {
+  if (props.activity_id !== undefined) {
+    return `id:${props.activity_id}`;
+  }
+
+  return `meta:${props.name}|${props.date}|${props.distance}`;
+};
+
+const mergeSegmentsForDisplay = (
+  segments: LineCoordinates[]
+): LineCoordinates[] => {
+  if (segments.length <= 1) {
+    return segments;
+  }
+
+  const merged: LineCoordinates[] = [];
+  let current = [...segments[0]];
+
+  for (const segment of segments.slice(1)) {
+    const lastPoint = current[current.length - 1];
+    const nextPoint = segment[0];
+    if (!lastPoint || !nextPoint) {
+      merged.push(current);
+      current = [...segment];
+      continue;
+    }
+
+    const gapMeters = haversineMeters(lastPoint, nextPoint);
+    if (gapMeters <= DISPLAY_MERGE_THRESHOLD_METERS) {
+      current = current.concat(segment);
+      continue;
+    }
+
+    merged.push(current);
+    current = [...segment];
+  }
+
+  merged.push(current);
+  return merged;
+};
+
+const buildDisplayGeoJson = (data: GeoJSONData): DisplayGeoJSONData => {
+  const grouped = new Map<string, LineCoordinates[]>();
+  const propertiesByKey = new Map<string, ActivityProperties>();
+
+  for (const feature of data.features) {
+    if (feature.geometry.type !== "LineString") {
+      continue;
+    }
+
+    const key = buildActivityKey(feature.properties);
+    const existing = grouped.get(key) ?? [];
+    existing.push(feature.geometry.coordinates);
+    grouped.set(key, existing);
+    if (!propertiesByKey.has(key)) {
+      propertiesByKey.set(key, feature.properties);
+    }
+  }
+
+  const displayFeatures: ActivityFeature[] = [];
+  grouped.forEach((segments, key) => {
+    const merged = mergeSegmentsForDisplay(segments);
+    const properties = propertiesByKey.get(key);
+    if (!properties) {
+      return;
+    }
+
+    if (merged.length === 1) {
+      displayFeatures.push({
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: merged[0],
+        },
+        properties,
+      });
+      return;
+    }
+
+    displayFeatures.push({
+      type: "Feature",
+      geometry: {
+        type: "MultiLineString",
+        coordinates: merged,
+      },
+      properties,
+    });
+  });
+
+  return {
+    type: "FeatureCollection",
+    features: displayFeatures,
+  };
+};
 
 /**
  * Interactive map component displaying Pac-Tyler biking routes
@@ -149,8 +290,10 @@ export default function PacTylerMapClient() {
           opacity: 0.8,
         };
 
+        const displayData = buildDisplayGeoJson(data);
+
         // Add GeoJSON layer to map
-        L.geoJSON(data, {
+        L.geoJSON(displayData, {
           style,
           onEachFeature: (feature, layer) => {
             // Add popup with activity details
@@ -218,34 +361,34 @@ export default function PacTylerMapClient() {
           <StatCard
             label="Total Miles"
             value={stats.totalDistance.toFixed(1)}
-            icon="🚴"
+            icon="Miles"
           />
           <StatCard
             label="Activities"
             value={stats.totalActivities.toString()}
-            icon="📊"
+            icon="Count"
           />
           <StatCard
             label="Longest Ride"
             value={`${stats.longestRide.toFixed(1)} mi`}
-            icon="🏆"
+            icon="Max"
           />
           <StatCard
             label="First Ride"
             value={stats.firstActivity}
-            icon="🎮"
+            icon="Start"
             small
           />
           <StatCard
             label="Latest Ride"
             value={stats.lastActivity}
-            icon="⏱️"
+            icon="Recent"
             small
           />
           <StatCard
             label="Total Streets"
             value={stats.totalActivities.toString()}
-            icon="🗺️"
+            icon="Streets"
           />
         </div>
       )}

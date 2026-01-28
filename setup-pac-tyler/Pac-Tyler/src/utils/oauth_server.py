@@ -39,5 +39,8 @@ def run_server() -> Optional[str]:
     server_address = ("", OAUTH_PORT)
     httpd = HTTPServer(server_address, OAuthCallbackHandler)
     logging.info("Starting HTTP server for OAuth callback on port %s.", OAUTH_PORT)
-    httpd.handle_request()
+    try:
+        httpd.handle_request()
+    finally:
+        httpd.server_close()
     return authorization_code

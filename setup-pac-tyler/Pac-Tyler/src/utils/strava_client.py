@@ -2,7 +2,8 @@
 
 import logging
 import time
-from typing import Any, Dict, List
+from datetime import datetime
+from typing import Any, Dict, Iterable, List
 
 from stravalib.client import Client
 from stravalib.exc import RateLimitExceeded
@@ -18,6 +19,7 @@ from config import (
     STRAVA_STREAM_RESOLUTION,
     STRAVA_STREAM_TYPES,
 )
+from src.utils.geojson_cleaner import normalize_activity_type, normalize_date
 
 def is_valid_coordinate(coord: List[float]) -> bool:
     """Validate if a coordinate is within latitude and longitude bounds.
@@ -60,18 +62,22 @@ def activities_to_geojson(activities: List[Dict[str, Any]]) -> Dict[str, Any]:
         if not valid_coords:
             continue
 
+        properties = {
+            "name": activity["name"],
+            "date": normalize_date(activity["date"]),
+            "distance": activity["distance"],
+            "type": normalize_activity_type(activity["type"]),
+        }
+        if activity.get("id") is not None:
+            properties["activity_id"] = activity["id"]
+
         feature = {
             "type": "Feature",
             "geometry": {
                 "type": "LineString",
                 "coordinates": valid_coords,
             },
-            "properties": {
-                "name": activity["name"],
-                "date": str(activity["date"]),
-                "distance": activity["distance"],
-                "type": activity["type"],
-            },
+            "properties": properties,
         }
         geojson["features"].append(feature)
     return geojson
@@ -150,9 +156,13 @@ class StravaClient:
                 self.client.get_activities(after=start_date, limit=batch_size)
             )
 
+            start_timestamp = start_date.timestamp()
+
             for summary_activity in summary_activities:
-                if summary_activity.start_date_local <= start_date:
-                    return activities
+                activity_date = summary_activity.start_date or summary_activity.start_date_local
+                activity_timestamp = activity_date.timestamp()
+                if activity_timestamp <= start_timestamp:
+                    continue
 
                 full_activity = self.client.get_activity(summary_activity.id)
                 streams = self.client.get_activity_streams(
@@ -169,6 +179,7 @@ class StravaClient:
 
                 activities.append(
                     {
+                        "id": full_activity.id,
                         "name": full_activity.name,
                         "type": str(full_activity.type),
                         "date": full_activity.start_date_local,
@@ -186,4 +197,68 @@ class StravaClient:
             time.sleep(RATE_LIMIT_SLEEP_SECONDS)
 
         return activities
+
+    def iter_detailed_activities(self, start_date: datetime) -> Iterable[Dict[str, Any]]:
+        """Iterate detailed activities after the given start date.
+
+        Args:
+            start_date (datetime): Date to start fetching activities from.
+
+        Yields:
+            dict: Detailed activity data dictionary.
+        """
+        start_timestamp = start_date.timestamp()
+
+        try:
+            summary_activities = self.client.get_activities(after=start_date)
+        except RateLimitExceeded as exc:
+            logging.warning(
+                "Short term API rate limit exceeded. Waiting %s seconds. Details: %s",
+                RATE_LIMIT_SLEEP_SECONDS,
+                exc,
+            )
+            time.sleep(RATE_LIMIT_SLEEP_SECONDS)
+            return
+
+        for summary_activity in summary_activities:
+            activity_date = summary_activity.start_date or summary_activity.start_date_local
+            if not activity_date:
+                continue
+
+            activity_timestamp = activity_date.timestamp()
+            if activity_timestamp <= start_timestamp:
+                continue
+
+            try:
+                full_activity = self.client.get_activity(summary_activity.id)
+                streams = self.client.get_activity_streams(
+                    full_activity.id,
+                    types=STRAVA_STREAM_TYPES,
+                    resolution=STRAVA_STREAM_RESOLUTION,
+                )
+            except RateLimitExceeded as exc:
+                logging.warning(
+                    "Short term API rate limit exceeded. Waiting %s seconds. Details: %s",
+                    RATE_LIMIT_SLEEP_SECONDS,
+                    exc,
+                )
+                time.sleep(RATE_LIMIT_SLEEP_SECONDS)
+                continue
+
+            coordinates = streams.get("latlng").data if "latlng" in streams else []
+            logging.debug(
+                "Fetched %s coordinates for activity %s",
+                len(coordinates),
+                full_activity.name,
+            )
+
+            yield {
+                "id": full_activity.id,
+                "name": full_activity.name,
+                "type": str(full_activity.type),
+                "date": full_activity.start_date_local,
+                "distance": float(full_activity.distance),
+                "coordinates": coordinates,
+            }
+
 

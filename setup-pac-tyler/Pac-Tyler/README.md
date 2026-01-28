@@ -29,9 +29,13 @@ This script automates the data retrieval process, so the user only needs to log 
 ## Usage
 
 ### Prerequisites
-- Set `CLIENT_ID` and `CLIENT_SECRET` in your environment or a `.env` file
+- Set `CLIENT_ID` and `CLIENT_SECRET` in your environment or a `.env` file (supported locations: `setup-pac-tyler/Pac-Tyler/.env` and `setup-pac-tyler/.env`)
 
 ### Run the updater
 1. Run `startup.py` to install dependencies and execute the updater
 2. Authorize the app in the browser when prompted
 3. The script writes `cleaned_output.geojson` at the repository root
+4. A small lookback window is used to avoid missing recent activities; duplicates are removed automatically
+5. Activity types and dates are normalized
+6. Coordinates are validated; simplification is optional via configuration
+7. Optional override: set `PAC_TYLER_LOOKBACK_DAYS` to change the lookback window
