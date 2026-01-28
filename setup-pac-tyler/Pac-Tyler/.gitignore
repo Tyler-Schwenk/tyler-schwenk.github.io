@@ -1,0 +1,48 @@
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore the activities GeoJSON file
+*.geojson
+
+# Ignore environment files
+.env
+.venv/
+env/
+venv/
+
+# Ignore logs and database files
+*.log
+*.sqlite3
+*.db
+
+# Ignore bytecode and cache files
+__pycache__/
+*.pyc
+
+# Ignore Python package files
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+wheels/
+share/python-wheels/
+pip-wheel-metadata/
+*.egg-info/
+.installed.cfg
+*.egg-info/
+
+# Ignore VS Code settings and workspace files
+.vscode/
+
+# Ignore macOS files
+.DS_Store
+
+# Ignore system files
+Thumbs.db

@@ -13,13 +13,72 @@ const pressStart2P = Press_Start_2P({
   variable: "--font-press-start",
 });
 
+const SITE_NAME = "Tyler Schwenk";
+const SITE_URL = "https://tyler-schwenk.github.io";
+const DEFAULT_TITLE = "Tyler Schwenk - Software Developer";
+const TITLE_TEMPLATE = "%s | Tyler Schwenk";
+const DEFAULT_DESCRIPTION =
+  "Full-stack software developer specializing in sustainable software development. Showcasing projects including Ribbit Radar, Trade Routes, and more.";
+const OG_IMAGE_PATH = "/images/favicon/android-chrome-512x512.png";
+const OG_IMAGE_WIDTH = 512;
+const OG_IMAGE_HEIGHT = 512;
+const KEYWORDS = [
+  "software developer",
+  "full-stack",
+  "sustainable development",
+  "machine learning",
+  "web development",
+  "Next.js",
+  "TypeScript",
+];
+
 export const metadata: Metadata = {
-  title: "Tyler Schwenk - Software Developer",
-  description: "Full-stack software developer specializing in sustainable software development. Showcasing projects including Ribbit Radar, Trade Routes, and more.",
-  authors: [{ name: "Tyler Schwenk", url: "https://tyler-schwenk.github.io" }],
-  keywords: ["software developer", "full-stack", "sustainable development", "machine learning", "web development"],
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: DEFAULT_TITLE,
+    template: TITLE_TEMPLATE,
+  },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  alternates: {
+    canonical: "/",
+  },
+  keywords: KEYWORDS,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: OG_IMAGE_PATH,
+        width: OG_IMAGE_WIDTH,
+        height: OG_IMAGE_HEIGHT,
+        alt: SITE_NAME,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [OG_IMAGE_PATH],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
+/**
+ * Root layout for the site shell.
+ *
+ * @param {Readonly<{ children: React.ReactNode }>} props - Layout properties.
+ * @returns {JSX.Element} Root HTML layout wrapper.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

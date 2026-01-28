@@ -161,13 +161,14 @@ The build process:
 4. Creates static export for GitHub Pages
 
 ### Updating Activity Data
-1. Run Python scripts in Pac-Tyler repo
-2. Script fetches new Strava activities
-3. Cleans and processes GPS data
-4. Commits updated `cleaned_output.geojson` to GitHub
-5. Frontend automatically fetches new data on next page load
+1. Ensure Strava credentials are available in the environment or a `.env` file as `CLIENT_ID` and `CLIENT_SECRET`
+2. Run the updater in `setup-pac-tyler/Pac-Tyler/startup.py`
+3. Authorize in the browser when prompted by Strava OAuth
+4. The script fetches new activities, splits large pauses, and writes `cleaned_output.geojson` at the Pac-Tyler repo root
+5. Commit and push the updated `cleaned_output.geojson` to GitHub
+6. The frontend automatically fetches new data on the next page load
 
-No website rebuild required!
+No website rebuild is required.
 
 ## Error Handling
 
