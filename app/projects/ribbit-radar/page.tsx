@@ -247,6 +247,20 @@ export default function RibbitRadar() {
                 </div>
               </div>
             </a>
+
+            {/* Deployment Photo */}
+            <div className="mt-8">
+              <Image 
+                src="/images/bikes/deployment.jpg" 
+                alt="Vespa-powered anuran acoustics device deployment" 
+                width={800} 
+                height={600} 
+                className="rounded-lg w-full" 
+              />
+              <p className="text-center text-slate-400 mt-2 italic">
+                Worlds first Vespa-powered real-time anuran accoustics device deployment?
+              </p>
+            </div>
           </div>
         </div>
       </section>

@@ -13,15 +13,16 @@ export interface Bike {
   images: string[]; // Array of image paths for gallery
   acquired: string; // Date acquired (e.g., "2020-05-15" or "May 2020")
   decommissioned?: string; // Date decommissioned (e.g., "2022-08-20" or "Aug 2022"), undefined for current bikes
-  totalMiles: number;
-  description: string;
+  totalMiles?: number; // Optional - omit if miles aren't tracked for this bike
+  description: string; // Main story about the bike, its characteristics, and experiences
   specs?: {
     brand?: string;
     model?: string;
     year?: number;
     type?: string;
   };
-  decommissionReason?: string; // Why it was retired/lost (optional for current bikes)
+  status: string; // Current status: "Active", "Stolen", "Sold", "Totalled", "Returned", etc.
+  decommissionDetails?: string; // Optional extended explanation for decommissioned bikes (e.g., "Sold to Jude, later parted out")
 }
 
 interface BikeQuiverProps {
@@ -146,10 +147,12 @@ function BikeCard({ bike, onClick }: BikeCardProps) {
             <span className="text-[#E3B800]">{bike.decommissioned}</span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span className="text-gray-400">Miles:</span>
-          <span className="text-[#E3B800]">{bike.totalMiles.toLocaleString()}</span>
-        </div>
+        {bike.totalMiles !== undefined && (
+          <div className="flex justify-between">
+            <span className="text-gray-400">Miles:</span>
+            <span className="text-[#E3B800]">{bike.totalMiles.toLocaleString()}</span>
+          </div>
+        )}
         {bike.specs?.brand && (
           <div className="flex justify-between">
             <span className="text-gray-400">Brand:</span>
@@ -160,13 +163,13 @@ function BikeCard({ bike, onClick }: BikeCardProps) {
 
       {/* Status Badge */}
       <div className="mt-4 pt-3 border-t border-[#E3B800]/30">
-        {bike.decommissionReason ? (
-          <span className="text-xs text-red-400 font-mono">
-            ⚠️ DECOMMISSIONED
+        {bike.status.toLowerCase() === 'active' ? (
+          <span className="text-xs text-green-400 font-mono">
+            ✓ {bike.status.toUpperCase()}
           </span>
         ) : (
-          <span className="text-xs text-green-400 font-mono">
-            ✓ ACTIVE
+          <span className="text-xs text-red-400 font-mono">
+            ⚠️ {bike.status.toUpperCase()}
           </span>
         )}
       </div>
@@ -254,10 +257,14 @@ function BikeModal({
               <span className="text-gray-400">
                 {bike.acquired}{bike.decommissioned ? ` - ${bike.decommissioned}` : ' - Present'}
               </span>
-              <span className="text-gray-600">•</span>
-              <span className="text-[#E3B800]">
-                {bike.totalMiles.toLocaleString()} miles
-              </span>
+              {bike.totalMiles !== undefined && (
+                <>
+                  <span className="text-gray-600">•</span>
+                  <span className="text-[#E3B800]">
+                    {bike.totalMiles.toLocaleString()} miles
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -304,13 +311,13 @@ function BikeModal({
             <p className="text-gray-300 leading-relaxed">{bike.description}</p>
           </div>
 
-          {/* Decommission Reason */}
-          {bike.decommissionReason && (
+          {/* Decommission Details */}
+          {bike.decommissionDetails && (
             <div className="bg-red-900/20 border border-red-500/50 rounded p-4">
               <h3 className="text-lg font-bold text-red-400 font-mono mb-2">
-                ⚠️ DECOMMISSIONED
+                ⚠️ {bike.status.toUpperCase()}
               </h3>
-              <p className="text-red-200 text-sm">{bike.decommissionReason}</p>
+              <p className="text-red-200 text-sm">{bike.decommissionDetails}</p>
             </div>
           )}
         </div>
