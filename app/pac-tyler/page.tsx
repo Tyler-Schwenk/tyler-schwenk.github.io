@@ -26,7 +26,7 @@ const BIKES: Bike[] = [
     images: ["/images/bikes/vespa.jpg"],
     acquired: "January 13th 2026",
     description:
-      "Thus ends my time living by the bike. Its still fuck cars though. Vespa miles are not tracked.",
+      "Thus ends my time living by the bike and hopefully not dying by the bike. You still wont catch me owning a car though. Vespa miles are not tracked on the map or anything.",
     specs: {
       brand: "Vespa",
       year: 2008,
@@ -41,7 +41,7 @@ const BIKES: Bike[] = [
     thumbnail: "/images/bikes/novara.jpg",
     images: ["/images/bikes/novara.jpg"],
     acquired: "November 21 2025",
-    totalMiles: 0,
+    totalMiles: 548.7,
     description:
       "My new daily driver. Bar end shifters, kick stand, wide gear ratio, nice leather seat, plenty of cargo space, upright riding position, and it actually fits.",
     specs: {
@@ -57,7 +57,6 @@ const BIKES: Bike[] = [
     thumbnail: "/images/bikes/hardrock.jpg",
     images: ["/images/bikes/hardrock.jpg"],
     acquired: "September 1 2025",
-    totalMiles: 0,
     description:
       "This thing had a Gold chain",
     specs: {
@@ -74,9 +73,8 @@ const BIKES: Bike[] = [
     thumbnail: "/images/bikes/pubbike.jpg",
     images: ["/images/bikes/pubbike.jpg"],
     acquired: "April 26 2025",
-    totalMiles: 0,
     description:
-      "Got this from a nice man at a garage sale for $30. The brifters are really awesome. Its a little too small though",
+      "Got this from a nice man at a garage sale for $30. The brifters are really awesome, but its a little too small. I use it as my pub bike but that doesnt mean I dont love it",
     specs: {
       brand: "Diamondback",
       model: "Interval",
@@ -86,12 +84,12 @@ const BIKES: Bike[] = [
   },
   {
     id: "bike-5",
-    name: "FartBike",
+    name: "Fart Bike",
     thumbnail: "/images/bikes/fartbike.jpg",
     images: ["/images/bikes/fartbike.jpg", "/images/bikes/retrofartbike.jpg"],
     acquired: "April 7 2025",
     decommissioned: "November 18 2025",
-    totalMiles: 0,
+    totalMiles: 2622.5,
     description:
       "I hauled a lot of stuff on this bike. it felt indestructible. Shortly after making the custom waxed canvas frame back it was stolen. This was my fault - as I had it locked with a tiny bungee lock. still bummed to have lost the bag, broken in saddle, and emergency kit. Now I use a U lock and a thicker bungee.",
     specs: {
@@ -103,11 +101,10 @@ const BIKES: Bike[] = [
   },
   {
     id: "bike-6",
-    name: "KegBike",
+    name: "Keg Bike",
     thumbnail: "/images/bikes/kegbike.JPG",
     images: ["/images/bikes/kegbike.JPG"],
     acquired: "January 25th 2025",
-    totalMiles: 6.9,
     description:
       "Julian, Joel, and Dax made brought this beauty into existence. The bike got gradually lighter as we rode it around fiesta island, and to in-n-out. It also made a summertime appearance in Yosemite Valley. Who knows where it may appear next.",
     specs: {
@@ -119,12 +116,12 @@ const BIKES: Bike[] = [
   },
   {
     id: "bike-3",
-    name: "MilkMan",
+    name: "Milk Man",
     thumbnail: "/images/bikes/milkman.jpg",
     images: ["/images/bikes/milkman.jpg","/images/bikes/milkman2.jpg","/images/bikes/redbike.jpg"],
     acquired: "April 26 2024",
     decommissioned: "April 6 2025",
-    totalMiles: 500,
+    totalMiles: 3137.6,
     description:
       "The MilkMan was my first introduction to weightmaxing on a commuter bike and I never looked back. It's also when I really began to love biking for the joy of it, and hit my stride in being able to support myself with maintenance. It had a perpetual squeak that persisted even though a full cleaning and regrease of the bottom bracket. Originally a milk crate based cargo system, it evolved to see a new life with bullhorns on the cruizer bars for maximum aerodyamics, and my first custom frame bag. Some say it may be refurbished to see a thrid iteration.",
     specs: {
@@ -143,7 +140,7 @@ const BIKES: Bike[] = [
     images: ["/images/bikes/davescott.jpg","/images/bikes/davescoottridde.jpg","/images/bikes/davescottride.jpg"],
     acquired: "March 14th 2024",
     decommissioned: "April 25 2024",
-    totalMiles: 500,
+    totalMiles: 223.5,
     description:
       "The Dave Scott was beautiful - and it put up being ridden very hard in my early days of biking. It rode down 3000 ft of rocky descent in Red Rocks without a complaint. Still, the mighty must fall. It eventually succumbed to a failure at the bottom bracket. Its pedals lived to see many more bikes.",
     specs: {
@@ -162,7 +159,7 @@ const BIKES: Bike[] = [
     images: ["/images/bikes/garyfsher1.jpg", "/images/bikes/garyfisher.jpg"],
     acquired: "Jan 25th 2024",
     decommissioned: "March 13th 2024",
-    totalMiles: 500,
+    totalMiles: 96.4,
     description:
       "When I lost my job and came to San Diego Kyle let me borrow his mom's old Gary Fisher she rode in college. It served me very well while I sorted my life out",
     specs: {
