@@ -19,6 +19,7 @@ const STATIC_ROUTES = [
 ];
 
 const TRIP_GALLERY_SLUGS = [
+  "jordan",
   "epc",
   "durango",
   "ceciliawedding",

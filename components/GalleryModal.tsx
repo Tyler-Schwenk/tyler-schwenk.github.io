@@ -1,18 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-interface Photo {
+interface MediaItem {
   src: string;
   alt: string;
+  type: "image" | "video";
 }
 
 interface Gallery {
   title: string;
   description: string;
   coverImage: string;
-  photos: Photo[];
+  media: MediaItem[];
   externalUrl?: string;
   externalLinkText?: string;
 }
@@ -37,18 +38,33 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
   const goToNext = () => {
     if (selectedGallery) {
       const gallery = galleries[selectedGallery];
-      setCurrentIndex((prev) => (prev + 1) % gallery.photos.length);
+      setCurrentIndex((prev) => (prev + 1) % gallery.media.length);
     }
   };
 
   const goToPrev = () => {
     if (selectedGallery) {
       const gallery = galleries[selectedGallery];
-      setCurrentIndex((prev) => (prev - 1 + gallery.photos.length) % gallery.photos.length);
+      setCurrentIndex((prev) => (prev - 1 + gallery.media.length) % gallery.media.length);
     }
   };
 
   const currentGallery = selectedGallery ? galleries[selectedGallery] : null;
+
+  useEffect(() => {
+    if (!currentGallery) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeGallery();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentGallery]);
 
   return (
     <>
@@ -73,7 +89,7 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
                 {gallery.title}
               </h3>
               <p className="text-slate-400 mb-2 whitespace-pre-line">{gallery.description}</p>
-              <p className="text-orange-500 text-sm">{gallery.photos.length} photos</p>
+              <p className="text-orange-500 text-sm">{gallery.media.length} items</p>
             </div>
           </button>
         ))}
@@ -85,7 +101,7 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
           {/* Close button */}
           <button
             onClick={closeGallery}
-            className="absolute top-6 right-6 text-white hover:text-orange-500 transition-colors text-4xl font-light z-50"
+            className="absolute top-16 right-6 h-12 w-12 rounded-full border border-white/40 bg-black/60 text-white hover:text-orange-500 hover:border-orange-500 transition-colors text-3xl font-light z-50"
             aria-label="Close gallery"
           >
             ×
@@ -93,7 +109,10 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
 
           {/* External link overlay */}
           {currentGallery.externalUrl ? (
-            <div className="flex flex-col items-center justify-center gap-8">
+            <div
+              className="flex flex-col items-center justify-center gap-8"
+              onClick={(event) => event.stopPropagation()}
+            >
               <h2 className="text-4xl font-bold text-white">
                 {currentGallery.externalLinkText || "Check out Vishal's Photos"}
               </h2>
@@ -109,32 +128,54 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
           ) : (
             <>
               {/* Main image */}
-              <div className="relative w-full h-full flex flex-col items-center justify-center p-4 pb-32">
+              <div
+                className="relative w-full h-full flex flex-col items-center justify-center p-4 pb-32"
+                onClick={(event) => event.stopPropagation()}
+              >
                 <div className="relative w-full h-full max-w-7xl">
-                  <Image
-                    src={currentGallery.photos[currentIndex].src}
-                    alt={currentGallery.photos[currentIndex].alt}
-                    fill
-                    className="object-contain"
-                    priority
-                    sizes="(max-width: 1536px) 100vw, 1536px"
-                  />
+                  {currentGallery.media[currentIndex].type === "image" ? (
+                    <Image
+                      src={currentGallery.media[currentIndex].src}
+                      alt={currentGallery.media[currentIndex].alt}
+                      fill
+                      className="object-contain"
+                      priority
+                      sizes="(max-width: 1536px) 100vw, 1536px"
+                    />
+                  ) : (
+                    <video
+                      className="w-full h-full object-contain"
+                      src={currentGallery.media[currentIndex].src}
+                      controls
+                      playsInline
+                    />
+                  )}
                 </div>
 
                 {/* Preload next/prev images */}
-                {currentGallery.photos.length > 1 && (
+                {currentGallery.media.length > 1 && (
                   <>
-                    {currentIndex > 0 && (
-                      <link rel="preload" as="image" href={currentGallery.photos[currentIndex - 1].src} />
-                    )}
-                    {currentIndex < currentGallery.photos.length - 1 && (
-                      <link rel="preload" as="image" href={currentGallery.photos[currentIndex + 1].src} />
-                    )}
+                    {currentIndex > 0 &&
+                      currentGallery.media[currentIndex - 1].type === "image" && (
+                        <link
+                          rel="preload"
+                          as="image"
+                          href={currentGallery.media[currentIndex - 1].src}
+                        />
+                      )}
+                    {currentIndex < currentGallery.media.length - 1 &&
+                      currentGallery.media[currentIndex + 1].type === "image" && (
+                        <link
+                          rel="preload"
+                          as="image"
+                          href={currentGallery.media[currentIndex + 1].src}
+                        />
+                      )}
                   </>
                 )}
 
                 {/* Navigation arrows */}
-                {currentGallery.photos.length > 1 && (
+                {currentGallery.media.length > 1 && (
                   <>
                     <button
                       onClick={goToPrev}
@@ -155,14 +196,17 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
 
                 {/* Counter */}
                 <div className="absolute top-6 left-6 text-white/75 text-sm">
-                  {currentIndex + 1} / {currentGallery.photos.length}
+                  {currentIndex + 1} / {currentGallery.media.length}
                 </div>
               </div>
 
               {/* Thumbnail strip */}
-              <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-4 overflow-x-auto">
+              <div
+                className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-4 overflow-x-auto"
+                onClick={(event) => event.stopPropagation()}
+              >
                 <div className="flex gap-3 justify-center min-w-max mx-auto">
-                  {currentGallery.photos.map((photo, index) => {
+                  {currentGallery.media.map((item, index) => {
                     // Only load thumbnails that are near the current index for performance
                     const shouldLoad = Math.abs(index - currentIndex) <= 5;
                     
@@ -177,14 +221,24 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
                         }`}
                       >
                         {shouldLoad ? (
-                          <Image
-                            src={photo.src}
-                            alt={photo.alt}
-                            fill
-                            className="object-cover"
-                            loading={index === currentIndex ? "eager" : "lazy"}
-                            sizes="80px"
-                          />
+                          item.type === "image" ? (
+                            <Image
+                              src={item.src}
+                              alt={item.alt}
+                              fill
+                              className="object-cover"
+                              loading={index === currentIndex ? "eager" : "lazy"}
+                              sizes="80px"
+                            />
+                          ) : (
+                            <video
+                              className="w-full h-full object-cover"
+                              src={item.src}
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                          )
                         ) : (
                           <div className="w-full h-full bg-slate-700" />
                         )}

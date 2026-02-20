@@ -27,8 +27,15 @@ const tripConfig: Record<string, {
   description: string;
   folderPath: string;
   coverImage?: string;
+  videoPaths?: string[];
   externalUrl?: string;
 }> = {
+  jordan: {
+    title: "Jordan",
+    description: "Lovely time in Jordan. February 2026",
+    folderPath: "/images/gallery/jordan",
+    videoPaths: ["/video/jordan.mp4"]
+  },
   epc: {
     title: "El Potrero Chico",
     description: "From a few trips across multiple years\n2023, 2024, 2025",
@@ -107,29 +114,39 @@ export default function GalleryPage() {
   // Load trip photos dynamically from folders
   const tripGalleries = Object.entries(tripConfig).reduce((acc, [key, config]) => {
     const photos = getImagesFromFolder(config.folderPath, config.title);
+    const videos = (config.videoPaths || []).map((videoPath) => ({
+      src: videoPath,
+      alt: `${config.title} video`,
+      type: "video" as const
+    }));
+    const media = [
+      ...videos,
+      ...photos.map((photo) => ({ ...photo, type: "image" as const }))
+    ];
     acc[key] = {
       title: config.title,
       description: config.description,
       coverImage: config.coverImage || photos[0]?.src || "/images/bikes/black-bike.jpg",
-      photos,
+      media,
       externalUrl: config.externalUrl
     };
     return acc;
-  }, {} as Record<string, { title: string; description: string; coverImage: string; photos: Array<{ src: string; alt: string }>; externalUrl?: string }>);
+  }, {} as Record<string, { title: string; description: string; coverImage: string; media: Array<{ src: string; alt: string; type: "image" | "video" }>; externalUrl?: string }>);
 
   // Load people photos dynamically from folders
   const peopleGalleries = Object.entries(peopleConfig).reduce((acc, [key, config]) => {
     const photos = getImagesFromFolder(config.folderPath, config.title);
+    const media = photos.map((photo) => ({ ...photo, type: "image" as const }));
     acc[key] = {
       title: config.title,
       description: config.description,
       coverImage: config.coverImage || photos[0]?.src || "/images/pic00.jpeg",
-      photos,
+      media,
       externalUrl: config.externalUrl,
       externalLinkText: config.externalLinkText
     };
     return acc;
-  }, {} as Record<string, { title: string; description: string; coverImage: string; photos: Array<{ src: string; alt: string }>; externalUrl?: string; externalLinkText?: string }>);
+  }, {} as Record<string, { title: string; description: string; coverImage: string; media: Array<{ src: string; alt: string; type: "image" | "video" }>; externalUrl?: string; externalLinkText?: string }>);
 
   return (
     <PageWrapper>
