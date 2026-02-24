@@ -6,6 +6,10 @@ const SITE_URL = "https://tyler-schwenk.github.io";
 
 const STATIC_ROUTES = [
   "/",
+  "/events",
+  "/events/milan-tyler-birthday-boogie",
+  "/events/climbers-for-palestine-meetup",
+  "/events/fuck-ice-punk-fundraiser",
   "/pac-tyler",
   "/gallery",
   "/cookbook",

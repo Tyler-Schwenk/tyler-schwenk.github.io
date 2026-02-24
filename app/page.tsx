@@ -3,6 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
+/**
+ * Renders the retro main menu landing page.
+ *
+ * @returns {JSX.Element} The home page layout.
+ */
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-black flex items-center justify-center p-4">
@@ -33,6 +38,9 @@ export default function Home() {
                 </div>
 
                 {/* Menu Items */}
+                <MenuOption href="/events" iconSrc="/images/8bit/events.png">
+                  UPCOMING EVENTS
+                </MenuOption>
                 <MenuOption href="https://tylerschwenktechnical.github.io/" external iconSrc="/images/8bit/work.png">
                   PROFESSIONAL SERVICES
                 </MenuOption>
@@ -79,6 +87,17 @@ export default function Home() {
 }
 
 // Menu Option Component
+/**
+ * Renders a single menu option with an icon.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.href - Navigation target.
+ * @param {string} [props.icon] - Text icon fallback.
+ * @param {string} [props.iconSrc] - Image icon source.
+ * @param {React.ReactNode} props.children - Option label.
+ * @param {boolean} [props.external=false] - Opens link in a new tab when true.
+ * @returns {JSX.Element} The menu option entry.
+ */
 function MenuOption({ 
   href, 
   icon, 
