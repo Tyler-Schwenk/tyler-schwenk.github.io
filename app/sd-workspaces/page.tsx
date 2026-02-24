@@ -24,6 +24,17 @@ export default function SDWorkspaces() {
             </p>
           </div>
 
+          <div className="mb-6">
+            <a
+              href="https://docs.google.com/spreadsheets/d/e/2PACX-1vQb8v471W90j8OrmKpMlij5kMDcZBvbOMaYNJnM_8RwnGw4LGEIAy4gl1aFUk6B8ZSavJ83Nw_-dnDz/pubhtml"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-[#F8D030] border-2 border-black px-4 py-2 text-black pixel-font text-xs hover:bg-yellow-300 transition-colors"
+            >
+              Open Full Spreadsheet in Google Sheets
+            </a>
+          </div>
+
           {/* Embedded Google Sheets */}
           <div className="bg-white border-4 border-black shadow-2xl">
             <div className="w-full" style={{ height: 'calc(100vh - 350px)', minHeight: '600px' }}>

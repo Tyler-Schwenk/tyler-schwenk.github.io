@@ -5,9 +5,26 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import PageWrapper from "@/components/PageWrapper";
 import { useState } from "react";
+import GalleryModal from "@/components/GalleryModal";
 
 export default function Others() {
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+
+  const treeGalleries = {
+    tree: {
+      title: "Tree",
+      description: "",
+      coverImage: "/images/tree/summer.jpg",
+      media: [
+        { src: "/images/tree/summer.jpg", alt: "", type: "image" as const },
+        { src: "/images/tree/full.jpg", alt: "", type: "image" as const },
+        { src: "/images/tree/branch.jpg", alt: "", type: "image" as const },
+        { src: "/images/tree/fish.jpg", alt: "", type: "image" as const },
+        { src: "/images/tree/bike.jpg", alt: "", type: "image" as const },
+        { src: "/images/tree/friends.JPG", alt: "", type: "image" as const }
+      ]
+    }
+  };
 
   return (
     <PageWrapper>
@@ -57,133 +74,7 @@ export default function Others() {
             <h2 className="text-3xl font-bold text-white">My Favorite Tree</h2>      
             
             {/* Tree Gallery */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <div 
-                  className="relative cursor-pointer group overflow-hidden rounded-lg"
-                  onClick={() => setFullscreenImage("/images/tree/summer.jpg")}
-                >
-                  <Image 
-                    src="/images/tree/summer.jpg" 
-                    alt="Tree in Summer" 
-                    width={600} 
-                    height={800}
-                    className="w-full h-auto transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                      🔍
-                    </span>
-                  </div>
-                </div>
-                <p className="text-slate-400 italic">Trees like it when you climb them</p>
-              </div>
-
-              <div className="space-y-2">
-                <div 
-                  className="relative cursor-pointer group overflow-hidden rounded-lg"
-                  onClick={() => setFullscreenImage("/images/tree/full.jpg")}
-                >
-                  <Image 
-                    src="/images/tree/full.jpg" 
-                    alt="Full tree view" 
-                    width={600} 
-                    height={800}
-                    className="w-full h-auto transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                      🔍
-                    </span>
-                  </div>
-                </div>
-                <p className="text-slate-400 italic">In all its glory</p>
-              </div>
-
-              <div className="space-y-2">
-                <div 
-                  className="relative cursor-pointer group overflow-hidden rounded-lg"
-                  onClick={() => setFullscreenImage("/images/tree/branch.jpg")}
-                >
-                  <Image 
-                    src="/images/tree/branch.jpg" 
-                    alt="Tree branch detail" 
-                    width={600} 
-                    height={800}
-                    className="w-full h-auto transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                      🔍
-                    </span>
-                  </div>
-                </div>
-                <p className="text-slate-400 italic">This branch touches the ground, sending out new roots and another vertical trunk</p>
-              </div>
-
-              <div className="space-y-2">
-                <div 
-                  className="relative cursor-pointer group overflow-hidden rounded-lg"
-                  onClick={() => setFullscreenImage("/images/tree/fish.jpg")}
-                >
-                  <Image 
-                    src="/images/tree/fish.jpg" 
-                    alt="Tree with fish decoration" 
-                    width={600} 
-                    height={800}
-                    className="w-full h-auto transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                      🔍
-                    </span>
-                  </div>
-                </div>
-                <p className="text-slate-400 italic">Great place for a snack</p>
-              </div>
-
-              <div className="space-y-2">
-                <div 
-                  className="relative cursor-pointer group overflow-hidden rounded-lg"
-                  onClick={() => setFullscreenImage("/images/tree/bike.jpg")}
-                >
-                  <Image 
-                    src="/images/tree/bike.jpg" 
-                    alt="Tree with bike" 
-                    width={600} 
-                    height={800}
-                    className="w-full h-auto transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                      🔍
-                    </span>
-                  </div>
-                </div>
-                <p className="text-slate-400 italic">Bike-based pilgrimage with my neighbor</p>
-              </div>
-
-              <div className="space-y-2">
-                <div 
-                  className="relative cursor-pointer group overflow-hidden rounded-lg"
-                  onClick={() => setFullscreenImage("/images/tree/friends.JPG")}
-                >
-                  <Image 
-                    src="/images/tree/friends.JPG" 
-                    alt="Tree with friends" 
-                    width={600} 
-                    height={800}
-                    className="w-full h-auto transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <span className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                      🔍
-                    </span>
-                  </div>
-                </div>
-                <p className="text-slate-400 italic">SD friends at the tree!</p>
-              </div>
-            </div>
+            <GalleryModal galleries={treeGalleries} />
           </div>
         </div>
       </section>
