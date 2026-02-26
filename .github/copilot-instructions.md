@@ -1,7 +1,7 @@
 # GitHub Copilot Instructions - Instinct Environmental
 
 ## Project Overview
-Wildlife detection and notification system using Firebase Cloud Functions, Firestore, and sensor data from ASU acoustic monitoring devices.
+Personal website for all my fun things.
 
 The resources in C:\Users\tyler\important\projects\WebDev\Tylers Website\tyler-schwenk.github.io\docs are authoritative and must be referenced before making changes.  
 They must also be kept up to date as changes are made.

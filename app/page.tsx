@@ -41,11 +41,17 @@ export default function Home() {
                 <MenuOption href="/events" iconSrc="/images/8bit/events.png">
                   UPCOMING EVENTS
                 </MenuOption>
-                <MenuOption href="https://tylerschwenktechnical.github.io/" external iconSrc="/images/8bit/work.png">
-                  PROFESSIONAL SERVICES
+                <MenuOption href="/gallery" iconSrc="/images/8bit/camera.png">
+                  GALLERY
                 </MenuOption>
                 <MenuOption href="/pac-tyler" iconSrc="/images/8bit/pacman.png">
                   PAC-TYLER
+                </MenuOption>
+                <MenuOption href="/cookbook" iconSrc="/images/8bit/chef.png">
+                  COOKBOOK
+                </MenuOption>
+                <MenuOption href="/sd-workspaces" iconSrc="/images/8bit/coffee.png">
+                  SD WORKSPACES
                 </MenuOption>
                 <MenuOption href="/projects/ribbit-radar" iconSrc="/images/8bit/crlf_8bit.png">
                   FROG WORK
@@ -56,14 +62,8 @@ export default function Home() {
                 <MenuOption href="/projects/trade-routes" iconSrc="/images/8bit/traderoutes.png">
                   TRADE ROUTES
                 </MenuOption>
-                <MenuOption href="/gallery" iconSrc="/images/8bit/camera.png">
-                  GALLERY
-                </MenuOption>
-                <MenuOption href="/cookbook" iconSrc="/images/8bit/chef.png">
-                  COOKBOOK
-                </MenuOption>
-                <MenuOption href="/sd-workspaces" iconSrc="/images/8bit/coffee.png">
-                  SD WORKSPACES
+                <MenuOption href="https://tylerschwenktechnical.github.io/" external iconSrc="/images/8bit/work.png">
+                  PROFESSIONAL SERVICES
                 </MenuOption>
                 <MenuOption href="/inspiration" iconSrc="/images/8bit/community.png">
                   COMMUNITY BOARD

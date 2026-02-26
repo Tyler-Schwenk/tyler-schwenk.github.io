@@ -17,40 +17,6 @@ export default function Cookbook() {
           </h1>
         </div>
 
-        {/* Submit Recipe Section */}
-        <section className="mb-12">
-          <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-8 shadow-xl rounded-lg border-2 border-amber-300">
-            <h2 className="text-3xl font-bold text-amber-900 mb-6 text-center" style={{ fontFamily: 'Georgia, serif' }}>
-              Share Your Recipe
-            </h2>
-            <div className="space-y-4">
-              <p className="text-amber-800 text-center mb-6 text-lg leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                Help, I need to think of something to eat every day or I die!
-              </p>
-              <a 
-                href="https://forms.gle/5WZb1k6DvaceAnfa7" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group"
-              >
-                <div className="bg-gradient-to-br from-amber-200 to-orange-200 p-6 hover:from-orange-300 hover:to-amber-300 transition-all cursor-pointer shadow-lg rounded-lg border-2 border-amber-400 hover:border-amber-600">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-amber-900 mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-                        Submit Your Recipe
-                      </h3>
-                      <p className="text-sm text-amber-700" style={{ fontFamily: 'Georgia, serif' }}>
-                        Click to open submission form
-                      </p>
-                    </div>
-                    
-                  </div>
-                </div>
-              </a>
-            </div>
-          </div>
-        </section>
-
         {/* Main Download Section */}
         <section className="mb-12">
           <div className="bg-gradient-to-br from-yellow-100 to-amber-100 p-8 shadow-xl rounded-lg border-2 border-amber-300">
@@ -86,6 +52,40 @@ export default function Cookbook() {
                         Click to view/download PDF
                       </p>
                     </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Submit Recipe Section */}
+        <section className="mb-12">
+          <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-8 shadow-xl rounded-lg border-2 border-amber-300">
+            <h2 className="text-3xl font-bold text-amber-900 mb-6 text-center" style={{ fontFamily: 'Georgia, serif' }}>
+              Share Your Recipe
+            </h2>
+            <div className="space-y-4">
+              <p className="text-amber-800 text-center mb-6 text-lg leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                Help, I need to think of something to eat every day or I die!
+              </p>
+              <a 
+                href="https://forms.gle/5WZb1k6DvaceAnfa7" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
+              >
+                <div className="bg-gradient-to-br from-amber-200 to-orange-200 p-6 hover:from-orange-300 hover:to-amber-300 transition-all cursor-pointer shadow-lg rounded-lg border-2 border-amber-400 hover:border-amber-600">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-amber-900 mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+                        Submit Your Recipe
+                      </h3>
+                      <p className="text-sm text-amber-700" style={{ fontFamily: 'Georgia, serif' }}>
+                        Click to open submission form
+                      </p>
+                    </div>
+                    
                   </div>
                 </div>
               </a>
