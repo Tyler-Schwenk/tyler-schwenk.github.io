@@ -68,8 +68,14 @@ export default function Home() {
                 <MenuOption href="/inspiration" iconSrc="/images/8bit/community.png">
                   COMMUNITY BOARD
                 </MenuOption>
+                <MenuOption href="/opium-den">
+                  ENTER THE VIRTUAL OPIUM DEN
+                </MenuOption>
                 <MenuOption href="/projects/others" iconSrc="/images/8bit/lightbulb.png">
                   INSPIRATION/MISC
+                </MenuOption>
+                <MenuOption href="/public-square">
+                  PUBLIC SQUARE
                 </MenuOption>
               </div>
             </div>
@@ -123,9 +129,9 @@ function MenuOption({
             className="pixelated"
           />
         </div>
-      ) : (
+      ) : icon ? (
         <span className="text-xl group-hover:animate-bounce">{icon}</span>
-      )}
+      ) : null}
       <span className="pixel-font text-sm flex-1 text-white group-hover:text-[#3850A0] drop-shadow-[1px_1px_0_rgba(0,0,0,0.8)]">{children}</span>
       <span className="text-white group-hover:text-[#3850A0] pixel-font text-xs">▶</span>
     </div>

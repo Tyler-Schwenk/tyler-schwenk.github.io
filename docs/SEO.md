@@ -15,6 +15,8 @@ The root layout defines the following defaults:
 ## Sitemap
 A static sitemap is generated with:
 - Core site routes
+- Music page route (`/opium-den`)
+- Public discussion route (`/public-square`)
 - Gallery trip routes
 - Gallery people routes
 
