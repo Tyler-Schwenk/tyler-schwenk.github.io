@@ -35,6 +35,21 @@ export default function Inspiration() {
           </div>
         </section>
 
+        {/* Beloved Local Orgs Section */}
+        <section className="mb-12">
+          <div className="bg-slate-800/50 backdrop-blur-sm p-8 rounded-lg border border-slate-700 shadow-xl">
+            <h2 className="text-3xl font-bold text-white mb-6">
+              Beloved Local Orgs
+            </h2>
+            <div className="space-y-4">
+              <LinkCard href="https://www.bikesdelpueblo.org/" name="Bikes del Pueblo" />
+              <LinkCard href="https://www.alotrolado.org/" name="Al Otro Lado" />
+              <LinkCard href="https://www.borderangels.org/" name="Border Angels" />
+              <LinkCard href="https://www.instagram.com/climbersforpalestine_sd/" name="Climbers for Palestine SD" />
+            </div>
+          </div>
+        </section>
+
         {/* Other Inspirations Section */}
         <section className="mb-12">
           <div className="bg-slate-800/50 backdrop-blur-sm p-8 rounded-lg border border-slate-700 shadow-xl">
