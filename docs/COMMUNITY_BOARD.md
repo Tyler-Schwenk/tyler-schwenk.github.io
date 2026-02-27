@@ -19,7 +19,7 @@ The Community Board route (`/inspiration`) is a full-screen interactive corkboar
 - **Touch support**: Pointer events handle both mouse and touch interactions
 
 ## Visual Organization
-Links are grouped into three categories with dedicated header post-its:
+Links are grouped into four categories with dedicated header post-its:
 
 ### Friends Section (Left)
 - Header: Blue post-it at top
@@ -31,17 +31,23 @@ Links are grouped into three categories with dedicated header post-its:
 - 4 organization links below in 2 rows
 - X range: 1000-1300px
 
-### Other Inspirations Section (Right)
+### Other Inspirations Section (Right Top)
 - Header: Blue post-it at top
 - 2 inspiration links below
 - X range: 1780-1820px
 
+### Personal Links Section (Right Bottom)
+- Header: Blue post-it below Other Inspirations
+- 1 link (Goodreads)
+- X range: 1780-1820px
+- Y position: 720-880px
+
 ## Link Data
 - Source file: `data/communityBoardLinks.ts`
 - Structure: `CommunityBoardLink` type with optional `isHeader` boolean
-- Contains 18 total entries:
-  - 3 category headers (non-clickable, blue, larger)
-  - 15 clickable links (yellow/amber/orange/lime colors)
+- Contains 20 total entries:
+  - 4 category headers (non-clickable, blue, larger)
+  - 16 clickable links (yellow/amber/orange/lime colors)
 
 ## Styling
 - **Headers**: 280px wide, blue background (`bg-blue-300`), bold centered text, no hover effect

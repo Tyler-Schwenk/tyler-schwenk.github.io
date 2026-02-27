@@ -48,6 +48,10 @@ const NOTE_POSITIONS = [
   // Other Inspirations (2 items)
   { x: 1800, y: 280 },
   { x: 1820, y: 480 },
+  // Personal Links Header
+  { x: 1780, y: 720 },
+  // Personal Links (1 item)
+  { x: 1800, y: 880 },
 ];
 
 type DragState = {

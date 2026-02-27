@@ -100,4 +100,17 @@ export const COMMUNITY_BOARD_LINKS: CommunityBoardLink[] = [
     href: "https://tom7.org/index.html",
     description: "Computer scientist whose work I enjoy",
   },
+  {
+    id: "header-personal",
+    name: "Personal Links",
+    href: "",
+    description: "",
+    isHeader: true,
+  },
+  {
+    id: "goodreads",
+    name: "Goodreads",
+    href: "https://www.goodreads.com/user/show/179009098-tyler-schwenk",
+    description: "What I'm reading",
+  },
 ];
