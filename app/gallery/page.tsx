@@ -110,6 +110,26 @@ const peopleConfig: Record<string, {
   }
 };
 
+type WhyNotInstagramReason = {
+  title?: string;
+  description?: string;
+  linkUrl?: string;
+  linkText?: string;
+};
+
+const WHY_NOT_INSTAGRAM_REASONS: WhyNotInstagramReason[] = [
+  {
+    description: "I mean we all intuitively know this stuff is bad for us. But heres some concrete examples",
+    },
+  {
+    title: "Intentional manipulation",
+    description: "Social media platforms have the capability, and motivation, to take control of our political system.",
+    linkUrl: "https://research.facebook.com/publications/a-61-million-person-experiment-in-social-influence-and-political-mobilization/",
+    linkText: "From Facebook - A 61 Million Person Experiment in Social Influence and Political Mobilization"
+  }
+  
+];
+
 export default function GalleryPage() {
   // Load trip photos dynamically from folders
   const tripGalleries = Object.entries(tripConfig).reduce((acc, [key, config]) => {
@@ -183,6 +203,40 @@ export default function GalleryPage() {
               Vishal
             </a>
           </div>
+        </section>
+
+        {/* Why Not Instagram Section */}
+        <section className="mb-16 max-w-3xl mx-auto">
+          <details className="group bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 shadow-xl">
+            <summary className="cursor-pointer px-6 py-4 text-lg font-semibold text-white hover:text-orange-400 transition-colors list-none flex items-center justify-between">
+              <span>Why not just use Instagram?</span>
+              <span className="text-orange-500 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="px-6 pb-6 pt-2 space-y-6 text-slate-300">
+              {WHY_NOT_INSTAGRAM_REASONS.map((reason, index) => (
+                <div key={index} className="space-y-3">
+                  {(reason.title || reason.description) && (
+                    <p className="leading-relaxed">
+                      {reason.title && <strong className="text-white">{reason.title}:</strong>}
+                      {reason.title && reason.description && " "}
+                      {reason.description}
+                    </p>
+                  )}
+                  {reason.linkUrl && (
+                    <a
+                      href={reason.linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 underline"
+                    >
+                      {reason.linkText || reason.linkUrl}
+                      <span>→</span>
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </details>
         </section>
 
         {/* Trips Section */}
