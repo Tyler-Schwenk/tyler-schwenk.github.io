@@ -55,6 +55,9 @@ export default function OpiumDenPage() {
             >
               https://en.wikipedia.org/wiki/Criticism_of_Spotify#Funding_defense_technology
             </a>
+<p>              Also, the ability to own your music, not rent it. Over the past ~11 years I have spent about $1,900 on Spotify and own nothing. If they went bankrupt or just decided to change their terms I would lose everything. I'd rather start investing In the ownership of music.
+            </p>
+
             <p>
               But i think in this modern world we have a great opportunity to access artists' music directly, and thus also support them directly, with a significant reduction in people skimming off the top, or worse. 
             </p>
