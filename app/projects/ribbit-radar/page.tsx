@@ -122,6 +122,37 @@ export default function RibbitRadar() {
                 </a>
               </div>
             </div>
+
+            {/* Other Folks Using the Model Section */}
+            <div className="mt-16">
+              <h2 className="text-3xl font-bold text-white text-center mb-8">
+                Other Folks Using My Red-Legged Frog Model
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center justify-items-center max-w-2xl mx-auto">
+                <a
+                  href="https://www.wra-ca.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:scale-110 transition-transform"
+                  title="WRA Environmental Consultants"
+                >
+                  <div className="bg-white p-6 rounded-lg">
+                    <Image src="/images/wra_logo.png" alt="WRA Environmental Consultants" width={200} height={100} className="object-contain" />
+                  </div>
+                </a>
+                <a
+                  href="https://www.ucla.edu/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:scale-110 transition-transform"
+                  title="UCLA"
+                >
+                  <div className="bg-white p-6 rounded-lg">
+                    <Image src="/images/ucla.png" alt="UCLA" width={200} height={100} className="object-contain" />
+                  </div>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>

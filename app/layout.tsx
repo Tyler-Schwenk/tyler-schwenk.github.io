@@ -15,10 +15,10 @@ const pressStart2P = Press_Start_2P({
 
 const SITE_NAME = "Tyler Schwenk";
 const SITE_URL = "https://tyler-schwenk.github.io";
-const DEFAULT_TITLE = "Tyler Schwenk - Software Developer";
+const DEFAULT_TITLE = "Tyler Schwenk - Personal Website";
 const TITLE_TEMPLATE = "%s | Tyler Schwenk";
 const DEFAULT_DESCRIPTION =
-  "Full-stack software developer specializing in sustainable software development. Showcasing projects including Ribbit Radar, Trade Routes, and more.";
+  "Lots of fun projects on here. Welcome to the small web";
 const OG_IMAGE_PATH = "/images/favicon/android-chrome-512x512.png";
 const OG_IMAGE_WIDTH = 512;
 const OG_IMAGE_HEIGHT = 512;
