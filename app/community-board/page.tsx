@@ -8,12 +8,11 @@ const BOARD_BACKGROUND_IMAGE_PATH = "/images/cork bg 2.avif";
 const BOARD_BACKGROUND_SIZE = "420px";
 const BOARD_WIDTH_PX = 2400;
 const BOARD_HEIGHT_PX = 1600;
-const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.8;
 const ZOOM_SENSITIVITY = 0.001;
-const DEFAULT_SCALE = 0.7;
-const DEFAULT_OFFSET_X = -200;
-const DEFAULT_OFFSET_Y = -100;
+const DEFAULT_SCALE = 1.0;
+const DEFAULT_OFFSET_X = -400;
+const DEFAULT_OFFSET_Y = -200;
 const NOTE_WIDTH_PX = 220;
 const HEADER_NOTE_WIDTH_PX = 280;
 
@@ -81,6 +80,19 @@ function clamp(value: number, minimum: number, maximum: number): number {
 }
 
 /**
+ * Calculates the minimum zoom level needed to fill the viewport.
+ *
+ * @param {number} viewportWidth - Viewport width in pixels.
+ * @param {number} viewportHeight - Viewport height in pixels.
+ * @returns {number} Minimum zoom scale to cover viewport.
+ */
+function calculateMinZoom(viewportWidth: number, viewportHeight: number): number {
+  const minZoomX = viewportWidth / BOARD_WIDTH_PX;
+  const minZoomY = viewportHeight / BOARD_HEIGHT_PX;
+  return Math.max(minZoomX, minZoomY);
+}
+
+/**
  * Clamps pan offsets to prevent scrolling beyond board boundaries.
  *
  * @param {number} offsetX - Current X offset.
@@ -116,7 +128,7 @@ function clampToBounds(
  *
  * @returns {JSX.Element} Full-screen pan/zoom corkboard page.
  */
-export default function Inspiration() {
+export default function CommunityBoard() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(DEFAULT_SCALE);
   const [offsetX, setOffsetX] = useState(DEFAULT_OFFSET_X);
@@ -203,7 +215,9 @@ export default function Inspiration() {
       return;
     }
 
-    const newScale = clamp(scale - event.deltaY * ZOOM_SENSITIVITY, MIN_ZOOM, MAX_ZOOM);
+    const { width, height } = containerRef.current.getBoundingClientRect();
+    const minZoom = calculateMinZoom(width, height);
+    const newScale = clamp(scale - event.deltaY * ZOOM_SENSITIVITY, minZoom, MAX_ZOOM);
     
     if (newScale === scale) {
       return;
@@ -218,7 +232,6 @@ export default function Inspiration() {
     const newOffsetX = mouseX - boardPointX * newScale;
     const newOffsetY = mouseY - boardPointY * newScale;
 
-    const { width, height } = containerRef.current.getBoundingClientRect();
     const clamped = clampToBounds(newOffsetX, newOffsetY, newScale, width, height);
 
     setScale(newScale);

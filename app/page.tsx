@@ -65,7 +65,7 @@ export default function Home() {
                 <MenuOption href="https://tylerschwenktechnical.github.io/" external iconSrc="/images/8bit/work.png">
                   PROFESSIONAL SERVICES
                 </MenuOption>
-                <MenuOption href="/inspiration" iconSrc="/images/8bit/community.png">
+                <MenuOption href="/community-board" iconSrc="/images/8bit/community.png">
                   COMMUNITY BOARD
                 </MenuOption>
                 <MenuOption href="/opium-den">

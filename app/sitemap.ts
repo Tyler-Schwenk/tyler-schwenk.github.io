@@ -13,7 +13,7 @@ const STATIC_ROUTES = [
   "/pac-tyler",
   "/gallery",
   "/cookbook",
-  "/inspiration",
+  "/community-board",
   "/opium-den",
   "/public-square",
   "/mallard",

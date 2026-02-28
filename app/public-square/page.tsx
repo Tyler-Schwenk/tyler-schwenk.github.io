@@ -31,13 +31,56 @@ const MAX_REPLY_LENGTH = 1000;
 const INITIAL_THREADS: Thread[] = [
   {
     id: "thread-streaming-alternatives",
-    title: "How do we move forward away from predatory streaming services without moving backward?",
+    title: "How do we move forward away from predatory streaming services without regressing?",
     authorName: "",
     replies: [],
   },
   {
     id: "thread-small-internet",
     title: "Building a Decentralized/\"small\" internet",
+    authorName: "",
+    replies: [],
+  },
+  {
+    id: "thread-homelabbing",
+    title: "Homelabbing Ideas",
+    authorName: "",
+    replies: [
+      {
+        id: "reply-strava",
+        content: "Improved Strava data - better analytics and visualizations",
+        authorName: "",
+      },
+      {
+        id: "reply-minecraft",
+        content: "Minecraft server",
+        authorName: "",
+      },
+      {
+        id: "reply-mattbot",
+        content: "MattBot",
+        authorName: "",
+      },
+      {
+        id: "reply-mallard",
+        content: "Mallard counter",
+        authorName: "",
+      },
+      {
+        id: "reply-navidrome",
+        content: "Music (Navidrome)",
+        authorName: "",
+      },
+      {
+        id: "reply-imich",
+        content: "Photos - Imich",
+        authorName: "",
+      },
+    ],
+  },
+  {
+    id: "thread-profit-vs-humanity",
+    title: "How a for profit business inherently works against the goals of humanity - and how data centers exemplify this",
     authorName: "",
     replies: [],
   },
