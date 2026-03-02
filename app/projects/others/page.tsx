@@ -67,6 +67,47 @@ export default function Others() {
         </div>
       </section>
 
+      {/* Inspirational Links Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto space-y-8">
+            <h2 className="text-3xl font-bold text-white">Inspirational Links</h2>
+            <div className="space-y-6">
+              <div className="bg-slate-800/50 rounded-lg p-6 hover:bg-slate-800/70 transition-colors">
+                <a
+                  href="https://youtu.be/jTRwxNpFNjA?si=WLrqOdv577E6odan"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block space-y-2"
+                >
+                  <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                    Bird Scooter Hack
+                  </h3>
+                  <p className="text-slate-300">
+                    Kyle and I did this as a project for our Systems Programming project.
+                  </p>
+                </a>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-6 hover:bg-slate-800/70 transition-colors">
+                <a
+                  href="https://www.cameronsworld.net/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block space-y-2"
+                >
+                  <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                    Cameron's World
+                  </h3>
+                  <p className="text-slate-300">
+                    Beautiful through and through
+                  </p>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Favorite Tree Section */}
       <section className="py-16">
         <div className="container mx-auto px-6">
