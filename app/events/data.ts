@@ -41,8 +41,9 @@ export const EVENTS: EventEntry[] = [
     type: "info",
     highlights: [
       "Tommy will be DJing.",
+      "Synth/noise performance by Joel - likely.",
       "Dress theme: bug.",
-      "Bring hotdogs, chips, and dips.",
+      "Bring hotdogs, chips, and dips?",
     ],
     flierImage: {
       src: "/images/events/bugdj.jpg",
@@ -50,7 +51,7 @@ export const EVENTS: EventEntry[] = [
     },
     links: [
       {
-        label: "DJ set: Spectrum Techno - Live from the Techno Jungle",
+        label: "One of Tommy's past sets - live at EQ",
         href: DJ_SET_URL,
       },
     ],
@@ -82,9 +83,21 @@ export const EVENTS: EventEntry[] = [
     ],
   },
   {
+    slug: "cfp-mission-gorge-meetup",
+    title: "CFP Mission Gorge Meetup",
+    dateText: "March 22",
+    locationText: "Mission Gorge",
+    summary: "Outdoor climbing meetup at Mission Gorge.",
+    type: "flier",
+    flierImage: {
+      src: "/images/events/outdoor_meetup.jpg",
+      alt: "CFP Mission Gorge outdoor meetup flier",
+    },
+  },
+  {
     slug: "fuck-ice-punk-fundraiser",
     title: "Fuck Ice Punk Concert/Fundraiser",
-    dateText: "April 4 (details TBD)",
+    dateText: "TBD",
     locationText: LOCATION_TBD,
     summary: "Concert and fundraiser. More details coming soon.",
     type: "info",
