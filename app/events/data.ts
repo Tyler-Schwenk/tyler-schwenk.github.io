@@ -35,7 +35,7 @@ const LOCATION_FLIER = "See flier for details.";
 export const EVENTS: EventEntry[] = [
   {
     slug: "milan-tyler-birthday-boogie",
-    title: "Milan and Tyler Birthday Boogie and \"Welcome Back Tommy Party\"",
+    title: "Milan and Tyler Birthday Boogie and \"Welcome Back Tommy\" Party",
     dateText: "March 28",
     locationText: "Tyler's house",
     summary: "",
