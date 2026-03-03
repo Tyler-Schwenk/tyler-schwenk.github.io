@@ -18,6 +18,7 @@ export type EventEntry = {
   summary: string;
   type: EventType;
   flierImage?: EventFlier;
+  schedule?: string;
   highlights?: string[];
   links?: EventLink[];
   rsvpLink?: EventLink;
@@ -34,14 +35,16 @@ const LOCATION_FLIER = "See flier for details.";
 export const EVENTS: EventEntry[] = [
   {
     slug: "milan-tyler-birthday-boogie",
-    title: "Milan and Tyler Birthday Boogie",
-    dateText: "March 28 (time TBD)",
+    title: "Milan and Tyler Birthday Boogie and Welcome Back Tommy Party",
+    dateText: "March 28",
     locationText: "Tyler's house",
     summary: "",
     type: "info",
+    schedule: "Grilling starts at sunset, boogieing at night time",
     highlights: [
-      "Tommy will be DJing.",
+      "Tommy will be DJing on Lavender Soundsystem.",
       "Synth/noise performance by Joel - likely.",
+      "Perhaps some other performances.",
       "Dress theme: bug.",
       "Bring hotdogs, chips, and dips?",
     ],
@@ -96,7 +99,7 @@ export const EVENTS: EventEntry[] = [
   },
   {
     slug: "fuck-ice-punk-fundraiser",
-    title: "Fuck Ice Punk Concert/Fundraiser",
+    title: '"Fuck Ice" Punk Concert/Fundraiser',
     dateText: "TBD",
     locationText: LOCATION_TBD,
     summary: "Concert and fundraiser. More details coming soon.",

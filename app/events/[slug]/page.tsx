@@ -47,6 +47,7 @@ export default async function EventDetailPage({
           <div className="mt-6 bg-slate-900/70 border border-slate-700 rounded-2xl p-8 shadow-xl">
             <EventHeader event={event} />
             <EventDetails event={event} />
+            <EventSchedule event={event} />
             <EventHighlights event={event} />
             <EventLinks event={event} />
             <EventRsvp event={event} />
@@ -94,6 +95,26 @@ function EventDetails({ event }: { event: EventEntry }) {
         <p className="text-slate-400 uppercase tracking-wide text-xs">Location</p>
         <p className="mt-2 font-semibold text-white">{event.locationText}</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Renders optional schedule information for the event.
+ *
+ * @param {object} props - Component props.
+ * @param {EventEntry} props.event - Event data.
+ * @returns {JSX.Element | null} The schedule section when present.
+ */
+function EventSchedule({ event }: { event: EventEntry }) {
+  if (!event.schedule) {
+    return null;
+  }
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-lg font-semibold text-white mb-3">Schedule</h2>
+      <p className="text-slate-300">{event.schedule}</p>
     </div>
   );
 }

@@ -82,6 +82,12 @@ export const COMMUNITY_BOARD_LINKS: CommunityBoardLink[] = [
     description: "Beloved local organization",
   },
   {
+    id: "kpbs-sd-news",
+    name: "KPBS San Diego News Now",
+    href: "https://www.kpbs.org/podcasts/san-diego-news-now",
+    description: "Beloved local organization",
+  },
+  {
     id: "header-inspirations",
     name: "Other Inspirations",
     href: "",

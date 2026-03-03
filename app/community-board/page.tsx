@@ -37,11 +37,12 @@ const NOTE_POSITIONS = [
   { x: 720, y: 500 },
   // Local Orgs Header
   { x: 1020, y: 120 },
-  // Local Orgs (4 items)
+  // Local Orgs (5 items)
   { x: 1000, y: 280 },
   { x: 1280, y: 300 },
   { x: 1020, y: 520 },
   { x: 1300, y: 540 },
+  { x: 1000, y: 760 },
   // Other Inspirations Header
   { x: 1780, y: 120 },
   // Other Inspirations (2 items)
