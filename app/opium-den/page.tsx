@@ -26,7 +26,7 @@ export default function OpiumDenPage() {
           </summary>
           <div className="mt-4 space-y-4 text-red-100/90 leading-relaxed">
             <p>
-              self hosted music library to stream to my phone, and also share with friends. implement fun things i would like to have in a streaming service. The goal is to do this in a way that encourages supporting living artists more directly, while still progressing in th enjoyment of music, not just regressing.
+              self hosted music library to stream to my phone, and also share with friends. implement fun things i would like to have in a streaming service. The goal is to do this in a way that encourages supporting living artists more directly, while still providing a good experience.
             </p>
             
           </div>
@@ -59,10 +59,7 @@ export default function OpiumDenPage() {
             </p>
 
             <p>
-              But i think in this modern world we have a great opportunity to access artists' music directly, and thus also support them directly, with a significant reduction in people skimming off the top, or worse. 
-            </p>
-            <p>
-              I think there are also positive effects of having music be less based on instant gratification & a mentality of collection. 
+              I think there are also positive effects of having music feel less like an infinite, disposable commodity, and rather something special that you have to seek out. 
             </p>
           </div>
         </details>

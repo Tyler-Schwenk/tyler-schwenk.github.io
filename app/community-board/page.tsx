@@ -159,6 +159,14 @@ export default function CommunityBoard() {
    * @param {React.PointerEvent<HTMLDivElement>} event - Pointer down event.
    */
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    
+    // Don't start dragging if clicking on a link
+    if (target.tagName === 'A' || target.closest('a')) {
+      return;
+    }
+    
+    event.currentTarget.setPointerCapture(event.pointerId);
     setDragState({
       isDragging: true,
       lastX: event.clientX,
@@ -175,6 +183,8 @@ export default function CommunityBoard() {
     if (!dragState.isDragging || !containerRef.current) {
       return;
     }
+
+    event.preventDefault();
 
     const deltaX = event.clientX - dragState.lastX;
     const deltaY = event.clientY - dragState.lastY;
@@ -197,7 +207,10 @@ export default function CommunityBoard() {
   /**
    * Ends drag mode.
    */
-  function handlePointerUp() {
+  function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    if (dragState.isDragging) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     setDragState((previousDragState) => ({
       ...previousDragState,
       isDragging: false,
@@ -247,12 +260,15 @@ export default function CommunityBoard() {
         <div
           ref={containerRef}
           className="absolute inset-0"
+          style={{ 
+            cursor: dragState.isDragging ? "grabbing" : "grab",
+            touchAction: "none"
+          }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
-          style={{ cursor: dragState.isDragging ? "grabbing" : "grab" }}
         >
           <div className="absolute left-0 top-0" style={boardStyle}>
             {COMMUNITY_BOARD_LINKS.map((entry, index) => {

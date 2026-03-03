@@ -67,7 +67,7 @@ export default function Cookbook() {
             </h2>
             <div className="space-y-4">
               <p className="text-amber-800 text-center mb-6 text-lg leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                Help, I need to think of something to eat every day or I die!
+                Help, I need to think of something to eat every day!
               </p>
               <a 
                 href="https://forms.gle/5WZb1k6DvaceAnfa7" 

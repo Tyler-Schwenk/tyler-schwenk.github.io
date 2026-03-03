@@ -185,14 +185,14 @@ export default function GalleryPage() {
               {WHY_NOT_INSTAGRAM_REASONS.map((reason, index) => (
                 <div key={index} className="space-y-3">
                   {reason.imageSrc ? (
-                    <div className="flex gap-4 items-start">
+                    <div className="flex flex-col md:flex-row gap-4 md:items-start">
                       <div className="flex-shrink-0">
                         <Image
                           src={reason.imageSrc}
                           alt={reason.title || "Reason image"}
                           width={200}
                           height={150}
-                          className="rounded-lg border border-slate-600"
+                          className="rounded-lg border border-slate-600 w-full md:w-auto"
                         />
                       </div>
                       <div className="flex-1 space-y-3">
