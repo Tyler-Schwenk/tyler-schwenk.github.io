@@ -99,8 +99,12 @@ export default function Others() {
                     Cameron's World
                   </h3>
                   <p className="text-slate-300">
-                    Beautiful through and through
-                  </p>
+                    GeoCities was a web-hosting service that made it possible for people to build their own homepages. During the 90s, users from all over the world created personalised corners of the Internet.</p>
+<p className="text-slate-300">Cameron’s World brings together archived material from thousands of these sites.</p>
+
+<p className="text-slate-300">In an age where we interact primarily with branded and marketed web content, Cameron’s World is a tribute to the lost days of unrefined self-expression on the Internet. This project recalls the visual aesthetics from an era when it was expected that personal spaces would always be under construction.</p>
+
+                  
                 </a>
               </div>
             </div>
