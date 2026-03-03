@@ -46,7 +46,7 @@ export const EVENTS: EventEntry[] = [
       "Synth/noise performance by Joel - likely.",
       "Perhaps some other performances.",
       "Dress theme: bug.",
-      "Bring hotdogs, chips, and dips?",
+      "Bring hotdogs, chips, and dips? maybe we will just get a bunch of hot dogs",
     ],
     flierImage: {
       src: "/images/events/bugdj.jpg",
