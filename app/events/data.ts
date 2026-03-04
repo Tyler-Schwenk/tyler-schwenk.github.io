@@ -47,6 +47,7 @@ export const EVENTS: EventEntry[] = [
       "Perhaps some other performances.",
       "Dress theme: bug.",
       "Bring hotdogs, chips, and dips? maybe we will just get a bunch of hot dogs",
+      "No phones on the dance floor, please"
     ],
     flierImage: {
       src: "/images/events/bugdj.jpg",
