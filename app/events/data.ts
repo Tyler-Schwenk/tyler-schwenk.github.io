@@ -55,7 +55,7 @@ export const EVENTS: EventEntry[] = [
     },
     links: [
       {
-        label: "Something along these lines: One of Tommy's past sets - live at EQ",
+        label: "Something along these lines: One of Tommy's past sets",
         href: DJ_SET_URL,
       },
     ],
