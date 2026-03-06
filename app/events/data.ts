@@ -26,7 +26,7 @@ export type EventEntry = {
 };
 
 const DJ_SET_URL =
-  "https://soundcloud.com/byrdmp3/spectrum-techno-presents-live-from-the-techno-jungle-w-tommypips";
+  "https://soundcloud.com/tommypips/01-dare-u-mastered/s-mx54M3H05nq?ref=clipboard&p=a&c=1&si=35b9cc96db6146089a2d14a5250edd1b&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing";
 
 const RSVP_NOTE_COMING_SOON = "RSVP details coming soon.";
 const LOCATION_TBD = "Venue TBD";
@@ -35,7 +35,7 @@ const LOCATION_FLIER = "See flier for details.";
 export const EVENTS: EventEntry[] = [
   {
     slug: "milan-tyler-birthday-boogie",
-    title: "Milan and Tyler Birthday Boogie and \"Welcome Back Tommy\" Party",
+    title: "Milan and Tyler Birthday Boogie and \"Welcome Back Tommy and Ruby\" Party",
     dateText: "March 28",
     locationText: "Tyler's house",
     summary: "",
