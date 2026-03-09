@@ -3,6 +3,8 @@ import Navigation from "@/components/Navigation";
 
 const NTS_RADIO_URL = "https://www.nts.live/";
 const TOMMY_DJ_SET_URL = "#";
+const DUBLAB_URL = "https://www.dublab.com/archive/andy-oro-and-akumen-made-to-move-radio-09-06-25";
+const THE_LOT_URL = "https://www.thelotradio.com/";
 
 /**
  * Renders the music lounge page with curated listening links.
@@ -79,6 +81,22 @@ export default function OpiumDenPage() {
             className="block w-fit rounded-md border border-red-700 bg-red-900/60 px-4 py-2 text-red-100 hover:bg-red-800 transition-colors"
           >
             NTS Radio
+          </a>
+          <a
+            href={DUBLAB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-fit rounded-md border border-red-700 bg-red-900/60 px-4 py-2 text-red-100 hover:bg-red-800 transition-colors"
+          >
+            dublab
+          </a>
+          <a
+            href={THE_LOT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-fit rounded-md border border-red-700 bg-red-900/60 px-4 py-2 text-red-100 hover:bg-red-800 transition-colors"
+          >
+            the lot
           </a>
         </section>
 
