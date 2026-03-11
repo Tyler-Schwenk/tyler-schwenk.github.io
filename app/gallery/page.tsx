@@ -274,6 +274,14 @@ export default function GalleryPage() {
             >
               Vishal
             </a>
+            <a 
+              href="https://www.samuelsfilm.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 rounded-lg text-orange-400 font-mono transition-all hover:scale-105"
+            >
+              Sam
+            </a>
           </div>
         </section>
 

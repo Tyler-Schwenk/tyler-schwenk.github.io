@@ -28,13 +28,14 @@ const HEADER_COLOR = "bg-blue-300 text-blue-950";
 const NOTE_POSITIONS = [
   // Friends Header
   { x: 200, y: 120 },
-  // Friends (6 items)
+  // Friends (7 items)
   { x: 150, y: 280 },
   { x: 420, y: 260 },
   { x: 690, y: 290 },
   { x: 180, y: 520 },
   { x: 460, y: 540 },
   { x: 720, y: 500 },
+  { x: 200, y: 760 },
   // Local Orgs Header
   { x: 1020, y: 120 },
   // Local Orgs (5 items)

@@ -39,6 +39,12 @@ export const COMMUNITY_BOARD_LINKS: CommunityBoardLink[] = [
     description: "Friend site",
   },
   {
+    id: "sam",
+    name: "Sam",
+    href: "https://www.samuelsfilm.com/",
+    description: "Friend film portfolio",
+  },
+  {
     id: "fiona",
     name: "Fiona",
     href: "https://fiona-sullivan.github.io/",
