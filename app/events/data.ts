@@ -101,9 +101,9 @@ export const EVENTS: EventEntry[] = [
   {
     slug: "fuck-ice-punk-fundraiser",
     title: '"Fuck Ice" Punk Concert/Fundraiser',
-    dateText: "TBD",
-    locationText: LOCATION_TBD,
-    summary: "Concert and fundraiser. More details coming soon.",
+    dateText: "May 8",
+    locationText: "Probably my house",
+    summary: "Danny and Andrew will be unleashing hell",
     type: "info",
     rsvpNote: RSVP_NOTE_COMING_SOON,
   },
