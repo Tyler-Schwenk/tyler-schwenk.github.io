@@ -30,6 +30,11 @@ const tripConfig: Record<string, {
   videoPaths?: string[];
   externalUrl?: string;
 }> = {
+  instinct: {
+    title: "Portland, OR",
+    description: "Full grind mode at the Instinct headquarters assembling the new ASU 3's for launch. March 2026",
+    folderPath: "/images/gallery/Instinct"
+  },
   jordan: {
     title: "Jordan",
     description: "Lovely time in Jordan. February 2026",

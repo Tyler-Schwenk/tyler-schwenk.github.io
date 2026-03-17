@@ -117,7 +117,7 @@ export default function Others() {
                     Coevolution Ecology
                   </h3>
                   <p className="text-slate-300">
-                    An interesting perspective on ecological relationships and coevolution.
+                    I'm a big fan of this guy in general. I think this video hows his interesting perspective on species interactions. It changed my understanding of invasive species and gave me more hope for the world.
                   </p>
                 </a>
               </div>            </div>
