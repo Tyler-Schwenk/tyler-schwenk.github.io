@@ -71,7 +71,7 @@ export default function Others() {
       <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto space-y-8">
-            <h2 className="text-3xl font-bold text-white">Inspirational Links</h2>
+            <h2 className="text-3xl font-bold text-white">Links</h2>
             <div className="space-y-6">
               <div className="bg-slate-800/50 rounded-lg p-6 hover:bg-slate-800/70 transition-colors">
                 <a
@@ -106,8 +106,21 @@ export default function Others() {
 
                   
                 </a>
-              </div>
-            </div>
+              </div>              <div className="bg-slate-800/50 rounded-lg p-6 hover:bg-slate-800/70 transition-colors">
+                <a
+                  href="https://m.youtube.com/watch?v=hCAvBmY7ZgA&pp=ygUTQ29ldm9sdXRpb24gZWNvbG9neQ%3D%3D"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block space-y-2"
+                >
+                  <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                    Coevolution Ecology
+                  </h3>
+                  <p className="text-slate-300">
+                    An interesting perspective on ecological relationships and coevolution.
+                  </p>
+                </a>
+              </div>            </div>
           </div>
         </div>
       </section>
