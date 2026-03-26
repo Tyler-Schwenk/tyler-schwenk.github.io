@@ -36,7 +36,7 @@ export const EVENTS: EventEntry[] = [
   {
     slug: "milan-tyler-birthday-boogie",
     title: "Milan and Tyler Birthday Boogie and \"Welcome Back Tommy and Ruby\" Party",
-    dateText: "March 28",
+    dateText: "March 28 - Food (maqluba) at 7!",
     locationText: "Tyler's house",
     summary: "",
     type: "info",
