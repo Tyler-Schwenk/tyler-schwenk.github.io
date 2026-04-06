@@ -157,7 +157,7 @@ function EventLinks({ event }: { event: EventEntry }) {
 
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-semibold text-white mb-3">what kinda music?</h2>
+      <h2 className="text-lg font-semibold text-white mb-3">Links</h2>
       <div className="flex flex-col gap-3">
         {event.links.map((link) => (
           <a

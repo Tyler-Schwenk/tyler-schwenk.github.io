@@ -2,7 +2,7 @@
 // Each time a page loads, one will be randomly selected and displayed in the footer.
 
 export const funFacts = [
-  "Fun Fact: I like to ride my bicycle.",
+  "I like to ride my bicycle.",
   "Favorite programming language: Github Copilot.",
   "Favorite frog: Rana Draytonii",
   "Least favorite frog: Rana catebeiana",
@@ -17,8 +17,10 @@ export const funFacts = [
   "Favorite Tree: American Sycamore",
   "Favorite Plane Seat: 29C",
   "In-N-Out Order: Double-Double, fried mustard, grilled onions, chopped chillis, fries, and a cup of water",
-  "Best Cheeseteak: Angelo's South Philly w/ fried onions & cooper sharp",
+  "Best Cheesesteak: Angelo's South Philly w/ fried onions & cooper sharp",
   "R6S Main: Twitch",
   "Overwatch Main: Genji",
+  "I would like to be able to photosynthesize",
+  "I am trapped in this website, send help",
 
 ];

@@ -17,7 +17,9 @@ export type EventEntry = {
   locationText: string;
   summary: string;
   type: EventType;
+  past?: boolean;
   flierImage?: EventFlier;
+  smallImage?: boolean;
   schedule?: string;
   highlights?: string[];
   links?: EventLink[];
@@ -33,6 +35,54 @@ const LOCATION_TBD = "Venue TBD";
 const LOCATION_FLIER = "See flier for details.";
 
 export const EVENTS: EventEntry[] = [
+  // Upcoming — pinned recurring first, then soonest upcoming
+  {
+    slug: "climbers-for-palestine-meetup",
+    title: "Climbers for Palestine Meetups",
+    dateText: "Tuesdays, 6:30 PM",
+    locationText: "Mesa Rim Mission Valley",
+    summary: "Climbing meetups at the gym - every damn tuesday",
+    type: "flier",
+    flierImage: {
+      src: "/images/events/mv_meetup.png",
+      alt: "Climbers for Palestine meetup flier",
+    },
+    links: [
+      {
+        label: "Instagram: climbersforpalestine_sd",
+        href: "https://www.instagram.com/climbersforpalestine_sd/",
+      },
+      {
+        label: "Join WhatsApp group",
+        href: "https://chat.whatsapp.com/Dr2rt7Z9Myt19BRtcGPm50",
+      },
+    ],
+  },
+  {
+    slug: "fuck-ice-punk-fundraiser",
+    title: '"Fuck Ice" Punk Concert/Fundraiser',
+    dateText: "May 8",
+    locationText: "Tyler's House",
+    summary: "Danny and Andrew will be unleashing hell",
+    type: "info",
+    flierImage: {
+      src: "/images/events/fuckice.png",
+      alt: "Fuck Ice punk concert flier",
+    },
+    smallImage: true,
+    highlights: [
+      "$10 suggested donation at the door - all proceeds go to Al Otro Lado",
+    ],
+    links: [
+      {
+        label: "Al Otro Lado",
+        href: "https://www.alotrolado.org/",
+      },
+    ],
+    rsvpNote: RSVP_NOTE_COMING_SOON,
+  },
+
+  // Past — most recent first
   {
     slug: "milan-tyler-birthday-boogie",
     title: "Milan and Tyler Birthday Boogie and \"Welcome Back Tommy and Ruby\" Party",
@@ -40,6 +90,7 @@ export const EVENTS: EventEntry[] = [
     locationText: "Tyler's house",
     summary: "",
     type: "info",
+    past: true,
     schedule: "Grilling starts at sunset, boogieing at night time",
     highlights: [
       "Tommy will be DJing on Lavender Soundsystem.",
@@ -65,47 +116,17 @@ export const EVENTS: EventEntry[] = [
     },
   },
   {
-    slug: "climbers-for-palestine-meetup",
-    title: "Climbers for Palestine Meetups",
-    dateText: "Tuesdays, 6:30 PM",
-    locationText: "Mesa Rim Mission Valley",
-    summary: "Climbing meetups at the gym - every damn tuesday",
-    type: "flier",
-    flierImage: {
-      src: "/images/events/mv_meetup.png",
-      alt: "Climbers for Palestine meetup flier",
-    },
-    links: [
-      {
-        label: "Instagram: climbersforpalestine_sd",
-        href: "https://www.instagram.com/climbersforpalestine_sd/",
-      },
-      {
-        label: "Join WhatsApp group",
-        href: "https://chat.whatsapp.com/Dr2rt7Z9Myt19BRtcGPm50",
-      },
-    ],
-  },
-  {
     slug: "cfp-mission-gorge-meetup",
     title: "CFP Mission Gorge Meetup",
     dateText: "March 22",
     locationText: "Mission Gorge",
     summary: "Outdoor climbing meetup at Mission Gorge.",
     type: "flier",
+    past: true,
     flierImage: {
       src: "/images/events/outdoor_meetup.jpg",
       alt: "CFP Mission Gorge outdoor meetup flier",
     },
-  },
-  {
-    slug: "fuck-ice-punk-fundraiser",
-    title: '"Fuck Ice" Punk Concert/Fundraiser',
-    dateText: "May 8",
-    locationText: "Probably my house",
-    summary: "Danny and Andrew will be unleashing hell",
-    type: "info",
-    rsvpNote: RSVP_NOTE_COMING_SOON,
   },
 ];
 

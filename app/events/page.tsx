@@ -5,6 +5,7 @@ import PageWrapper from "@/components/PageWrapper";
 import { EVENTS, EventEntry } from "./data";
 
 const PAGE_TITLE = "Upcoming Events";
+const PAST_SECTION_TITLE = "Past Events";
 
 /**
  * Renders the upcoming events landing page.
@@ -12,6 +13,9 @@ const PAGE_TITLE = "Upcoming Events";
  * @returns {JSX.Element} The events overview page.
  */
 export default function EventsPage() {
+  const upcomingEvents = EVENTS.filter((e) => !e.past);
+  const pastEvents = EVENTS.filter((e) => e.past);
+
   return (
     <PageWrapper>
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 py-16">
@@ -23,10 +27,23 @@ export default function EventsPage() {
           </header>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {EVENTS.map((event) => (
+            {upcomingEvents.map((event) => (
               <EventCard key={event.slug} event={event} />
             ))}
           </div>
+
+          {pastEvents.length > 0 && (
+            <section className="mt-20">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-400 tracking-wide mb-8 text-center">
+                {PAST_SECTION_TITLE}
+              </h2>
+              <div className="grid gap-6 md:grid-cols-2">
+                {pastEvents.map((event) => (
+                  <EventCard key={event.slug} event={event} />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </PageWrapper>
@@ -46,7 +63,7 @@ function EventCard({ event }: { event: EventEntry }) {
   return (
     <div className="bg-slate-900/70 border border-slate-700 rounded-2xl overflow-hidden shadow-xl flex flex-col">
       {event.flierImage ? (
-        <div className="relative w-full h-64 md:h-72">
+        <div className={`relative w-full ${event.smallImage ? "h-40 md:h-48" : "h-64 md:h-72"}`}>
           <Image
             src={event.flierImage.src}
             alt={event.flierImage.alt}
