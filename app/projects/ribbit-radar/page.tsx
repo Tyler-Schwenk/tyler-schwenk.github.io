@@ -292,6 +292,20 @@ export default function RibbitRadar() {
                 Worlds first Vespa-powered real-time anuran accoustics device deployment?
               </p>
             </div>
+
+            {/* Bad code photo */}
+            <div className="mt-8">
+              <Image
+                src="/images/bad_code.png"
+                alt="A monstrosity of a function found while refactoring the codebase"
+                width={800}
+                height={600}
+                className="rounded-lg w-full"
+              />
+              <p className="text-center text-slate-400 mt-2 italic">
+                Had to share this monstrosity of a function I found while refactoring this codebase
+              </p>
+            </div>
           </div>
         </div>
       </section>
