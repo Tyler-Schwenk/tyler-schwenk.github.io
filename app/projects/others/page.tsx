@@ -137,6 +137,45 @@ export default function Others() {
         </div>
       </section>
 
+      {/* AirBNB Shady Dealings Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <h2 className="text-3xl font-bold text-white">Air BNB Shady Dealings Research</h2>
+            <div className="bg-slate-800/50 rounded-lg p-6 space-y-4">
+              <p className="text-slate-300 leading-relaxed">
+                Mariana has been uncovering AirBNB&apos;s shady dealings including paying protesters to come from LA to oppose a tax on vacation homes in San Diego.{" "}
+                <a
+                  href="https://voiceofsandiego.org/2026/01/28/paid-protestors-from-la-supported-airbnb-during-vacation-home-tax-vote/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-orange-500 hover:text-orange-400 underline transition-colors"
+                >
+                  Read her story here.
+                </a>
+              </p>
+              <p className="text-slate-300 leading-relaxed">
+                Hey Mariana, below is the report for the campaign contributions.
+              </p>
+              <p className="text-slate-300 leading-relaxed">
+                &ldquo;Airbnb&rdquo; never appears by name as a donor or payee in these campaign finance records. Instead, their presence shows up indirectly through California Strategies LLC, the lobbying and public affairs firm that represents Airbnb in San Diego.
+              </p>
+              <p className="text-slate-300 leading-relaxed">
+                Three people listed as California Strategies employees — Craig Benedetto, Marshall Anderson, and Ben Haddad — show up repeatedly making personal contributions to San Diego City Council and City Attorney candidates. Under California campaign finance law, individuals can give directly; the firm itself cannot. So the lobbyists give personally, and their employer affiliation is what ties them back to Airbnb.
+              </p>
+              <a
+                href="/airbnb-report.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 px-5 py-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold rounded-lg transition-colors"
+              >
+                View Full Campaign Finance Report
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Old Projects */}
       <section className="py-16 bg-slate-800/50">
         <div className="container mx-auto px-6">

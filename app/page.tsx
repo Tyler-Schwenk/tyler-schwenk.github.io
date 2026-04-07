@@ -74,9 +74,6 @@ export default function Home() {
                 <MenuOption href="/projects/others" iconSrc="/images/8bit/lightbulb.png">
                   INSPIRATION/MISC
                 </MenuOption>
-                <MenuOption href="/airbnb-report.html" external>
-                  AIR BNB SHADDY DEALINGS
-                </MenuOption>
               </div>
             </div>
             
