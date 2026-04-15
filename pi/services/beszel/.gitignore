@@ -1,0 +1,5 @@
+# Beszel data directory
+data/
+
+# Environment files
+.env

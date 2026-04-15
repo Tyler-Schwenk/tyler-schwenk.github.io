@@ -1,0 +1,11 @@
+# Environment file with secrets
+.env
+
+# PostgreSQL data
+postgres/
+
+# Machine learning cache
+cache/
+
+# Logs
+*.log

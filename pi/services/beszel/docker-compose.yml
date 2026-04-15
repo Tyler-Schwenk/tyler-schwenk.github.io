@@ -1,0 +1,25 @@
+services:
+  beszel:
+    image: henrygd/beszel:latest
+    container_name: beszel-hub
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./data:/beszel_data
+    restart: unless-stopped
+    environment:
+      - PORT=8090
+  
+  agent:
+    image: henrygd/beszel-agent:latest
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+    environment:
+      - PORT=45876
+      - KEY=${AGENT_KEY}

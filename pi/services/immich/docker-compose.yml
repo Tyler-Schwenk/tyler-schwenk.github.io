@@ -1,0 +1,57 @@
+services:
+  immich-server:
+    container_name: immich-server
+    image: ghcr.io/immich-app/immich-server:release
+    command: ['start.sh', 'immich']
+    volumes:
+      - /media/tyler/FE645A9A645A558D/photos:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - .env
+    ports:
+      - 2283:3001
+    depends_on:
+      - redis
+      - database
+    restart: unless-stopped
+
+  immich-microservices:
+    container_name: immich-microservices
+    image: ghcr.io/immich-app/immich-server:release
+    command: ['start.sh', 'microservices']
+    volumes:
+      - /media/tyler/FE645A9A645A558D/photos:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - database
+    restart: unless-stopped
+
+  immich-machine-learning:
+    container_name: immich-machine-learning
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    volumes:
+      - ./cache:/cache
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  redis:
+    container_name: immich-redis
+    image: redis:6.2-alpine
+    restart: unless-stopped
+
+  database:
+    container_name: immich-postgres
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    restart: unless-stopped

@@ -1,0 +1,68 @@
+# Environment files
+.env
+*.env
+
+# Service data directories
+services/*/data/
+services/*/config/*.db
+services/*/config/*.log
+
+# Credentials and secrets
+secrets/
+keys/
+*/keys
+*.key
+*.pem
+*.crt
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.bak
+*.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Docker volumes (if using local testing)
+docker-compose.override.yml
+
+# Backup-related
+.restic-password
+*.tar.gz
+backups/
+backup-*.log
+
+# Restic repository data (if local testing)
+.restic/
+restic-repo/

@@ -1,18 +1,30 @@
-# GitHub Copilot Instructions - Instinct Environmental
+# GitHub Copilot Instructions
 
 ## Project Overview
-Personal website for all my fun things.
 
-The resources in C:\Users\tyler\important\projects\WebDev\Tylers Website\tyler-schwenk.github.io\docs are authoritative and must be referenced before making changes.  
-They must also be kept up to date as changes are made. remmeber this means both adding new documentation as needed, but also removing old documentation that is no longer accurate or redundant!
+Personal website and home server monorepo for tyler-schwenk.com.
 
-- docs/
-  - Contains all project documentation, organized into subfolders
-  - You may reorganize or improve documentation structure as needed
-  - Documentation must reflect the current system behavior and data formats
-- In-code docstrings
-  - Must always be accurate and up to date
-  - Treated as first-class documentation for future AI code companions
+### Repository Structure
+
+```
+tyler-schwenk.github.io/      (monorepo root)
+├── website/                   Next.js frontend, deployed to GitHub Pages
+└── pi/                        Raspberry Pi 5 backend (Docker services + FastAPI)
+```
+
+- **website/** — Next.js 16 static site. Deployed automatically to tyler-schwenk.com via GitHub Actions on push to main.
+- **pi/** — FastAPI backend + Docker Compose configs for fart-pi home server. Pulled and run on the Pi separately.
+
+### Documentation
+
+Each subproject has its own `docs/` folder co-located with its code:
+
+- `website/docs/` — Frontend documentation (gallery, SEO, routing, etc.)
+- `pi/docs/` — Backend documentation (API reference, architecture, deployment, services)
+
+These docs are authoritative and must be referenced before making changes. They must also be kept up to date as changes are made — add new docs as needed, remove docs that are no longer accurate or redundant.
+
+In-code docstrings must always be accurate and up to date. They are treated as first-class documentation for future AI code companions.
 
 ---
 
@@ -49,39 +61,18 @@ All code must comply with the following rules without exception:
 ## JSDoc Standards
 
 **REQUIRED for all:**
-- Service functions (all exports in `src/services/`)
-- Custom hooks (all exports in `src/hooks/`)
-- Utility functions (all exports in `src/utils/`)
-- Context providers and hooks
+- Service functions and utility exports in `website/`
+- Custom hooks
 - Component exports (especially reusable ones)
 
 **JSDoc Format:**
 ```javascript
 /**
- * Brief description of what the function does
- * @param {Type} paramName - Parameter description
- * @param {Object} options - Options object (if applicable)
- * @param {string} options.key - Nested property description
- * @returns {Promise<{data: Type|null, error: string|null}>} Description of return value
+ * Brief description of what the function does.
+ * @param {Type} paramName - Parameter description.
+ * @returns {Promise<Type>} Description of return value.
  */
-export const functionName = async (paramName, options) => {
-```
-
-**Service Layer Pattern:**
-All service functions MUST document the `{data, error}` return pattern:
-```javascript
-/**
- * @returns {Promise<{data: Array|null, error: string|null}>} Sensor data or error
- */
-```
-
-**Hook Pattern:**
-```javascript
-/**
- * Custom hook for managing state
- * @param {string} userId - User ID
- * @returns {{data: Array, loading: boolean, error: string|null}}
- */
+export const functionName = async (paramName) => {
 ```
 
 **When to update JSDoc:**
@@ -89,8 +80,6 @@ All service functions MUST document the `{data, error}` return pattern:
 - Changing return types
 - Adding new exported functions
 - Modifying function behavior significantly
-
-See `docs/JSDOC_GUIDE.md` for examples and patterns.
 
 ## After Making Code Changes - MANDATORY VERIFICATION
 
@@ -123,39 +112,35 @@ See `docs/JSDOC_GUIDE.md` for examples and patterns.
 
 ## Coding Standards
 
-### Cloud Functions
-- Use **modular architecture** - separate handlers, services, and utils
-- Never use emojis
-- **Structured logging** with Logger class (see `utils/logger.js`)
+### Website (Next.js / TypeScript)
+- Static export target — no server-side features (`output: 'export'` in next.config.ts)
+- All pages in `website/app/` using App Router conventions
+- Client components must be explicitly marked with `'use client'`
+- Images in `website/public/images/`, fetched at runtime from `https://api.tyler-schwenk.com` for galleries
+
+### Pi Backend (FastAPI / Python)
+- Docker Compose services in `pi/services/`
+- FastAPI app in `pi/services/website-backend/app/`
+- SQLite database; do not switch to another DB without updating `pi/docs/architecture.md`
+- Use **modular architecture** — separate routers, services, and models
 - **Error handling**: Always catch and log errors with context
-- **Async/await**: Use modern async patterns, avoid callbacks
-- **Parallel execution**: Use `Promise.all()` for independent operations
-
-### Firestore Paths
-- Organizations: `orgs/{orgId}`
-- Sensor data: `orgs/{orgId}/clusters/{clusterId}/sensors/{sensorId}/data/{timestamp}`
-- **Subscriptions**: `users/{userId}/subscriptions/{subscriptionId}` (with `orgIds` array field)
-- See `docs/DATABASE.md` for complete schema
-
+- **Async/await**: Use modern async patterns throughout
 
 ## Critical Notes
-- **PowerShell**: Always quote comma-separated lists: `--only "hosting,functions"`
-- **Firestore triggers**: Use Gen2 functions with `onDocumentCreated` (not legacy v1 triggers)
-- **Secrets**: Managed via Google Secret Manager (SENDGRID_API_KEY, TWILIO_SID, etc.)
-- **Region**: Functions in `us-central1`, Firestore in `nam5`
+- **PowerShell**: Always quote comma-separated lists when needed
+- **GitHub Actions**: Build runs from `website/` subdirectory (see `.github/workflows/deploy.yml`)
+- **Pi deployment**: SSH to fart-pi, pull from this repo, run services from `pi/services/`
+- **Public API**: `https://api.tyler-schwenk.com` via Cloudflare Tunnel pointing to Pi port 8000
+- **Pi access via NetBird VPN**: `ssh tyler@100.124.76.27`
 
 ## When Making Changes
-1. **Read docs first**: Check `docs/` for any relevant documentation
-2. **Test locally**: Use emulators or test scripts before deploying
-3. **Update docs**: Keep `docs/` in sync with code changes
-4. **Log everything**: Use Logger class with appropriate context
-5. **Handle errors**: Graceful degradation, never throw unhandled errors
+1. **Read docs first**: Check `website/docs/` or `pi/docs/` for relevant documentation
+2. **Update docs**: Keep docs in sync with code changes
+3. **For Pi changes**: Test locally with Docker before deploying to fart-pi
 
 ## Code Review Checklist
-- [ ] Follows modular architecture (handlers → services → utils)
-- [ ] Uses Logger for all significant events (Cloud Functions)
+- [ ] Follows modular architecture
 - [ ] Handles errors gracefully with context
-- [ ] Parallel execution where possible
-- [ ] **JSDoc comments on all exported functions**
-- [ ] Documentation updated if schema/API changed
-- [ ] Tested with scripts or emulator
+- [ ] JSDoc/docstrings on all exported functions and classes
+- [ ] Documentation updated if API or schema changed
+- [ ] No hardcoded secrets or credentials

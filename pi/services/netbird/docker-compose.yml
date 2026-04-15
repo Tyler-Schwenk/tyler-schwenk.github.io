@@ -1,0 +1,17 @@
+services:
+  netbird:
+    image: netbirdio/netbird:latest
+    container_name: netbird
+    hostname: fart-pi
+    environment:
+      - NB_SETUP_KEY=${NB_SETUP_KEY}
+      - NB_HOSTNAME=fart-pi
+      - NB_MANAGEMENT_URL=https://johnserv.garrepi.dev:443
+    volumes:
+      - ./data:/etc/netbird
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+    network_mode: host
+    restart: unless-stopped

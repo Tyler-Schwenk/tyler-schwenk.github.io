@@ -119,4 +119,24 @@ config.local.json
 .browserslistrc
 .vercel
 
+# ============================================================
+# PI BACKEND (pi/)
+# ============================================================
+
+# Service data and databases
+pi/services/*/data/
+pi/services/*/config/*.db
+pi/services/*/config/*.log
+
+# Keys and credentials
+pi/keys/
+*.key
+*.pem
+*.crt
+
+# Python
+pi/.venv/
+__pycache__/
+*.py[cod]
+
 _legacy-reference/
