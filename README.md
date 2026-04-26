@@ -1,6 +1,7 @@
 # tyler-schwenk.github.io
 
 Monorepo for tyler-schwenk.com — personal website frontend and Raspberry Pi home server backend.
+reedpeloy pls
 
 ## Structure
 
