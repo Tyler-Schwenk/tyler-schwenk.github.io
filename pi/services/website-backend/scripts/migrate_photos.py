@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""
-Photo migration script for Website Backend API.
+"""Photo migration script for Website Backend API.
 
 Scans photo directories and registers them in the database via API.
-Run inside Docker container: docker exec website-backend-api python scripts/migrate_photos.py
+Requires admin credentials to authenticate before creating galleries.
+
+Run inside Docker container:
+    docker exec website-backend-api python scripts/migrate_photos.py --password YOUR_PASSWORD
 """
 
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -14,13 +17,17 @@ from typing import Dict, Optional
 
 
 # API configuration
+ADMIN_EMAIL = "tylerschwenk1@yahoo.com"
 API_BASE_URL = "http://localhost:8000"
 PHOTOS_DIR = Path("/app/photos")
 
 # Supported image extensions
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".JPG", ".JPEG", ".PNG"}
 
-# Gallery metadata mapping - customize titles and descriptions here
+# Folders that are not real photo galleries — skip them
+SKIP_FOLDERS = {"reasons", "sort", "thumbnails"}
+
+# Gallery metadata — title and description for each folder slug
 GALLERY_CONFIG: Dict[str, Dict[str, str]] = {
     "jordan": {
         "title": "Jordan",
@@ -28,79 +35,113 @@ GALLERY_CONFIG: Dict[str, Dict[str, str]] = {
     },
     "durango": {
         "title": "Durango",
-        "description": "Climbing trip to Durango"
+        "description": "Visiting Jeff for 2 nights of backpacking after he finished the Colorado Trail.\nSept 5-8, 2025"
     },
     "elcap": {
-        "title": "El Capitan",
-        "description": "El Cap climb"
+        "title": "El Cap",
+        "description": "Via triple direct.\nMay 10-16, 2025"
     },
     "halfdome": {
         "title": "Half Dome",
-        "description": "Half Dome climb"
+        "description": "Via Regular Northwest Face\nMay 2024"
     },
     "enchantments": {
-        "title": "Enchantments",
-        "description": "Enchantments backpacking trip"
+        "title": "The Enchantments",
+        "description": "Backpacking & Aasgard Sentinel\nJuly 2021"
     },
     "epc": {
         "title": "El Potrero Chico",
-        "description": "Climbing in El Potrero Chico"
+        "description": "From a few trips across multiple years\n2023, 2024, 2025"
     },
     "bikenite": {
         "title": "Bike Nite",
-        "description": "Bike Nite events"
+        "description": ""
     },
-    "Celciliawedding": {
-        "title": "Celcilia's Wedding",
-        "description": "Wedding celebration"
+    "celciliawedding": {
+        "title": "Cecilia's Wedding",
+        "description": "Friends stayed with my family in phl, then went to the wedding at Cecilia's family farm, and finished with some NYC nightlife"
+    },
+    "instinct": {
+        "title": "Portland, OR",
+        "description": "Full grind mode at the Instinct headquarters assembling the new ASU 3's for launch. March 2026"
     },
     "friends": {
         "title": "Friends",
-        "description": "Memories with friends"
+        "description": ""
     },
     "family": {
         "title": "Family",
-        "description": "Family photos"
+        "description": "and Funtown"
     },
     "college": {
         "title": "College",
-        "description": "College memories"
+        "description": "Trash house"
     },
     "palestinepals": {
-        "title": "Palestine Solidarity",
-        "description": "Palestine solidarity event"
-    }
+        "title": "Palestine Pals",
+        "description": "Free Palestine"
+    },
 }
 
 
 def get_gallery_metadata(folder_name: str) -> Dict[str, str]:
     """
     Get gallery metadata for a folder.
-    
+
+    Looks up by lowercased folder name so capitalization variations dont matter.
+
     Args:
-        folder_name: Name of the folder
-        
+        folder_name: Name of the folder on disk.
+
     Returns:
-        Dictionary with title and description
+        Dict with title and description keys.
     """
-    if folder_name in GALLERY_CONFIG:
-        return GALLERY_CONFIG[folder_name]
-    
-    # Default: capitalize folder name
+    key = folder_name.lower()
+    if key in GALLERY_CONFIG:
+        return GALLERY_CONFIG[key]
+
+    # fallback: clean up the folder name
     title = folder_name.replace("-", " ").replace("_", " ").title()
-    return {"title": title, "description": f"{title} gallery"}
+    return {"title": title, "description": ""}
+
+
+def login(client: httpx.Client, password: str) -> str:
+    """
+    Authenticate with the API and return a JWT token.
+
+    Args:
+        client: HTTP client.
+        password: Admin account password.
+
+    Returns:
+        Bearer token string.
+
+    Raises:
+        SystemExit: If login fails.
+    """
+    response = client.post(
+        "/auth/login",
+        data={"username": ADMIN_EMAIL, "password": password},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    if response.status_code != 200:
+        print(f"ERROR: login failed ({response.status_code}) — check your password")
+        sys.exit(1)
+    token = response.json()["access_token"]
+    print(f"Logged in as {ADMIN_EMAIL}\n")
+    return token
 
 
 def create_gallery(client: httpx.Client, folder_name: str) -> Optional[int]:
     """
-    Create a gallery via API.
-    
+    Create a gallery via API, or return the existing gallery's ID.
+
     Args:
-        client: HTTP client
-        folder_name: Folder name to use as slug
-        
+        client: HTTP client with auth headers already set.
+        folder_name: Folder name used as the gallery slug.
+
     Returns:
-        Gallery ID if successful, None otherwise
+        Gallery ID if successful, None otherwise.
     """
     slug = folder_name.lower()
     metadata = get_gallery_metadata(folder_name)
@@ -170,12 +211,15 @@ def upload_photo(client: httpx.Client, gallery_id: int, photo_path: Path, displa
         return False
 
 
-def migrate_photos():
+def migrate_photos(password: str) -> None:
     """
     Migrate photos from filesystem to database.
-    
-    Scans photo directories and registers all images via API.
-    Creates galleries and uploads photos with automatic thumbnail generation.
+
+    Logs in, scans photo directories, creates galleries, and uploads all images.
+    Skips folders in SKIP_FOLDERS and galleries that already exist.
+
+    Args:
+        password: Admin account password used to get a JWT.
     """
     if not PHOTOS_DIR.exists():
         print(f"ERROR: Photos directory not found: {PHOTOS_DIR}")
@@ -183,18 +227,22 @@ def migrate_photos():
     
     print(f"Scanning photos directory: {PHOTOS_DIR}")
     print(f"API base URL: {API_BASE_URL}\n")
-    
-    # Find all subdirectories
-    folders = [d for d in PHOTOS_DIR.iterdir() if d.is_dir() and not d.name.startswith(".")]
-    
+
+    # Find all subdirectories, skip non-gallery folders
+    folders = [
+        d for d in PHOTOS_DIR.iterdir()
+        if d.is_dir() and not d.name.startswith(".") and d.name.lower() not in SKIP_FOLDERS
+    ]
+
     if not folders:
         print("No photo folders found.")
         return
-    
+
     print(f"Found {len(folders)} photo folders\n")
-    
-    # Create HTTP client
+
     with httpx.Client(base_url=API_BASE_URL) as client:
+        token = login(client, password)
+        client.headers.update({"Authorization": f"Bearer {token}"})
         total_photos = 0
         total_galleries = 0
         
@@ -233,4 +281,7 @@ def migrate_photos():
 
 
 if __name__ == "__main__":
-    migrate_photos()
+    parser = argparse.ArgumentParser(description="migrate photos from disk into the gallery database")
+    parser.add_argument("--password", required=True, help="admin account password")
+    args = parser.parse_args()
+    migrate_photos(args.password)

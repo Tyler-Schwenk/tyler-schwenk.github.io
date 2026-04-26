@@ -17,12 +17,10 @@ import sys
 # make app importable when run from the project root
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from passlib.context import CryptContext
+import bcrypt
 
 from app.database import SessionLocal, init_db
 from app.models import User
-
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_admin(email: str, password: str) -> None:
@@ -45,7 +43,7 @@ def create_admin(email: str, password: str) -> None:
             print("to reset the password, delete the user row first or update hashed_password directly")
             sys.exit(1)
 
-        hashed = _pwd_context.hash(password)
+        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
         user = User(
             email=email,
             hashed_password=hashed,
