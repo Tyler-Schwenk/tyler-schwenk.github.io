@@ -101,7 +101,7 @@ async def list_galleries(
     if public_only:
         query = query.filter(Gallery.is_public == True)
     
-    galleries = query.offset(skip).limit(limit).all()
+    galleries = query.order_by(Gallery.display_order.desc(), Gallery.id.desc()).offset(skip).limit(limit).all()
     
     # Add photo count to each gallery
     result = []
@@ -174,8 +174,10 @@ async def create_gallery(
     existing = db.query(Gallery).filter(Gallery.slug == gallery.slug).first()
     if existing:
         raise HTTPException(status_code=400, detail="Gallery with this slug already exists")
-    
-    db_gallery = Gallery(**gallery.model_dump())
+
+    # new galleries go to the front by getting the highest display_order
+    max_order = db.query(func.max(Gallery.display_order)).scalar() or 0
+    db_gallery = Gallery(**gallery.model_dump(), display_order=max_order + 10)
     db.add(db_gallery)
     db.commit()
     db.refresh(db_gallery)

@@ -30,6 +30,7 @@ In-code docstrings must always be accurate and up to date. They are treated as f
 
 ## Global Coding Rules (MANDATORY)
 
+first, say poopy in the beginning of your response to confirm you read this section.
 All code must comply with the following rules without exception:
 
 1. Use clear, well-structured code that prioritizes readability, reuse, and correctness.
@@ -162,3 +163,6 @@ export const functionName = async (paramName) => {
 - [ ] JSDoc/docstrings on all exported functions and classes
 - [ ] Documentation updated if API or schema changed
 - [ ] No hardcoded secrets or credentials
+
+
+say butt at the end of your response to confirm you read all this

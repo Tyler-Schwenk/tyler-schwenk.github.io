@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Tyler Schwenk</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --orange: #f97316;
+            --red: #ef4444;
+            --green: #22c55e;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ---- login ---- */
+        #loginWrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        /* ---- admin panel ---- */
+        #adminPanel { display: none; max-width: 1000px; margin: 0 auto; padding: 24px 20px; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .panel-header h1 { font-size: 22px; }
+        .panel-header .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+        /* ---- tabs ---- */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            padding: 9px 18px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 14px;
+            transition: color 0.15s;
+        }
+
+        .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+        .tab-btn:hover { color: var(--text); }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ---- shared form ---- */
+        .form-row { margin-bottom: 14px; }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--orange);
+        }
+
+        textarea { resize: vertical; min-height: 70px; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        @media (max-width: 540px) { .two-col { grid-template-columns: 1fr; } }
+
+        /* ---- buttons ---- */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+
+        .btn:hover:not(:disabled) { opacity: 0.85; }
+        .btn:active:not(:disabled) { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-primary { background: var(--orange); color: #fff; }
+        .btn-ghost { background: var(--border); color: var(--text); }
+        .btn-danger { background: #7f1d1d; color: #fca5a5; }
+        .btn-sm { padding: 5px 11px; font-size: 12px; }
+        .btn-full { width: 100%; }
+
+        /* ---- messages ---- */
+        .msg {
+            padding: 9px 13px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .msg.success { background: #14532d; color: #86efac; display: block; }
+        .msg.error   { background: #7f1d1d; color: #fca5a5; display: block; }
+
+        /* ---- gallery cards ---- */
+        .gallery-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .gallery-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+        }
+
+        .order-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+
+        .gallery-info { flex: 1; min-width: 0; }
+        .gallery-name { font-size: 15px; font-weight: 600; }
+
+        .gallery-meta {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gallery-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+        .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 99px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-pub { background: #14532d; color: #86efac; }
+        .badge-prv { background: #44403c; color: #d6d3d1; }
+
+        /* ---- edit form (inline beneath header) ---- */
+        .edit-form {
+            border-top: 1px solid var(--border);
+            padding: 14px;
+            background: #0d1526;
+            display: none;
+        }
+
+        .edit-form.open { display: block; }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text);
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-row input { width: auto; }
+
+        /* ---- gallery body (photos) ---- */
+        .gallery-body {
+            border-top: 1px solid var(--border);
+            padding: 14px;
+            display: none;
+        }
+
+        .gallery-body.open { display: block; }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .photo-thumb {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 5px;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+        .photo-del {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: rgba(239, 68, 68, 0.9);
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            width: 20px;
+            height: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .photo-thumb:hover .photo-del,
+        .photo-thumb:focus-within .photo-del { opacity: 1; }
+
+        /* always visible on touch devices */
+        @media (hover: none) { .photo-del { opacity: 1; } }
+
+        /* ---- drop zone ---- */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 7px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 13px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--orange);
+            background: rgba(249, 115, 22, 0.05);
+            color: var(--text);
+        }
+
+        .file-hidden { display: none; }
+
+        /* ---- progress bar ---- */
+        .progress-wrap {
+            background: var(--border);
+            border-radius: 99px;
+            height: 6px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--orange);
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        /* ---- new-gallery panel ---- */
+        .new-gallery-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        .new-gallery-panel.open { display: block; }
+
+        /* ---- galleries tab toolbar ---- */
+        .galleries-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        /* ---- upload tab ---- */
+        .upload-wrap { max-width: 580px; }
+
+        .radio-row { display: flex; gap: 20px; margin-bottom: 14px; }
+        .radio-row label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text); cursor: pointer; text-transform: none; letter-spacing: 0; }
+        .radio-row input { width: auto; }
+
+        .file-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 10px;
+            background: var(--surface);
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== LOGIN ========== -->
+<div id="loginWrapper">
+    <div class="login-card">
+        <h1 style="margin-bottom: 4px;">Admin</h1>
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 24px;">tyler-schwenk.com</p>
+        <div class="form-row">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" autocomplete="username">
+        </div>
+        <div class="form-row">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary btn-full" id="loginBtn" style="margin-top: 8px;">Login</button>
+        <div class="msg" id="loginMsg"></div>
+    </div>
+</div>
+
+<!-- ========== ADMIN PANEL ========== -->
+<div id="adminPanel">
+    <div class="panel-header">
+        <div>
+            <h1>Admin</h1>
+            <div class="sub" id="panelSub"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="galleries">Galleries</button>
+        <button class="tab-btn" data-tab="upload">Upload</button>
+    </div>
+
+    <!-- ===== GALLERIES TAB ===== -->
+    <div class="tab-panel active" id="tab-galleries">
+
+        <div class="galleries-toolbar">
+            <span style="font-size: 13px; color: var(--muted);" id="galleriesCount"></span>
+            <button class="btn btn-primary btn-sm" id="newGalleryBtn">+ New Gallery</button>
+        </div>
+
+        <!-- new gallery form -->
+        <div class="new-gallery-panel" id="newGalleryPanel">
+            <div style="font-weight: 600; margin-bottom: 12px;">New Gallery</div>
+            <div class="two-col">
+                <div class="form-row">
+                    <label for="ng-name">Name</label>
+                    <input type="text" id="ng-name" placeholder="Jordan 2026">
+                </div>
+                <div class="form-row">
+                    <label for="ng-slug">Slug</label>
+                    <input type="text" id="ng-slug" placeholder="jordan-2026">
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="ng-desc">Description</label>
+                <textarea id="ng-desc" placeholder="Optional"></textarea>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary btn-sm" id="createGalleryBtn">Create</button>
+                <button class="btn btn-ghost btn-sm" id="cancelNewGalleryBtn">Cancel</button>
+            </div>
+            <div class="msg" id="newGalleryMsg"></div>
+        </div>
+
+        <div id="galleryList"></div>
+    </div>
+
+    <!-- ===== UPLOAD TAB ===== -->
+    <div class="tab-panel" id="tab-upload">
+        <div class="upload-wrap">
+            <div class="radio-row">
+                <label><input type="radio" name="uType" value="photo" checked> Photos</label>
+                <label><input type="radio" name="uType" value="video"> Video</label>
+            </div>
+
+            <!-- photo fields -->
+            <div id="photoFields">
+                <div class="radio-row">
+                    <label><input type="radio" name="gallMode" value="existing" checked> Existing gallery</label>
+                    <label><input type="radio" name="gallMode" value="new"> New gallery</label>
+                </div>
+                <div id="existingField" class="form-row">
+                    <label for="uGallerySelect">Gallery</label>
+                    <select id="uGallerySelect"><option value="">Loading...</option></select>
+                </div>
+                <div id="newInlineFields" style="display: none;">
+                    <div class="two-col">
+                        <div class="form-row">
+                            <label for="ui-name">Name</label>
+                            <input type="text" id="ui-name">
+                        </div>
+                        <div class="form-row">
+                            <label for="ui-slug">Slug</label>
+                            <input type="text" id="ui-slug">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label for="ui-desc">Description</label>
+                        <textarea id="ui-desc"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- video fields -->
+            <div id="videoFields" style="display: none;">
+                <div class="form-row">
+                    <label for="v-title">Title</label>
+                    <input type="text" id="v-title">
+                </div>
+                <div class="form-row">
+                    <label for="v-slug">Slug</label>
+                    <input type="text" id="v-slug">
+                </div>
+                <div class="form-row">
+                    <label for="v-desc">Description</label>
+                    <textarea id="v-desc"></textarea>
+                </div>
+            </div>
+
+            <div class="drop-zone" id="uDropZone">
+                Drop files here or tap to browse
+                <div style="font-size: 11px; margin-top: 3px;">JPG, PNG, HEIC</div>
+            </div>
+            <input type="file" class="file-hidden" id="uFileInput" multiple accept="image/*">
+            <div id="uFileList" style="margin-top: 8px;"></div>
+            <button class="btn btn-primary btn-full" id="uSubmitBtn" style="margin-top: 12px;">Upload</button>
+            <div class="progress-wrap" id="uProgressWrap"><div class="progress-fill" id="uProgressFill"></div></div>
+            <div class="msg" id="uMsg"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'https://api.tyler-schwenk.com';
+
+    let token = localStorage.getItem('adminToken');
+    let galleries = [];
+    let uploadFiles = [];
+    let expandedIds = new Set();
+
+    // ---- boot ----
+    token ? showAdmin() : showLogin();
+
+    // ---- login / logout ----
+    document.getElementById('loginBtn').addEventListener('click', doLogin);
+    document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+    async function doLogin() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const pwd = document.getElementById('loginPassword').value;
+        const btn = document.getElementById('loginBtn');
+        btn.disabled = true;
+        clearMsg('loginMsg');
+
+        const res = await fetch(`${API}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ username: email, password: pwd }),
+        }).catch(() => null);
+
+        btn.disabled = false;
+
+        if (!res || !res.ok) {
+            showMsg('loginMsg', 'Login failed. Check your credentials.', 'error');
+            return;
+        }
+
+        token = (await res.json()).access_token;
+        localStorage.setItem('adminToken', token);
+        showAdmin();
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        token = null;
+        localStorage.removeItem('adminToken');
+        showLogin();
+    });
+
+    function showLogin() {
+        document.getElementById('loginWrapper').style.display = 'flex';
+        document.getElementById('adminPanel').style.display = 'none';
+    }
+
+    async function showAdmin() {
+        document.getElementById('loginWrapper').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        await loadGalleries();
+    }
+
+    // ---- tabs ----
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+        });
+    });
+
+    // ---- load galleries ----
+    async function loadGalleries() {
+        const res = await aFetch(`${API}/galleries?public_only=false`);
+        if (!res) return;
+        galleries = await res.json();
+        renderGalleries();
+        populateUploadSelect();
+    }
+
+    function renderGalleries() {
+        document.getElementById('galleriesCount').textContent = `${galleries.length} galleries`;
+        const list = document.getElementById('galleryList');
+        list.innerHTML = '';
+        galleries.forEach((g, i) => list.appendChild(makeCard(g, i)));
+    }
+
+    function makeCard(g, idx) {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        card.id = `gc-${g.id}`;
+
+        const isFirst = idx === 0;
+        const isLast = idx === galleries.length - 1;
+        const open = expandedIds.has(g.id);
+        const descSnip = g.description
+            ? escH(g.description.length > 55 ? g.description.substring(0, 55) + '...' : g.description)
+            : '';
+
+        card.innerHTML = `
+            <div class="gallery-header">
+                <div class="order-btns">
+                    <button class="btn btn-ghost btn-sm" data-a="up" data-id="${g.id}" ${isFirst ? 'disabled' : ''}>&#9650;</button>
+                    <button class="btn btn-ghost btn-sm" data-a="down" data-id="${g.id}" ${isLast ? 'disabled' : ''}>&#9660;</button>
+                </div>
+                <div class="gallery-info">
+                    <div class="gallery-name">${escH(g.name)}</div>
+                    <div class="gallery-meta">
+                        <span class="badge ${g.is_public ? 'badge-pub' : 'badge-prv'}">${g.is_public ? 'public' : 'private'}</span>
+                        &nbsp;${g.photo_count ?? 0} photos${descSnip ? ' &bull; ' + descSnip : ''}
+                    </div>
+                </div>
+                <div class="gallery-actions">
+                    <button class="btn btn-ghost btn-sm" data-a="edit" data-id="${g.id}" title="Edit details">&#9998;</button>
+                    <button class="btn btn-ghost btn-sm" data-a="toggle" data-id="${g.id}" title="Show photos">${open ? '&#8593;' : '&#8595;'}</button>
+                    <button class="btn btn-danger btn-sm" data-a="del" data-id="${g.id}" title="Delete gallery">&#128465;</button>
+                </div>
+            </div>
+            <div class="edit-form" id="ef-${g.id}">
+                <div class="two-col">
+                    <div class="form-row"><label>Name</label><input type="text" id="ef-name-${g.id}" value="${escA(g.name)}"></div>
+                    <div class="form-row"><label>Slug</label><input type="text" id="ef-slug-${g.id}" value="${escA(g.slug)}"></div>
+                </div>
+                <div class="form-row"><label>Description</label><textarea id="ef-desc-${g.id}">${escH(g.description || '')}</textarea></div>
+                <label class="checkbox-row">
+                    <input type="checkbox" id="ef-pub-${g.id}" ${g.is_public ? 'checked' : ''}> Public
+                </label>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-primary btn-sm" data-a="save" data-id="${g.id}">Save</button>
+                    <button class="btn btn-ghost btn-sm" data-a="close-edit" data-id="${g.id}">Cancel</button>
+                </div>
+                <div class="msg" id="ef-msg-${g.id}"></div>
+            </div>
+            <div class="gallery-body ${open ? 'open' : ''}" id="gb-${g.id}">
+                <div class="photo-grid" id="pg-${g.id}">
+                    <span style="color:var(--muted); font-size:13px;" id="pl-${g.id}">Loading...</span>
+                </div>
+                <div class="drop-zone" id="gd-${g.id}">Drop photos here or tap to add</div>
+                <input type="file" class="file-hidden" id="gfi-${g.id}" multiple accept="image/*">
+                <div class="progress-wrap" id="gp-${g.id}"><div class="progress-fill" id="gpf-${g.id}"></div></div>
+                <div class="msg" id="gm-${g.id}"></div>
+            </div>
+        `;
+
+        // wire up delegated click handler
+        card.addEventListener('click', e => {
+            const btn = e.target.closest('[data-a]');
+            if (!btn) return;
+            const id = parseInt(btn.dataset.id);
+            dispatch(btn.dataset.a, id);
+        });
+
+        // wire up gallery drop zone
+        const dz = card.querySelector(`#gd-${g.id}`);
+        const fi = card.querySelector(`#gfi-${g.id}`);
+        dz.addEventListener('click', () => fi.click());
+        fi.addEventListener('change', ev => addPhotosToGallery(g.id, [...ev.target.files]));
+        dz.addEventListener('dragover', ev => { ev.preventDefault(); dz.classList.add('drag-over'); });
+        dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+        dz.addEventListener('drop', ev => {
+            ev.preventDefault();
+            dz.classList.remove('drag-over');
+            addPhotosToGallery(g.id, [...ev.dataTransfer.files].filter(f => f.type.startsWith('image/')));
+        });
+
+        if (open) loadPhotos(g.id);
+        return card;
+    }
+
+    function dispatch(action, id) {
+        if (action === 'up')         reorder(id, 'up');
+        else if (action === 'down')  reorder(id, 'down');
+        else if (action === 'edit')  toggleEditForm(id, true);
+        else if (action === 'close-edit') toggleEditForm(id, false);
+        else if (action === 'save')  saveEdit(id);
+        else if (action === 'toggle') toggleBody(id);
+        else if (action === 'del')   deleteGallery(id);
+    }
+
+    function toggleEditForm(id, open) {
+        document.getElementById(`ef-${id}`).classList.toggle('open', open);
+    }
+
+    // ---- reorder ----
+    async function reorder(id, dir) {
+        const idx = galleries.findIndex(g => g.id === id);
+        if (idx < 0) return;
+        const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
+        if (swapIdx < 0 || swapIdx >= galleries.length) return;
+
+        const a = galleries[idx];
+        const b = galleries[swapIdx];
+
+        // if orders are equal, give them distinct values first
+        const oA = a.display_order === b.display_order
+            ? (dir === 'up' ? b.display_order + 1 : b.display_order - 1)
+            : b.display_order;
+        const oB = a.display_order;
+
+        await Promise.all([
+            aFetch(`${API}/galleries/${a.id}`, patch({ display_order: oA })),
+            aFetch(`${API}/galleries/${b.id}`, patch({ display_order: oB })),
+        ]);
+        await loadGalleries();
+    }
+
+    // ---- edit ----
+    async function saveEdit(id) {
+        const name = document.getElementById(`ef-name-${id}`).value.trim();
+        const slug = document.getElementById(`ef-slug-${id}`).value.trim();
+        const desc = document.getElementById(`ef-desc-${id}`).value.trim();
+        const isPublic = document.getElementById(`ef-pub-${id}`).checked;
+
+        if (!name || !slug) {
+            showMsg(`ef-msg-${id}`, 'Name and slug are required.', 'error');
+            return;
+        }
+
+        const res = await aFetch(`${API}/galleries/${id}`, patch({ name, slug, description: desc || null, is_public: isPublic }));
+
+        if (res && res.ok) {
+            showMsg(`ef-msg-${id}`, 'Saved.', 'success');
+            await loadGalleries();
+        } else {
+            const err = res ? await res.json().catch(() => ({})) : {};
+            showMsg(`ef-msg-${id}`, err.detail || 'Save failed.', 'error');
+        }
+    }
+
+    // ---- delete gallery ----
+    async function deleteGallery(id) {
+        const g = galleries.find(x => x.id === id);
+        if (!confirm(`Delete "${g?.name}" and ALL its photos? This cannot be undone.`)) return;
+        const res = await aFetch(`${API}/galleries/${id}`, { method: 'DELETE' });
+        if (res && (res.ok || res.status === 204)) {
+            expandedIds.delete(id);
+            await loadGalleries();
+        } else {
+            alert('Delete failed.');
+        }
+    }
+
+    // ---- expand / collapse ----
+    async function toggleBody(id) {
+        const body = document.getElementById(`gb-${id}`);
+        const nowOpen = !body.classList.contains('open');
+        body.classList.toggle('open', nowOpen);
+        if (nowOpen) {
+            expandedIds.add(id);
+            await loadPhotos(id);
+        } else {
+            expandedIds.delete(id);
+        }
+        const btn = document.querySelector(`[data-a="toggle"][data-id="${id}"]`);
+        if (btn) btn.innerHTML = nowOpen ? '&#8593;' : '&#8595;';
+    }
+
+    // ---- photos ----
+    async function loadPhotos(galleryId) {
+        const grid = document.getElementById(`pg-${galleryId}`);
+        grid.innerHTML = '<span style="color:var(--muted); font-size:13px;">Loading...</span>';
+
+        const res = await aFetch(`${API}/galleries/${galleryId}/photos`);
+        if (!res) return;
+        const photos = await res.json();
+
+        grid.innerHTML = '';
+        if (!photos.length) {
+            grid.innerHTML = '<span style="color:var(--muted); font-size:13px; grid-column:1/-1;">No photos yet.</span>';
+            return;
+        }
+        photos.forEach(p => grid.appendChild(makeThumb(p, galleryId)));
+    }
+
+    function makeThumb(photo, galleryId) {
+        const div = document.createElement('div');
+        div.className = 'photo-thumb';
+        div.id = `pt-${photo.id}`;
+        div.innerHTML = `
+            <img src="${API}/galleries/photos/${photo.id}/file?thumbnail=true" alt="" loading="lazy">
+            <button class="photo-del" title="Delete photo">&#215;</button>
+        `;
+        div.querySelector('.photo-del').addEventListener('click', e => {
+            e.stopPropagation();
+            deletePhoto(photo.id, galleryId);
+        });
+        return div;
+    }
+
+    async function deletePhoto(photoId, galleryId) {
+        if (!confirm('Delete this photo? Cannot be undone.')) return;
+        const res = await aFetch(`${API}/galleries/photos/${photoId}`, { method: 'DELETE' });
+        if (res && (res.ok || res.status === 204)) {
+            document.getElementById(`pt-${photoId}`)?.remove();
+            // update count in memory and re-render meta
+            const g = galleries.find(x => x.id === galleryId);
+            if (g) { g.photo_count = Math.max(0, (g.photo_count || 1) - 1); refreshMeta(g); }
+        } else {
+            alert('Delete failed.');
+        }
+    }
+
+    async function addPhotosToGallery(galleryId, files) {
+        if (!files.length) return;
+        const wrap = document.getElementById(`gp-${galleryId}`);
+        const fill = document.getElementById(`gpf-${galleryId}`);
+        wrap.style.display = 'block';
+
+        let done = 0;
+        for (const f of files) {
+            const fd = new FormData();
+            fd.append('file', f);
+            await aFetch(`${API}/galleries/${galleryId}/photos`, { method: 'POST', body: fd });
+            done++;
+            fill.style.width = `${Math.round((done / files.length) * 100)}%`;
+        }
+
+        wrap.style.display = 'none';
+        fill.style.width = '0%';
+        showMsg(`gm-${galleryId}`, `Uploaded ${done} photo${done !== 1 ? 's' : ''}.`, 'success');
+        await loadPhotos(galleryId);
+        const g = galleries.find(x => x.id === galleryId);
+        if (g) { g.photo_count = (g.photo_count || 0) + done; refreshMeta(g); }
+    }
+
+    function refreshMeta(g) {
+        const meta = document.querySelector(`#gc-${g.id} .gallery-meta`);
+        if (!meta) return;
+        const descSnip = g.description
+            ? escH(g.description.length > 55 ? g.description.substring(0, 55) + '...' : g.description)
+            : '';
+        meta.innerHTML = `
+            <span class="badge ${g.is_public ? 'badge-pub' : 'badge-prv'}">${g.is_public ? 'public' : 'private'}</span>
+            &nbsp;${g.photo_count ?? 0} photos${descSnip ? ' &bull; ' + descSnip : ''}
+        `;
+    }
+
+    // ---- new gallery form ----
+    document.getElementById('newGalleryBtn').addEventListener('click', () => {
+        document.getElementById('newGalleryPanel').classList.toggle('open');
+    });
+    document.getElementById('cancelNewGalleryBtn').addEventListener('click', () => {
+        document.getElementById('newGalleryPanel').classList.remove('open');
+    });
+    document.getElementById('ng-name').addEventListener('input', e => {
+        document.getElementById('ng-slug').value = slugify(e.target.value);
+    });
+    document.getElementById('createGalleryBtn').addEventListener('click', async () => {
+        const name = document.getElementById('ng-name').value.trim();
+        const slug = document.getElementById('ng-slug').value.trim();
+        const desc = document.getElementById('ng-desc').value.trim();
+        if (!name || !slug) { showMsg('newGalleryMsg', 'Name and slug required.', 'error'); return; }
+
+        const res = await aFetch(`${API}/galleries`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, slug, description: desc || null, is_public: true }),
+        });
+
+        if (res && res.ok) {
+            ['ng-name', 'ng-slug', 'ng-desc'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('newGalleryPanel').classList.remove('open');
+            await loadGalleries();
+        } else {
+            const err = res ? await res.json().catch(() => ({})) : {};
+            showMsg('newGalleryMsg', err.detail || 'Create failed.', 'error');
+        }
+    });
+
+    // ---- upload tab ----
+    document.querySelectorAll('input[name="uType"]').forEach(r => r.addEventListener('change', () => {
+        const isPhoto = r.value === 'photo' && r.checked;
+        document.getElementById('photoFields').style.display = isPhoto ? '' : 'none';
+        document.getElementById('videoFields').style.display = isPhoto ? 'none' : '';
+        document.getElementById('uFileInput').accept = isPhoto ? 'image/*' : 'video/*';
+        document.getElementById('uFileInput').multiple = isPhoto;
+        uploadFiles = [];
+        renderUploadFileList();
+    }));
+
+    document.querySelectorAll('input[name="gallMode"]').forEach(r => r.addEventListener('change', () => {
+        const isExisting = r.value === 'existing' && r.checked;
+        document.getElementById('existingField').style.display = isExisting ? '' : 'none';
+        document.getElementById('newInlineFields').style.display = isExisting ? 'none' : '';
+    }));
+
+    document.getElementById('ui-name').addEventListener('input', e => {
+        document.getElementById('ui-slug').value = slugify(e.target.value);
+    });
+    document.getElementById('v-title').addEventListener('input', e => {
+        document.getElementById('v-slug').value = slugify(e.target.value);
+    });
+
+    const uDZ = document.getElementById('uDropZone');
+    const uFI = document.getElementById('uFileInput');
+    uDZ.addEventListener('click', () => uFI.click());
+    uFI.addEventListener('change', e => { uploadFiles = [...e.target.files]; renderUploadFileList(); });
+    uDZ.addEventListener('dragover', e => { e.preventDefault(); uDZ.classList.add('drag-over'); });
+    uDZ.addEventListener('dragleave', () => uDZ.classList.remove('drag-over'));
+    uDZ.addEventListener('drop', e => {
+        e.preventDefault();
+        uDZ.classList.remove('drag-over');
+        uploadFiles = [...e.dataTransfer.files];
+        renderUploadFileList();
+    });
+
+    function renderUploadFileList() {
+        document.getElementById('uFileList').innerHTML = uploadFiles.map((f, i) => `
+            <div class="file-list-item">
+                <span>${escH(f.name)} <span style="color:var(--muted);">(${fmtBytes(f.size)})</span></span>
+                <button class="btn btn-danger btn-sm" onclick="uploadFiles.splice(${i},1);renderUploadFileList();">&#215;</button>
+            </div>
+        `).join('');
+    }
+
+    function populateUploadSelect() {
+        const sel = document.getElementById('uGallerySelect');
+        sel.innerHTML = '<option value="">Select gallery...</option>';
+        galleries.forEach(g => {
+            const o = document.createElement('option');
+            o.value = g.id;
+            o.textContent = `${g.name} (${g.photo_count || 0})`;
+            sel.appendChild(o);
+        });
+    }
+
+    document.getElementById('uSubmitBtn').addEventListener('click', async () => {
+        const isPhoto = document.querySelector('input[name="uType"]:checked').value === 'photo';
+        if (isPhoto) await submitPhotoUpload();
+        else await submitVideoUpload();
+    });
+
+    async function submitPhotoUpload() {
+        if (!uploadFiles.length) { showMsg('uMsg', 'Select files first.', 'error'); return; }
+
+        const mode = document.querySelector('input[name="gallMode"]:checked').value;
+        let galleryId;
+
+        if (mode === 'existing') {
+            galleryId = document.getElementById('uGallerySelect').value;
+            if (!galleryId) { showMsg('uMsg', 'Select a gallery.', 'error'); return; }
+        } else {
+            const name = document.getElementById('ui-name').value.trim();
+            const slug = document.getElementById('ui-slug').value.trim();
+            const desc = document.getElementById('ui-desc').value.trim();
+            if (!name || !slug) { showMsg('uMsg', 'Name and slug required.', 'error'); return; }
+
+            const res = await aFetch(`${API}/galleries`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, slug, description: desc || null, is_public: true }),
+            });
+            if (!res || !res.ok) {
+                const err = res ? await res.json().catch(() => ({})) : {};
+                showMsg('uMsg', err.detail || 'Failed to create gallery.', 'error');
+                return;
+            }
+            galleryId = (await res.json()).id;
+            await loadGalleries();
+        }
+
+        const wrap = document.getElementById('uProgressWrap');
+        const fill = document.getElementById('uProgressFill');
+        const btn = document.getElementById('uSubmitBtn');
+        wrap.style.display = 'block';
+        btn.disabled = true;
+
+        let done = 0;
+        for (const f of uploadFiles) {
+            const fd = new FormData();
+            fd.append('file', f);
+            await aFetch(`${API}/galleries/${galleryId}/photos`, { method: 'POST', body: fd });
+            done++;
+            fill.style.width = `${Math.round((done / uploadFiles.length) * 100)}%`;
+        }
+
+        wrap.style.display = 'none';
+        fill.style.width = '0%';
+        btn.disabled = false;
+        uploadFiles = [];
+        renderUploadFileList();
+        showMsg('uMsg', `Uploaded ${done} photo${done !== 1 ? 's' : ''}.`, 'success');
+        await loadGalleries();
+    }
+
+    async function submitVideoUpload() {
+        if (!uploadFiles.length) { showMsg('uMsg', 'Select a video file.', 'error'); return; }
+        const title = document.getElementById('v-title').value.trim();
+        const slug = document.getElementById('v-slug').value.trim();
+        const desc = document.getElementById('v-desc').value.trim();
+        if (!title || !slug) { showMsg('uMsg', 'Title and slug required.', 'error'); return; }
+
+        const btn = document.getElementById('uSubmitBtn');
+        btn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('file', uploadFiles[0]);
+        fd.append('title', title);
+        fd.append('slug', slug);
+        if (desc) fd.append('description', desc);
+
+        const res = await aFetch(`${API}/videos`, { method: 'POST', body: fd });
+        btn.disabled = false;
+
+        if (res && res.ok) {
+            uploadFiles = [];
+            renderUploadFileList();
+            ['v-title', 'v-slug', 'v-desc'].forEach(id => document.getElementById(id).value = '');
+            showMsg('uMsg', 'Video uploaded.', 'success');
+        } else {
+            const err = res ? await res.json().catch(() => ({})) : {};
+            showMsg('uMsg', err.detail || 'Video upload failed.', 'error');
+        }
+    }
+
+    // ---- helpers ----
+    async function aFetch(url, opts = {}) {
+        try {
+            const res = await fetch(url, {
+                ...opts,
+                headers: { ...opts.headers, Authorization: `Bearer ${token}` },
+            });
+            if (res.status === 401) { token = null; localStorage.removeItem('adminToken'); showLogin(); return null; }
+            return res;
+        } catch (e) {
+            console.error('fetch failed:', e);
+            return null;
+        }
+    }
+
+    function patch(body) {
+        return { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+    }
+
+    function showMsg(id, text, type) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text;
+        el.className = `msg ${type}`;
+        setTimeout(() => { el.className = 'msg'; el.textContent = ''; }, 4000);
+    }
+
+    function clearMsg(id) {
+        const el = document.getElementById(id);
+        if (el) { el.className = 'msg'; el.textContent = ''; }
+    }
+
+    function slugify(s) {
+        return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+
+    function escH(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escA(s) {
+        return String(s || '').replace(/"/g, '&quot;');
+    }
+
+    function fmtBytes(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+        return (b / 1048576).toFixed(1) + ' MB';
+    }
+</script>
+</body>
+</html>

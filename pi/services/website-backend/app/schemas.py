@@ -119,6 +119,7 @@ class GalleryUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=5000)
     slug: Optional[str] = Field(None, min_length=1, max_length=200)
     is_public: Optional[bool] = None
+    display_order: Optional[int] = None
 
 
 class GalleryPhotoBase(BaseModel):
@@ -159,6 +160,7 @@ class GalleryPhotoRead(GalleryPhotoBase):
 class GalleryRead(GalleryBase):
     """Gallery data returned in API responses."""
     id: int
+    display_order: int = 0
     created_at: datetime
     updated_at: Optional[datetime] = None
     photo_count: Optional[int] = Field(None, description="Number of photos in gallery")

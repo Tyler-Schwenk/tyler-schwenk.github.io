@@ -35,7 +35,7 @@ interface ApiVideo {
 }
 
 // slugs that belong under the People section; everything else is Trips
-const PEOPLE_SLUGS = new Set(["friends", "college", "palestinepals", "family"]);
+const PEOPLE_SLUGS = new Set(["friends", "college", "palestinepals", "family", "bikenite"]);
 
 // external-link-only entries — not stored on the Pi so they live in code
 interface ExternalEntry {
@@ -46,30 +46,10 @@ interface ExternalEntry {
   externalLinkText?: string;
 }
 
-const EXTERNAL_TRIPS: ExternalEntry[] = [
-  {
-    slug: "elcap",
-    title: "El Cap",
-    description: "Via triple direct.\nMay 10-16, 2025",
-    externalUrl: "https://vish.ventures/triple-direct",
-  },
-  {
-    slug: "halfdome",
-    title: "Half Dome",
-    description: "Via Regular Northwest Face\nMay 2024",
-    externalUrl: "https://vish.ventures/yosemite-05-24/rnwf",
-  },
-];
+// external-link-only trips with no photos on the Pi
+const EXTERNAL_TRIPS: ExternalEntry[] = [];
 
-const EXTERNAL_PEOPLE: ExternalEntry[] = [
-  {
-    slug: "bikenite",
-    title: "Bike Nite",
-    description: "",
-    externalUrl: "https://www.instagram.com/bikenitesd/",
-    externalLinkText: "ok this is on instagram",
-  },
-];
+const EXTERNAL_PEOPLE: ExternalEntry[] = [];
 
 type GalleryEntry = {
   title: string;
@@ -82,28 +62,6 @@ type GalleryEntry = {
 
 const FALLBACK_TRIP_COVER = "/images/bikes/black-bike.jpg";
 const FALLBACK_PEOPLE_COVER = "/images/pic00.jpeg";
-
-type WhyNotInstagramReason = {
-  title?: string;
-  description?: string;
-  linkUrl?: string;
-  linkText?: string;
-  imageSrc?: string;
-};
-
-const WHY_NOT_INSTAGRAM_REASONS: WhyNotInstagramReason[] = [
-  {
-    description: "I mean we all intuitively know this stuff is bad for us. But heres some concrete examples",
-    },
-  {
-    title: "Intentional manipulation",
-    description: "Social media platforms have the capability, and motivation, to take control of our political system.",
-    linkUrl: "https://research.facebook.com/publications/a-61-million-person-experiment-in-social-influence-and-political-mobilization/",
-    linkText: "From Facebook - A 61 Million Person Experiment in Social Influence and Political Mobilization",
-    imageSrc: "/images/gallery/reasons/trump_mark.webp"
-  }
-  
-];
 
 // --- API helpers ---
 
@@ -248,76 +206,6 @@ export default async function GalleryPage() {
     <PageWrapper>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-6 py-20">
-        {/* Why Not Instagram Section */}
-        <section className="mb-16 max-w-3xl mx-auto">
-          <details className="group bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 shadow-xl">
-            <summary className="cursor-pointer px-6 py-4 text-lg font-semibold text-white hover:text-orange-400 transition-colors list-none flex items-center justify-between">
-              <span>Why not just use Instagram?</span>
-              <span className="text-orange-500 group-open:rotate-180 transition-transform">▼</span>
-            </summary>
-            <div className="px-6 pb-6 pt-2 space-y-6 text-slate-300">
-              {WHY_NOT_INSTAGRAM_REASONS.map((reason, index) => (
-                <div key={index} className="space-y-3">
-                  {reason.imageSrc ? (
-                    <div className="flex flex-col md:flex-row gap-4 md:items-start">
-                      <div className="flex-shrink-0">
-                        <Image
-                          src={reason.imageSrc}
-                          alt={reason.title || "Reason image"}
-                          width={200}
-                          height={150}
-                          className="rounded-lg border border-slate-600 w-full md:w-auto"
-                        />
-                      </div>
-                      <div className="flex-1 space-y-3">
-                        {(reason.title || reason.description) && (
-                          <p className="leading-relaxed">
-                            {reason.title && <strong className="text-white">{reason.title}:</strong>}
-                            {reason.title && reason.description && " "}
-                            {reason.description}
-                          </p>
-                        )}
-                        {reason.linkUrl && (
-                          <a
-                            href={reason.linkUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 underline"
-                          >
-                            {reason.linkText || reason.linkUrl}
-                            <span>→</span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {(reason.title || reason.description) && (
-                        <p className="leading-relaxed">
-                          {reason.title && <strong className="text-white">{reason.title}:</strong>}
-                          {reason.title && reason.description && " "}
-                          {reason.description}
-                        </p>
-                      )}
-                      {reason.linkUrl && (
-                        <a
-                          href={reason.linkUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 underline"
-                        >
-                          {reason.linkText || reason.linkUrl}
-                          <span>→</span>
-                        </a>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </details>
-        </section>
-
         {/* Friends' Websites */}
         <section className="mb-16 text-center">
           <p className="text-xl text-gray-300 mb-6">

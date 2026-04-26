@@ -99,6 +99,7 @@ class Gallery(Base):
         description: Gallery description
         slug: URL-friendly identifier
         is_public: Whether gallery is visible to public
+        display_order: Sort order — higher values shown first; new galleries auto-get max+10
         created_at: Timestamp of creation
         updated_at: Timestamp of last update
     """
@@ -109,6 +110,7 @@ class Gallery(Base):
     description = Column(Text, nullable=True)
     slug = Column(String(200), unique=True, nullable=False, index=True)
     is_public = Column(Boolean, default=True, nullable=False)
+    display_order = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
