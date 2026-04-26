@@ -89,7 +89,15 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
                 {gallery.title}
               </h3>
               <p className="text-slate-400 mb-2 whitespace-pre-line">{gallery.description}</p>
-              <p className="text-orange-500 text-sm">{gallery.media.length} items</p>
+              <p className="text-orange-500 text-sm">
+                {gallery.media.length === 0
+                  ? null
+                  : gallery.media.every((item) => item.type === "video")
+                  ? gallery.media.length === 1
+                    ? "video"
+                    : `${gallery.media.length} videos`
+                  : `${gallery.media.length} photos`}
+              </p>
             </div>
           </button>
         ))}

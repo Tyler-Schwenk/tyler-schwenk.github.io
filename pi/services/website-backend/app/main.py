@@ -15,6 +15,7 @@ from datetime import datetime
 from app.config import settings
 from app.database import init_db
 from app.schemas import HealthCheck
+from app.routers import gallery, videos, auth
 
 
 # Rate limiter instance
@@ -90,14 +91,6 @@ async def root():
 
 
 # Include routers
-from app.routers import gallery, videos
-
+app.include_router(auth.router)
 app.include_router(gallery.router)
 app.include_router(videos.router)
-
-
-# TODO: Include additional routers for auth, posts, and comments
-# from app.routers import auth, posts, comments
-# app.include_router(auth.router)
-# app.include_router(posts.router)
-# app.include_router(comments.router)

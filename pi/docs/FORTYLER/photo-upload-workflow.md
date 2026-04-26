@@ -1,63 +1,36 @@
 ﻿# Photo Upload Workflow
 
-After a trip, add photos to your website gallery.
+After a trip, add photos to your website gallery from your phone or laptop.
 
 ## Quick Steps
 
-### 1. Copy Photos to Pi
+1. Open `https://tyler-schwenk.com/admin/upload.html` on your phone or browser
+2. Login with your credentials (stays logged in for 30 days)
+3. Select **Photos**, choose **New Gallery** or an existing one
+4. Fill in gallery name, slug, and description if creating a new one
+5. Drag or select your photos and hit Upload
+6. Redeploy the site (push to `main`) — the gallery auto-appears on the website
 
-From your laptop:
-```bash
-# Create folder for trip
-ssh tyler@192.168.1.116 "mkdir -p /media/tyler/FE645A9A645A558D/public-gallery/trip-name"
+No SSH, no scripts, no config changes needed.
 
-# Copy photos
-scp -r "C:\path\to\photos\*" tyler@192.168.1.116:/media/tyler/FE645A9A645A558D/public-gallery/trip-name/
-```
+## Gallery Name and Description
 
-### 2. Register in Database
+Whatever you type in the upload UI is what shows on the website. The frontend pulls name and description directly from the API, so there's no hardcoded config to update.
 
-On Pi:
-```bash
-ssh tyler@192.168.1.116
-cd ~/tyler-schwenk.github.io/pi/services/website-backend
-docker exec website-backend-api python scripts/migrate_photos.py
-```
-
-Done! Photos are now accessible via API with automatic thumbnails.
-
-## Customize Gallery Metadata
-
-Before running migration script, edit gallery titles/descriptions:
-
-```bash
-nano ~/tyler-schwenk.github.io/pi/services/website-backend/scripts/migrate_photos.py
-```
-
-Find `GALLERY_CONFIG` and add your trip:
-```python
-"trip-name": {
-    "title": "Display Name",
-    "description": "Trip description"
-}
-```
+The URL slug should be lowercase with hyphens (e.g., `iceland-trip-2026`). It auto-generates from the name.
 
 ## Verify Upload
 
 ```bash
-# List galleries
-curl http://localhost:8000/galleries
+# List galleries (from Pi or via API)
+curl https://api.tyler-schwenk.com/galleries
 
-# Get specific gallery
-curl http://localhost:8000/galleries/slug/trip-name
-
-# Test thumbnail
-curl http://localhost:8000/galleries/photos/PHOTO_ID/file?thumbnail=true --output test.jpg
+# Get specific gallery with photos
+curl https://api.tyler-schwenk.com/galleries/slug/trip-name
 ```
 
 ## Notes
 
-- Script skips already-migrated galleries
-- Thumbnails auto-generated (400x400px)
+- Thumbnails are auto-generated (400x400px)
 - Original photos preserved
-- Can re-run migration script safely
+- Gallery is public by default — uncheck if you want to hide it temporarily

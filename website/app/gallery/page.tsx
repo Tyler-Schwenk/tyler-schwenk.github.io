@@ -1,119 +1,87 @@
 import Image from "next/image";
-import { readdirSync } from "fs";
-import { join } from "path";
 import GalleryModal from "@/components/GalleryModal";
 import PageWrapper from "@/components/PageWrapper";
 
-// Helper function to get all images from a folder
-function getImagesFromFolder(folderPath: string, altText: string) {
-  const fullPath = join(process.cwd(), "public", folderPath);
-  try {
-    const files = readdirSync(fullPath);
-    return files
-      .filter(file => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
-      .map(file => ({
-        src: `${folderPath}/${file}`,
-        alt: altText
-      }));
-  } catch (error) {
-    console.error(`Error reading directory ${folderPath}:`, error);
-    return [];
-  }
+const API_BASE = "https://api.tyler-schwenk.com";
+
+// --- API types ---
+
+interface ApiPhoto {
+  id: number;
+  display_order: number;
 }
 
-// Trip galleries configuration
-const tripConfig: Record<string, {
+// returned by GET /galleries (list)
+interface ApiGallery {
+  id: number;
+  name: string;
+  description: string | null;
+  slug: string;
+  photo_count: number | null;
+}
+
+// returned by GET /galleries/slug/{slug} (detail with photos)
+interface ApiGalleryDetail {
+  name: string;
+  description: string | null;
+  photos: ApiPhoto[];
+}
+
+interface ApiVideo {
+  id: number;
+  title: string;
+  description: string | null;
+  slug: string;
+}
+
+// slugs that belong under the People section; everything else is Trips
+const PEOPLE_SLUGS = new Set(["friends", "college", "palestinepals", "family"]);
+
+// external-link-only entries — not stored on the Pi so they live in code
+interface ExternalEntry {
+  slug: string;
   title: string;
   description: string;
-  folderPath: string;
-  coverImage?: string;
-  videoPaths?: string[];
-  externalUrl?: string;
-}> = {
-  instinct: {
-    title: "Portland, OR",
-    description: "Full grind mode at the Instinct headquarters assembling the new ASU 3's for launch. March 2026",
-    folderPath: "/images/gallery/Instinct"
-  },
-  jordan: {
-    title: "Jordan",
-    description: "Lovely time in Jordan. February 2026",
-    folderPath: "/images/gallery/jordan",
-    videoPaths: ["/video/jordan.mp4"]
-  },
-  epc: {
-    title: "El Potrero Chico",
-    description: "From a few trips across multiple years\n2023, 2024, 2025",
-    folderPath: "/images/gallery/epc"
-  },
-  durango: {
-    title: "Durango",
-    description: "Visiting Jeff for 2 nights of backpacking after he finished the Colorado Trail.\nSept 5-8, 2025",
-    folderPath: "/images/gallery/durango",
-    coverImage: "/images/gallery/durango/IMG_9655.jpg"
-  },
-  ceciliawedding: {
-    title: "Cecilia's Wedding",
-    description: "Friends stayed with my family in phl, then went to the wedding at Cecilia's family farm, and finished with some NYC nightlife",
-    folderPath: "/images/gallery/Celciliawedding"
-  },
-  elcap: {
+  externalUrl: string;
+  externalLinkText?: string;
+}
+
+const EXTERNAL_TRIPS: ExternalEntry[] = [
+  {
+    slug: "elcap",
     title: "El Cap",
     description: "Via triple direct.\nMay 10-16, 2025",
-    folderPath: "/images/gallery/elcap",
-    externalUrl: "https://vish.ventures/triple-direct"
+    externalUrl: "https://vish.ventures/triple-direct",
   },
-  halfdome: {
+  {
+    slug: "halfdome",
     title: "Half Dome",
     description: "Via Regular Northwest Face\nMay 2024",
-    folderPath: "/images/gallery/halfdome",
-    externalUrl: "https://vish.ventures/yosemite-05-24/rnwf"
+    externalUrl: "https://vish.ventures/yosemite-05-24/rnwf",
   },
-  enchantments: {
-    title: "The Enchantments",
-    description: "Backpacking & Aasgard Sentinel\nJuly 2021",
-    folderPath: "/images/gallery/enchantments"
-  },
-  
-};
+];
 
-// People galleries configuration
-const peopleConfig: Record<string, {
-  title: string;
-  description: string;
-  folderPath: string;
-  coverImage?: string;
-  externalUrl?: string;
-  externalLinkText?: string;
-}> = {
-  friends: {
-    title: "Friends",
-    description: "",
-    folderPath: "/images/gallery/friends"
-  },
-  college: {
-    title: "College",
-    description: "Trash house",
-    folderPath: "/images/gallery/college"
-  },
-  palestinepals: {
-    title: "Palestine Pals",
-    description: "Free Palestine",
-    folderPath: "/images/gallery/palestinepals"
-  },
-  family: {
-    title: "Family",
-    description: "and Funtown",
-    folderPath: "/images/gallery/family"
-  },
-  bikenite: {
+const EXTERNAL_PEOPLE: ExternalEntry[] = [
+  {
+    slug: "bikenite",
     title: "Bike Nite",
     description: "",
-    folderPath: "/images/gallery/bikenite",
     externalUrl: "https://www.instagram.com/bikenitesd/",
-    externalLinkText: "ok this is on instagram"
-  }
+    externalLinkText: "ok this is on instagram",
+  },
+];
+
+type GalleryEntry = {
+  title: string;
+  description: string;
+  coverImage: string;
+  media: Array<{ src: string; alt: string; type: "image" | "video" }>;
+  externalUrl?: string;
+  externalLinkText?: string;
 };
+
+const FALLBACK_TRIP_COVER = "/images/bikes/black-bike.jpg";
+const FALLBACK_PEOPLE_COVER = "/images/pic00.jpeg";
 
 type WhyNotInstagramReason = {
   title?: string;
@@ -137,43 +105,144 @@ const WHY_NOT_INSTAGRAM_REASONS: WhyNotInstagramReason[] = [
   
 ];
 
-export default function GalleryPage() {
-  // Load trip photos dynamically from folders
-  const tripGalleries = Object.entries(tripConfig).reduce((acc, [key, config]) => {
-    const photos = getImagesFromFolder(config.folderPath, config.title);
-    const videos = (config.videoPaths || []).map((videoPath) => ({
-      src: videoPath,
-      alt: `${config.title} video`,
-      type: "video" as const
-    }));
-    const media = [
-      ...videos,
-      ...photos.map((photo) => ({ ...photo, type: "image" as const }))
-    ];
-    acc[key] = {
-      title: config.title,
-      description: config.description,
-      coverImage: config.coverImage || photos[0]?.src || "/images/bikes/black-bike.jpg",
-      media,
-      externalUrl: config.externalUrl
-    };
-    return acc;
-  }, {} as Record<string, { title: string; description: string; coverImage: string; media: Array<{ src: string; alt: string; type: "image" | "video" }>; externalUrl?: string }>);
+// --- API helpers ---
 
-  // Load people photos dynamically from folders
-  const peopleGalleries = Object.entries(peopleConfig).reduce((acc, [key, config]) => {
-    const photos = getImagesFromFolder(config.folderPath, config.title);
-    const media = photos.map((photo) => ({ ...photo, type: "image" as const }));
-    acc[key] = {
-      title: config.title,
-      description: config.description,
-      coverImage: config.coverImage || photos[0]?.src || "/images/pic00.jpeg",
-      media,
-      externalUrl: config.externalUrl,
-      externalLinkText: config.externalLinkText
-    };
-    return acc;
-  }, {} as Record<string, { title: string; description: string; coverImage: string; media: Array<{ src: string; alt: string; type: "image" | "video" }>; externalUrl?: string; externalLinkText?: string }>);
+/**
+ * Fetches metadata for all public galleries from the Pi API.
+ * Returns empty array if the API is unreachable.
+ */
+async function fetchAllGalleries(): Promise<ApiGallery[]> {
+  try {
+    const res = await fetch(`${API_BASE}/galleries`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    console.warn("could not fetch galleries from API");
+    return [];
+  }
+}
+
+/**
+ * Fetches a gallery and its photos by slug from the Pi API.
+ * Returns null if the gallery doesn't exist or the API is unreachable.
+ */
+async function fetchGalleryBySlug(slug: string): Promise<ApiGalleryDetail | null> {
+  try {
+    const res = await fetch(`${API_BASE}/galleries/slug/${slug}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    console.warn(`could not fetch gallery "${slug}" from API — leaving it empty`);
+    return null;
+  }
+}
+
+/**
+ * Fetches all public videos from the Pi API.
+ * Returns empty array if the API is unreachable.
+ */
+async function fetchAllVideos(): Promise<ApiVideo[]> {
+  try {
+    const res = await fetch(`${API_BASE}/videos`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    console.warn("could not fetch videos from API — skipping video section");
+    return [];
+  }
+}
+
+/**
+ * Returns the URL for a gallery photo file.
+ * @param photoId - Photo ID from the API
+ * @param thumbnail - If true, returns the 400x400 thumbnail instead of full resolution
+ */
+function photoUrl(photoId: number, thumbnail = false): string {
+  const params = thumbnail ? "?thumbnail=true" : "";
+  return `${API_BASE}/galleries/photos/${photoId}/file${params}`;
+}
+
+/** Returns the streaming URL for a video. */
+function videoStreamUrl(videoId: number): string {
+  return `${API_BASE}/videos/${videoId}/stream`;
+}
+
+/** Returns the thumbnail image URL for a video. */
+function videoThumbnailUrl(videoId: number): string {
+  return `${API_BASE}/videos/${videoId}/thumbnail`;
+}
+
+/**
+ * Builds a GalleryEntry for a Pi-hosted gallery by fetching its photos.
+ * Name and description come from the API — no hardcoding needed.
+ */
+async function buildApiGalleryEntry(
+  gallery: ApiGallery,
+  fallbackCover: string
+): Promise<GalleryEntry> {
+  const detail = await fetchGalleryBySlug(gallery.slug);
+  const photos = detail?.photos ?? [];
+  const media = photos.map((photo) => ({
+    src: photoUrl(photo.id),
+    alt: gallery.name,
+    type: "image" as const,
+  }));
+  return {
+    title: gallery.name,
+    description: gallery.description ?? "",
+    coverImage: photos.length > 0 ? photoUrl(photos[0].id, true) : fallbackCover,
+    media,
+  };
+}
+
+/**
+ * Builds a GalleryEntry for an external-link-only gallery (no photos on the Pi).
+ */
+function buildExternalEntry(entry: ExternalEntry, fallbackCover: string): GalleryEntry {
+  return {
+    title: entry.title,
+    description: entry.description,
+    coverImage: fallbackCover,
+    media: [],
+    externalUrl: entry.externalUrl,
+    externalLinkText: entry.externalLinkText,
+  };
+}
+
+export default async function GalleryPage() {
+  const [allGalleries, videos] = await Promise.all([fetchAllGalleries(), fetchAllVideos()]);
+
+  const tripApiGalleries = allGalleries.filter((g) => !PEOPLE_SLUGS.has(g.slug));
+  const peopleApiGalleries = allGalleries.filter((g) => PEOPLE_SLUGS.has(g.slug));
+
+  const [tripApiEntries, peopleApiEntries] = await Promise.all([
+    Promise.all(tripApiGalleries.map((g) => buildApiGalleryEntry(g, FALLBACK_TRIP_COVER))),
+    Promise.all(peopleApiGalleries.map((g) => buildApiGalleryEntry(g, FALLBACK_PEOPLE_COVER))),
+  ]);
+
+  // Pi galleries come first (API order), external-link entries appended at the end
+  const tripGalleries: Record<string, GalleryEntry> = Object.fromEntries([
+    ...tripApiGalleries.map((g, i) => [g.slug, tripApiEntries[i]]),
+    ...EXTERNAL_TRIPS.map((e) => [e.slug, buildExternalEntry(e, FALLBACK_TRIP_COVER)]),
+  ]);
+
+  const peopleGalleries: Record<string, GalleryEntry> = Object.fromEntries([
+    ...peopleApiGalleries.map((g, i) => [g.slug, peopleApiEntries[i]]),
+    ...EXTERNAL_PEOPLE.map((e) => [e.slug, buildExternalEntry(e, FALLBACK_PEOPLE_COVER)]),
+  ]);
+
+  // each video on the Pi becomes its own gallery card
+  const videoGalleries: Record<string, GalleryEntry> = Object.fromEntries(
+    videos.map((video) => [
+      video.slug,
+      {
+        title: video.title,
+        description: video.description ?? "",
+        coverImage: videoThumbnailUrl(video.id),
+        media: [{ src: videoStreamUrl(video.id), alt: video.title, type: "video" as const }],
+      },
+    ])
+  );
 
   return (
     <PageWrapper>
@@ -300,7 +369,7 @@ export default function GalleryPage() {
         </section>
 
         {/* People Section */}
-        <section className="space-y-12">
+        <section className="mb-20 space-y-12">
           <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
             <span className="text-orange-500 mr-3"></span>
             People
@@ -308,6 +377,17 @@ export default function GalleryPage() {
           
           <GalleryModal galleries={peopleGalleries} />
         </section>
+
+        {/* Videos Section — only shown if videos exist on the Pi */}
+        {Object.keys(videoGalleries).length > 0 && (
+          <section className="space-y-12">
+            <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
+              <span className="text-orange-500 mr-3"></span>
+              Videos
+            </h2>
+            <GalleryModal galleries={videoGalleries} />
+          </section>
+        )}
       </div>
     </div>
     </PageWrapper>

@@ -47,7 +47,14 @@ Each service in the `services/` directory contains:
 To deploy a service:
 
 1. SSH into fart-pi: `ssh tyler@100.124.76.27`
-2. Clone the monorepo if not already present: `git clone https://github.com/Tyler-Schwenk/tyler-schwenk.github.io.git ~/tyler-schwenk.github.io`
+2. Clone with sparse checkout if not already present (only downloads `pi/`, not the full frontend):
+   ```bash
+   git clone --filter=blob:none --no-checkout https://github.com/Tyler-Schwenk/tyler-schwenk.github.io.git ~/tyler-schwenk.github.io
+   cd ~/tyler-schwenk.github.io
+   git sparse-checkout init --cone
+   git sparse-checkout set pi
+   git checkout main
+   ```
 3. Pull latest changes: `cd ~/tyler-schwenk.github.io && git pull`
 4. Navigate to the service directory
 5. Run docker compose

@@ -39,17 +39,17 @@ All code must comply with the following rules without exception:
 3. No magic numbers.
    - All constants must be named and centralized
 4. No emojis anywhere in code, logs, comments, or documentation.
-6. Reuse existing code whenever possible.
+5. Reuse existing code whenever possible.
    - Reduce duplication
    - Fewer lines are acceptable only if clarity and maintainability are preserved
-7. Optimize for long-term maintainability and readability.
-8. Do not document change history or current changes and issues.
+6. Optimize for long-term maintainability and readability.
+7. Do not document change history or current changes and issues.
    - Only document how the system works today
    - Focus on data formats, schemas, APIs, and behavior
-9. When modifying a file:
+8. When modifying a file:
    - You must read the entire file
    - Ensure no compile, runtime, or logical errors are introduced
-10. All functions and classes must have docstrings.
+9. All functions and classes must have docstrings.
     - Follow PEP 257 conventions
     - Google or NumPy style is acceptable
     - Docstrings must describe:
@@ -57,6 +57,24 @@ All code must comply with the following rules without exception:
       - Inputs
       - Outputs
       - Side effects (if any)
+10. Comments explain WHY, not WHAT. code should be self-explanatory — only comment when it adds real value.
+11. Comments and docstrings use casual, conversational style:
+    - lowercase preferred except for proper nouns and acronyms
+    - brief and direct, no fluff
+    - use contractions (dont, youre, its, etc.)
+    - talk like youre explaining to a teammate
+    - a little humor is fine
+12. Constants with units get unit suffixes — `_s`, `_ms`, `_m`, `_px`, etc.
+13. All imports at the top of the file unless there is a very specific reason otherwise (rare).
+14. Error messages must explain what failed, why, and what to do next. vague errors are useless.
+15. Code must be deterministic and reproducible — no implicit global state, user shell config, or interactive input unless explicitly stated.
+16. Code must be idempotent when applicable (especially scripts, provisioning, and migrations).
+17. If you add code and it doesnt work, remove it before trying other solutions. no dead code.
+18. Avoid clever or non-obvious constructs if a simpler explicit solution exists.
+19. Simple when possible, but no simpler. function if a function works, class only if needed.
+20. When creating a function that could be reused, consider a shared utility or base abstraction instead of duplicating logic.
+21. Code changes should be small and logically complete. avoid changes that require mental reconstruction across many files unless necessary.
+22. Never commit or push to git unless the user explicitly asks. make the code changes and stop — no `git add`, no `git commit`, no `git push`. all git operations are the users call.
 
 ## JSDoc Standards
 

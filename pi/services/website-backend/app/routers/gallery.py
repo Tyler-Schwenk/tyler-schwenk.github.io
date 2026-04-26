@@ -16,6 +16,7 @@ from PIL import Image
 import io
 
 from app.database import get_db
+from app.dependencies import require_admin
 from app.models import Gallery, GalleryPhoto
 from app.schemas import (
     GalleryCreate, GalleryUpdate, GalleryRead, GalleryWithPhotos,
@@ -154,7 +155,11 @@ async def get_gallery_by_slug(slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=GalleryRead, status_code=status.HTTP_201_CREATED)
-async def create_gallery(gallery: GalleryCreate, db: Session = Depends(get_db)):
+async def create_gallery(
+    gallery: GalleryCreate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     """
     Create a new gallery.
     
@@ -182,7 +187,8 @@ async def create_gallery(gallery: GalleryCreate, db: Session = Depends(get_db)):
 async def update_gallery(
     gallery_id: int,
     gallery_update: GalleryUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     """
     Update a gallery.
@@ -216,7 +222,11 @@ async def update_gallery(
 
 
 @router.delete("/{gallery_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_gallery(gallery_id: int, db: Session = Depends(get_db)):
+async def delete_gallery(
+    gallery_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     """
     Delete a gallery and all its photos.
     
@@ -250,7 +260,8 @@ async def upload_photo(
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     display_order: int = Form(0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     """
     Upload a photo to a gallery.
@@ -405,7 +416,8 @@ async def get_photo_file(photo_id: int, thumbnail: bool = False, db: Session = D
 async def update_photo(
     photo_id: int,
     photo_update: GalleryPhotoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     """
     Update photo metadata.
@@ -433,7 +445,11 @@ async def update_photo(
 
 
 @router.delete("/photos/{photo_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_photo(photo_id: int, db: Session = Depends(get_db)):
+async def delete_photo(
+    photo_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     """
     Delete a photo.
     

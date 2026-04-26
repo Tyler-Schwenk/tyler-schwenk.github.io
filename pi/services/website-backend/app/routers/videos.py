@@ -15,6 +15,7 @@ import subprocess
 import json
 
 from app.database import get_db
+from app.dependencies import require_admin
 from app.models import Video
 from app.schemas import VideoCreate, VideoUpdate, VideoRead
 from app.config import settings
@@ -186,7 +187,8 @@ async def upload_video(
     slug: str = Form(...),
     description: Optional[str] = Form(None),
     is_public: bool = Form(True),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     """
     Upload a new video file.
@@ -253,7 +255,8 @@ async def upload_video(
 async def update_video(
     video_id: int,
     video_update: VideoUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
 ):
     """
     Update video metadata.
@@ -287,7 +290,11 @@ async def update_video(
 
 
 @router.delete("/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_video(video_id: int, db: Session = Depends(get_db)):
+async def delete_video(
+    video_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+):
     """
     Delete a video and its files.
     

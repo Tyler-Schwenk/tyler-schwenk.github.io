@@ -35,12 +35,19 @@ Configuration and code for **fart-pi** (Raspberry Pi 5 home server). Contains Do
 - Private access: `ssh tyler@100.124.76.27` (NetBird VPN)
 - Docs: `pi/docs/`
 
-To deploy or update services, SSH to fart-pi and pull this repo:
+To deploy or update services, SSH to fart-pi. On first setup, use sparse checkout so only `pi/` is downloaded (not the full frontend):
 
 ```bash
 ssh tyler@100.124.76.27
+# First-time setup (sparse checkout — only clones pi/, skips website/)
+git clone --filter=blob:none --no-checkout https://github.com/Tyler-Schwenk/tyler-schwenk.github.io.git ~/tyler-schwenk.github.io
 cd ~/tyler-schwenk.github.io
-git pull
+git sparse-checkout init --cone
+git sparse-checkout set pi
+git checkout main
+
+# Ongoing updates
+cd ~/tyler-schwenk.github.io && git pull
 cd pi/services/<service-name>
 docker compose up -d
 ```

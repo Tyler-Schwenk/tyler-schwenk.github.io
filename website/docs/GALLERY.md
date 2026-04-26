@@ -2,13 +2,227 @@
 
 ## Overview
 
-The Gallery feature displays photo and video collections organized into two main categories:
+The gallery displays photo and video collections organized into three categories:
 - **Trips**: Adventure-based photo galleries (climbing trips, travel, events)
 - **People**: Social photo collections (friends, family, college, causes)
+- **Videos**: Standalone video entries (one card per video)
+
+All media is served from the Pi backend at `https://api.tyler-schwenk.com`. Photos and videos are stored on the Pi's external drive and served via the FastAPI backend. The frontend fetches data at build time, so the site is fully static — changes to media on the Pi require a redeploy to show up.
 
 ## Architecture
 
+### Data Flow
+
+```
+next build
+  └── GalleryPage (async server component)
+        ├── fetch /galleries/slug/{slug} for each configured trip/people gallery
+        ├── fetch /videos for all public videos
+        └── builds gallery data objects → passes to GalleryModal
+```
+
 ### Routes
+
+- `/gallery` - Main gallery index page
+  - Component: [app/gallery/page.tsx](app/gallery/page.tsx)
+  - Async server component — fetches all gallery data at build time
+  - Displays Trips, People, and Videos sections
+
+- `/gallery/[trip]` - Individual trip gallery viewer
+  - Unused — trips use GalleryModal instead
+
+- `/gallery/people/[category]` - People gallery viewer
+  - Component: [app/gallery/people/[category]/page.tsx](app/gallery/people/[category]/page.tsx)
+  - Async server component — fetches photos from API at build time
+  - Client component: [app/gallery/people/[category]/PeopleGalleryClient.tsx](app/gallery/people/[category]/PeopleGalleryClient.tsx)
+
+### Components
+
+#### GalleryModal ([components/GalleryModal.tsx](components/GalleryModal.tsx))
+Client component that renders gallery cards and full-screen modal viewer.
+
+**Props:**
+```typescript
+{
+  galleries: Record<string, {
+    title: string;
+    description: string;
+    coverImage: string;
+    media: Array<{ src: string; alt: string; type: "image" | "video" }>;
+    externalUrl?: string;       // Redirects to external site instead of showing photos
+    externalLinkText?: string;  // Custom text for external link button
+  }>;
+}
+```
+
+**Features:**
+- Grid of gallery preview cards with hover effects
+- Full-screen modal viewer with navigation
+- Keyboard support (Escape to close)
+- Image preloading for smooth navigation
+- Video support with HTML5 player
+- External URL handling (displays link instead of photos)
+
+#### PeopleGalleryClient ([app/gallery/people/[category]/PeopleGalleryClient.tsx](app/gallery/people/[category]/PeopleGalleryClient.tsx))
+Client component for full-page people gallery viewer.
+
+**Props:**
+```typescript
+{
+  gallery: {
+    title: string;
+    description: string;
+    photos: Array<{ src: string; alt: string; caption?: string }>;
+  };
+}
+```
+
+**Features:**
+- Full-size image viewer with aspect ratio preservation
+- Navigation arrows for previous/next
+- Thumbnail strip with current image highlighting
+- Photo counter display
+- Empty state handling
+
+## Data Management
+
+### Media URLs
+
+All media is served from the Pi API:
+
+| Content | URL Pattern |
+|---|---|
+| Photo (full res) | `https://api.tyler-schwenk.com/galleries/photos/{id}/file` |
+| Photo (thumbnail) | `https://api.tyler-schwenk.com/galleries/photos/{id}/file?thumbnail=true` |
+| Video stream | `https://api.tyler-schwenk.com/videos/{id}/stream` |
+| Video thumbnail | `https://api.tyler-schwenk.com/videos/{id}/thumbnail` |
+
+Gallery cover images use the thumbnail of the first photo in the gallery.
+
+### Trip & People Gallery Data
+
+Galleries are fully dynamic — the frontend fetches all galleries from `GET /galleries` at build time and uses their `name` and `description` directly from the API. No hardcoded config is needed for Pi-hosted galleries.
+
+Categorization uses a `PEOPLE_SLUGS` set in [app/gallery/page.tsx](app/gallery/page.tsx):
+```typescript
+const PEOPLE_SLUGS = new Set(["friends", "college", "palestinepals", "family"]);
+```
+Galleries whose slug is in this set appear under People; all others appear under Trips.
+
+External-link-only entries (no photos on the Pi) stay hardcoded in `EXTERNAL_TRIPS` and `EXTERNAL_PEOPLE` and are appended at the end of each section:
+```typescript
+interface ExternalEntry {
+  slug: string;          // used as the card key
+  title: string;
+  description: string;
+  externalUrl: string;   // card opens this link instead of showing photos
+  externalLinkText?: string;
+}
+```
+
+### Video Galleries
+
+Videos are auto-fetched from `GET /videos` — no config needed. Every public video on the Pi automatically appears as a gallery card in the Videos section.
+
+### People Category Detail Pages
+
+Configured in [app/gallery/people/[category]/page.tsx](app/gallery/people/[category]/page.tsx) via `CATEGORY_CONFIG`:
+
+```typescript
+const CATEGORY_CONFIG = {
+  friends: { title: "Friends", description: "Memories with friends", slug: "friends" },
+  // ...
+};
+```
+
+`generateStaticParams()` returns keys from this config, so only listed categories get static pages.
+
+### "Why Not Instagram" Section
+
+Static content in `WHY_NOT_INSTAGRAM_REASONS` array in [app/gallery/page.tsx](app/gallery/page.tsx). Images in this section (e.g., `reasons/trump_mark.webp`) are static repo assets, not served from the Pi.
+
+## File Structure
+
+```
+app/gallery/
+├── page.tsx                           # Main gallery index (async server component)
+├── [trip]/page.tsx                    # Trip detail page (unused)
+└── people/[category]/
+    ├── page.tsx                       # People gallery (async server component)
+    └── PeopleGalleryClient.tsx        # People gallery client component
+
+components/
+└── GalleryModal.tsx                   # Modal viewer for trips, people, and videos
+
+public/images/gallery/
+└── reasons/                           # Static images for "Why not Instagram" section
+                                       # (other gallery folders kept as backup — not served to users)
+```
+
+## Adding New Galleries
+
+### Adding a Trip Gallery
+
+1. Upload photos via `tyler-schwenk.com/admin/upload.html` — set the gallery name, slug, and description there
+2. Redeploy the site (push to main → GitHub Actions builds + deploys)
+
+No code change needed. The gallery auto-appears under Trips because its slug wont be in `PEOPLE_SLUGS`.
+
+### Adding a People Gallery
+
+1. Upload photos (same as above)
+2. Add the gallery's slug to `PEOPLE_SLUGS` in [app/gallery/page.tsx](app/gallery/page.tsx)
+3. For a detail page at `/gallery/people/{category}`, also add to `CATEGORY_CONFIG` in [app/gallery/people/[category]/page.tsx](app/gallery/people/[category]/page.tsx)
+4. Redeploy
+
+### Adding an External-Link Gallery
+
+Add an entry to `EXTERNAL_TRIPS` or `EXTERNAL_PEOPLE` in [app/gallery/page.tsx](app/gallery/page.tsx), then redeploy.
+
+### Adding a Video
+
+1. Upload the video via the upload UI
+2. Redeploy — videos are auto-fetched, no config change needed
+
+## Features
+
+### Modal Navigation (Trips, People Cards, Videos)
+
+- Click gallery card to open full-screen modal
+- Arrow buttons to navigate between photos
+- Escape key to close
+- Photo counter
+- Image preloading for smooth transitions
+
+### People Gallery Detail Pages
+
+- Opens at `/gallery/people/{category}`
+- Full-page viewer with thumbnail strip
+- Navigation arrows and thumbnail highlighting
+
+### External Links
+
+```typescript
+{
+  externalUrl: "https://external-site.com/photos",
+  externalLinkText: "View on External Site"  // optional
+}
+```
+
+When set, clicking the card shows a full-screen overlay with a link button instead of photos.
+
+## Static Site Generation
+
+The gallery is built statically at deploy time. All fetch calls to the Pi API happen during `next build` on GitHub Actions. The Pi API must be reachable during the build for galleries to populate.
+
+If the API is unreachable for a specific gallery, that gallery renders with zero photos (graceful fallback). The build does not fail.
+
+## Styling
+
+- **Theme**: Dark mode, slate-900 to slate-800 gradient
+- **Accent**: Orange (`orange-500`)
+- **Responsive**: Grid adjusts for mobile/tablet/desktop
+
 
 - `/gallery` - Main gallery index page
   - Component: [app/gallery/page.tsx](app/gallery/page.tsx)
