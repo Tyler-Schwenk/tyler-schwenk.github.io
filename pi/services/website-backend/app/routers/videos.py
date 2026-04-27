@@ -5,7 +5,7 @@ Provides endpoints for uploading videos, managing metadata, and streaming
 video content with support for range requests (seeking).
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form, status
 from fastapi.responses import StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -495,29 +495,93 @@ async def delete_video(
 
 
 @router.get("/{video_id}/stream")
-async def stream_video(video_id: int, db: Session = Depends(get_db)):
+async def stream_video(video_id: int, request: Request, db: Session = Depends(get_db)):
     """
-    Stream video content with range request support for seeking.
-    
+    Stream video content with HTTP range request support.
+
+    Handles the Range header so browsers can seek, buffer incrementally, and
+    resume partial downloads — standard for any decent video player. Without
+    this, browsers cant seek and may try to download the whole file upfront.
+
     Args:
-        video_id: Video ID
-        db: Database session
-        
+        video_id: Video ID.
+        request: FastAPI request (used to read the Range header).
+        db: Database session.
+
     Returns:
-        Video file stream
+        206 Partial Content with the requested byte range, or 200 with the
+        full file if no Range header is present.
     """
     video = db.query(Video).filter(Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    
+
     video_path = Path(video.file_path)
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found")
-    
-    return FileResponse(
-        path=str(video_path),
+
+    file_size = video_path.stat().st_size
+    range_header = request.headers.get("Range")
+
+    # chunk size for streaming — 1 MB at a time keeps memory usage low
+    chunk_size_bytes = 1024 * 1024
+
+    if range_header:
+        # parse "bytes=start-end"
+        try:
+            range_val = range_header.strip().replace("bytes=", "")
+            start_str, end_str = range_val.split("-")
+            start = int(start_str)
+            end = int(end_str) if end_str else file_size - 1
+        except (ValueError, AttributeError):
+            raise HTTPException(status_code=416, detail="Invalid Range header.")
+
+        if start >= file_size or end >= file_size or start > end:
+            raise HTTPException(
+                status_code=416,
+                detail=f"Range not satisfiable. File size: {file_size} bytes."
+            )
+
+        content_length = end - start + 1
+
+        def iter_range():
+            with video_path.open("rb") as f:
+                f.seek(start)
+                remaining = content_length
+                while remaining > 0:
+                    data = f.read(min(chunk_size_bytes, remaining))
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    yield data
+
+        return StreamingResponse(
+            iter_range(),
+            status_code=206,
+            media_type=video.mime_type,
+            headers={
+                "Content-Range": f"bytes {start}-{end}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(content_length),
+            },
+        )
+
+    # no Range header — stream the whole file (browser will handle buffering)
+    def iter_full():
+        with video_path.open("rb") as f:
+            while True:
+                data = f.read(chunk_size_bytes)
+                if not data:
+                    break
+                yield data
+
+    return StreamingResponse(
+        iter_full(),
         media_type=video.mime_type,
-        filename=video.filename
+        headers={
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(file_size),
+        },
     )
 
 

@@ -156,6 +156,7 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
                       src={currentGallery.media[currentIndex].src}
                       controls
                       playsInline
+                      preload="metadata"
                     />
                   )}
                 </div>
