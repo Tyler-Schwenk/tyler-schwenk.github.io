@@ -247,6 +247,17 @@ export default async function GalleryPage() {
           </div>
         </section>
 
+        {/* Videos Section — only shown if videos exist on the Pi */}
+        {Object.keys(videoGalleries).length > 0 && (
+          <section className="mb-20 space-y-12">
+            <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
+              <span className="text-orange-500 mr-3"></span>
+              Videos
+            </h2>
+            <GalleryModal galleries={videoGalleries} />
+          </section>
+        )}
+
         {/* Trips Section */}
         <section className="mb-20">
           <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
@@ -265,17 +276,6 @@ export default async function GalleryPage() {
           
           <GalleryModal galleries={peopleGalleries} />
         </section>
-
-        {/* Videos Section — only shown if videos exist on the Pi */}
-        {Object.keys(videoGalleries).length > 0 && (
-          <section className="space-y-12">
-            <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
-              <span className="text-orange-500 mr-3"></span>
-              Videos
-            </h2>
-            <GalleryModal galleries={videoGalleries} />
-          </section>
-        )}
       </div>
     </div>
     </PageWrapper>
