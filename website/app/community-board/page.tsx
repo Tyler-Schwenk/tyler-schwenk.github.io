@@ -16,14 +16,25 @@ const DEFAULT_OFFSET_Y = -200;
 const NOTE_WIDTH_PX = 220;
 const HEADER_NOTE_WIDTH_PX = 280;
 
-const NOTE_COLORS = [
-  "bg-yellow-200 text-amber-950",
-  "bg-amber-200 text-amber-950",
-  "bg-orange-200 text-amber-950",
-  "bg-lime-200 text-lime-950",
+// transparent-bg sticky note images — cycle pseudo-randomly by id hash
+const STICKY_NOTE_IMAGES = [
+  "/images/sticky%20note4.png",
+  "/images/sticky%20note5.png",
 ];
 
 const HEADER_COLOR = "bg-blue-300 text-blue-950";
+
+/**
+ * Picks a sticky note image index based on a simple hash of the entry id.
+ * deterministic so the same note always gets the same image — no hydration flicker.
+ *
+ * @param {string} id - Entry id string.
+ * @returns {number} Index into STICKY_NOTE_IMAGES.
+ */
+function stickyImageIndex(id: string): number {
+  const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return hash % STICKY_NOTE_IMAGES.length;
+}
 
 const NOTE_POSITIONS = [
   // Friends Header
@@ -274,16 +285,14 @@ export default function CommunityBoard() {
           <div className="absolute left-0 top-0" style={boardStyle}>
             {COMMUNITY_BOARD_LINKS.map((entry, index) => {
               const notePosition = NOTE_POSITIONS[index % NOTE_POSITIONS.length];
-              const noteColorClass = entry.isHeader 
-                ? HEADER_COLOR 
-                : NOTE_COLORS[index % NOTE_COLORS.length];
               const noteWidth = entry.isHeader ? HEADER_NOTE_WIDTH_PX : NOTE_WIDTH_PX;
+              const stickyIndex = stickyImageIndex(entry.id);
 
               if (entry.isHeader) {
                 return (
                   <div
                     key={entry.id}
-                    className={`absolute rounded-md p-4 shadow-[0_8px_18px_rgba(0,0,0,0.3)] ${noteColorClass}`}
+                    className={`absolute rounded-md p-4 shadow-[0_8px_18px_rgba(0,0,0,0.3)] ${HEADER_COLOR}`}
                     style={{
                       left: `${notePosition.x}px`,
                       top: `${notePosition.y}px`,
@@ -301,15 +310,19 @@ export default function CommunityBoard() {
                   href={entry.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`absolute rounded-md p-4 shadow-[0_8px_18px_rgba(0,0,0,0.3)] hover:scale-[1.02] transition-transform ${noteColorClass}`}
+                  className="absolute p-5 hover:scale-[1.02] transition-transform text-amber-950"
                   style={{
                     left: `${notePosition.x}px`,
                     top: `${notePosition.y}px`,
                     width: `${noteWidth}px`,
+                    minHeight: "120px",
+                    backgroundImage: `url('${STICKY_NOTE_IMAGES[stickyIndex]}')`,
+                    backgroundSize: "100% 100%",
+                    backgroundRepeat: "no-repeat",
                   }}
                 >
-                  <h2 className="text-sm font-semibold leading-snug">{entry.name}</h2>
-                  <p className="mt-2 text-xs opacity-90 leading-snug">{entry.description}</p>
+                  <h2 className="text-base font-semibold leading-snug" style={{ fontFamily: "var(--font-caveat)" }}>{entry.name}</h2>
+                  <p className="mt-1 text-sm opacity-80 leading-snug" style={{ fontFamily: "var(--font-caveat)" }}>{entry.description}</p>
                 </a>
               );
             })}

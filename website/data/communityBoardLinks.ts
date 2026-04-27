@@ -17,7 +17,7 @@ export const COMMUNITY_BOARD_LINKS: CommunityBoardLink[] = [
   {
     id: "jeff",
     name: "Jeff",
-    href: "https://myhalfbakedideas.com/",
+    href: "https://jeffsdigitalworld.com/",
     description: "Friend project and ideas",
   },
   {
@@ -101,16 +101,16 @@ export const COMMUNITY_BOARD_LINKS: CommunityBoardLink[] = [
     isHeader: true,
   },
   {
-    id: "botpa",
-    name: "BOTPA",
-    href: "https://botpa.vercel.app/",
-    description: "Cool app",
-  },
-  {
     id: "tom7",
     name: "Tom7",
     href: "https://tom7.org/index.html",
     description: "Computer scientist whose work I enjoy",
+  },
+  {
+    id: "botpa",
+    name: "BOTPA",
+    href: "https://botpa.vercel.app/",
+    description: "Cool app",
   },
   {
     id: "header-personal",
