@@ -13,6 +13,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import json
+import uuid
 
 from app.database import get_db
 from app.dependencies import require_admin
@@ -29,6 +30,9 @@ SUPPORTED_VIDEO_TYPES = {
     "video/ogg": ".ogv",
     "video/quicktime": ".mov"
 }
+
+# temp storage for in-progress chunked uploads — cleaned up on complete/failure
+TEMP_UPLOADS_DIR = Path("/tmp/video_uploads")
 
 
 def save_upload_file(upload_file: UploadFile, destination: Path) -> None:
@@ -113,6 +117,177 @@ def generate_video_thumbnail(video_path: Path, thumbnail_path: Path, time_offset
         return result.returncode == 0
     except Exception:
         return False
+
+
+@router.post("/upload/initiate")
+async def initiate_chunked_upload(
+    filename: str = Form(...),
+    total_chunks: int = Form(...),
+    mime_type: str = Form(...),
+    _: None = Depends(require_admin),
+):
+    """
+    Start a chunked video upload session.
+
+    Creates a temp directory for chunk storage and returns an upload_id to
+    reference in subsequent chunk and complete requests.
+
+    Args:
+        filename: Original filename of the video.
+        total_chunks: Total number of chunks that will be sent.
+        mime_type: MIME type of the video (must be a supported type).
+
+    Returns:
+        Dict with upload_id string.
+    """
+    if mime_type not in SUPPORTED_VIDEO_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported video type. Supported: {', '.join(SUPPORTED_VIDEO_TYPES.keys())}"
+        )
+
+    upload_id = str(uuid.uuid4())
+    upload_dir = TEMP_UPLOADS_DIR / upload_id
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    meta = {"filename": filename, "total_chunks": total_chunks, "mime_type": mime_type}
+    (upload_dir / "metadata.json").write_text(json.dumps(meta))
+
+    return {"upload_id": upload_id}
+
+
+@router.post("/upload/chunk")
+async def upload_chunk(
+    upload_id: str = Form(...),
+    chunk_index: int = Form(...),
+    file: UploadFile = File(...),
+    _: None = Depends(require_admin),
+):
+    """
+    Upload a single chunk of a chunked video upload.
+
+    Chunks can arrive in any order and are stored by index. Call
+    /upload/complete once all chunks are sent.
+
+    Args:
+        upload_id: Upload session ID returned by /upload/initiate.
+        chunk_index: Zero-based index of this chunk.
+        file: The chunk data.
+
+    Returns:
+        Dict with received_chunks and total_chunks counts.
+    """
+    upload_dir = TEMP_UPLOADS_DIR / upload_id
+
+    # prevent path traversal
+    if not str(upload_dir.resolve()).startswith(str(TEMP_UPLOADS_DIR.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid upload ID.")
+
+    if not upload_dir.exists():
+        raise HTTPException(status_code=404, detail="Upload session not found. Start a new upload.")
+
+    meta = json.loads((upload_dir / "metadata.json").read_text())
+    total_chunks = meta["total_chunks"]
+
+    if chunk_index < 0 or chunk_index >= total_chunks:
+        raise HTTPException(status_code=400, detail=f"chunk_index must be 0-{total_chunks - 1}.")
+
+    chunk_path = upload_dir / f"{chunk_index}.chunk"
+    save_upload_file(file, chunk_path)
+
+    received = len(list(upload_dir.glob("*.chunk")))
+    return {"received_chunks": received, "total_chunks": total_chunks}
+
+
+@router.post("/upload/complete", response_model=VideoRead, status_code=status.HTTP_201_CREATED)
+async def complete_chunked_upload(
+    upload_id: str = Form(...),
+    title: str = Form(...),
+    slug: str = Form(...),
+    description: Optional[str] = Form(None),
+    is_public: bool = Form(True),
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+):
+    """
+    Finalize a chunked upload by assembling all chunks into the final video file.
+
+    Verifies all expected chunks are present, concatenates them in order,
+    runs ffprobe/ffmpeg for metadata and thumbnail, then registers in the DB.
+    Cleans up temp chunk storage on success or failure.
+
+    Args:
+        upload_id: Upload session ID from /upload/initiate.
+        title: Video title.
+        slug: URL-friendly identifier (must be unique).
+        description: Optional description.
+        is_public: Whether the video is publicly accessible.
+        db: Database session.
+
+    Returns:
+        Created video metadata.
+    """
+    upload_dir = TEMP_UPLOADS_DIR / upload_id
+
+    if not str(upload_dir.resolve()).startswith(str(TEMP_UPLOADS_DIR.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid upload ID.")
+
+    if not upload_dir.exists():
+        raise HTTPException(status_code=404, detail="Upload session not found. Start a new upload.")
+
+    meta = json.loads((upload_dir / "metadata.json").read_text())
+    total_chunks = meta["total_chunks"]
+    mime_type = meta["mime_type"]
+    original_filename = meta["filename"]
+
+    missing = [i for i in range(total_chunks) if not (upload_dir / f"{i}.chunk").exists()]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Missing chunks: {missing}. Re-upload them or start over.")
+
+    existing = db.query(Video).filter(Video.slug == slug).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Video with this slug already exists.")
+
+    videos_dir = Path(settings.VIDEOS_DIR)
+    videos_dir.mkdir(parents=True, exist_ok=True)
+
+    file_extension = SUPPORTED_VIDEO_TYPES.get(mime_type, ".mp4")
+    file_path = videos_dir / f"{slug}{file_extension}"
+
+    try:
+        with file_path.open("wb") as out:
+            for i in range(total_chunks):
+                with (upload_dir / f"{i}.chunk").open("rb") as chunk:
+                    shutil.copyfileobj(chunk, out)
+    finally:
+        shutil.rmtree(upload_dir, ignore_errors=True)
+
+    file_size = file_path.stat().st_size
+    video_metadata = extract_video_metadata(file_path)
+
+    thumbnail_path = videos_dir / "thumbnails" / f"{slug}.jpg"
+    thumbnail_generated = generate_video_thumbnail(file_path, thumbnail_path)
+
+    db_video = Video(
+        filename=original_filename,
+        file_path=str(file_path),
+        thumbnail_path=str(thumbnail_path) if thumbnail_generated else None,
+        title=title,
+        description=description,
+        slug=slug,
+        is_public=is_public,
+        width=video_metadata.get("width"),
+        height=video_metadata.get("height"),
+        duration=video_metadata.get("duration"),
+        file_size=file_size,
+        mime_type=mime_type,
+    )
+
+    db.add(db_video)
+    db.commit()
+    db.refresh(db_video)
+
+    return db_video
 
 
 @router.get("", response_model=List[VideoRead])
