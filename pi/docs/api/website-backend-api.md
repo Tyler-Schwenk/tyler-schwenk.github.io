@@ -1,7 +1,8 @@
 # Website Backend API Documentation
 
 **Version:** 1.0.0  
-**Base URL:** `https://fart-pi.your-tailnet.ts.net:8000`
+**Base URL (public):** `https://api.tyler-schwenk.com`  
+**Base URL (local/NetBird):** `http://100.124.76.27:8000`
 
 Backend API for tyler-schwenk.com providing:
 - **Public Square Forum**: User authentication, posts, comments, and discussions
@@ -355,7 +356,7 @@ Photo galleries for displaying curated images on the website.
 
 ### List Galleries
 
-Get all galleries.
+Get all galleries, sorted by `display_order` descending (higher = shown first).
 
 **Endpoint:** `GET /galleries`
 
@@ -373,6 +374,7 @@ Get all galleries.
     "description": "Photos from summer vacation",
     "slug": "summer-2026",
     "is_public": true,
+    "display_order": 150,
     "created_at": "2026-03-15T10:00:00Z",
     "updated_at": null,
     "photo_count": 12

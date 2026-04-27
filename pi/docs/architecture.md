@@ -29,12 +29,13 @@ System architecture for fart-pi multi-service home server.
    - Public Access: https://api.tyler-schwenk.com
    - API Documentation: http://100.124.76.27:8000/docs or https://api.tyler-schwenk.com/docs
    - Health Check: http://100.124.76.27:8000/health or https://api.tyler-schwenk.com/health
-   - Database: SQLite at /app/data/website_backend.db (16 galleries, 255 photos)
+   - Database: SQLite at /app/data/website_backend.db
    - Features:
-     - **Photo Galleries**: 16 albums with automatic thumbnail generation (255 photos migrated)
+     - **Photo Galleries**: 13 albums (250+ photos), display_order sorting, admin panel management
      - **Video Hosting**: Upload, streaming, thumbnail generation with ffmpeg
      - **Public Square Forum**: Posts, comments, discussions (routers pending implementation)
-     - JWT authentication ready
+     - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI
+     - JWT authentication (bcrypt password hashing, 30-day token expiry)
    - Photo Storage: /media/tyler/FE645A9A645A558D/public-gallery
    - Video Storage: /media/tyler/FE645A9A645A558D/videos
 
@@ -78,17 +79,18 @@ System architecture for fart-pi multi-service home server.
 **Website Backend API**
 - Unified backend for tyler-schwenk.com
 - FastAPI (Python) with single SQLite database
-- User auth: JWT (OAuth planned)
+- User auth: JWT, bcrypt password hashing, 30-day token expiry
 - **Features:**
-  - **Photo Galleries**: 16 albums, 255 photos with automatic thumbnails (operational)
+  - **Photo Galleries**: 13 albums, 250+ photos, display_order sorting, automatic thumbnails (operational)
   - **Video Hosting**: Upload, streaming, automatic thumbnail generation (operational)
   - **Public Square Forum**: Posts, comments, threads (routers pending implementation)
+  - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:
   - Private: http://100.124.76.27:8000 (via NetBird) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
-- Database: website_backend.db with tables for users, posts, comments, galleries, gallery_photos, videos
+- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments
 - Storage:
   - Photos: /media/tyler/FE645A9A645A558D/public-gallery
   - Videos: /media/tyler/FE645A9A645A558D/videos
@@ -211,26 +213,16 @@ Directories:
 - Location: `/media/tyler/FE645A9A645A558D/public-gallery/` on Pi
 - **Why**: Easy to update, no Git commits needed, dynamic management
 
-### Migration from Static to API
+### Gallery Management
 
-**Current state:** All photos in GitHub repo static files
-**Target state:** Gallery photos served from Pi API
+All gallery photos and videos are managed via the admin panel at `https://tyler-schwenk.com/admin/`. No SSH or scripts needed for day-to-day updates.
 
-**Migration process:**
-1. Copy photo folders to Pi: `/media/tyler/FE645A9A645A558D/public-gallery/`
-2. Run migration script: `docker exec website-backend-api python scripts/migrate_photos.py`
-3. Update frontend to fetch from API instead of static files
-4. Remove gallery photos from GitHub repo (keep homepage/static images)
-
-**Frontend integration:**
-```typescript
-// Old: Static files at build time
-const photos = fs.readdirSync('/public/images/gallery/jordan');
-
-// New: Fetch from API
-const response = await fetch('http://api.yoursite.com/galleries/slug/jordan');
-const gallery = await response.json();
-```
+**Admin panel features:**
+- Reorder galleries by `display_order` (higher = shown first, auto-increments by 10 on create)
+- Edit gallery name, slug, description, public/private toggle
+- Delete individual photos or entire galleries
+- Upload new photos to existing or new galleries
+- Upload videos
 
 ### Internal Storage (SD Card)
 **Purpose**: System and service configurations

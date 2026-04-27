@@ -4,7 +4,7 @@ After a trip, add photos to your website gallery from your phone or laptop.
 
 ## Quick Steps
 
-1. Open `https://tyler-schwenk.com/admin/upload.html` on your phone or browser
+1. Open `https://tyler-schwenk.com/admin/` on your phone or browser
 2. Login with your credentials (stays logged in for 30 days)
 3. Select **Photos**, choose **New Gallery** or an existing one
 4. Fill in gallery name, slug, and description if creating a new one
