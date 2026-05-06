@@ -21,7 +21,7 @@ DISPLAY_HEIGHT = 64
 I2C_ADDRESS = 0x3C
 
 # URL of the endpoint that returns {"count": <int>}
-COUNT_API_URL = "https://www.traderoutestcg.com/api/mallard-count"
+COUNT_API_URL = "https://www.traderoutes.cards/api/mallard-counter/count/"
 
 # How often to re-fetch the count from the API (s)
 FETCH_INTERVAL_S = 60
