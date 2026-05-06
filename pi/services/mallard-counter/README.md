@@ -1,6 +1,18 @@
 # Mallard Counter
 
-Raspberry Pi service that drives an Adafruit SSD1306 OLED display (128x64, I2C) to show the current mallard count from the backend API.
+Raspberry Pi service that drives an Adafruit SSD1306 OLED display (128x64, I2C) to show the current mallard count. Fetches from an external API once per hour and re-renders every minute.
+
+## Configuration
+
+Two constants in `main.py` control behavior:
+
+| Constant | Default | Description |
+|---|---|---|
+| `COUNT_API_URL` | `https://www.traderoutestcg.com/api/mallard-count` | Endpoint that returns `{"count": <int>}` |
+| `FETCH_INTERVAL_S` | `3600` | How often to re-fetch the count (s) |
+| `DISPLAY_REFRESH_S` | `60` | How often to re-render the display (s) |
+
+The display shows `---` until the first successful fetch. On fetch failure, the last known count is held.
 
 ## Hardware
 
@@ -24,10 +36,15 @@ sudo raspi-config
 sudo reboot
 ```
 
+Install system dependencies (one-time):
+
+```bash
+sudo apt install i2c-tools swig liblgpio-dev
+```
+
 Verify display is detected:
 
 ```bash
-sudo apt install i2c-tools
 i2cdetect -y 1
 # Should show 0x3c in the grid
 ```
@@ -35,6 +52,8 @@ i2cdetect -y 1
 ## Running
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 python main.py
 ```
@@ -51,7 +70,7 @@ Description=Mallard Counter Display
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /home/tyler/tyler-schwenk.github.io/pi/services/mallard-counter/main.py
+ExecStart=/home/tyler/tyler-schwenk.github.io/pi/services/mallard-counter/.venv/bin/python /home/tyler/tyler-schwenk.github.io/pi/services/mallard-counter/main.py
 WorkingDirectory=/home/tyler/tyler-schwenk.github.io/pi/services/mallard-counter
 Restart=always
 User=tyler

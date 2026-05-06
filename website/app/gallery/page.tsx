@@ -51,6 +51,14 @@ const EXTERNAL_TRIPS: ExternalEntry[] = [];
 
 const EXTERNAL_PEOPLE: ExternalEntry[] = [];
 
+// Pi-hosted galleries that also have an external link for more photos.
+// these show photos normally in the modal, plus a "see more" button.
+const GALLERY_EXTRA_LINKS: Record<string, { externalUrl: string; externalLinkText?: string }> = {
+  "elcap": { externalUrl: "https://vish.ventures/triple-direct", externalLinkText: "See Vishal's El Cap photos" },
+  "halfdome": { externalUrl: "https://vish.ventures/yosemite-05-24/rnwf", externalLinkText: "See Vishal's Half Dome photos" },
+  "bikenite": { externalUrl: "https://www.instagram.com/bikenitesd/", externalLinkText: "Bike Nite SD on Instagram" },
+};
+
 type GalleryEntry = {
   title: string;
   description: string;
@@ -178,14 +186,15 @@ export default async function GalleryPage() {
     Promise.all(peopleApiGalleries.map((g) => buildApiGalleryEntry(g, FALLBACK_PEOPLE_COVER))),
   ]);
 
-  // Pi galleries come first (API order), external-link entries appended at the end
+  // Pi galleries come first (API order), external-link entries appended at the end.
+  // GALLERY_EXTRA_LINKS entries get merged in so Pi photos AND an external link both show.
   const tripGalleries: Record<string, GalleryEntry> = Object.fromEntries([
-    ...tripApiGalleries.map((g, i) => [g.slug, tripApiEntries[i]]),
+    ...tripApiGalleries.map((g, i) => [g.slug, { ...tripApiEntries[i], ...GALLERY_EXTRA_LINKS[g.slug] }]),
     ...EXTERNAL_TRIPS.map((e) => [e.slug, buildExternalEntry(e, FALLBACK_TRIP_COVER)]),
   ]);
 
   const peopleGalleries: Record<string, GalleryEntry> = Object.fromEntries([
-    ...peopleApiGalleries.map((g, i) => [g.slug, peopleApiEntries[i]]),
+    ...peopleApiGalleries.map((g, i) => [g.slug, { ...peopleApiEntries[i], ...GALLERY_EXTRA_LINKS[g.slug] }]),
     ...EXTERNAL_PEOPLE.map((e) => [e.slug, buildExternalEntry(e, FALLBACK_PEOPLE_COVER)]),
   ]);
 
@@ -247,17 +256,6 @@ export default async function GalleryPage() {
           </div>
         </section>
 
-        {/* Videos Section — only shown if videos exist on the Pi */}
-        {Object.keys(videoGalleries).length > 0 && (
-          <section className="mb-20 space-y-12">
-            <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
-              <span className="text-orange-500 mr-3"></span>
-              Videos
-            </h2>
-            <GalleryModal galleries={videoGalleries} />
-          </section>
-        )}
-
         {/* Trips Section */}
         <section className="mb-20">
           <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
@@ -276,6 +274,17 @@ export default async function GalleryPage() {
           
           <GalleryModal galleries={peopleGalleries} />
         </section>
+
+        {/* Videos Section — only shown if videos exist on the Pi */}
+        {Object.keys(videoGalleries).length > 0 && (
+          <section className="space-y-12">
+            <h2 className="text-4xl font-bold text-white mb-12 flex items-center">
+              <span className="text-orange-500 mr-3"></span>
+              Videos
+            </h2>
+            <GalleryModal galleries={videoGalleries} />
+          </section>
+        )}
       </div>
     </div>
     </PageWrapper>

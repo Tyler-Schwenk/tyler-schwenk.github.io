@@ -473,7 +473,6 @@
             <div id="uFileList" style="margin-top: 8px;"></div>
             <button class="btn btn-primary btn-full" id="uSubmitBtn" style="margin-top: 12px;">Upload</button>
             <div class="progress-wrap" id="uProgressWrap"><div class="progress-fill" id="uProgressFill"></div></div>
-            <div id="uProgressLabel" style="font-size: 12px; color: var(--muted); margin-top: 5px; display: none;"></div>
             <div class="msg" id="uMsg"></div>
         </div>
     </div>
@@ -481,9 +480,6 @@
 
 <script>
     const API = 'https://api.tyler-schwenk.com';
-
-    // stay well under Cloudflare's 100MB per-request limit
-    const CHUNK_SIZE_BYTES = 90 * 1024 * 1024;
 
     let token = localStorage.getItem('adminToken');
     let galleries = [];
@@ -970,86 +966,26 @@
         const desc = document.getElementById('v-desc').value.trim();
         if (!title || !slug) { showMsg('uMsg', 'Title and slug required.', 'error'); return; }
 
-        const file = uploadFiles[0];
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE_BYTES);
-
-        const wrap = document.getElementById('uProgressWrap');
-        const fill = document.getElementById('uProgressFill');
-        const label = document.getElementById('uProgressLabel');
         const btn = document.getElementById('uSubmitBtn');
-        wrap.style.display = 'block';
-        label.style.display = 'block';
         btn.disabled = true;
 
-        const setProgress = (done, total, msg) => {
-            fill.style.width = `${Math.round((done / total) * 100)}%`;
-            label.textContent = msg;
-        };
+        const fd = new FormData();
+        fd.append('file', uploadFiles[0]);
+        fd.append('title', title);
+        fd.append('slug', slug);
+        if (desc) fd.append('description', desc);
 
-        try {
-            // 1. start upload session
-            setProgress(0, totalChunks + 1, 'Starting upload...');
-            const initForm = new FormData();
-            initForm.append('filename', file.name);
-            initForm.append('total_chunks', totalChunks);
-            initForm.append('mime_type', file.type);
+        const res = await aFetch(`${API}/videos`, { method: 'POST', body: fd });
+        btn.disabled = false;
 
-            const initRes = await aFetch(`${API}/videos/upload/initiate`, { method: 'POST', body: initForm });
-            if (!initRes || !initRes.ok) {
-                const err = initRes ? await initRes.json().catch(() => ({})) : {};
-                throw new Error(err.detail || 'Failed to start upload.');
-            }
-            const { upload_id } = await initRes.json();
-
-            // 2. send chunks sequentially
-            for (let i = 0; i < totalChunks; i++) {
-                const start = i * CHUNK_SIZE_BYTES;
-                const end = Math.min(start + CHUNK_SIZE_BYTES, file.size);
-                const chunk = file.slice(start, end);
-
-                const chunkForm = new FormData();
-                chunkForm.append('upload_id', upload_id);
-                chunkForm.append('chunk_index', i);
-                chunkForm.append('file', chunk, file.name);
-
-                const chunkRes = await aFetch(`${API}/videos/upload/chunk`, { method: 'POST', body: chunkForm });
-                if (!chunkRes || !chunkRes.ok) {
-                    const err = chunkRes ? await chunkRes.json().catch(() => ({})) : {};
-                    throw new Error(err.detail || `Chunk ${i + 1} of ${totalChunks} failed.`);
-                }
-                setProgress(i + 1, totalChunks + 1, `Uploading chunk ${i + 1} of ${totalChunks}...`);
-            }
-
-            // 3. assemble and register
-            setProgress(totalChunks, totalChunks + 1, 'Processing video...');
-            const completeForm = new FormData();
-            completeForm.append('upload_id', upload_id);
-            completeForm.append('title', title);
-            completeForm.append('slug', slug);
-            if (desc) completeForm.append('description', desc);
-            completeForm.append('is_public', 'true');
-
-            const completeRes = await aFetch(`${API}/videos/upload/complete`, { method: 'POST', body: completeForm });
-            if (!completeRes || !completeRes.ok) {
-                const err = completeRes ? await completeRes.json().catch(() => ({})) : {};
-                throw new Error(err.detail || 'Failed to finalize video.');
-            }
-
-            fill.style.width = '100%';
-            wrap.style.display = 'none';
-            label.style.display = 'none';
-            fill.style.width = '0%';
-            btn.disabled = false;
+        if (res && res.ok) {
             uploadFiles = [];
             renderUploadFileList();
             ['v-title', 'v-slug', 'v-desc'].forEach(id => document.getElementById(id).value = '');
-            showMsg('uMsg', 'Video uploaded successfully.', 'success');
-        } catch (e) {
-            wrap.style.display = 'none';
-            label.style.display = 'none';
-            fill.style.width = '0%';
-            btn.disabled = false;
-            showMsg('uMsg', e.message || 'Video upload failed.', 'error');
+            showMsg('uMsg', 'Video uploaded.', 'success');
+        } else {
+            const err = res ? await res.json().catch(() => ({})) : {};
+            showMsg('uMsg', err.detail || 'Video upload failed.', 'error');
         }
     }
 

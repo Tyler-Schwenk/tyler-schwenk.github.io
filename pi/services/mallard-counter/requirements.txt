@@ -1,4 +1,5 @@
 adafruit-circuitpython-ssd1306
 adafruit-blinka
 Pillow
-RPi.GPIO
+lgpio
+requests

@@ -115,14 +115,14 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
             ×
           </button>
 
-          {/* External link overlay */}
+          {/* External link overlay — shown for any gallery with an externalUrl */}
           {currentGallery.externalUrl ? (
             <div
               className="flex flex-col items-center justify-center gap-8"
               onClick={(event) => event.stopPropagation()}
             >
               <h2 className="text-4xl font-bold text-white">
-                {currentGallery.externalLinkText || "Check out Vishal's Photos"}
+                {currentGallery.externalLinkText || "View Gallery"}
               </h2>
               <a
                 href={currentGallery.externalUrl}
@@ -132,6 +132,10 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
               >
                 View Gallery →
               </a>
+            </div>
+          ) : currentGallery.media.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-4 text-white/60">
+              <p className="text-xl">No photos yet.</p>
             </div>
           ) : (
             <>
