@@ -1,6 +1,6 @@
 # Mallard Counter
 
-Raspberry Pi service that drives an Adafruit SSD1306 OLED display (128x64, I2C) to show the current mallard count. Fetches from an external API once per hour and re-renders every minute.
+Raspberry Pi service that drives an Adafruit SSD1306 OLED display (128x64, I2C) to show the current mallard count. Fetches from an external API every minute and re-renders the display every minute.
 
 ## Configuration
 
@@ -8,8 +8,8 @@ Two constants in `main.py` control behavior:
 
 | Constant | Default | Description |
 |---|---|---|
-| `COUNT_API_URL` | `https://www.traderoutestcg.com/api/mallard-count` | Endpoint that returns `{"count": <int>}` |
-| `FETCH_INTERVAL_S` | `3600` | How often to re-fetch the count (s) |
+| `COUNT_API_URL` | `https://api.traderoutes.cards/api/mallard-counter/count/` | Endpoint that returns `{"count": <int>}` |
+| `FETCH_INTERVAL_S` | `60` | How often to re-fetch the count (s) |
 | `DISPLAY_REFRESH_S` | `60` | How often to re-render the display (s) |
 
 The display shows `---` until the first successful fetch. On fetch failure, the last known count is held.
@@ -52,9 +52,9 @@ i2cdetect -y 1
 ## Running
 
 ```bash
+cd ~/tyler-schwenk.github.io/pi/services/mallard-counter
 python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+.venv/bin/pip install -r requirements.txt
 python main.py
 ```
 
