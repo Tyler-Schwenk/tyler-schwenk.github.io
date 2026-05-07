@@ -12,6 +12,16 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS}
       - API_TITLE=Website Backend API
       - API_VERSION=1.0.0
+      # Twilio credentials for trash reminders
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      # Trash reminder config
+      - ROOMMATE_PHONES=${ROOMMATE_PHONES}
+      - TRASH_REMINDER_HOUR=${TRASH_REMINDER_HOUR:-18}
+      - TRASH_TIMEZONE=${TRASH_TIMEZONE:-America/Los_Angeles}
+      - TRASH_QUIET_START_HOUR=${TRASH_QUIET_START_HOUR:-22}
+      - TRASH_QUIET_END_HOUR=${TRASH_QUIET_END_HOUR:-8}
     volumes:
       - ./data:/app/data
       - ./app:/app/app

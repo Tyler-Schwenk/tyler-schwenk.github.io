@@ -116,6 +116,41 @@ Future network enhancements:
 - **Original Router DNS**: 192.168.1.254 (backed up in /etc/resolv.conf.original.netbird)
 - Automatic system updates configuration
 
+## GPIO Pin Usage
+
+Full map of physical pins in use. Check here before wiring anything new.
+
+| Physical Pin | GPIO | Function | Used by |
+|---|---|---|---|
+| 1 | 3.3V | Power | OLED display (VCC) |
+| 2 | 5V | Power | I2S amps (VIN via breadboard + rail) |
+| 3 | GPIO 2 | I2C SDA | OLED display |
+| 5 | GPIO 3 | I2C SCL | OLED display |
+| 6 | GND | Ground | OLED display (GND) |
+| 9 | GND | Ground | I2S amps (GND via breadboard - rail) |
+| 11 | GPIO 17 | Input (pull-up) | Trash reminder button |
+| 12 | GPIO 18 | I2S BCLK | Both MAX98357A amps |
+| 35 | GPIO 19 | I2S LRCLK | Both MAX98357A amps |
+| 40 | GPIO 21 | I2S DOUT | Both MAX98357A amps |
+
+### Connected peripherals
+
+**OLED display** (Adafruit SSD1306, 128x64, I2C)
+- Bus: I2C, address `0x3C`
+- Pins: 1, 3, 5, 6
+- Service: mallard-counter (systemd)
+
+**Button** (momentary pushbutton)
+- Pin: 11 (GPIO 17), other leg to GND rail
+- Pull-up: internal (software configured)
+- Service: trash-reminder (systemd, pending)
+
+**Stereo audio** (2x Adafruit MAX98357A I2S amp + 8 ohm 5W speakers)
+- Bus: I2S
+- Pins: 2, 9, 12, 35, 40
+- Channel select: left amp SD → 5V rail, right amp SD → GND rail
+- Service: trash-reminder (systemd, pending)
+
 ## Status
 
 All systems operational and verified working:

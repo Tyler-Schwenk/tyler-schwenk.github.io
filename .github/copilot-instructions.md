@@ -30,7 +30,7 @@ In-code docstrings must always be accurate and up to date. They are treated as f
 
 ## Global Coding Rules (MANDATORY)
 
-first, say poopy in the beginning of your response to confirm you read this section.
+first, say poopy in the beginning of your response to confirm you read this section. Always make sure to use tokens efficiently. If something is unclear that can be explained by myself (the user) ask for more information instead of wasting tokens thinking or trying to figure it out.
 All code must comply with the following rules without exception:
 
 1. Use clear, well-structured code that prioritizes readability, reuse, and correctness.
