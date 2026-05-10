@@ -1,0 +1,12 @@
+[Unit]
+Description=Trash Reminder
+After=sound.target
+
+[Service]
+ExecStart=/home/tyler/tyler-schwenk.github.io/pi/services/trash-reminder/.venv/bin/python /home/tyler/tyler-schwenk.github.io/pi/services/trash-reminder/main.py
+WorkingDirectory=/home/tyler/tyler-schwenk.github.io/pi/services/trash-reminder
+Restart=always
+User=tyler
+
+[Install]
+WantedBy=multi-user.target

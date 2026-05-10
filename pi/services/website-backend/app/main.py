@@ -1,8 +1,7 @@
 """
 Website Backend API - Main application entry point.
 
-Backend API providing forum (Public Square), photo gallery, and home
-automation services (trash reminders).
+Backend API providing forum (Public Square) and photo gallery services.
 """
 
 from fastapi import FastAPI
@@ -13,12 +12,10 @@ from slowapi.errors import RateLimitExceeded
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
 from app.config import settings
 from app.database import init_db
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, trash
+from app.routers import gallery, videos, auth
 
 
 # Rate limiter instance
@@ -30,17 +27,10 @@ async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
 
-    Initializes database and starts the APScheduler instance (trash reminders)
-    on startup. Shuts the scheduler down cleanly on exit.
+    Initializes database on startup.
     """
-    # Startup
     init_db()
-    scheduler = AsyncIOScheduler()
-    trash.start_scheduler(scheduler)
-    scheduler.start()
     yield
-    # Shutdown
-    scheduler.shutdown()
 
 
 # Create FastAPI application
@@ -102,4 +92,3 @@ async def root():
 app.include_router(auth.router)
 app.include_router(gallery.router)
 app.include_router(videos.router)
-app.include_router(trash.router)
