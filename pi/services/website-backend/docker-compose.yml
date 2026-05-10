@@ -18,6 +18,7 @@ services:
       - ./scripts:/app/scripts
       - /media/tyler/FE645A9A645A558D/public-gallery:/app/photos
       - /media/tyler/FE645A9A645A558D/videos:/app/videos
+      - /home/tyler/pac-tyler-data:/app/pac-tyler:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

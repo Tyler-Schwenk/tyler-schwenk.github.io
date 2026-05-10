@@ -1,11 +1,15 @@
-"""Entry point for updating Pac-Tyler GeoJSON data from Strava."""
+"""Headless entry point for the Pac-Tyler daily data updater.
+
+run this on a schedule (systemd timer, cron, etc.). it uses a saved strava
+refresh token so no browser is needed. run auth_setup.py once first to
+bootstrap the token file.
+"""
 
 import logging
 import os
-from pathlib import Path
-import webbrowser
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
 
 from dotenv import load_dotenv
 
@@ -13,21 +17,23 @@ from config import (
     ACTIVITY_DATE_INCREMENT_SECONDS,
     BATCH_SIZE,
     DEFAULT_LOOKBACK_DAYS,
-    DOTENV_SEARCH_PATHS,
+    DOTENV_FILE,
+    GEOJSON_FILE,
     LOOKBACK_DAYS_ENV_VAR,
     PAUSE_SPLIT_THRESHOLD_KM,
     RECENT_ACTIVITY_LOOKBACK_DAYS,
     REDIRECT_URI,
     SILENCE_TOKEN_WARNINGS_ENV_VAR,
+    TOKEN_FILE,
 )
-from src.utils.file_utils import load_existing_geojson, save_geojson
-from src.utils.activity_dataset import save_activity_dataset
-from src.utils.oauth_server import run_server
-from src.utils.geojson_cleaner import clean_geojson
-from src.utils.separate_pauses import split_activities
-from src.utils.strava_client import StravaClient, activities_to_geojson
+from utils.file_utils import load_existing_geojson, save_geojson
+from utils.activity_dataset import save_activity_dataset
+from utils.geojson_cleaner import clean_geojson
+from utils.separate_pauses import split_activities
+from utils.strava_client import StravaClient, activities_to_geojson
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+
 
 def configure_logging() -> None:
     """Configure global logging settings.
@@ -39,21 +45,8 @@ def configure_logging() -> None:
     logging.getLogger("stravalib").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-def load_environment_files(paths: List[Path]) -> None:
-    """Load environment variables from the first available .env files.
 
-    Args:
-        paths (list): Candidate .env paths to check.
-
-    Returns:
-        None
-    """
-    for path in paths:
-        if not path.exists():
-            continue
-        load_dotenv(dotenv_path=path, override=False)
-
-def load_strava_credentials() -> Tuple[str, str]:
+def load_strava_credentials() -> tuple[str, str]:
     """Load Strava client credentials from environment variables.
 
     Returns:
@@ -62,16 +55,20 @@ def load_strava_credentials() -> Tuple[str, str]:
     Raises:
         ValueError: If credentials are missing.
     """
-    load_environment_files(DOTENV_SEARCH_PATHS)
+    if DOTENV_FILE.exists():
+        load_dotenv(dotenv_path=DOTENV_FILE, override=False)
+
     client_id = os.getenv("CLIENT_ID")
     client_secret = os.getenv("CLIENT_SECRET")
 
     if not client_id or not client_secret:
         raise ValueError(
-            "CLIENT_ID and CLIENT_SECRET must be set in the environment or .env file."
+            "CLIENT_ID and CLIENT_SECRET must be set in the environment or .env file. "
+            "Check that your .env exists next to main.py."
         )
 
     return client_id, client_secret
+
 
 def set_strava_env_credentials(client_id: str, client_secret: str) -> None:
     """Set Strava environment variables for downstream library usage.
@@ -84,17 +81,18 @@ def set_strava_env_credentials(client_id: str, client_secret: str) -> None:
         None
 
     Side Effects:
-        Updates process environment variables for Strava client warnings.
+        Updates process environment variables.
     """
     os.environ.setdefault("STRAVA_CLIENT_ID", client_id)
     os.environ.setdefault("STRAVA_CLIENT_SECRET", client_secret)
     os.environ.setdefault(SILENCE_TOKEN_WARNINGS_ENV_VAR, "true")
 
+
 def get_lookback_days_from_env(default_days: int) -> int:
-    """Get the lookback window from environment variables.
+    """Get the lookback window in days from environment variables.
 
     Args:
-        default_days (int): Default lookback window in days.
+        default_days (int): Fallback if env var is absent or invalid.
 
     Returns:
         int: Lookback window in days.
@@ -115,19 +113,20 @@ def get_lookback_days_from_env(default_days: int) -> int:
 
     return value
 
+
 def ensure_timezone_aware(value: datetime) -> datetime:
-    """Ensure a datetime value includes timezone information.
+    """Ensure a datetime has timezone info attached.
 
     Args:
         value (datetime): Datetime to normalize.
 
     Returns:
-        datetime: Timezone-aware datetime.
+        datetime: Timezone-aware datetime (UTC if none was set).
     """
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
-
     return value
+
 
 def get_most_recent_activity_date(
     existing_geojson: Dict[str, Any],
@@ -137,7 +136,7 @@ def get_most_recent_activity_date(
 
     Args:
         existing_geojson (dict): Existing GeoJSON FeatureCollection.
-        fallback_days (int): Days to look back if no data exists.
+        fallback_days (int): Days to look back if there's no data yet.
 
     Returns:
         datetime: Most recent activity date.
@@ -159,24 +158,6 @@ def get_most_recent_activity_date(
 
     return ensure_timezone_aware(max(dates))
 
-def authorize_strava(strava: StravaClient) -> None:
-    """Authorize the Strava client through the browser OAuth flow.
-
-    Args:
-        strava (StravaClient): Strava API client wrapper.
-
-    Returns:
-        None
-    """
-    url = strava.get_authorization_url()
-    logging.info("Open this URL to authorize the application: %s", url)
-    webbrowser.open_new(url)
-    authorization_code = run_server()
-
-    if not authorization_code:
-        raise RuntimeError("Authorization failed to return a code.")
-
-    strava.authenticate(authorization_code)
 
 def get_start_date(
     existing_geojson: Dict[str, Any],
@@ -184,12 +165,15 @@ def get_start_date(
 ) -> datetime:
     """Compute the start date for fetching new activities.
 
+    applies a lookback window so we dont miss activities that were uploaded
+    slightly after their actual date.
+
     Args:
         existing_geojson (dict): Existing GeoJSON FeatureCollection.
-        lookback_days (int): Days to look back to avoid missing recent activities.
+        lookback_days (int): Days to look back from the most recent activity.
 
     Returns:
-        datetime: Start date for fetching activities after the last known entry.
+        datetime: Start date for the Strava fetch.
     """
     most_recent_date = get_most_recent_activity_date(existing_geojson)
     most_recent_date = ensure_timezone_aware(most_recent_date)
@@ -200,14 +184,15 @@ def get_start_date(
 
     return most_recent_date + timedelta(seconds=ACTIVITY_DATE_INCREMENT_SECONDS)
 
+
 def build_activity_key(properties: Dict[str, Any]) -> str:
     """Build a stable identifier for a GeoJSON activity feature.
 
     Args:
-        properties (dict): GeoJSON properties for an activity.
+        properties (dict): GeoJSON properties dict for one activity.
 
     Returns:
-        str: Stable key for de-duplication.
+        str: Stable key suitable for de-duplication.
     """
     activity_id = properties.get("activity_id")
     if activity_id is not None:
@@ -218,14 +203,15 @@ def build_activity_key(properties: Dict[str, Any]) -> str:
     distance = properties.get("distance", "")
     return f"meta:{name}|{date_value}|{distance}"
 
+
 def get_existing_activity_keys(existing_geojson: Dict[str, Any]) -> Set[str]:
-    """Collect keys for existing activity features.
+    """Collect de-duplication keys for all features in the GeoJSON.
 
     Args:
         existing_geojson (dict): Existing GeoJSON FeatureCollection.
 
     Returns:
-        set: Unique keys representing existing features.
+        set: Keys representing already-stored activities.
     """
     keys: Set[str] = set()
     for feature in existing_geojson.get("features", []):
@@ -233,18 +219,19 @@ def get_existing_activity_keys(existing_geojson: Dict[str, Any]) -> Set[str]:
         keys.add(build_activity_key(properties))
     return keys
 
+
 def filter_new_features(
     features: List[Dict[str, Any]],
     existing_keys: Set[str],
 ) -> List[Dict[str, Any]]:
-    """Filter out features that already exist in the GeoJSON.
+    """Filter out features we already have in the GeoJSON.
 
     Args:
-        features (list): New GeoJSON features to evaluate.
-        existing_keys (set): Known activity keys.
+        features (list): Candidate GeoJSON features from this batch.
+        existing_keys (set): Known activity keys (mutated in place to stay current).
 
     Returns:
-        list: New features not previously seen.
+        list: Only the genuinely new features.
     """
     new_features: List[Dict[str, Any]] = []
     for feature in features:
@@ -256,16 +243,17 @@ def filter_new_features(
         new_features.append(feature)
     return new_features
 
+
 def process_activity_batch(
     activities: List[Dict[str, Any]],
     combined_geojson: Dict[str, Any],
     existing_keys: Set[str],
 ) -> int:
-    """Convert activities to GeoJSON, dedupe, and persist results.
+    """Convert a batch of activities to GeoJSON, dedupe, and write to disk.
 
     Args:
-        activities (list): Activity payloads from Strava.
-        combined_geojson (dict): Current combined GeoJSON collection.
+        activities (list): Activity payloads fetched from Strava.
+        combined_geojson (dict): Current full GeoJSON collection (mutated in place).
         existing_keys (set): Known activity keys for de-duplication.
 
     Returns:
@@ -277,21 +265,18 @@ def process_activity_batch(
         return 0
 
     combined_geojson["features"].extend(new_features)
-
-    final_geojson = split_activities(
-        combined_geojson,
-        threshold_km=PAUSE_SPLIT_THRESHOLD_KM,
-    )
+    final_geojson = split_activities(combined_geojson, threshold_km=PAUSE_SPLIT_THRESHOLD_KM)
     cleaned_geojson = clean_geojson(final_geojson)
     save_geojson(cleaned_geojson)
     save_activity_dataset(cleaned_geojson)
     return len(new_features)
 
+
 def update_geojson(
     strava: StravaClient,
     existing_geojson: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Fetch new activities and save an updated GeoJSON file.
+    """Fetch new activities from Strava and save an updated GeoJSON file.
 
     Args:
         strava (StravaClient): Authenticated Strava client.
@@ -304,8 +289,8 @@ def update_geojson(
     most_recent_date = get_most_recent_activity_date(existing_geojson)
     start_date = get_start_date(existing_geojson, lookback_days=lookback_days)
 
-    logging.info("Most recent stored activity date: %s", most_recent_date)
-    logging.info("Using lookback window: %s days", lookback_days)
+    logging.info("Most recent stored activity: %s", most_recent_date)
+    logging.info("Lookback window: %s days", lookback_days)
     logging.info("Fetching activities after %s", start_date)
 
     combined_geojson = {
@@ -325,12 +310,8 @@ def update_geojson(
         fetched_any = True
         fetched_count += 1
         activity_date = ensure_timezone_aware(activity["date"])
-        earliest_fetched = activity_date if earliest_fetched is None else min(
-            earliest_fetched, activity_date
-        )
-        latest_fetched = activity_date if latest_fetched is None else max(
-            latest_fetched, activity_date
-        )
+        earliest_fetched = min(earliest_fetched, activity_date) if earliest_fetched else activity_date
+        latest_fetched = max(latest_fetched, activity_date) if latest_fetched else activity_date
         batch.append(activity)
 
         if len(batch) < BATCH_SIZE:
@@ -350,17 +331,15 @@ def update_geojson(
 
     if not fetched_any:
         logging.info("No new activities found after %s.", start_date)
-    elif not new_feature_count:
-        logging.info("Fetched activities but no new features were added.")
-    if fetched_any:
+    else:
         logging.info("Fetched %s activities from Strava.", fetched_count)
-        logging.info("Fetched activity date range: %s to %s", earliest_fetched, latest_fetched)
+        logging.info("Date range: %s to %s", earliest_fetched, latest_fetched)
+        if not new_feature_count:
+            logging.info("All fetched activities were already in the GeoJSON.")
 
+    # always re-clean and re-save the dataset even if nothing new, keeps files consistent
     if not new_feature_count:
-        final_geojson = split_activities(
-            combined_geojson,
-            threshold_km=PAUSE_SPLIT_THRESHOLD_KM,
-        )
+        final_geojson = split_activities(combined_geojson, threshold_km=PAUSE_SPLIT_THRESHOLD_KM)
         cleaned_geojson = clean_geojson(final_geojson)
         save_geojson(cleaned_geojson)
         save_activity_dataset(cleaned_geojson)
@@ -368,11 +347,15 @@ def update_geojson(
 
     return combined_geojson
 
+
 def main() -> Optional[Dict[str, Any]]:
-    """Run the Pac-Tyler update workflow.
+    """Run the headless Pac-Tyler update workflow.
+
+    loads a saved strava token, refreshes it if needed, fetches new
+    activities, and writes updated GeoJSON and activity dataset files.
 
     Returns:
-        dict: Updated GeoJSON data if successful.
+        dict: Updated GeoJSON data if successful, None on failure.
     """
     configure_logging()
 
@@ -390,16 +373,19 @@ def main() -> Optional[Dict[str, Any]]:
         redirect_uri=REDIRECT_URI,
     )
 
-    try:
-        authorize_strava(strava)
-    except RuntimeError as exc:
-        logging.error("%s", exc)
+    if not strava.authenticate_from_token_file(TOKEN_FILE):
+        logging.error(
+            "No valid token at %s. Run auth_setup.py once to authorize with Strava, "
+            "then try again.",
+            TOKEN_FILE,
+        )
         return None
 
     existing_geojson = load_existing_geojson()
     updated_geojson = update_geojson(strava, existing_geojson)
-    logging.info("Finished updating GeoJSON with all fetched activities.")
+    logging.info("Finished updating GeoJSON.")
     return updated_geojson
+
 
 if __name__ == "__main__":
     main()

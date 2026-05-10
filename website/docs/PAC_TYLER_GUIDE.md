@@ -1,7 +1,7 @@
 # Pac-Tyler Implementation Guide
 
 ## Overview
-Pac-Tyler is a modern, interactive web page showcasing a gamified biking challenge where the goal is to bike every street in San Diego. The implementation integrates with external GeoJSON data from a Python backend that processes Strava API data.
+Pac-Tyler is a modern, interactive web page showcasing a gamified biking challenge where the goal is to bike every street in San Diego. The implementation integrates with Strava activity data served by the Pi backend.
 
 ## Architecture
 
@@ -10,13 +10,13 @@ Pac-Tyler is a modern, interactive web page showcasing a gamified biking challen
 - **Language**: TypeScript for type safety
 - **Styling**: Tailwind CSS with retro Pac-Man theme
 - **Mapping**: Leaflet.js for interactive maps
-- **Data Fetching**: Client-side fetch from GitHub API
+- **Data Fetching**: Client-side fetch from `https://api.tyler-schwenk.com`
 
-### Backend (Separate Repository)
-- **Repository**: [Tyler-Schwenk/Pac-Tyler](https://github.com/Tyler-Schwenk/Pac-Tyler)
-- **Language**: Python 3.x
-- **Data Source**: Strava API
-- **Output**: GeoJSON file with cleaned GPS tracks
+### Backend (Pi)
+- **Service**: `pi/services/pac-tyler-updater/` — daily Python script on fart-pi
+- **API**: `pi/services/website-backend/` — FastAPI serving the data files
+- **Data Source**: Strava API (via refresh token, no browser needed)
+- **Output**: GeoJSON + activity dataset written to `/home/tyler/pac-tyler-data/` on the Pi
 
 ## Component Structure
 
@@ -48,8 +48,8 @@ Client-side map implementation with full Leaflet integration.
 
 **Responsibilities**:
 - Initialize Leaflet map centered on San Diego
-- Fetch GeoJSON data from GitHub
-- Fetch derived activity dataset for analytics
+- Fetch GeoJSON data from `https://api.tyler-schwenk.com/pac-tyler/geojson`
+- Fetch derived activity dataset from `https://api.tyler-schwenk.com/pac-tyler/activities`
 - Calculate statistics from activity data
 - Render GPS tracks in Pac-Man gold (#E3B800)
 - Display interactive popups with activity details
@@ -60,8 +60,8 @@ Client-side map implementation with full Leaflet integration.
 ```
 1. Component mounts → useEffect triggers
 2. Initialize Leaflet map with dark tiles
-3. Fetch GeoJSON from GitHub
-4. Fetch derived activity dataset from GitHub
+3. Fetch GeoJSON from Pi API
+4. Fetch derived activity dataset from Pi API
 5. Parse and validate data
 6. Calculate statistics (distance, activities, dates)
 7. Render GeoJSON layer on map
@@ -96,8 +96,7 @@ interface ActivityFeature {
 ```
 
 ### Derived Activity Dataset
-The updater also writes a normalized dataset for analytics at `public/data/pac-tyler-activities.json`.
-The frontend loads this dataset from `/data/pac-tyler-activities.json` for charts.
+The updater writes a normalized dataset for frontend analytics to `/home/tyler/pac-tyler-data/pac-tyler-activities.json` on the Pi. The FastAPI backend serves it at `GET /pac-tyler/activities`.
 
 ```typescript
 interface ActivityDataset {
@@ -149,10 +148,9 @@ interface ActivityDatasetEntry {
 - No API key required
 
 ### Why Client-Side Data Fetching?
-- GeoJSON file updates independently of website deployments
-- Latest activity data loads automatically
+- Data updates daily without any website rebuild or deployment
+- Latest activity data loads automatically on each page visit
 - Reduces build time (no static generation of data)
-- Simplifies Python backend workflow
 
 ### Why Separate Map Component Files?
 - Better code organization
@@ -170,7 +168,7 @@ npm run dev
 
 The map will:
 1. Show loading state
-2. Fetch latest GeoJSON from GitHub
+2. Fetch latest GeoJSON from Pi API
 3. Render routes and statistics
 4. Allow interaction with map and popups
 
@@ -186,23 +184,15 @@ The build process:
 3. Optimizes images
 4. Creates static export for GitHub Pages
 
-### Updating Activity Data
-1. Ensure Strava credentials are available in the environment or a `.env` file (supported locations: `setup-pac-tyler/Pac-Tyler/.env` and `setup-pac-tyler/.env`) as `CLIENT_ID` and `CLIENT_SECRET`
-2. Run the updater in `setup-pac-tyler/Pac-Tyler/startup.py`
-3. Authorize in the browser when prompted by Strava OAuth
-4. The script reads the most recent activity timestamp in `cleaned_output.geojson`, applies a small lookback window plus a time offset, and fetches newer activities from Strava
-  - Optional override: set `PAC_TYLER_LOOKBACK_DAYS` to change the lookback window
-5. It adds only new activities (based on `activity_id` when available), splits large gaps using a distance threshold, normalizes fields, and writes `cleaned_output.geojson` at the Pac-Tyler repo root
-6. It also exports `public/data/pac-tyler-activities.json` for frontend analytics
-7. Commit and push the updated `cleaned_output.geojson` and derived dataset to GitHub
-8. The frontend automatically fetches new data on the next page load
+### Updating Activity Data (Automated)
+The `pac-tyler-updater` service on fart-pi runs every day at 3am via systemd timer. No manual steps needed.
 
-No website rebuild is required.
+See `pi/services/pac-tyler-updater/README.md` for setup and first-time auth instructions.
 
-## Error Handling
+### Error Handling
 
 ### Network Errors
-If GitHub API is unreachable:
+If the Pi API is unreachable:
 - Displays error message with details
 - Maintains page layout
 - Suggests user to refresh

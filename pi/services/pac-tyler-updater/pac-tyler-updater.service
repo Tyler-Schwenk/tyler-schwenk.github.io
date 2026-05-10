@@ -1,0 +1,16 @@
+[Unit]
+Description=Pac-Tyler Strava data updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tyler
+WorkingDirectory=/home/tyler/tyler-schwenk.github.io/pi/services/pac-tyler-updater
+ExecStart=/home/tyler/pac-tyler-venv/bin/python main.py
+EnvironmentFile=/home/tyler/tyler-schwenk.github.io/pi/services/pac-tyler-updater/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

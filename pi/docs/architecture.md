@@ -1,6 +1,6 @@
 ﻿# Architecture Plan
 
-**Status**: Phase 1 deployed and operational - Website Backend (gallery + forum), NetBird, Beszel, Cloudflare Tunnel all running
+**Status**: Phase 1 deployed and operational - Website Backend (gallery + forum + pac-tyler), NetBird, Beszel, Cloudflare Tunnel all running; Pac-Tyler updater pending first-time setup
 
 ## Overview
 
@@ -52,8 +52,16 @@ System architecture for fart-pi multi-service home server.
    - Tunnel Name: fart-pi-tunnel
    - Target: website-backend-api:8000
 
+5. **Pac-Tyler Updater** - Daily Strava data sync
+   - Status: Code ready, pending first-time setup on Pi (see pi/services/pac-tyler-updater/README.md)
+   - Service: `pi/services/pac-tyler-updater/`
+   - Auth: Strava refresh token (headless, no browser required after first-time setup)
+   - Output: `/home/tyler/pac-tyler-data/cleaned_output.geojson` and `pac-tyler-activities.json`
+   - Data served by website-backend at `/pac-tyler/geojson` and `/pac-tyler/activities`
+   - Logs: `journalctl -u pac-tyler-updater.service`
+
 **Ready to deploy (Phase 2):**
-5. **Immich** - Photo and video management
+6. **Immich** - Photo and video management
    - Status: Configured, ready to deploy
    - Port: 2283
    - Access: http://100.124.76.27:2283 (via NetBird)

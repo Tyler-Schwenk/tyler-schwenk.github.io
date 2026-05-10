@@ -1,16 +1,16 @@
 """Centralized configuration for the Pac-Tyler data updater."""
 
+import os
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SITE_ROOT_PARENT_LEVELS = 1
-SITE_REPO_ROOT = REPO_ROOT.parents[SITE_ROOT_PARENT_LEVELS]
+# data dir is configurable so it can differ between local dev and the Pi
+DATA_DIR = Path(os.getenv("PAC_TYLER_DATA_DIR", "/home/tyler/pac-tyler-data"))
 
-DOTENV_FILE_NAME = ".env"
-DOTENV_SEARCH_PATHS = [
-    REPO_ROOT / DOTENV_FILE_NAME,
-    REPO_ROOT.parent / DOTENV_FILE_NAME,
-]
+GEOJSON_FILE = DATA_DIR / "cleaned_output.geojson"
+DERIVED_ACTIVITY_JSON = DATA_DIR / "pac-tyler-activities.json"
+TOKEN_FILE = DATA_DIR / "strava_token.json"
+
+DOTENV_FILE = Path(__file__).resolve().parent / ".env"
 
 OAUTH_PORT = 8080
 REDIRECT_URI = f"http://localhost:{OAUTH_PORT}"
@@ -22,6 +22,9 @@ ACTIVITY_DATE_INCREMENT_SECONDS = 1
 
 LOOKBACK_DAYS_ENV_VAR = "PAC_TYLER_LOOKBACK_DAYS"
 SILENCE_TOKEN_WARNINGS_ENV_VAR = "SILENCE_TOKEN_WARNINGS"
+
+# refresh the strava token this many seconds before it actually expires
+TOKEN_REFRESH_BUFFER_SECONDS = 5 * 60
 
 DATE_TIME_OUTPUT_TIMESPEC = "seconds"
 
@@ -44,8 +47,3 @@ MAX_LONGITUDE = 180.0
 
 JSON_INDENT = 4
 METERS_PER_MILE = 1609.34
-
-GEOJSON_FILE = REPO_ROOT / "cleaned_output.geojson"
-PUBLIC_DATA_DIR = SITE_REPO_ROOT / "public" / "data"
-DERIVED_DATA_DIR = PUBLIC_DATA_DIR
-DERIVED_ACTIVITY_JSON = DERIVED_DATA_DIR / "pac-tyler-activities.json"

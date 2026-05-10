@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # Video Storage
     VIDEOS_DIR: str = "/app/videos"
     VIDEO_THUMBNAIL_WIDTH: int = 1280
+
+    # Pac-Tyler data (written by pac-tyler-updater, mounted as a volume)
+    PAC_TYLER_DATA_DIR: str = "/app/pac-tyler"
     
     # API Metadata
     API_TITLE: str = "Website Backend API"

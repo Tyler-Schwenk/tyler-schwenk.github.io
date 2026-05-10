@@ -21,14 +21,17 @@ from config import (
 TYPE_ROOT_PATTERN = re.compile(r"root='([^']+)'", re.IGNORECASE)
 EARTH_RADIUS_METERS = 6371000
 
+
 def normalize_activity_type(value: Any) -> Optional[str]:
-    """Normalize an activity type value to a clean string.
+    """Normalize a raw Strava activity type value to a clean string.
+
+    stravalib sometimes returns types with root= wrappers, this strips that.
 
     Args:
         value (Any): Raw activity type value.
 
     Returns:
-        Optional[str]: Normalized activity type string.
+        Optional[str]: Clean type string, or None.
     """
     if value is None:
         return None
@@ -43,14 +46,15 @@ def normalize_activity_type(value: Any) -> Optional[str]:
 
     return value_str
 
+
 def normalize_date(value: Any) -> Optional[str]:
-    """Normalize an activity date string to ISO 8601 format.
+    """Normalize a raw date value to ISO 8601 format.
 
     Args:
-        value (Any): Raw date value.
+        value (Any): Raw date value (string or datetime).
 
     Returns:
-        Optional[str]: Normalized ISO 8601 date string.
+        Optional[str]: ISO 8601 date string, or None.
     """
     if value is None:
         return None
@@ -66,12 +70,13 @@ def normalize_date(value: Any) -> Optional[str]:
 
     return parsed.isoformat(timespec=DATE_TIME_OUTPUT_TIMESPEC)
 
+
 def haversine_meters(start: List[float], end: List[float]) -> float:
-    """Compute the distance between two lon/lat points in meters.
+    """Compute distance in meters between two [lon, lat] points.
 
     Args:
-        start (list): Start coordinate in [lon, lat].
-        end (list): End coordinate in [lon, lat].
+        start (list): Start coordinate as [lon, lat].
+        end (list): End coordinate as [lon, lat].
 
     Returns:
         float: Distance in meters.
@@ -87,21 +92,22 @@ def haversine_meters(start: List[float], end: List[float]) -> float:
 
     sin_lat = math.sin(delta_lat / 2)
     sin_lon = math.sin(delta_lon / 2)
-    a_value = sin_lat * sin_lat + math.cos(start_lat_rad) * math.cos(end_lat_rad) * sin_lon * sin_lon
+    a_value = sin_lat ** 2 + math.cos(start_lat_rad) * math.cos(end_lat_rad) * sin_lon ** 2
     c_value = 2 * math.atan2(math.sqrt(a_value), math.sqrt(1 - a_value))
     return EARTH_RADIUS_METERS * c_value
+
 
 def reduce_coordinates(
     coordinates: List[List[float]],
     min_distance_meters: int = MIN_COORDINATE_DISTANCE_METERS,
     max_points: int = MAX_COORDINATES_PER_FEATURE,
 ) -> List[List[float]]:
-    """Reduce coordinates by removing points closer than a threshold.
+    """Reduce coordinate density by removing points closer than a threshold.
 
     Args:
         coordinates (list): Coordinate list in [lon, lat] pairs.
-        min_distance_meters (int): Minimum distance between retained points.
-        max_points (int): Optional hard cap on points; 0 disables the cap.
+        min_distance_meters (int): Minimum spacing between retained points.
+        max_points (int): Hard cap on points; 0 disables the cap.
 
     Returns:
         list: Reduced coordinate list.
@@ -131,23 +137,47 @@ def reduce_coordinates(
 
     return capped[:max_points]
 
-def clean_feature(feature: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Clean an individual GeoJSON feature.
+
+def filter_valid_coordinates(coordinates: List[List[float]]) -> List[List[float]]:
+    """Remove coordinates outside valid lat/lon bounds.
 
     Args:
-        feature (dict): GeoJSON feature.
+        coordinates (list): Coordinate list in [lon, lat] pairs.
 
     Returns:
-        Optional[dict]: Cleaned feature or None if invalid.
+        list: Filtered coordinate list.
+    """
+    valid: List[List[float]] = []
+    for point in coordinates:
+        if not isinstance(point, list) or len(point) != 2:
+            continue
+        lon, lat = point
+        if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+            continue
+        if MIN_LATITUDE <= lat <= MAX_LATITUDE and MIN_LONGITUDE <= lon <= MAX_LONGITUDE:
+            valid.append([lon, lat])
+    return valid
+
+
+def clean_feature(feature: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Normalize and validate a single GeoJSON feature.
+
+    Args:
+        feature (dict): Raw GeoJSON feature.
+
+    Returns:
+        Optional[dict]: Cleaned feature, or None if it should be dropped.
     """
     geometry = feature.get("geometry", {})
     coordinates = geometry.get("coordinates", [])
     if not isinstance(coordinates, list):
         return None
+
     cleaned_coordinates = filter_valid_coordinates(coordinates)
     cleaned_coordinates = reduce_coordinates(cleaned_coordinates)
     if len(cleaned_coordinates) < MIN_COORDINATES_PER_FEATURE:
         return None
+
     properties = dict(feature.get("properties", {}))
 
     normalized_type = normalize_activity_type(properties.get("type"))
@@ -167,31 +197,12 @@ def clean_feature(feature: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         "properties": properties,
     }
 
-def filter_valid_coordinates(coordinates: List[List[float]]) -> List[List[float]]:
-    """Remove coordinates that are outside valid latitude/longitude bounds.
-
-    Args:
-        coordinates (list): Coordinate list in [lon, lat] pairs.
-
-    Returns:
-        list: Filtered coordinate list.
-    """
-    valid_coordinates: List[List[float]] = []
-    for point in coordinates:
-        if not isinstance(point, list) or len(point) != 2:
-            continue
-        lon, lat = point
-        if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
-            continue
-        if MIN_LATITUDE <= lat <= MAX_LATITUDE and MIN_LONGITUDE <= lon <= MAX_LONGITUDE:
-            valid_coordinates.append([lon, lat])
-    return valid_coordinates
 
 def clean_geojson(geojson: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize and reduce GeoJSON activity data.
+    """Normalize and reduce all features in a GeoJSON FeatureCollection.
 
     Args:
-        geojson (dict): GeoJSON FeatureCollection.
+        geojson (dict): Raw GeoJSON FeatureCollection.
 
     Returns:
         dict: Cleaned GeoJSON FeatureCollection.

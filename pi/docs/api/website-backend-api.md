@@ -8,8 +8,61 @@ Backend API for tyler-schwenk.com providing:
 - **Public Square Forum**: User authentication, posts, comments, and discussions
 - **Photo Galleries**: Album management with automatic thumbnails and image serving
 - **Video Hosting**: Video upload, streaming, and thumbnail generation
+- **Pac-Tyler**: GeoJSON activity tracks and analytics dataset from Strava
 
 **Database:** Single SQLite file (`website_backend.db`) with separate tables for forum, gallery, and video features.
+
+## Pac-Tyler
+
+No authentication required. Data is written by the `pac-tyler-updater` systemd service and served as static files. Returns `503` if the updater hasnt run yet.
+
+### Get GeoJSON tracks
+
+**Endpoint:** `GET /pac-tyler/geojson`
+
+**Response:** `200 OK` — GeoJSON FeatureCollection with all recorded Strava routes. Each feature is a LineString with properties: `name`, `date` (ISO 8601), `distance` (meters), `type` (e.g. "Ride"), and optionally `activity_id`.
+
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[...]] },
+      "properties": {
+        "name": "Morning Ride",
+        "date": "2026-05-09T08:00:00",
+        "distance": 24000,
+        "type": "Ride",
+        "activity_id": 123456789
+      }
+    }
+  ]
+}
+```
+
+### Get activity dataset
+
+**Endpoint:** `GET /pac-tyler/activities`
+
+**Response:** `200 OK` — Flat activity list for frontend charts. No coordinate data.
+
+```json
+{
+  "generated_at": "2026-05-10T03:01:00+00:00",
+  "activity_count": 42,
+  "activities": [
+    {
+      "activity_id": "123456789",
+      "name": "Morning Ride",
+      "date": "2026-05-09T08:00:00",
+      "distance_m": 24000,
+      "distance_mi": 14.91,
+      "type": "Ride"
+    }
+  ]
+}
+```
 
 ## Authentication
 

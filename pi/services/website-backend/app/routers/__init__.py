@@ -1,5 +1,5 @@
 """
 API routers for Website Backend API.
 
-Defines route handlers for forum (Public Square) and gallery features.
+Defines route handlers for gallery, video, auth, and pac-tyler features.
 """

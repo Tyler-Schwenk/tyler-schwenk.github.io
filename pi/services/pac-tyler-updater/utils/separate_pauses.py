@@ -1,22 +1,27 @@
-"""Utilities to split activities at large pauses."""
+"""Utilities to split activity tracks at large pauses."""
 
 from typing import Any, Dict, List
+
 from geopy.distance import geodesic
 
 from config import PAUSE_SPLIT_THRESHOLD_KM
 
+
 def split_activities(
     activities: Dict[str, Any],
     threshold_km: float = PAUSE_SPLIT_THRESHOLD_KM,
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Split activities when large gaps are detected between points.
+) -> Dict[str, Any]:
+    """Split activity tracks when a large gap is detected between GPS points.
+
+    strava sometimes leaves a straight line between where you paused and
+    unpaused, which would draw a fake path across the map. this removes those.
 
     Args:
         activities (dict): GeoJSON FeatureCollection of activity tracks.
-        threshold_km (float): Distance threshold in kilometers to split tracks.
+        threshold_km (float): Gap distance in km that triggers a split.
 
     Returns:
-        dict: GeoJSON FeatureCollection with split segments.
+        dict: GeoJSON FeatureCollection with split segments as separate features.
     """
     new_activities: List[Dict[str, Any]] = []
 
@@ -48,19 +53,16 @@ def split_activities(
         new_segments.append(current_segment)
 
         for segment in new_segments:
-            new_activity = {
+            new_activities.append({
                 "type": "Feature",
                 "geometry": {
                     "type": "LineString",
                     "coordinates": segment,
                 },
                 "properties": properties,
-            }
-            new_activities.append(new_activity)
+            })
 
     return {
         "type": "FeatureCollection",
         "features": new_activities,
     }
-
-

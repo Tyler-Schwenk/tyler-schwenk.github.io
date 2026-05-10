@@ -10,7 +10,7 @@ const METERS_PER_MILE = 1609.34;
 const DISPLAY_MERGE_THRESHOLD_KM = 2;
 const DISPLAY_MERGE_THRESHOLD_METERS =
   DISPLAY_MERGE_THRESHOLD_KM * METERS_PER_KM;
-const ACTIVITY_DATASET_URL = "/data/pac-tyler-activities.json";
+const ACTIVITY_DATASET_URL = "https://api.tyler-schwenk.com/pac-tyler/activities";
 const FILTER_MODE_ALL = "all";
 const FILTER_MODE_YEAR = "year";
 const FILTER_MODE_MONTH = "month";
@@ -1106,7 +1106,7 @@ export default function PacTylerMapClient() {
       try {
         setLoading(true);
         const response = await fetch(
-          "https://raw.githubusercontent.com/Tyler-Schwenk/Pac-Tyler/main/cleaned_output.geojson"
+          "https://api.tyler-schwenk.com/pac-tyler/geojson"
         );
 
         if (!response.ok) {
