@@ -186,7 +186,7 @@ class StravaClient:
 
         self.client.access_token = token_data["access_token"]
         self.client.refresh_token = token_data.get("refresh_token")
-        self.client.token_expires_at = token_data.get("expires_at")
+        self.client.token_expires = token_data.get("expires_at")
         logging.info("Authenticated via saved token.")
         return True
 
