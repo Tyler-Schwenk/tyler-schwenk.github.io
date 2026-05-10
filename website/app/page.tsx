@@ -44,8 +44,8 @@ export default function Home() {
                 <MenuOption href="/gallery" iconSrc="/images/8bit/camera.png">
                   GALLERY
                 </MenuOption>
-                <MenuOption href="/pac-tyler" iconSrc="/images/8bit/pacman.png">
-                  PAC-TYLER
+                <MenuOption href="/biking" iconSrc="/images/8bit/bike.png">
+                  BIKING
                 </MenuOption>
                 <MenuOption href="/cookbook" iconSrc="/images/8bit/chef.png">
                   COOKBOOK

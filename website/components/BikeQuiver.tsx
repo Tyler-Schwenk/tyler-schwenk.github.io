@@ -11,6 +11,7 @@ export interface Bike {
   name: string;
   thumbnail: string; // Path to thumbnail image
   images: string[]; // Array of image paths for gallery
+  videos?: string[]; // Optional video paths shown in modal
   acquired: string; // Date acquired (e.g., "2020-05-15" or "May 2020")
   decommissioned?: string; // Date decommissioned (e.g., "2022-08-20" or "Aug 2022"), undefined for current bikes
   totalMiles?: number; // Optional - omit if miles aren't tracked for this bike
@@ -74,7 +75,7 @@ export default function BikeQuiver({ bikes }: BikeQuiverProps) {
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-[#E3B800] font-mono mb-2">
-          🚴 THE QUIVER
+          THE QUIVER
         </h2>
         <p className="text-gray-400 font-mono text-sm">
           Click any bike to view full details and photos
@@ -311,11 +312,30 @@ function BikeModal({
             <p className="text-gray-300 leading-relaxed">{bike.description}</p>
           </div>
 
+          {/* Videos */}
+          {bike.videos && bike.videos.length > 0 && (
+            <div>
+              <h3 className="text-lg font-bold text-[#E3B800] font-mono mb-3">
+                VIDEO
+              </h3>
+              <div className="space-y-4">
+                {bike.videos.map((src, i) => (
+                  <video
+                    key={i}
+                    src={src}
+                    controls
+                    className="w-full rounded bg-black"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Decommission Details */}
           {bike.decommissionDetails && (
             <div className="bg-red-900/20 border border-red-500/50 rounded p-4">
               <h3 className="text-lg font-bold text-red-400 font-mono mb-2">
-                ⚠️ {bike.status.toUpperCase()}
+                {bike.status.toUpperCase()}
               </h3>
               <p className="text-red-200 text-sm">{bike.decommissionDetails}</p>
             </div>

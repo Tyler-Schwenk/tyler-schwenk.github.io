@@ -58,6 +58,7 @@ export const EVENTS: EventEntry[] = [
       },
     ],
   },
+  // Past — most recent first
   {
     slug: "fuck-ice-punk-fundraiser",
     title: '"Fuck Ice" Punk Concert/Fundraiser',
@@ -65,6 +66,7 @@ export const EVENTS: EventEntry[] = [
     locationText: "Tyler's House",
     summary: "Danny and Andrew will be unleashing hell",
     type: "info",
+    past: true,
     flierImage: {
       src: "/images/events/fuckice.png",
       alt: "Fuck Ice punk concert flier",
@@ -79,10 +81,7 @@ export const EVENTS: EventEntry[] = [
         href: "https://www.alotrolado.org/",
       },
     ],
-    rsvpNote: RSVP_NOTE_COMING_SOON,
   },
-
-  // Past — most recent first
   {
     slug: "milan-tyler-birthday-boogie",
     title: "Milan and Tyler Birthday Boogie and \"Welcome Back Tommy and Ruby\" Party",
