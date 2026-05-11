@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+
+const ACTIVITIES_API_URL = "https://api.tyler-schwenk.com/pac-tyler/activities";
 
 /**
  * Bike data structure
@@ -14,7 +16,9 @@ export interface Bike {
   videos?: string[]; // Optional video paths shown in modal
   acquired: string; // Date acquired (e.g., "2020-05-15" or "May 2020")
   decommissioned?: string; // Date decommissioned (e.g., "2022-08-20" or "Aug 2022"), undefined for current bikes
-  totalMiles?: number; // Optional - omit if miles aren't tracked for this bike
+  totalMiles?: number; // static total — used for decommissioned bikes
+  milesFrom?: string; // ISO date (e.g. "2025-11-21") — enables live mile tracking from the API
+  milesUntil?: string; // ISO date — omit for active bikes
   description: string; // Main story about the bike, its characteristics, and experiences
   specs?: {
     brand?: string;
@@ -42,6 +46,52 @@ interface BikeQuiverProps {
 export default function BikeQuiver({ bikes }: BikeQuiverProps) {
   const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [computedMiles, setComputedMiles] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const dynamicBikes = bikes.filter((b) => b.milesFrom);
+    if (dynamicBikes.length === 0) return;
+
+    const fetchAndCompute = async () => {
+      const res = await fetch(ACTIVITIES_API_URL);
+      const data = await res.json();
+      const activities: Array<{
+        name: string;
+        date: string;
+        distance_m: number;
+        distance_mi: number;
+        type: string;
+      }> = data.activities;
+
+      // deduplicate — API returns some rides twice (once without activity_id, once with)
+      const seen = new Set<string>();
+      const deduped = activities.filter((a) => {
+        const key = `${a.name}|${a.date}|${a.distance_m}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      const result: Record<string, number> = {};
+      for (const bike of dynamicBikes) {
+        const from = new Date(bike.milesFrom!);
+        const until = bike.milesUntil ? new Date(bike.milesUntil) : null;
+        let total = 0;
+        for (const activity of deduped) {
+          if (activity.type !== "Ride") continue;
+          const d = new Date(activity.date);
+          if (d < from) continue;
+          if (until && d > until) continue;
+          total += activity.distance_mi;
+        }
+        result[bike.id] = Math.round(total * 10) / 10;
+      }
+
+      setComputedMiles(result);
+    };
+
+    fetchAndCompute();
+  }, [bikes]);
 
   const openBikeModal = (bike: Bike) => {
     setSelectedBike(bike);
@@ -88,6 +138,7 @@ export default function BikeQuiver({ bikes }: BikeQuiverProps) {
           <BikeCard
             key={bike.id}
             bike={bike}
+            displayMiles={computedMiles[bike.id] ?? bike.totalMiles}
             onClick={() => openBikeModal(bike)}
           />
         ))}
@@ -97,6 +148,7 @@ export default function BikeQuiver({ bikes }: BikeQuiverProps) {
       {selectedBike && (
         <BikeModal
           bike={selectedBike}
+          displayMiles={computedMiles[selectedBike.id] ?? selectedBike.totalMiles}
           currentImageIndex={currentImageIndex}
           onClose={closeBikeModal}
           onNextImage={nextImage}
@@ -112,10 +164,11 @@ export default function BikeQuiver({ bikes }: BikeQuiverProps) {
  */
 interface BikeCardProps {
   bike: Bike;
+  displayMiles?: number;
   onClick: () => void;
 }
 
-function BikeCard({ bike, onClick }: BikeCardProps) {
+function BikeCard({ bike, displayMiles, onClick }: BikeCardProps) {
   return (
     <div
       onClick={onClick}
@@ -148,10 +201,10 @@ function BikeCard({ bike, onClick }: BikeCardProps) {
             <span className="text-[#E3B800]">{bike.decommissioned}</span>
           </div>
         )}
-        {bike.totalMiles !== undefined && (
+        {displayMiles !== undefined && (
           <div className="flex justify-between">
             <span className="text-gray-400">Miles:</span>
-            <span className="text-[#E3B800]">{bike.totalMiles.toLocaleString()}</span>
+            <span className="text-[#E3B800]">{displayMiles.toLocaleString()}</span>
           </div>
         )}
         {bike.specs?.brand && (
@@ -183,6 +236,7 @@ function BikeCard({ bike, onClick }: BikeCardProps) {
  */
 interface BikeModalProps {
   bike: Bike;
+  displayMiles?: number;
   currentImageIndex: number;
   onClose: () => void;
   onNextImage: () => void;
@@ -191,6 +245,7 @@ interface BikeModalProps {
 
 function BikeModal({
   bike,
+  displayMiles,
   currentImageIndex,
   onClose,
   onNextImage,
@@ -258,11 +313,11 @@ function BikeModal({
               <span className="text-gray-400">
                 {bike.acquired}{bike.decommissioned ? ` - ${bike.decommissioned}` : ' - Present'}
               </span>
-              {bike.totalMiles !== undefined && (
+              {displayMiles !== undefined && (
                 <>
                   <span className="text-gray-600">•</span>
                   <span className="text-[#E3B800]">
-                    {bike.totalMiles.toLocaleString()} miles
+                    {displayMiles.toLocaleString()} miles
                   </span>
                 </>
               )}

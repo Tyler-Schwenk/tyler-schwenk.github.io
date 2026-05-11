@@ -41,7 +41,7 @@ const BIKES: Bike[] = [
     thumbnail: "/images/bikes/novara.jpg",
     images: ["/images/bikes/novara.jpg"],
     acquired: "November 21 2025",
-    totalMiles: 548.7,
+    milesFrom: "2025-11-21",
     description:
       "My new daily driver. Bar end shifters, kick stand, wide gear ratio, nice leather seat, plenty of cargo space, upright riding position, and it actually fits.",
     specs: {
@@ -190,7 +190,7 @@ export default function Biking() {
           <header className="mb-12">
             <h1 className="text-4xl font-bold mb-3">Biking</h1>
             <p className="text-gray-400 text-lg leading-relaxed">
-              I Love bikes. I think riding them improves the users life and the lives of those around them. Its also very fun to ride bikes while listening to techno music. You dont have to pay for gas, you just buy yourself yummy food instead. When they break they are easy and cheap to fix. You dont need to get insurrance either. Also when youre biking you smell good food spots your wouldnt have noticed in your car. You hear live music you wouldnt have found on the highway. You see your neighbors and ring your bell at them. You also exersize and feel better mentally - and get to brag about it on strava. You dont have to give any of your hard earned money to natural gas companies - whom I have some choice words for. I think thats all I have for now..
+              I Love bikes. I think riding them improves the users life and the lives of those around them. Its also very fun to ride bikes while listening to techno music. You dont have to pay for gas, you just buy yourself yummy food instead. When they break they are easy and cheap to fix. You dont need to get insurrance either. Also when youre biking you smell good food spots your wouldnt have noticed in your car. You hear live music you wouldnt have found on the highway. You see your neighbors and ring your bell at them. You also get a lil cardio in and feel better mentally. And you get to brag about your rides on strava. You dont have to give any of your hard earned money to natural gas companies - whom I have some choice words for. Uuuuh I think thats all I have for now..
             </p>
           </header>
 
