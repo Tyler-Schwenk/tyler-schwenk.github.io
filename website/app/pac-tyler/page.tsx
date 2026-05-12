@@ -118,6 +118,19 @@ export default function PacTyler() {
               </div>
             </div>
           </section>
+
+          {/* Inspiration Credit */}
+          <div className="mt-8 text-center font-mono text-sm text-gray-500">
+            Inspired by{" "}
+            <a
+              href="https://www.youtube.com/watch?v=1c8i5SABqwU"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-[#E3B800] underline transition-colors"
+            >
+              Tom7
+            </a>
+          </div>
         </div>
       </main>
     </PageWrapper>
