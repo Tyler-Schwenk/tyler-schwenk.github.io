@@ -40,6 +40,10 @@ const DAY_LABEL_FORMATTER = new Intl.DateTimeFormat("en-US", {
 const MONTH_KEY_PATTERN = /^\d{4}-\d{2}$/;
 const MONTH_LABEL_INTERVAL = 1;
 const MONTH_INDEX_OFFSET = 1;
+const USER_LOCATION_DOT_COLOR = "#4A90D9";
+const USER_LOCATION_DOT_BORDER_COLOR = "#ffffff";
+const USER_LOCATION_DOT_RADIUS_PX = 8;
+const USER_LOCATION_DOT_OPACITY = 0.9;
 
 type LineCoordinates = [number, number][];
 type MultiLineCoordinates = [number, number][][];
@@ -951,6 +955,7 @@ function MonthlyDistanceChart({
 export default function PacTylerMapClient() {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const userLocationMarkerRef = useRef<L.CircleMarker | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activityDataset, setActivityDataset] = useState<ActivityDatasetEntry[]>(
@@ -1086,6 +1091,27 @@ export default function PacTylerMapClient() {
 
         mapRef.current = map;
 
+        // request location non-blockingly — if denied, nothing happens
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              const marker = L.circleMarker([latitude, longitude], {
+                radius: USER_LOCATION_DOT_RADIUS_PX,
+                color: USER_LOCATION_DOT_BORDER_COLOR,
+                fillColor: USER_LOCATION_DOT_COLOR,
+                fillOpacity: USER_LOCATION_DOT_OPACITY,
+                weight: 2,
+              });
+              marker.addTo(map).bindPopup("Your location");
+              userLocationMarkerRef.current = marker;
+            },
+            () => {
+              // location denied or unavailable — totally fine, just skip
+            }
+          );
+        }
+
         // Use dark themed tiles for Pac-Man aesthetic
         L.tileLayer(
           "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -1206,6 +1232,10 @@ export default function PacTylerMapClient() {
           <div className="flex items-center gap-2">
             <div className="w-8 h-1 bg-[#E3B800]"></div>
             <span className="text-[#E3B800]">Completed Routes</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#4A90D9] border-2 border-white"></div>
+            <span className="text-gray-300">Your Location</span>
           </div>
           <div className="text-gray-400">Click any route for details</div>
         </div>
