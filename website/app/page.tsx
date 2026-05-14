@@ -50,6 +50,9 @@ export default function Home() {
                 <MenuOption href="/cookbook" iconSrc="/images/8bit/chef.png">
                   COOKBOOK
                 </MenuOption>
+                <MenuOption href="/garden" iconSrc="/images/8bit/plant.png">
+                  THE GARDEN
+                </MenuOption>
                 <MenuOption href="/sd-workspaces" iconSrc="/images/8bit/coffee.png">
                   SD WORKSPACES
                 </MenuOption>

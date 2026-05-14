@@ -25,6 +25,7 @@ export type EventEntry = {
   links?: EventLink[];
   rsvpLink?: EventLink;
   rsvpNote?: string;
+  additionalImages?: EventFlier[];
 };
 
 const DJ_SET_URL =
@@ -74,6 +75,12 @@ export const EVENTS: EventEntry[] = [
     smallImage: true,
     highlights: [
       "$10 suggested donation at the door - all proceeds go to Al Otro Lado",
+    ],
+    additionalImages: [
+      {
+        src: "/images/events/AOL_Donate.png",
+        alt: "Al Otro Lado donation receipt",
+      },
     ],
     links: [
       {

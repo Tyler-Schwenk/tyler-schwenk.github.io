@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -52,6 +53,7 @@ export default async function EventDetailPage({
             <EventLinks event={event} />
             <EventRsvp event={event} />
             <EventFlierModal flier={event.flierImage} />
+            <EventAdditionalImages event={event} />
           </div>
         </div>
       </div>
@@ -170,6 +172,38 @@ function EventLinks({ event }: { event: EventEntry }) {
             <span>{link.label}</span>
             <span className="text-sm text-indigo-300">Open</span>
           </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Renders additional photos attached to the event.
+ *
+ * @param {object} props - Component props.
+ * @param {EventEntry} props.event - Event data.
+ * @returns {JSX.Element | null} The photos section when present.
+ */
+function EventAdditionalImages({ event }: { event: EventEntry }) {
+  if (!event.additionalImages || event.additionalImages.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-8">
+      <h2 className="text-lg font-semibold text-white mb-3">Photos</h2>
+      <div className="flex flex-wrap gap-4">
+        {event.additionalImages.map((image) => (
+          <div key={image.src} className="relative w-full max-w-sm rounded-xl overflow-hidden border border-slate-700">
+            <Image
+              src={image.src}
+              alt={image.alt}
+              width={600}
+              height={400}
+              className="w-full h-auto object-cover"
+            />
+          </div>
         ))}
       </div>
     </div>

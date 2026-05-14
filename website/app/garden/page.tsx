@@ -1,0 +1,234 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import PageWrapper from "@/components/PageWrapper";
+import { TIMELAPSE_TIMESTAMPS } from "./timelapse-timestamps";
+
+const API_BASE = "https://api.tyler-schwenk.com";
+const TIMELAPSE_SLUG = "garden-timelapse";
+
+interface VideoMeta {
+  id: number;
+  title: string;
+}
+
+/**
+ * Returns the date label for the given playback position.
+ * Walks the sorted timestamps and returns the last entry whose startSeconds
+ * is <= currentSeconds — so we always show the most recent date.
+ *
+ * @param {number} currentSeconds - Current video playback position in seconds.
+ * @returns {string} Formatted date label, e.g. "Apr 13, 2026".
+ */
+function getDateAtTime(currentSeconds: number): string {
+  let label = TIMELAPSE_TIMESTAMPS[0]?.date ?? "";
+  for (const entry of TIMELAPSE_TIMESTAMPS) {
+    if (entry.startSeconds <= currentSeconds) {
+      label = entry.date;
+    } else {
+      break;
+    }
+  }
+  return label;
+}
+
+/**
+ * The garden page — shows a timelapse of the garden with a live date indicator,
+ * plus a section of gardening inspiration links.
+ *
+ * @returns {JSX.Element} The garden page layout.
+ */
+export default function GardenPage() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
+  const [videoNotFound, setVideoNotFound] = useState(false);
+  const [currentDate, setCurrentDate] = useState(TIMELAPSE_TIMESTAMPS[0]?.date ?? "");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isEnded, setIsEnded] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // fetch the video ID by slug on mount — slug is stable, numeric ID is not
+  useEffect(() => {
+    fetch(`${API_BASE}/videos/slug/${TIMELAPSE_SLUG}`)
+      .then((res) => {
+        if (!res.ok) {
+          setVideoNotFound(true);
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) setVideoMeta({ id: data.id, title: data.title });
+      })
+      .catch(() => setVideoNotFound(true));
+  }, []);
+
+  const handleTimeUpdate = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    setProgress((video.currentTime / video.duration) * 100);
+    setCurrentDate(getDateAtTime(video.currentTime));
+  }, []);
+
+  const handleEnded = useCallback(() => {
+    setIsPlaying(false);
+    setIsEnded(true);
+  }, []);
+
+  // play/pause toggle — also handles replay from ended state
+  const handlePlayPause = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isEnded) {
+      video.currentTime = 0;
+      video.play();
+      setIsEnded(false);
+      return;
+    }
+    if (video.paused) {
+      video.play();
+    } else {
+      video.pause();
+    }
+  }, [isEnded]);
+
+  // scrubbing: seek the video and update date + progress immediately
+  const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    const pct = parseFloat(e.target.value);
+    const newTime = (pct / 100) * video.duration;
+    video.currentTime = newTime;
+    setProgress(pct);
+    setCurrentDate(getDateAtTime(newTime));
+    if (isEnded) setIsEnded(false);
+  }, [isEnded]);
+
+  const videoSrc = videoMeta ? `${API_BASE}/videos/${videoMeta.id}/stream` : null;
+
+  return (
+    <PageWrapper>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-950 to-slate-900 py-16">
+        <div className="container mx-auto px-6 max-w-4xl">
+
+          {/* Header */}
+          <div className="text-center mb-10">
+            <div className="flex items-center justify-center gap-4 mb-3">
+              <Image src="/images/8bit/plant.png" alt="" width={48} height={48} />
+              <h1 className="text-4xl md:text-5xl font-bold text-green-400 pixel-font tracking-wider drop-shadow-[3px_3px_0_rgba(0,0,0,1)]">
+                THE GARDEN
+              </h1>
+              <Image src="/images/8bit/plant.png" alt="" width={48} height={48} />
+            </div>
+          </div>
+
+          {/* Timelapse Section */}
+          <div className="mb-16">
+            <h2 className="text-lg font-bold text-green-300 pixel-font mb-5 text-center tracking-wide">
+              TIMELAPSE
+            </h2>
+
+            {videoSrc ? (
+              <div>
+                <video
+                  ref={videoRef}
+                  src={videoSrc}
+                  onTimeUpdate={handleTimeUpdate}
+                  onEnded={handleEnded}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  className="w-full rounded-lg border-2 border-green-700 shadow-2xl"
+                >
+                  Your browser does not support the video tag.
+                </video>
+
+                {/* Custom controls */}
+                <div className="mt-3 bg-green-950/60 border border-green-800 rounded-lg px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handlePlayPause}
+                      className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-green-700 hover:bg-green-600 text-white transition-colors"
+                      aria-label={isEnded ? "Replay" : isPlaying ? "Pause" : "Play"}
+                    >
+                      {isEnded ? "↺" : isPlaying ? "⏸" : "▶"}
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={0.01}
+                      value={progress}
+                      onChange={handleScrub}
+                      className="flex-1 cursor-pointer accent-green-400"
+                    />
+                  </div>
+                  <div className="mt-2 text-center">
+                    <span className="text-green-300 font-mono text-base tracking-widest">
+                      {currentDate}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : videoNotFound ? (
+              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
+                <p className="text-green-400 pixel-font text-lg mb-2">COMING SOON</p>
+                <p className="text-slate-400 text-sm">timelapse video is being processed</p>
+              </div>
+            ) : (
+              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
+                <p className="text-slate-400 text-sm">loading...</p>
+              </div>
+            )}
+          </div>
+
+          {/* Gardening Inspiration */}
+          <div className="mb-16">
+            <h2 className="text-lg font-bold text-green-300 pixel-font mb-6 text-center tracking-wide">
+              GARDENING INSPIRATION
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <a
+                href="https://sandiegoseedcompany.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group"
+              >
+                <div className="text-green-400 font-bold text-lg mb-1 group-hover:text-green-300">
+                  San Diego Seed Company
+                </div>
+                <div className="text-slate-400 text-sm mb-2">sandiegoseedcompany.com</div>
+                <div className="text-slate-500 text-xs">
+                  local seed company with solid info for SoCal gardening
+                </div>
+              </a>
+              <a
+                href="https://www.youtube.com/@SanDiegoSeedCompany"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group"
+              >
+                <div className="text-green-400 font-bold text-lg mb-1 group-hover:text-green-300">
+                  San Diego Seed Co. — YouTube
+                </div>
+                <div className="text-slate-400 text-sm mb-2">@SanDiegoSeedCompany</div>
+                <div className="text-slate-500 text-xs">
+                  videos on planting, growing, and harvesting for San Diego climate
+                </div>
+              </a>
+            </div>
+          </div>
+
+          {/* Back Link */}
+          <div className="text-center">
+            <Link href="/" className="text-slate-400 hover:text-white transition-colors">
+              ← Back to Main Menu
+            </Link>
+          </div>
+
+        </div>
+      </div>
+    </PageWrapper>
+  );
+}
