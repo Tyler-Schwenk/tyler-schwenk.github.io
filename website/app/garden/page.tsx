@@ -8,6 +8,7 @@ import { TIMELAPSE_TIMESTAMPS } from "./timelapse-timestamps";
 
 const API_BASE = "https://api.tyler-schwenk.com";
 const TIMELAPSE_SLUG = "garden-timelapse";
+const FRAME_DURATION_S = 1 / 30;
 
 interface VideoMeta {
   id: number;
@@ -42,6 +43,7 @@ function getDateAtTime(currentSeconds: number): string {
  */
 export default function GardenPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isScrubbing = useRef(false);
   const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
   const [videoNotFound, setVideoNotFound] = useState(false);
   const [currentDate, setCurrentDate] = useState(TIMELAPSE_TIMESTAMPS[0]?.date ?? "");
@@ -66,6 +68,8 @@ export default function GardenPage() {
   }, []);
 
   const handleTimeUpdate = useCallback(() => {
+    // skip while the user is dragging — they own the slider position
+    if (isScrubbing.current) return;
     const video = videoRef.current;
     if (!video || !video.duration) return;
     setProgress((video.currentTime / video.duration) * 100);
@@ -94,6 +98,14 @@ export default function GardenPage() {
     }
   }, [isEnded]);
 
+  const handleScrubStart = useCallback(() => {
+    isScrubbing.current = true;
+  }, []);
+
+  const handleScrubEnd = useCallback(() => {
+    isScrubbing.current = false;
+  }, []);
+
   // scrubbing: seek the video and update date + progress immediately
   const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
@@ -104,6 +116,17 @@ export default function GardenPage() {
     setProgress(pct);
     setCurrentDate(getDateAtTime(newTime));
     if (isEnded) setIsEnded(false);
+  }, [isEnded]);
+
+  // step one frame forward or back
+  const stepFrame = useCallback((direction: 1 | -1) => {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    const newTime = Math.max(0, Math.min(video.duration, video.currentTime + direction * FRAME_DURATION_S));
+    video.currentTime = newTime;
+    setProgress((newTime / video.duration) * 100);
+    setCurrentDate(getDateAtTime(newTime));
+    if (isEnded && direction < 0) setIsEnded(false);
   }, [isEnded]);
 
   const videoSrc = videoMeta ? `${API_BASE}/videos/${videoMeta.id}/stream` : null;
@@ -154,6 +177,13 @@ export default function GardenPage() {
                     >
                       {isEnded ? "↺" : isPlaying ? "⏸" : "▶"}
                     </button>
+                    <button
+                      onClick={() => stepFrame(-1)}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors text-sm"
+                      aria-label="Previous frame"
+                    >
+                      &#x276E;
+                    </button>
                     <input
                       type="range"
                       min={0}
@@ -161,8 +191,19 @@ export default function GardenPage() {
                       step={0.01}
                       value={progress}
                       onChange={handleScrub}
+                      onMouseDown={handleScrubStart}
+                      onMouseUp={handleScrubEnd}
+                      onTouchStart={handleScrubStart}
+                      onTouchEnd={handleScrubEnd}
                       className="flex-1 cursor-pointer accent-green-400"
                     />
+                    <button
+                      onClick={() => stepFrame(1)}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors text-sm"
+                      aria-label="Next frame"
+                    >
+                      &#x276F;
+                    </button>
                   </div>
                   <div className="mt-2 text-center">
                     <span className="text-green-300 font-mono text-base tracking-widest">
