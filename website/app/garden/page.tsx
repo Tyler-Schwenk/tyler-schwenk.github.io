@@ -43,8 +43,10 @@ function getDateAtTime(currentSeconds: number): string {
  */
 export default function GardenPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isScrubbing = useRef(false);
   const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoNotFound, setVideoNotFound] = useState(false);
   const [currentDate, setCurrentDate] = useState(TIMELAPSE_TIMESTAMPS[0]?.date ?? "");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -67,6 +69,16 @@ export default function GardenPage() {
       .catch(() => setVideoNotFound(true));
   }, []);
 
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
+    };
+  }, []);
+
   const handleTimeUpdate = useCallback(() => {
     // skip while the user is dragging — they own the slider position
     if (isScrubbing.current) return;
@@ -79,6 +91,20 @@ export default function GardenPage() {
   const handleEnded = useCallback(() => {
     setIsPlaying(false);
     setIsEnded(true);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container || !video) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (container.requestFullscreen) {
+      container.requestFullscreen();
+    } else if ((video as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen) {
+      // iOS Safari only supports fullscreen on the video element itself
+      (video as HTMLVideoElement & { webkitEnterFullscreen: () => void }).webkitEnterFullscreen();
+    }
   }, []);
 
   // play/pause toggle — also handles replay from ended state
@@ -154,7 +180,10 @@ export default function GardenPage() {
             </h2>
 
             {videoSrc ? (
-              <div>
+              <div
+                ref={containerRef}
+                className={isFullscreen ? "flex flex-col bg-black" : ""}
+              >
                 <video
                   ref={videoRef}
                   src={videoSrc}
@@ -162,13 +191,17 @@ export default function GardenPage() {
                   onEnded={handleEnded}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
-                  className="w-full rounded-lg border-2 border-green-700 shadow-2xl"
+                  className={isFullscreen
+                    ? "flex-1 min-h-0 w-full object-contain"
+                    : "w-full rounded-lg border-2 border-green-700 shadow-2xl"}
                 >
                   Your browser does not support the video tag.
                 </video>
 
                 {/* Custom controls */}
-                <div className="mt-3 bg-green-950/60 border border-green-800 rounded-lg px-4 py-3">
+                <div className={isFullscreen
+                  ? "w-full shrink-0 bg-black/90 px-4 py-3"
+                  : "mt-3 bg-green-950/60 border border-green-800 rounded-lg px-4 py-3"}>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={handlePlayPause}
@@ -203,6 +236,27 @@ export default function GardenPage() {
                       aria-label="Next frame"
                     >
                       &#x276F;
+                    </button>
+                    <button
+                      onClick={toggleFullscreen}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors"
+                      aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                    >
+                      {isFullscreen ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="4 14 10 14 10 20"></polyline>
+                          <polyline points="20 10 14 10 14 4"></polyline>
+                          <line x1="10" y1="14" x2="3" y2="21"></line>
+                          <line x1="21" y1="3" x2="14" y2="10"></line>
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="15 3 21 3 21 9"></polyline>
+                          <polyline points="9 21 3 21 3 15"></polyline>
+                          <line x1="21" y1="3" x2="14" y2="10"></line>
+                          <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                      )}
                     </button>
                   </div>
                   <div className="mt-2 text-center">

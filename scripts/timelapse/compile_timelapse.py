@@ -89,11 +89,11 @@ BEFORE_PHOTO_DATES: dict[str, str] = {
 }
 
 # how long each before photo holds on screen in the compiled video
-STILL_DURATION_S: int = 3
+STILL_DURATION_S: int = 2
 
 # native AVI clip resolution — all clips are normalized to this
-TARGET_WIDTH: int = 1920
-TARGET_HEIGHT: int = 1080
+TARGET_WIDTH: int = 1280
+TARGET_HEIGHT: int = 720
 
 
 def get_clip_duration(clip_path: Path) -> float:
@@ -243,7 +243,7 @@ def compile_video(
             FFMPEG, "-y",
             "-f", "concat", "-safe", "0",
             "-i", str(concat_file),
-            "-c:v", "libx264", "-crf", "18",
+            "-c:v", "libx264", "-crf", "26",
             "-pix_fmt", "yuv420p",
             "-movflags", "+faststart",
             str(output_path),
