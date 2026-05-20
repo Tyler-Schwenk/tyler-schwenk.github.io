@@ -312,6 +312,20 @@ export default function GardenPage() {
                   videos on planting, growing, and harvesting for San Diego climate
                 </div>
               </a>
+              <a
+                href="https://www.youtube.com/watch?v=6vqRMKOxaW8"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group"
+              >
+                <div className="text-green-400 font-bold text-lg mb-1 group-hover:text-green-300">
+                  Trellis to make you Jealous
+                </div>
+                <div className="text-slate-400 text-sm mb-2">youtube.com</div>
+                <div className="text-slate-500 text-xs">
+                  I use a modified version of this
+                </div>
+              </a>
             </div>
           </div>
 

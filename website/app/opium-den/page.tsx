@@ -3,6 +3,7 @@ import Navigation from "@/components/Navigation";
 
 const NTS_RADIO_URL = "https://www.nts.live/";
 const TOMMY_DJ_SET_URL = "#";
+const TOMMY_TRACEPOINT_URL = "https://youtu.be/vQVDN9WMmeY?si=30ZEHBMureSoWbwB";
 const DUBLAB_URL = "https://www.dublab.com/archive/andy-oro-and-akumen-made-to-move-radio-09-06-25";
 const THE_LOT_URL = "https://www.thelotradio.com/";
 
@@ -34,7 +35,7 @@ export default function OpiumDenPage() {
           </div>
         </details>
 
-        <details className="mt-8 rounded-xl border border-red-800/90 bg-red-900/30 p-4">
+        {/* <details className="mt-8 rounded-xl border border-red-800/90 bg-red-900/30 p-4">
           <summary className="inline-flex cursor-pointer list-none items-center rounded-md border border-red-700 bg-red-800 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-red-100 hover:bg-red-700 transition-colors">
             why?
           </summary>
@@ -43,7 +44,7 @@ export default function OpiumDenPage() {
               Listen, I fucking love spotify. leaving all of my playlists is going to hurt real bad. Ive been building them for over 10 years and I must say that there are some bangers there. That being said I may download my catalogue some way and perhaps keep some of thos eplaylists alive...
             </p>
             <p>
-              But sadly Spotify evil :( 
+              But sadly Spotify evil :(
             </p>
             <p>
               In a story that is very familiar in the world of music they have consistently exploited their artists.
@@ -57,23 +58,33 @@ export default function OpiumDenPage() {
             >
               https://en.wikipedia.org/wiki/Criticism_of_Spotify#Funding_defense_technology
             </a>
-<p>              Also, the ability to own your music, not rent it. Over the past ~11 years I have spent about $1,900 on Spotify and own nothing. If they went bankrupt or just decided to change their terms I would lose everything. I'd rather start investing In the ownership of music.
+            <p>Also, the ability to own your music, not rent it. Over the past ~11 years I have spent about $1,900 on Spotify and own nothing. If they went bankrupt or just decided to change their terms I would lose everything. I&apos;d rather start investing In the ownership of music.
             </p>
-
             <p>
-              I think there are also positive effects of having music feel less like an infinite, disposable commodity, and rather something special that you have to seek out. 
+              I think there are also positive effects of having music feel less like an infinite, disposable commodity, and rather something special that you have to seek out.
             </p>
           </div>
-        </details>
+        </details> */}
 
         <section className="mt-8 space-y-3">
           <h2 className="text-xl font-medium text-red-100">Listen</h2>
-          <a
-            href={TOMMY_DJ_SET_URL}
-            className="block w-fit rounded-md border border-red-700 bg-red-900/60 px-4 py-2 text-red-100 hover:bg-red-800 transition-colors"
-          >
-            Tommy&apos;s DJ Set
-          </a>
+          <div className="rounded-xl border border-red-800/60 bg-red-900/20 p-4 space-y-2">
+            <p className="text-red-300 text-sm font-semibold">Tommy aka Tracepoint</p>
+            <a
+              href={TOMMY_TRACEPOINT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-fit rounded-md border border-red-700 bg-red-900/60 px-4 py-2 text-red-100 hover:bg-red-800 transition-colors"
+            >
+              Nightwalk hong kong
+            </a>
+            <a
+              href={TOMMY_DJ_SET_URL}
+              className="block w-fit rounded-md border border-red-700 bg-red-900/60 px-4 py-2 text-red-100 hover:bg-red-800 transition-colors"
+            >
+              old TommyPips set
+            </a>
+          </div>
           <a
             href={NTS_RADIO_URL}
             target="_blank"
