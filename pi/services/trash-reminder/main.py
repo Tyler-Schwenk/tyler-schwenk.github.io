@@ -305,9 +305,12 @@ def scheduler_loop() -> None:
             elif state == "idle":
                 _start_trash_mode()
 
-        elif not in_window and state == "trash_active":
-            # 11 PM hit and nobody confirmed — reset for next week
-            logger.info("Trash window closed without confirmation, resetting")
+        elif not in_window and state in ("trash_active", "trash_done"):
+            # trash window closed — reset so next week fires normally
+            if state == "trash_active":
+                logger.info("Trash window closed without confirmation, resetting")
+            else:
+                logger.info("Trash window closed, resetting for next week")
             set_state("idle")
 
         elif in_window and state == "trash_active":
@@ -333,12 +336,14 @@ def on_button_press() -> None:
     state = get_state()
 
     if state == "trash_active":
-        # set state first so the scheduler thread wont fire a new reminder
+        # trash_done blocks the scheduler while the thanks sequence plays
         set_state("trash_done")
         _save_confirmed_week()
         stop_playback()
         time.sleep(0.3)  # brief gap after kill before starting thanks
         play_sequence(CLIP_THANKS, CLIP_I_LOVE_YOU)
+        # back to idle so the button works normally for the rest of the night
+        set_state("idle")
         return
 
     # idle greeting — alternates between hey_guys and i_love_you
