@@ -141,15 +141,27 @@ Full map of physical pins in use. Check here before wiring anything new.
 - Service: mallard-counter (systemd)
 
 **Button** (momentary pushbutton)
-- Pin: 11 (GPIO 17), other leg to GND rail
+- Pin: 11 (GPIO 17) → one leg of button
+- Other leg of button → GND rail on breadboard
 - Pull-up: internal (software configured)
-- Service: trash-reminder (systemd, pending)
+- Service: trash-reminder (systemd)
 
 **Stereo audio** (2x Adafruit MAX98357A I2S amp + 8 ohm 5W speakers)
 - Bus: I2S
-- Pins: 2, 9, 12, 35, 40
-- Channel select: left amp SD → 5V rail, right amp SD → GND rail
-- Service: trash-reminder (systemd, pending)
+- Service: trash-reminder (systemd)
+- Both amps share all three I2S signal lines in parallel
+
+| Pi physical pin | Pi GPIO | Amp pin | Notes |
+|---|---|---|---|
+| 2 | 5V | VIN | both amps share 5V rail |
+| 9 | GND | GND | both amps share GND rail |
+| 12 | GPIO 18 | BCLK | both amps |
+| 35 | GPIO 19 | LRC | both amps |
+| 40 | GPIO 21 | DIN | both amps |
+
+Channel select (SD pin on each amp):
+- Left amp SD → 5V rail (selects left channel)
+- Right amp SD → GND rail (selects right channel)
 
 ## Status
 

@@ -1,4 +1,14 @@
 ## This is for tyler to use himself whikle dvelopmeing
+
+# SSH to Pi
+Netbird:
+ssh tyler@100.124.76.27
+
+Ethernet:
+ssh tyler@192.168.1.116
+
+WiFi:
+ssh tyler@192.168.1.115
  
 ## Frontend deploy
  Push to main (deploys frontend automatically):
