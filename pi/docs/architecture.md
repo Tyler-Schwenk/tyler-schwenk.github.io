@@ -98,7 +98,7 @@ System architecture for fart-pi multi-service home server.
   - Private: http://100.124.76.27:8000 (via NetBird) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
-- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments
+- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, event_rsvps
 - Storage:
   - Photos: /media/tyler/FE645A9A645A558D/public-gallery
   - Videos: /media/tyler/FE645A9A645A558D/videos
@@ -231,6 +231,7 @@ All gallery photos and videos are managed via the admin panel at `https://tyler-
 - Delete individual photos or entire galleries
 - Upload new photos to existing or new galleries
 - Upload videos
+- View event RSVPs (grouped by event, with headcount and per-response delete)
 
 ### Internal Storage (SD Card)
 **Purpose**: System and service configurations

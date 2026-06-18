@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import PageWrapper from "@/components/PageWrapper";
 import { EVENTS, EventEntry, getEventBySlug } from "../data";
 import EventFlierModal from "@/components/EventFlierModal";
+import EventRsvpForm from "@/components/EventRsvpForm";
 
 /**
  * Generates static params for event detail pages.
@@ -52,6 +53,7 @@ export default async function EventDetailPage({
             <EventHighlights event={event} />
             <EventLinks event={event} />
             <EventRsvp event={event} />
+            {event.rsvpForm && <EventRsvpForm eventSlug={event.slug} />}
             <EventFlierModal flier={event.flierImage} />
             <EventAdditionalImages event={event} />
           </div>

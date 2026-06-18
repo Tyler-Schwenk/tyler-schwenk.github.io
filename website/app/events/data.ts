@@ -25,6 +25,7 @@ export type EventEntry = {
   links?: EventLink[];
   rsvpLink?: EventLink;
   rsvpNote?: string;
+  rsvpForm?: boolean;
   additionalImages?: EventFlier[];
 };
 
@@ -58,6 +59,20 @@ export const EVENTS: EventEntry[] = [
         href: "https://chat.whatsapp.com/Dr2rt7Z9Myt19BRtcGPm50",
       },
     ],
+  },
+  {
+    slug: "techno-fundraiser",
+    title: "Techno Fundraiser",
+    dateText: "July 17 - 8 PM",
+    locationText: "Mission Bay - exact location sent the day before",
+    summary: "Techno fundraiser - more details coming soon.",
+    type: "flier",
+    flierImage: {
+      src: "/images/bikes/davescoottridde.jpg",
+      alt: "Techno Fundraiser flier (placeholder)",
+    },
+    highlights: ["Tacos will be sold."],
+    rsvpForm: true,
   },
   // Past — most recent first
   {

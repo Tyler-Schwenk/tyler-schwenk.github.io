@@ -157,6 +157,36 @@ class GalleryPhoto(Base):
     gallery = relationship("Gallery", back_populates="photos")
 
 
+class EventRsvp(Base):
+    """
+    RSVP submission for an event.
+
+    Captures one contact (phone or email), how many friends they're bringing,
+    and which follow-ups they opted into. Public-facing form writes these;
+    admin panel reads them back.
+
+    Attributes:
+        id: Unique identifier
+        event_slug: Slug of the event this RSVP is for (matches frontend EVENTS data)
+        contact_type: Either "phone" or "email" — tells you how to reach them
+        contact_value: The phone number or email address itself
+        friends_count: How many extra people they're bringing (0 = just them)
+        wants_address: They want the exact address sent the day before
+        wants_reminder: They're ok getting a reminder a week or two ahead
+        created_at: Timestamp of submission
+    """
+    __tablename__ = "event_rsvps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_slug = Column(String(200), nullable=False, index=True)
+    contact_type = Column(String(10), nullable=False)
+    contact_value = Column(String(255), nullable=False)
+    friends_count = Column(Integer, default=0, nullable=False)
+    wants_address = Column(Boolean, default=False, nullable=False)
+    wants_reminder = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
 class Video(Base):
     """
     Video model representing a hosted video file.

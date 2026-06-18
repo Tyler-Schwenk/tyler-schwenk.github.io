@@ -7,6 +7,7 @@ Web interface for managing galleries, photos, and videos.
 - JWT authentication (secure, only you can upload)
 - **Galleries tab**: reorder galleries, edit name/slug/description/visibility, expand to see and delete photos, drop zone to add photos to any gallery, delete entire galleries
 - **Upload tab**: upload photos to existing or new gallery, upload videos with metadata
+- **RSVPs tab**: view event RSVPs grouped by event, with each event's response count, rough headcount (responders + friends), and a delete button per response
 - Drag-and-drop file upload with progress tracking
 - Mobile-friendly dark theme
 - Works from any browser (phone, tablet, laptop)

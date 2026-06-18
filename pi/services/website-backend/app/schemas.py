@@ -5,9 +5,10 @@ Defines data structures for API endpoints including users, posts, comments,
 galleries, and photos with comprehensive validation rules.
 """
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
+import re
 
 
 # User Schemas
@@ -181,6 +182,68 @@ class HealthCheck(BaseModel):
     status: str
     version: str
     timestamp: datetime
+
+
+# Event RSVP Schemas
+
+# a contact is reachable by exactly one of these
+CONTACT_TYPE_PHONE = "phone"
+CONTACT_TYPE_EMAIL = "email"
+
+# phone: digits only after stripping common separators, 7-15 digits per E.164
+MIN_PHONE_DIGITS = 7
+MAX_PHONE_DIGITS = 15
+PHONE_SEPARATORS_PATTERN = re.compile(r"[\s\-\(\)\.]")
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+# keep friend counts sane so the form can't be used to spam huge numbers
+MAX_FRIENDS_COUNT = 50
+
+
+class RsvpCreate(BaseModel):
+    """Schema for submitting an RSVP from the public event page."""
+    event_slug: str = Field(..., min_length=1, max_length=200, description="Event slug being RSVP'd to")
+    contact_type: Literal["phone", "email"] = Field(..., description="Whether contact_value is a phone or email")
+    contact_value: str = Field(..., min_length=1, max_length=255, description="Phone number or email address")
+    friends_count: int = Field(default=0, ge=0, le=MAX_FRIENDS_COUNT, description="Extra people they're bringing")
+    wants_address: bool = Field(default=False, description="Wants the exact address sent the day before")
+    wants_reminder: bool = Field(default=False, description="Ok with a reminder a week or two ahead")
+
+    @field_validator("contact_value")
+    @classmethod
+    def _strip_contact(cls, v: str) -> str:
+        """Trim whitespace so validation and storage use a clean value."""
+        return v.strip()
+
+    def validate_contact(self) -> None:
+        """
+        Check contact_value matches contact_type.
+
+        Pydantic validates each field in isolation, so this cross-field check
+        runs in the router after parsing. Raises ValueError with a fixable
+        message when the value doesn't look like the chosen type.
+        """
+        if self.contact_type == CONTACT_TYPE_EMAIL:
+            if not EMAIL_PATTERN.match(self.contact_value):
+                raise ValueError("that doesn't look like a valid email — check for typos")
+            return
+        digits = PHONE_SEPARATORS_PATTERN.sub("", self.contact_value).lstrip("+")
+        if not digits.isdigit() or not (MIN_PHONE_DIGITS <= len(digits) <= MAX_PHONE_DIGITS):
+            raise ValueError("that doesn't look like a valid phone number — include the area code")
+
+
+class RsvpRead(BaseModel):
+    """RSVP data returned to the admin panel."""
+    id: int
+    event_slug: str
+    contact_type: str
+    contact_value: str
+    friends_count: int
+    wants_address: bool
+    wants_reminder: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Video Schemas

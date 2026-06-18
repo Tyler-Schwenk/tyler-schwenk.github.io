@@ -666,6 +666,85 @@ Delete a photo (file and database record).
 
 **Response:** `204 No Content`
 
+## Event RSVPs
+
+RSVP submissions for events shown on the website's events pages. Creating an RSVP is public (the form is open to anyone); listing and deleting require admin auth.
+
+Each RSVP captures one contact method (phone or email), how many friends they're bringing, and which follow-ups they opted into.
+
+### Create RSVP
+
+Submit an RSVP from a public event page. No auth.
+
+**Endpoint:** `POST /events/rsvp`
+
+**Request Body:**
+```json
+{
+  "event_slug": "techno-fundraiser",
+  "contact_type": "phone",
+  "contact_value": "(555) 123-4567",
+  "friends_count": 2,
+  "wants_address": true,
+  "wants_reminder": false
+}
+```
+
+- `contact_type` must be `"phone"` or `"email"`.
+- `contact_value` is validated against `contact_type` — phone must be 7-15 digits after stripping separators; email must look like an address.
+- `friends_count` is 0-50.
+
+**Response:** `201 Created` - The stored RSVP object (includes `id` and `created_at`).
+
+**Rate limit:** 5 per minute and 30 per hour, per client IP (resolved via `CF-Connecting-IP` behind the Cloudflare Tunnel). Exceeding it returns `429 Too Many Requests`.
+
+**Errors:** `422 Unprocessable Entity` if `contact_value` doesn't match `contact_type`.
+
+### List RSVPs
+
+List RSVPs newest first, optionally filtered to one event. Admin only.
+
+**Endpoint:** `GET /events/rsvp`
+
+**Headers:**
+```
+Authorization: Bearer <your-token>
+```
+
+**Query Parameters:**
+- `event_slug` (optional) - only return RSVPs for this event
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": 12,
+    "event_slug": "techno-fundraiser",
+    "contact_type": "email",
+    "contact_value": "friend@example.com",
+    "friends_count": 1,
+    "wants_address": true,
+    "wants_reminder": true,
+    "created_at": "2026-06-17T20:00:00Z"
+  }
+]
+```
+
+### Delete RSVP
+
+Delete a single RSVP. Admin only.
+
+**Endpoint:** `DELETE /events/rsvp/{rsvp_id}`
+
+**Headers:**
+```
+Authorization: Bearer <your-token>
+```
+
+**Response:** `204 No Content`
+
+**Errors:** `404 Not Found` if no RSVP with that id exists.
+
 ## System Endpoints
 
 ### Health Check
