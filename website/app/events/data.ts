@@ -62,7 +62,7 @@ export const EVENTS: EventEntry[] = [
   },
   {
     slug: "techno-fundraiser",
-    title: "Techno Fundraiser",
+    title: "Lavender Bay",
     dateText: "July 17 - 8 PM",
     locationText: "Mission Bay - exact location sent the day before",
     summary: "Techno fundraiser - more details coming soon.",
