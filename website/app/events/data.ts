@@ -61,7 +61,7 @@ export const EVENTS: EventEntry[] = [
     ],
   },
   {
-    slug: "techno-fundraiser",
+    slug: "techno",
     title: "Lavender Bay",
     dateText: "July 17 - 8 PM",
     locationText: "Mission Bay - exact location sent the day before",
