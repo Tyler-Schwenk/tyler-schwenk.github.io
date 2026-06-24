@@ -203,6 +203,7 @@ MAX_FRIENDS_COUNT = 50
 class RsvpCreate(BaseModel):
     """Schema for submitting an RSVP from the public event page."""
     event_slug: str = Field(..., min_length=1, max_length=200, description="Event slug being RSVP'd to")
+    name: Optional[str] = Field(None, max_length=200, description="Submitter's name")
     contact_type: Literal["phone", "email"] = Field(..., description="Whether contact_value is a phone or email")
     contact_value: str = Field(..., min_length=1, max_length=255, description="Phone number or email address")
     friends_count: int = Field(default=0, ge=0, le=MAX_FRIENDS_COUNT, description="Extra people they're bringing")
@@ -236,6 +237,7 @@ class RsvpRead(BaseModel):
     """RSVP data returned to the admin panel."""
     id: int
     event_slug: str
+    name: Optional[str] = None
     contact_type: str
     contact_value: str
     friends_count: int

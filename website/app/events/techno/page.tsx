@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import PageWrapper from '@/components/PageWrapper';
@@ -35,8 +35,6 @@ const DJS = [
 ];
 
 export default function LavenderBayPage() {
-  const [rsvpOpen, setRsvpOpen] = useState(false);
-
   return (
     <PageWrapper hideFooter hideNavigation>
       <style>{styles}</style>
@@ -95,7 +93,7 @@ export default function LavenderBayPage() {
                       {dj.name}
                     </a>
                     {index < DJS.length - 1 && (
-                      <span className="text-gray-400">•</span>
+                      <span className="text-gray-300">•</span>
                     )}
                   </div>
                 ))}
@@ -106,84 +104,49 @@ export default function LavenderBayPage() {
         </section>
 
         {/* Tacos & RSVP Section with Background Image */}
-        <section
-          className="relative w-full py-16 overflow-hidden"
-          style={{
-            backgroundImage: 'url(/images/events/lavbay3.JPG)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          <div className="absolute inset-0 bg-black/60" />
+        <section className="relative w-full py-16 overflow-hidden">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: 'url(/images/events/lavbay2.JPG)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              transform: 'scaleY(-1)',
+            }}
+          />
+          <div className="absolute inset-0 bg-black/40" />
           <div className="relative z-10 px-6 max-w-2xl mx-auto space-y-8">
             {/* Proceeds Section */}
-            <div className="text-center space-y-6">
-              <div>
-                <h2 className="text-gray-400 text-xl font-bold tracking-wider">
+            <div className="text-center py-10 px-6 space-y-0">
+              <h2 className="text-gray-300 text-xl font-bold tracking-wider">
                 Food • Art • Visuals
                 <br />
                 <br />
                 All Proceeds to
               </h2>
-                <a
-                  href="https://www.alotrolado.org/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block mt-3 text-2xl font-bold tracking-wider hover:opacity-80 transition"
-                  style={{ color: LAVENDER }}
-                >
-                  AL OTRO LADO
-                </a>
-                <p className="text-gray-400 text-sm mt-3">
-                  Immigrant rights & mutual aid
-                </p>
-              </div>
+              <a
+                href="https://www.alotrolado.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block mt-3 text-2xl font-black tracking-wider hover:opacity-80 transition"
+                style={{ color: LAVENDER }}
+              >
+                AL OTRO LADO
+              </a>
+              <p className="text-gray-300 text-sm mt-3">
+                Immigrant rights & mutual aid
+              </p>
             </div>
 
             {/* RSVP Section */}
             <div>
-              <div className="text-center text-gray-400 py-4">
-                <p className="text-sm tracking-wide">FREE ENTRY</p>
-              </div>
-              <button
-                onClick={() => setRsvpOpen(!rsvpOpen)}
-                className="w-full border-2 border-gray-700 hover:border-gray-500 py-6 px-4 transition text-lg font-bold tracking-wide"
-                style={{
-                  color: LAVENDER,
-                  backgroundColor: rsvpOpen ? 'rgba(226, 169, 241, 0.05)' : 'transparent',
-                }}
-              >
-                {rsvpOpen ? '−' : '+'} RSVP FOR LOCATION
-              </button>
-              {rsvpOpen && (
-                <div className="mt-6 border border-gray-800 p-6 bg-gray-950/50">
-                  <EventRsvpForm eventSlug="techno" />
-                </div>
-              )}
+              <EventRsvpForm eventSlug="techno" successPath="/events/techno/success" />
             </div>
           </div>
         </section>
 
-        {/* Imagery Section */}
-        <section className="px-6 py-16 max-w-2xl mx-auto border-t border-gray-800">
-          <div className="space-y-6">
-            <Image
-              src="/images/events/lavbay1.JPG"
-              alt="Lavender Bay - water imagery"
-              width={800}
-              height={600}
-              className="w-full h-auto object-cover"
-            />
-          </div>
-        </section>
+        
 
-        {/* Footer */}
-        <section className="px-6 py-12 max-w-2xl mx-auto text-center text-gray-500 text-sm space-y-4">
-          <Link href="/events" className="block hover:text-white transition">
-            Back to events
-          </Link>
-          <p className="text-xs tracking-widest">FOOD • ART • VISUALS</p>
-        </section>
       </div>
     </PageWrapper>
   );

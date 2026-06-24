@@ -52,6 +52,7 @@ async def create_rsvp(request: Request, rsvp: RsvpCreate, db: Session = Depends(
 
     db_rsvp = EventRsvp(
         event_slug=rsvp.event_slug,
+        name=rsvp.name,
         contact_type=rsvp.contact_type,
         contact_value=rsvp.contact_value,
         friends_count=rsvp.friends_count,

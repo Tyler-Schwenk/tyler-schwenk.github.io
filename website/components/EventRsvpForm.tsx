@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const API_BASE = "https://api.tyler-schwenk.com";
 
@@ -48,12 +49,15 @@ function validateContact(type: ContactType, value: string): string | null {
  *
  * @param {object} props - Component props.
  * @param {string} props.eventSlug - Slug of the event being RSVP'd to.
+ * @param {string} [props.successPath] - Path to navigate to on successful submission. Falls back to inline success state if omitted.
  * @returns {JSX.Element} The RSVP form section.
  */
-export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
+export default function EventRsvpForm({ eventSlug, successPath }: { eventSlug: string; successPath?: string }) {
+  const router = useRouter();
+  const [name, setName] = useState("");
   const [contactType, setContactType] = useState<ContactType>("phone");
   const [contactValue, setContactValue] = useState("");
-  const [friendsCount, setFriendsCount] = useState(0);
+  const [friendsCount, setFriendsCount] = useState("0");
   const [wantsAddress, setWantsAddress] = useState(true);
   const [wantsReminder, setWantsReminder] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
@@ -67,6 +71,12 @@ export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!wantsAddress) {
+      setError("check the box to get the address — that's the whole point");
+      setState("error");
+      return;
+    }
 
     const contactError = validateContact(contactType, contactValue);
     if (contactError) {
@@ -82,9 +92,10 @@ export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           event_slug: eventSlug,
+          name: name.trim() || null,
           contact_type: contactType,
           contact_value: contactValue.trim(),
-          friends_count: friendsCount,
+          friends_count: clampFriends(friendsCount),
           wants_address: wantsAddress,
           wants_reminder: wantsReminder,
         }),
@@ -107,7 +118,11 @@ export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
         return;
       }
 
-      setState("success");
+      if (successPath) {
+        router.push(successPath);
+      } else {
+        setState("success");
+      }
     } catch {
       setError("couldn't reach the server - check your connection and try again");
       setState("error");
@@ -132,22 +147,34 @@ export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
   }
 
   const inputClass =
-    "w-full rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition";
+    "w-full rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#e2a9f1] transition";
 
   return (
     <div className="border-t border-slate-700 pt-8">
-      <h2 className="text-lg font-semibold text-white mb-2">RSVP</h2>
-      <p className="text-sm text-slate-400 mb-5">
-        Drop your contact and we&apos;ll keep you posted on the details.
-      </p>
+      <h2 className="text-lg font-semibold text-gray-300 mb-5">Free Entry — RSVP for Location</h2>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <ContactTypeToggle value={contactType} onChange={setContactType} />
+        <div>
+          <label htmlFor="rsvp-name" className="block text-xs uppercase tracking-wide text-gray-300 mb-2">
+            Name
+          </label>
+          <input
+            id="rsvp-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="your name"
+            className={inputClass}
+            autoComplete="name"
+          />
+        </div>
 
         <div>
-          <label htmlFor="rsvp-contact" className="block text-xs uppercase tracking-wide text-slate-400 mb-2">
-            {contactType === "phone" ? "Phone number" : "Email address"}
+          <label htmlFor="rsvp-contact" className="block text-xs uppercase tracking-wide text-gray-300 mb-2">
+            Contact
           </label>
+          <ContactTypeToggle value={contactType} onChange={setContactType} />
+          <div className="mt-3" />
           <input
             id="rsvp-contact"
             type={contactType === "phone" ? "tel" : "email"}
@@ -161,7 +188,7 @@ export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
         </div>
 
         <div>
-          <label htmlFor="rsvp-friends" className="block text-xs uppercase tracking-wide text-slate-400 mb-2">
+          <label htmlFor="rsvp-friends" className="block text-xs uppercase tracking-wide text-gray-300 mb-2">
             I&apos;m bringing this many friends
           </label>
           <input
@@ -170,7 +197,8 @@ export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
             min={0}
             max={MAX_FRIENDS_COUNT}
             value={friendsCount}
-            onChange={(e) => setFriendsCount(clampFriends(e.target.value))}
+            onChange={(e) => setFriendsCount(e.target.value)}
+            onBlur={() => setFriendsCount(String(clampFriends(friendsCount)))}
             className={`${inputClass} max-w-[8rem]`}
           />
         </div>
@@ -199,7 +227,8 @@ export default function EventRsvpForm({ eventSlug }: { eventSlug: string }) {
         <button
           type="submit"
           disabled={state === "submitting"}
-          className="inline-flex items-center justify-center rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed transition"
+          style={{ backgroundColor: '#e2a9f1' }}
         >
           {state === "submitting" ? "Sending..." : "Submit RSVP"}
         </button>
@@ -247,9 +276,10 @@ function ContactTypeToggle({
           onClick={() => onChange(opt)}
           className={`rounded-full px-5 py-1.5 text-sm font-medium capitalize transition ${
             value === opt
-              ? "bg-indigo-500 text-white"
-              : "text-slate-300 hover:text-white"
+              ? "text-black"
+              : "text-gray-300 hover:text-white"
           }`}
+          style={value === opt ? { backgroundColor: '#e2a9f1' } : undefined}
         >
           {opt}
         </button>
@@ -280,13 +310,13 @@ function CheckboxRow({
   label: string;
 }) {
   return (
-    <label htmlFor={id} className="flex items-center gap-3 text-slate-200 cursor-pointer">
+    <label htmlFor={id} className="flex items-center gap-3 text-gray-300 cursor-pointer">
       <input
         id={id}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-400"
+        className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-[#e2a9f1] focus:ring-[#e2a9f1]"
       />
       <span className="text-sm">{label}</span>
     </label>

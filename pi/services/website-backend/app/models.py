@@ -168,6 +168,7 @@ class EventRsvp(Base):
     Attributes:
         id: Unique identifier
         event_slug: Slug of the event this RSVP is for (matches frontend EVENTS data)
+        name: Optional name they provided
         contact_type: Either "phone" or "email" — tells you how to reach them
         contact_value: The phone number or email address itself
         friends_count: How many extra people they're bringing (0 = just them)
@@ -179,6 +180,7 @@ class EventRsvp(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     event_slug = Column(String(200), nullable=False, index=True)
+    name = Column(String(200), nullable=True)
     contact_type = Column(String(10), nullable=False)
     contact_value = Column(String(255), nullable=False)
     friends_count = Column(Integer, default=0, nullable=False)
