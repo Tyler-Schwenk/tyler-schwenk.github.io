@@ -17,6 +17,16 @@ const styles = `
   .bobbing-chevron {
     animation: bobbing 1s ease-in-out infinite;
   }
+  @keyframes orbit1 {
+    from { transform: rotateX(68deg) rotateZ(0deg); }
+    to   { transform: rotateX(68deg) rotateZ(360deg); }
+  }
+  @keyframes orbit2 {
+    from { transform: rotateX(52deg) rotateY(18deg) rotateZ(0deg); }
+    to   { transform: rotateX(52deg) rotateY(18deg) rotateZ(-360deg); }
+  }
+  .ellipse-orbit-1 { animation: orbit1 9s linear infinite; }
+  .ellipse-orbit-2 { animation: orbit2 14s linear infinite; }
 `;
 
 const DJS = [
@@ -79,8 +89,20 @@ export default function LavenderBayPage() {
             
 
             {/* Lineup Section */}
-            <div className="text-center">
-              <div className="flex flex-wrap justify-center items-center gap-3">
+            <div className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: '180px' }}>
+              <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: '600px' }}>
+                <div
+                  className="ellipse-orbit-1 border border-gray-500 rounded-full pointer-events-none"
+                  style={{ width: '390px', height: '115px' }}
+                />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: '600px' }}>
+                <div
+                  className="ellipse-orbit-2 border border-gray-500 rounded-full pointer-events-none"
+                  style={{ width: '330px', height: '155px' }}
+                />
+              </div>
+              <div className="relative z-10 flex flex-wrap justify-center items-center gap-3">
                 {DJS.map((dj, index) => (
                   <div key={dj.name} className="flex items-center gap-3">
                     <a
