@@ -63,15 +63,15 @@ export const EVENTS: EventEntry[] = [
   {
     slug: "techno",
     title: "Lavender Bay",
-    dateText: "July 17 - 8 PM",
+    dateText: "July 17 - 7 PM",
     locationText: "Mission Bay - exact location sent the day before",
-    summary: "Techno fundraiser - more details coming soon.",
+    summary: "Techno renegade fundraiser. All proceeds to Al Otro Lado.",
     type: "flier",
     flierImage: {
-      src: "/images/bikes/davescoottridde.jpg",
-      alt: "Techno Fundraiser flier (placeholder)",
+      src: "/images/events/lavbay2.JPG",
+      alt: "Lavender Bay techno fundraiser flier",
     },
-    highlights: ["Tacos will be sold."],
+    highlights: ["Free entry", "Food + art + visuals"],
     rsvpForm: true,
   },
   // Past — most recent first
