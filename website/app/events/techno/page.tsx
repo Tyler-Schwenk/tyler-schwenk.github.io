@@ -84,12 +84,12 @@ export default function LavenderBayPage() {
         </section>
 
         {/* Info Section */}
-        <section className="px-6 py-16 max-w-2xl mx-auto">
+        <section className="px-6 max-w-2xl mx-auto">
           <div className="space-y-8">
             
 
             {/* Lineup Section */}
-            <div className="relative flex items-center justify-center overflow-hidden" style={{ minHeight: '180px' }}>
+            <div className="relative flex items-center justify-center py-16">
               <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: '600px' }}>
                 <div
                   className="ellipse-orbit-1 border border-gray-500 rounded-full pointer-events-none"
