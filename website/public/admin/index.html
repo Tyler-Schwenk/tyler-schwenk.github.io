@@ -1091,7 +1091,7 @@
                     <table class="rsvp-table">
                         <thead>
                             <tr>
-                                <th>Contact</th><th>Friends</th><th>Address</th>
+                                <th>Name</th><th>Contact</th><th>Friends</th><th>Address</th>
                                 <th>Remind</th><th>When</th><th></th>
                             </tr>
                         </thead>
@@ -1113,6 +1113,7 @@
             : '<span class="rsvp-opt-no">no</span>';
         return `
             <tr>
+                <td>${r.name ? escH(r.name) : '<span style="color:var(--muted);">—</span>'}</td>
                 <td><span class="rsvp-contact">${escH(r.contact_value)}</span>
                     <div style="color:var(--muted); font-size:11px;">${escH(r.contact_type)}</div></td>
                 <td>${r.friends_count > 0 ? '+' + r.friends_count : '0'}</td>
