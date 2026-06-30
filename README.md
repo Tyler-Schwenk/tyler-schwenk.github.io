@@ -5,6 +5,8 @@ reedpeloy pls
 
 redeploy... or else
 
+static site got me fucking up the readme just to upload some photos
+
 why was 6 afraid of 7
 
 6 7
