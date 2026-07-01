@@ -10,9 +10,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 from pathlib import Path
+import logging
 import shutil
 import uuid
 from PIL import Image
+from pillow_heif import register_heif_opener
 import io
 
 from app.database import get_db
@@ -24,8 +26,16 @@ from app.schemas import (
 )
 from app.config import settings
 
+# lets Pillow decode HEIC/HEIF (default format for iPhone camera photos)
+register_heif_opener()
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/galleries", tags=["Galleries"])
+
+# formats most browsers render natively in <img> tags — anything else gets
+# converted to JPEG on upload so it actually shows up in the gallery
+WEB_SAFE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
 
 
 # Helper functions
@@ -60,21 +70,42 @@ def create_thumbnail(image_path: Path, thumbnail_path: Path, size: tuple = None)
         img.save(thumbnail_path, optimize=True, quality=settings.THUMBNAIL_QUALITY)
 
 
-def get_image_dimensions(file_content: bytes) -> tuple[int, int]:
+def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[bytes, int, int, str, str]:
     """
-    Get image width and height.
-    
+    Decode an uploaded image and convert it to a web-safe format if needed.
+
+    HEIC/HEIF (the default iPhone camera format) doesn't render in most desktop
+    browsers, so it gets re-encoded to JPEG here. Already web-safe formats
+    (JPEG/PNG/WEBP/GIF) pass through untouched to avoid a lossy re-encode.
+
     Args:
-        file_content: Raw image file bytes
-        
+        file_content: Raw uploaded file bytes.
+        filename: Original filename, used as a fallback extension for formats
+            Pillow doesn't have a clean name for.
+
     Returns:
-        Tuple of (width, height) in pixels
-        
+        Tuple of (content_bytes, width, height, file_extension, mime_type).
+
     Raises:
-        Exception: If file is not a valid image
+        HTTPException: 400 if the bytes aren't a decodable image.
     """
-    with Image.open(io.BytesIO(file_content)) as img:
-        return img.size
+    try:
+        with Image.open(io.BytesIO(file_content)) as img:
+            width, height = img.size
+            img_format = img.format
+
+            if img_format not in WEB_SAFE_FORMATS:
+                buffer = io.BytesIO()
+                img.convert("RGB").save(buffer, format="JPEG", quality=90)
+                return buffer.getvalue(), width, height, ".jpg", "image/jpeg"
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"rejected upload {filename!r}: could not decode as an image: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
+
+    ext = Path(filename).suffix or f".{img_format.lower()}"
+    return file_content, width, height, ext, f"image/{img_format.lower()}"
 
 
 # Gallery endpoints
@@ -283,23 +314,18 @@ async def upload_photo(
     gallery = db.query(Gallery).filter(Gallery.id == gallery_id).first()
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
-    
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
-    
-    # Read file content once
+
+    # Read file content once. Content-type headers are unreliable (some clients send
+    # application/octet-stream for HEIC) so validity is checked by actually decoding
+    # the image below rather than trusting the header.
     file_content = await file.read()
+
+    file_content, width, height, file_ext, mime_type = decode_and_normalize_image(
+        file_content, file.filename
+    )
     file_size = len(file_content)
-    
-    # Get image dimensions
-    try:
-        width, height = get_image_dimensions(file_content)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
-    
+
     # Generate unique filename
-    file_ext = Path(file.filename).suffix
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     
     # Create paths
@@ -317,9 +343,10 @@ async def upload_photo(
     try:
         create_thumbnail(file_path, thumbnail_path)
     except Exception as e:
-        # If thumbnail creation fails, continue without it
+        # gallery grid falls back to the full image when thumbnail_path is None
+        logger.warning(f"thumbnail generation failed for {file_path.name}: {e}")
         thumbnail_path = None
-    
+
     # Create database record
     db_photo = GalleryPhoto(
         gallery_id=gallery_id,
@@ -331,7 +358,7 @@ async def upload_photo(
         width=width,
         height=height,
         file_size=file_size,
-        mime_type=file.content_type,
+        mime_type=mime_type,
         display_order=display_order
     )
     

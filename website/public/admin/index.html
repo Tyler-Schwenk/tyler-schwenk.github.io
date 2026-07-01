@@ -511,6 +511,12 @@
                     <label for="v-desc">Description</label>
                     <textarea id="v-desc"></textarea>
                 </div>
+                <div class="form-row">
+                    <label>Existing Videos (slug must be unique — delete before re-uploading the same slug)</label>
+                    <div id="videoList" style="display:flex; flex-direction:column; gap:8px;">
+                        <span style="color:var(--muted); font-size:13px;">Loading...</span>
+                    </div>
+                </div>
             </div>
 
             <div class="drop-zone" id="uDropZone">
@@ -540,6 +546,7 @@
 
     let token = localStorage.getItem('adminToken');
     let galleries = [];
+    let videos = [];
     let uploadFiles = [];
     let expandedIds = new Set();
     let rsvps = [];
@@ -591,6 +598,7 @@
         document.getElementById('loginWrapper').style.display = 'none';
         document.getElementById('adminPanel').style.display = 'block';
         await loadGalleries();
+        await loadVideos();
     }
 
     // ---- tabs ----
@@ -1000,13 +1008,20 @@
         wrap.style.display = 'block';
         btn.disabled = true;
 
-        let done = 0;
+        const total = uploadFiles.length;
+        let succeeded = 0;
+        const failures = [];
         for (const f of uploadFiles) {
             const fd = new FormData();
             fd.append('file', f);
-            await aFetch(`${API}/galleries/${galleryId}/photos`, { method: 'POST', body: fd });
-            done++;
-            fill.style.width = `${Math.round((done / uploadFiles.length) * 100)}%`;
+            const res = await aFetch(`${API}/galleries/${galleryId}/photos`, { method: 'POST', body: fd });
+            if (res && res.ok) {
+                succeeded++;
+            } else {
+                const err = res ? await res.json().catch(() => ({})) : {};
+                failures.push(`${f.name}: ${err.detail || (res ? `HTTP ${res.status}` : 'network error')}`);
+            }
+            fill.style.width = `${Math.round(((succeeded + failures.length) / total) * 100)}%`;
         }
 
         wrap.style.display = 'none';
@@ -1014,8 +1029,14 @@
         btn.disabled = false;
         uploadFiles = [];
         renderUploadFileList();
-        showMsg('uMsg', `Uploaded ${done} photo${done !== 1 ? 's' : ''}.`, 'success');
         await loadGalleries();
+
+        if (failures.length) {
+            showMsg('uMsg', `Uploaded ${succeeded}/${total} — ${failures.length} failed, see popup.`, 'error');
+            alert(`These photos failed to upload:\n\n${failures.join('\n')}`);
+        } else {
+            showMsg('uMsg', `Uploaded ${succeeded} photo${succeeded !== 1 ? 's' : ''}.`, 'success');
+        }
     }
 
     async function submitVideoUpload() {
@@ -1042,9 +1063,56 @@
             renderUploadFileList();
             ['v-title', 'v-slug', 'v-desc'].forEach(id => document.getElementById(id).value = '');
             showMsg('uMsg', 'Video uploaded.', 'success');
+            await loadVideos();
         } else {
             const err = res ? await res.json().catch(() => ({})) : {};
             showMsg('uMsg', err.detail || 'Video upload failed.', 'error');
+        }
+    }
+
+    // ---- videos ----
+    async function loadVideos() {
+        const res = await aFetch(`${API}/videos?public_only=false`);
+        if (!res) return;
+        videos = await res.json();
+        renderVideos();
+    }
+
+    function renderVideos() {
+        const list = document.getElementById('videoList');
+        if (!videos.length) {
+            list.innerHTML = '<span style="color:var(--muted); font-size:13px;">No videos yet.</span>';
+            return;
+        }
+        list.innerHTML = videos.map(v => `
+            <div class="gallery-header" style="padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+                <div class="gallery-info">
+                    <div class="gallery-name">${escH(v.title)}</div>
+                    <div class="gallery-meta">
+                        <span class="badge ${v.is_public ? 'badge-pub' : 'badge-prv'}">${v.is_public ? 'public' : 'private'}</span>
+                        &nbsp;${escH(v.slug)}${v.duration ? ' &bull; ' + Math.floor(v.duration / 60) + ':' + String(Math.floor(v.duration % 60)).padStart(2, '0') : ''}
+                    </div>
+                </div>
+                <div class="gallery-actions">
+                    <button class="btn btn-danger btn-sm" data-del-video="${v.id}" title="Delete video">&#128465;</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    document.getElementById('videoList').addEventListener('click', e => {
+        const btn = e.target.closest('[data-del-video]');
+        if (btn) deleteVideo(parseInt(btn.dataset.delVideo));
+    });
+
+    async function deleteVideo(id) {
+        if (!confirm('Delete this video? Cannot be undone.')) return;
+        const res = await aFetch(`${API}/videos/${id}`, { method: 'DELETE' });
+        if (res && (res.ok || res.status === 204)) {
+            videos = videos.filter(v => v.id !== id);
+            renderVideos();
+        } else {
+            alert('Delete failed.');
         }
     }
 

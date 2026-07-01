@@ -83,20 +83,14 @@ This takes a few minutes. It outputs:
 
 ### 4. Replace the video on the Pi
 
-The existing video needs to be replaced since the timing has changed. Do this via the
-admin API (or admin upload page):
+The existing video needs to be replaced since the timing has changed. Slugs must be
+unique, so the old `garden-timelapse` video has to be deleted before re-uploading —
+do both from the admin page's Upload tab:
 
-```bash
-# delete the old video (get the ID first from GET /videos/slug/garden-timelapse)
-DELETE https://api.tyler-schwenk.com/videos/{id}
-
-# re-upload
-POST https://api.tyler-schwenk.com/videos
-  file: garden-timelapse.mp4
-  slug: garden-timelapse
-  title: Garden Timelapse
-  is_public: true
-```
+1. Go to `https://tyler-schwenk.com/admin/` → **Upload** tab → select **Video**
+2. Under "Existing Videos", find `garden-timelapse` and click the delete (trash) button
+3. Fill in the video fields (title: `Garden Timelapse`, slug: `garden-timelapse`) and
+   upload the new `garden-timelapse.mp4`
 
 ### 5. Deploy the website
 

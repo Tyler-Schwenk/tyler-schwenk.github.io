@@ -21,6 +21,7 @@ pydantic-settings==2.1.0
 
 # Image processing
 Pillow==10.2.0
+pillow-heif==1.4.0
 
 # File uploads
 python-multipart==0.0.7

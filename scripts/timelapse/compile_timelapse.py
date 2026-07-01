@@ -42,6 +42,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# windows consoles default to cp1252, which can't print the arrows below — force utf-8
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 def _expand_windows_path() -> None:
     """
@@ -73,7 +78,7 @@ _expand_windows_path()
 
 
 BEFORE_PHOTOS_DIR = Path(r"C:\Users\tyler\important\projects\WebDev\Tylers Website\data\time lapse\before")
-TIMELAPSE_DIR = Path(r"C:\Users\tyler\important\projects\WebDev\Tylers Website\data\time lapse\2")
+TIMELAPSE_DIR = Path(r"C:\Users\tyler\important\projects\WebDev\Tylers Website\data\time lapse\4")
 OUTPUT_VIDEO = Path(r"C:\Users\tyler\important\projects\WebDev\Tylers Website\data\garden-timelapse.mp4")
 TIMESTAMPS_FILE = Path(__file__).parents[2] / "website" / "app" / "garden" / "timelapse-timestamps.ts"
 
