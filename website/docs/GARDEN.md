@@ -3,11 +3,14 @@
 ## Overview
 
 The garden page (`/garden`) shows a timelapse of the home garden with a live date label
-that tracks which day is currently on screen. Below the video is a static Gardening
-Inspiration section with links to San Diego Seed Company.
+that tracks which day is currently on screen, a "Garden Photos" gallery below it, and a
+static Gardening Inspiration section with links to San Diego Seed Company.
 
-The video is served from the Pi backend. The date-tracking data is compiled into a
-TypeScript module at build time and shipped with the static site.
+The video and gallery photos are both served from the Pi backend and fetched client-side
+by slug — new uploads show up on page load without a website rebuild. The date-tracking
+data for the timelapse is the one exception: it's compiled into a TypeScript module at
+build time and shipped with the static site, so a new timelapse video still needs a
+`git push` to update the date labels (see "Adding New Footage" below).
 
 ---
 
@@ -17,9 +20,10 @@ TypeScript module at build time and shipped with the static site.
 
 | File | Purpose |
 |------|---------|
-| `website/app/garden/page.tsx` | Garden page — fetches video metadata by slug, renders player + date label |
+| `website/app/garden/page.tsx` | Garden page — fetches video + gallery metadata by slug, renders player, date label, and photo grid |
 | `website/app/garden/timelapse-timestamps.ts` | Auto-generated timestamp map (video seconds → calendar date) |
 | `scripts/timelapse/compile_timelapse.py` | Compiles the raw footage into one MP4 and regenerates the timestamps module |
+| `website/components/PhotoLightboxGrid.tsx` | Reusable thumbnail grid + fullscreen lightbox used by the Garden Photos section |
 
 ### Data Flow
 
@@ -137,6 +141,36 @@ $img.Dispose()
 
 ---
 
+## Garden Photos Gallery
+
+A regular Pi gallery (slug `garden-photos`) feeds the photo grid below the timelapse.
+Unlike the timelapse video, this needs no compile step or redeploy — upload a photo via
+the admin panel and it shows up on the next page load.
+
+### One-time setup
+
+The gallery only needs to be created once:
+
+1. Go to `https://tyler-schwenk.com/admin/` → **Galleries** tab → **+ New Gallery**
+2. Name: `Garden Photos`, Slug: `garden-photos` (must match `GARDEN_GALLERY_SLUG` in
+   `website/app/garden/page.tsx` exactly)
+
+### Adding photos
+
+1. **Upload** tab → **Photos** → **Existing Gallery** → select `Garden Photos`
+2. Select photos and hit Upload
+
+No slug field to fill in for photos — which gallery they land in is controlled entirely
+by the "Existing Gallery" dropdown selection, same as any other gallery.
+
+### Why it's not on the main `/gallery` page
+
+Both `garden-photos` and `garden-timelapse` are excluded from the general `/gallery`
+page (`EXCLUDED_GALLERY_SLUGS` / `EXCLUDED_VIDEO_SLUGS` in `website/app/gallery/page.tsx`)
+so they only appear once, on their dedicated `/garden` page.
+
+---
+
 ## Pi Video Endpoint
 
 The garden page fetches video metadata by slug:
@@ -149,3 +183,17 @@ GET https://api.tyler-schwenk.com/videos/{id}/stream
 ```
 
 If the video hasn't been uploaded yet, the page shows a "coming soon" placeholder.
+
+## Pi Gallery Endpoint
+
+The garden page fetches the photo gallery by slug:
+```
+GET https://api.tyler-schwenk.com/galleries/slug/garden-photos
+```
+Returns `{ id, photos: [...], ... }`. Each photo is rendered via:
+```
+GET https://api.tyler-schwenk.com/galleries/photos/{id}/file             (full size)
+GET https://api.tyler-schwenk.com/galleries/photos/{id}/file?thumbnail=true  (grid thumbnail)
+```
+
+If the gallery doesn't exist yet or has no photos, the page shows a "coming soon" placeholder.

@@ -4,16 +4,25 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import PageWrapper from "@/components/PageWrapper";
+import PhotoLightboxGrid from "@/components/PhotoLightboxGrid";
 import { TIMELAPSE_TIMESTAMPS } from "./timelapse-timestamps";
 
 const API_BASE = "https://api.tyler-schwenk.com";
 const TIMELAPSE_SLUG = "garden-timelapse";
+// slug of the Pi gallery that feeds the "Garden Photos" section below — create this
+// gallery once via the admin panel (Galleries tab -> New Gallery) with this exact slug,
+// then upload photos to it via Upload -> Photos -> Existing Gallery -> pick it from the list
+const GARDEN_GALLERY_SLUG = "garden-photos";
 const FRAME_DURATION_S = 1 / 30;
 const PLAYBACK_SPEEDS = [0.5, 1, 2, 3, 4];
 
 interface VideoMeta {
   id: number;
   title: string;
+}
+
+interface GalleryPhoto {
+  id: number;
 }
 
 /**
@@ -54,6 +63,7 @@ export default function GardenPage() {
   const [isEnded, setIsEnded] = useState(false);
   const [progress, setProgress] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[] | null>(null);
 
   // fetch the video ID by slug on mount — slug is stable, numeric ID is not
   useEffect(() => {
@@ -69,6 +79,14 @@ export default function GardenPage() {
         if (data) setVideoMeta({ id: data.id, title: data.title });
       })
       .catch(() => setVideoNotFound(true));
+  }, []);
+
+  // fetch the garden photo gallery by slug — null until loaded, [] if it's empty/missing
+  useEffect(() => {
+    fetch(`${API_BASE}/galleries/slug/${GARDEN_GALLERY_SLUG}`)
+      .then((res) => (res.ok ? res.json() : { photos: [] }))
+      .then((data) => setGalleryPhotos(data.photos ?? []))
+      .catch(() => setGalleryPhotos([]));
   }, []);
 
   useEffect(() => {
@@ -295,6 +313,32 @@ export default function GardenPage() {
               <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
                 <p className="text-slate-400 text-sm">loading...</p>
               </div>
+            )}
+          </div>
+
+          {/* Garden Photos Section */}
+          <div className="mb-16">
+            <h2 className="text-lg font-bold text-green-300 pixel-font mb-5 text-center tracking-wide">
+              GARDEN PHOTOS
+            </h2>
+
+            {galleryPhotos === null ? (
+              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
+                <p className="text-slate-400 text-sm">loading...</p>
+              </div>
+            ) : galleryPhotos.length === 0 ? (
+              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
+                <p className="text-green-400 pixel-font text-lg mb-2">COMING SOON</p>
+                <p className="text-slate-400 text-sm">photos will show up here once uploaded</p>
+              </div>
+            ) : (
+              <PhotoLightboxGrid
+                photos={galleryPhotos.map((photo) => ({
+                  src: `${API_BASE}/galleries/photos/${photo.id}/file`,
+                  thumbSrc: `${API_BASE}/galleries/photos/${photo.id}/file?thumbnail=true`,
+                  alt: "Garden photo",
+                }))}
+              />
             )}
           </div>
 

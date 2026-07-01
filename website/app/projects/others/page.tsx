@@ -120,7 +120,45 @@ export default function Others() {
                     I'm a big fan of this guy in general. I think this video hows his interesting perspective on species interactions. It changed my understanding of invasive species and gave me more hope for the world.
                   </p>
                 </a>
-              </div>            </div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-6 hover:bg-slate-800/70 transition-colors">
+                <a
+                  href="https://p5js.org/sketches/2213463/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block space-y-2"
+                >
+                  <Image
+                    src="/images/slime.jpg"
+                    alt="Slime mold simulation"
+                    width={800}
+                    height={523}
+                    className="w-full rounded-lg"
+                  />
+                  <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                    Slime Mold Simulation
+                  </h3>
+                  <p className="text-slate-300">
+                    I really enjoy this and lots of the other projects on this site
+                  </p>
+                </a>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-6 hover:bg-slate-800/70 transition-colors">
+                <a
+                  href="https://radio.garden/visit/bueng-kan/PDRpyECi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block space-y-2"
+                >
+                  <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                    Radio Garden
+                  </h3>
+                  <p className="text-slate-300">
+                    This site lets you explore different radio stations around the world. I think it&apos;s really cool to get a live look at what&apos;s being broadcast in various places.
+                  </p>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>

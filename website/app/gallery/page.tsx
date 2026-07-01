@@ -40,6 +40,9 @@ const PEOPLE_SLUGS = new Set(["friends", "college", "palestinepals", "family", "
 // videos with their own dedicated page — excluded here so they don't also get a gallery card
 const EXCLUDED_VIDEO_SLUGS = new Set(["garden-timelapse"]);
 
+// photo galleries with their own dedicated page — excluded here for the same reason
+const EXCLUDED_GALLERY_SLUGS = new Set(["garden-photos"]);
+
 // external-link-only entries — not stored on the Pi so they live in code
 interface ExternalEntry {
   slug: string;
@@ -179,7 +182,8 @@ function buildExternalEntry(entry: ExternalEntry, fallbackCover: string): Galler
 }
 
 export default async function GalleryPage() {
-  const [allGalleries, videos] = await Promise.all([fetchAllGalleries(), fetchAllVideos()]);
+  const [fetchedGalleries, videos] = await Promise.all([fetchAllGalleries(), fetchAllVideos()]);
+  const allGalleries = fetchedGalleries.filter((g) => !EXCLUDED_GALLERY_SLUGS.has(g.slug));
 
   const tripApiGalleries = allGalleries.filter((g) => !PEOPLE_SLUGS.has(g.slug));
   const peopleApiGalleries = allGalleries.filter((g) => PEOPLE_SLUGS.has(g.slug));
