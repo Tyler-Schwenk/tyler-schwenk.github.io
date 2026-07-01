@@ -37,6 +37,9 @@ interface ApiVideo {
 // slugs that belong under the People section; everything else is Trips
 const PEOPLE_SLUGS = new Set(["friends", "college", "palestinepals", "family", "bikenite"]);
 
+// videos with their own dedicated page — excluded here so they don't also get a gallery card
+const EXCLUDED_VIDEO_SLUGS = new Set(["garden-timelapse"]);
+
 // external-link-only entries — not stored on the Pi so they live in code
 interface ExternalEntry {
   slug: string;
@@ -198,17 +201,19 @@ export default async function GalleryPage() {
     ...EXTERNAL_PEOPLE.map((e) => [e.slug, buildExternalEntry(e, FALLBACK_PEOPLE_COVER)]),
   ]);
 
-  // each video on the Pi becomes its own gallery card
+  // each video on the Pi becomes its own gallery card, except ones with a dedicated page
   const videoGalleries: Record<string, GalleryEntry> = Object.fromEntries(
-    videos.map((video) => [
-      video.slug,
-      {
-        title: video.title,
-        description: video.description ?? "",
-        coverImage: videoThumbnailUrl(video.id),
-        media: [{ src: videoStreamUrl(video.id), alt: video.title, type: "video" as const }],
-      },
-    ])
+    videos
+      .filter((video) => !EXCLUDED_VIDEO_SLUGS.has(video.slug))
+      .map((video) => [
+        video.slug,
+        {
+          title: video.title,
+          description: video.description ?? "",
+          coverImage: videoThumbnailUrl(video.id),
+          media: [{ src: videoStreamUrl(video.id), alt: video.title, type: "video" as const }],
+        },
+      ])
   );
 
   return (
