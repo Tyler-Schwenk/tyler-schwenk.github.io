@@ -1,7 +1,7 @@
 ## This is for tyler to use himself whikle dvelopmeing
 
 # SSH to Pi
-Netbird:
+Netbird: CURRENTLY BROKEN!
 ssh tyler@100.124.76.27
 
 Ethernet:
