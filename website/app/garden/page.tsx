@@ -9,6 +9,7 @@ import { TIMELAPSE_TIMESTAMPS } from "./timelapse-timestamps";
 const API_BASE = "https://api.tyler-schwenk.com";
 const TIMELAPSE_SLUG = "garden-timelapse";
 const FRAME_DURATION_S = 1 / 30;
+const PLAYBACK_SPEEDS = [0.5, 1, 2, 3, 4];
 
 interface VideoMeta {
   id: number;
@@ -52,6 +53,7 @@ export default function GardenPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isEnded, setIsEnded] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
 
   // fetch the video ID by slug on mount — slug is stable, numeric ID is not
   useEffect(() => {
@@ -92,6 +94,17 @@ export default function GardenPage() {
     setIsPlaying(false);
     setIsEnded(true);
   }, []);
+
+  // playbackRate is a property on the video element, not an HTML attribute, so it's applied via ref
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) video.playbackRate = playbackRate;
+  }, [playbackRate]);
+
+  const cyclePlaybackRate = useCallback(() => {
+    const nextIndex = (PLAYBACK_SPEEDS.indexOf(playbackRate) + 1) % PLAYBACK_SPEEDS.length;
+    setPlaybackRate(PLAYBACK_SPEEDS[nextIndex]);
+  }, [playbackRate]);
 
   const toggleFullscreen = useCallback(() => {
     const container = containerRef.current;
@@ -236,6 +249,13 @@ export default function GardenPage() {
                       aria-label="Next frame"
                     >
                       &#x276F;
+                    </button>
+                    <button
+                      onClick={cyclePlaybackRate}
+                      className="flex-shrink-0 h-8 px-2 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors text-xs font-mono"
+                      aria-label={`Playback speed: ${playbackRate}x, click to change`}
+                    >
+                      {playbackRate}x
                     </button>
                     <button
                       onClick={toggleFullscreen}

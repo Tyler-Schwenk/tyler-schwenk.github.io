@@ -248,7 +248,7 @@ def compile_video(
             FFMPEG, "-y",
             "-f", "concat", "-safe", "0",
             "-i", str(concat_file),
-            "-c:v", "libx264", "-crf", "26",
+            "-c:v", "libx264", "-preset", "slow", "-crf", "28",
             "-pix_fmt", "yuv420p",
             "-movflags", "+faststart",
             str(output_path),
