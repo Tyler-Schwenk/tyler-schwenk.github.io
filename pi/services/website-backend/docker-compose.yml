@@ -9,6 +9,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRATION_MINUTES=43200
+      - IP_HASH_SALT=${IP_HASH_SALT}
       - CORS_ORIGINS=${CORS_ORIGINS}
       - API_TITLE=Website Backend API
       - API_VERSION=1.0.0

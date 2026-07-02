@@ -11,7 +11,7 @@ This guide shows how to integrate the Photo Gallery API into the tyler-schwenk.c
 
 **Frontend:** Static Next.js site on GitHub Pages (tyler-schwenk.com)  
 **Backend:** FastAPI on Raspberry Pi via Cloudflare Tunnel (api.tyler-schwenk.com)  
-**Benefits:** Update photos without rebuilding frontend, automatic thumbnails, future forum features
+**Benefits:** Update photos without rebuilding frontend, automatic thumbnails; the same Pi API also serves Public Square (see `pi/docs/api/website-backend-api.md`)
 
 ## Quick Start
 

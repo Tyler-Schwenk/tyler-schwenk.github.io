@@ -6,26 +6,26 @@ Backend API providing forum (Public Square), photo galleries, and video hosting 
 
 The Website Backend API is a unified RESTful API providing:
 
-- **Public Square Forum**: User authentication, posts, comments, and discussions
+- **Public Square**: Anonymous forum — posts, comments, upvote/downvote, no account needed
 - **Photo Galleries**: Album management with automatic thumbnail generation and image serving
 - **Video Hosting**: Video upload, streaming, and automatic thumbnail generation
-- **Single Database**: SQLite file with all tables (users, posts, comments, galleries, photos, videos)
-- **Rate limiting**: Protection against abuse
-- **JWT Authentication**: Secure token-based auth
+- **Single Database**: SQLite file with all tables (users, posts, comments, post_votes, comment_votes, galleries, photos, videos)
+- **Rate limiting**: Protection against abuse (per-IP, all Public Square writes)
+- **JWT Authentication**: Secure token-based auth for the single admin account (gallery/video/RSVP management, Public Square moderation) — not used by Public Square itself
 
 This service powers the backend for tyler-schwenk.com.
 
 ## Architecture
 
 **One Service, Multiple Features:**
-- Forum functionality (Public Square)
+- Public Square (anonymous forum)
 - Photo gallery management
 - Video hosting and streaming
-- User authentication shared across features
+- Admin authentication (single account, protects write endpoints outside Public Square)
 
 **Single Database:**
 - File: `website_backend.db`
-- Contains all tables: users, posts, comments, galleries, gallery_photos, videos
+- Contains all tables: users, posts, comments, post_votes, comment_votes, galleries, gallery_photos, videos
 - SQLite (lightweight, file-based, single file)
 
 **Separate from:**
@@ -46,18 +46,20 @@ This service powers the backend for tyler-schwenk.com.
 ## Database Schema
 
 ### Users
-- Authentication and profile information
+- Single admin account (JWT login) — not linked to Public Square, which is anonymous
 - Email, username, verification status
-- Relationships to posts and comments
 
 ### Posts
-- Forum threads/articles
-- Title, content, publish status
-- Author relationship, timestamps
+- Public Square posts — title, content, optional nickname, denormalized score
+- No author relationship (anonymous by design)
 
 ### Comments
-- Replies to posts
-- Content, author, timestamps
+- Flat replies to a post (no nested reply-to-reply)
+- Content, optional nickname, denormalized score
+
+### PostVotes / CommentVotes
+- One vote per post/comment per hashed visitor IP (`sha256(ip + IP_HASH_SALT)`, raw IP never stored)
+- Used to dedupe/toggle/flip votes and keep the post/comment's score in sync
 
 ### Galleries
 - Photo album collections
@@ -255,34 +257,25 @@ docker exec tailscale tailscale funnel 8000
 - `PATCH /galleries/photos/{id}` - Update photo metadata
 - `DELETE /galleries/photos/{id}` - Delete photo
 
-### Authentication (TODO: Implement routers)
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login and get JWT token
-- `POST /auth/logout` - Logout
-- `GET /auth/me` - Get current user info
+### Authentication
+- `POST /auth/login` - Login and get JWT token (single admin account only — no registration endpoint, see `scripts/create_admin.py`)
 
-### Posts (TODO: Implement routers)
-- `GET /posts` - List all posts (public)
-- `GET /posts/{id}` - Get single post
-- `POST /posts` - Create post (authenticated)
-- `PUT /posts/{id}` - Update post (authenticated, must be author)
-- `DELETE /posts/{id}` - Delete post (authenticated, must be author)
+### Public Square — Posts (Implemented)
+- `GET /public-square/posts` - List posts, sorted `top` or `new`, paginated
+- `GET /public-square/posts/{id}` - Get single post
+- `POST /public-square/posts` - Create post (public, no auth, rate limited per IP)
+- `DELETE /public-square/posts/{id}` - Delete post and its comments/votes (admin only)
 
-### Comments (TODO: Implement routers)
-- `GET /posts/{id}/comments` - List comments for a post
-- `POST /posts/{id}/comments` - Add comment (authenticated)
-- `PUT /comments/{id}` - Update comment (authenticated, must be author)
-- `DELETE /comments/{id}` - Delete comment (authenticated, must be author)
-- `POST /posts` - Create new post (authenticated)
-- `GET /posts/{id}` - Get single post (public)
-- `PUT /posts/{id}` - Update post (author only)
-- `DELETE /posts/{id}` - Delete post (author only)
+### Public Square — Comments (Implemented)
+- `GET /public-square/posts/{id}/comments` - List a post's comments, sorted `top` or `new`
+- `POST /public-square/posts/{id}/comments` - Add comment (public, no auth, rate limited per IP)
+- `DELETE /public-square/comments/{id}` - Delete comment (admin only)
 
-### Comments (TODO: Implement routers)
-- `GET /posts/{id}/comments` - List comments on a post (public)
-- `POST /posts/{id}/comments` - Add comment (authenticated)
-- `PUT /comments/{id}` - Update comment (author only)
-- `DELETE /comments/{id}` - Delete comment (author only)
+### Public Square — Votes (Implemented)
+- `POST /public-square/posts/{id}/vote` - Upvote/downvote a post (public, no auth). Same direction again retracts it; opposite direction flips it.
+- `POST /public-square/comments/{id}/vote` - Same, for a comment.
+
+Full request/response shapes: `pi/docs/api/website-backend-api.md`.
 
 ## Database
 
@@ -297,13 +290,17 @@ docker exec tailscale tailscale funnel 8000
 - is_active, is_verified, is_superuser
 - created_at
 
-**Posts Table (Public Square Forum):**
-- id, title, content, author_id
+**Posts Table (Public Square):**
+- id, title, content, nickname (optional), score
 - created_at, updated_at, is_published
 
-**Comments Table (Public Square Forum):**
-- id, content, post_id, author_id
+**Comments Table (Public Square):**
+- id, content, post_id, nickname (optional), score
 - created_at, updated_at
+
+**PostVotes / CommentVotes Tables:**
+- id, post_id or comment_id, ip_hash, value (1 or -1), created_at
+- unique per (post_id, ip_hash) / (comment_id, ip_hash)
 
 **Galleries Table:**
 - id, name, description, slug, is_public, user_id
@@ -331,11 +328,13 @@ cp data/website_backend.db data/website_backend.db.backup
 - Input validation (Pydantic)
 - SQL injection protection (SQLAlchemy ORM)
 
-### Rate Limits (TODO: Configure in routers)
-- Login: 5 attempts/minute
-- Register: 3 attempts/hour
-- Create post: 10/minute
-- Create comment: 20/minute
+### Rate Limits
+- Login: 5 attempts/minute per IP
+- Create Public Square post: 5/hour per IP
+- Create Public Square comment: 20/hour per IP
+- Vote (post or comment): 60/minute per IP
+
+These are intentionally loose for a low-traffic personal site — tighten them in `app/routers/public_square.py` only if abuse actually shows up.
 
 ## Development
 
@@ -365,13 +364,15 @@ website-backend/
 │   ├── database.py       # Database connection and session
 │   ├── models.py         # SQLAlchemy ORM models
 │   ├── schemas.py        # Pydantic validation schemas
-│   ├── auth.py           # Authentication setup
+│   ├── dependencies.py    # require_admin JWT dependency
+│   ├── rate_limit.py      # Shared per-IP rate limiter
 │   └── routers/          # API route handlers
 │       ├── __init__.py
-│       ├── gallery.py    # Gallery/photo endpoints (implemented)
-│       ├── auth.py       # Auth endpoints (TODO)
-│       ├── posts.py      # Post endpoints (TODO)
-│       └── comments.py   # Comment endpoints (TODO)
+│       ├── gallery.py    # Gallery/photo endpoints
+│       ├── videos.py     # Video endpoints
+│       ├── auth.py       # Admin login
+│       ├── rsvp.py       # Event RSVP endpoints
+│       └── public_square.py  # Public Square: posts, comments, votes
 ├── scripts/
 │   └── migrate_photos.py # Photo migration utility
 ├── data/                 # SQLite database (not in Git)
@@ -474,11 +475,10 @@ sudo chown -R $USER:$USER data/
 
 ## Next Steps
 
-1. Implement router modules (auth, posts, comments)
-2. Add rate limiting to endpoints
-3. Test authentication flow
-4. Connect frontend to API
-5. Access via NetBird network
+Public Square (posts, comments, votes) is implemented — see the API Endpoints section above and `pi/docs/api/website-backend-api.md`.
+
+1. Connect frontend to API
+2. Access via NetBird network
 
 ## References
 

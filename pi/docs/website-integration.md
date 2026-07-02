@@ -37,8 +37,8 @@ How tyler-schwenk.github.io integrates with the Website Backend API on fart-pi.
 
 **Served from Pi API (Dynamic):**
 - Photo gallery images (frequently updated)
-- Forum posts and comments (Public Square)
-- User authentication
+- Public Square posts, comments, and votes (anonymous, no auth)
+- Admin authentication (single account, protects gallery/video/RSVP management and Public Square moderation)
 - Any user-generated content
 
 ## Photo Gallery Migration
@@ -317,10 +317,13 @@ Keep API private, only accessible via Bird Wide Web:
 
 The Website Backend API uses a single SQLite database with multiple tables:
 
-### Forum Tables (Public Square)
-- **users**: Authentication and profiles
-- **posts**: Forum threads and articles
-- **comments**: Replies to posts
+### Public Square Tables
+- **posts**: Anonymous forum posts (optional nickname, denormalized score)
+- **comments**: Anonymous replies to posts (flat, no nesting)
+- **post_votes** / **comment_votes**: One vote per post/comment per hashed visitor IP
+
+### Auth Table
+- **users**: Single admin account only (JWT login) — not linked to Public Square, which is anonymous
 
 ### Gallery Tables
 - **galleries**: Photo albums with metadata
@@ -363,16 +366,18 @@ npm run dev
 
 ## Security Notes
 
-- API requires authentication for write operations (create/update/delete)
-- Gallery viewing is public (read-only, no auth needed)
+- Gallery/video/RSVP write operations (create/update/delete) require the admin JWT
+- Public Square is the exception: posting, commenting, and voting are public by design (anonymous forum) and rely on per-IP rate limiting instead of auth; only deleting a post/comment is admin-only
+- Gallery/video viewing is public (read-only, no auth needed)
 - CORS restricts which domains can call API
 - Rate limiting prevents abuse
-- JWT tokens for authenticated features
+- JWT tokens for authenticated (admin-only) features
 
 ## Next Steps
 
 1. Run photo migration script
 2. Update frontend to fetch from API
 3. Set up Cloudflare Tunnel for public access
-4. Implement forum routers (auth, posts, comments)
-5. Test end-to-end from GitHub Pages to Pi API
+4. Test end-to-end from GitHub Pages to Pi API
+
+Public Square (posts, comments, votes) is implemented — see `pi/docs/api/website-backend-api.md`.
