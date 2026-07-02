@@ -13,7 +13,7 @@ from pathlib import Path
 import logging
 import shutil
 import uuid
-from PIL import Image
+from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 import io
 
@@ -36,6 +36,12 @@ router = APIRouter(prefix="/galleries", tags=["Galleries"])
 # formats most browsers render natively in <img> tags — anything else gets
 # converted to JPEG on upload so it actually shows up in the gallery
 WEB_SAFE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
+
+# EXIF "Orientation" tag ID. 1 means "no rotation needed" -- anything else means
+# the pixels are stored sideways/upside-down and a viewer is expected to rotate
+# them using this tag. Our thumbnail generator doesn't do that, so we bake the
+# rotation into the pixels ourselves at upload time instead of relying on it.
+EXIF_ORIENTATION_TAG = 0x0112
 
 
 # Helper functions
@@ -72,11 +78,15 @@ def create_thumbnail(image_path: Path, thumbnail_path: Path, size: tuple = None)
 
 def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[bytes, int, int, str, str]:
     """
-    Decode an uploaded image and convert it to a web-safe format if needed.
+    Decode an uploaded image, convert it to a web-safe format if needed, and bake
+    in any EXIF rotation.
 
     HEIC/HEIF (the default iPhone camera format) doesn't render in most desktop
-    browsers, so it gets re-encoded to JPEG here. Already web-safe formats
-    (JPEG/PNG/WEBP/GIF) pass through untouched to avoid a lossy re-encode.
+    browsers, so it gets re-encoded to JPEG here. Separately, phone photos are
+    often stored "sideways" with an EXIF orientation tag telling viewers how to
+    rotate them -- since our thumbnail generator ignores that tag, any non-default
+    orientation gets physically rotated into the pixels here instead. Already
+    web-safe, non-rotated images pass through untouched to avoid a lossy re-encode.
 
     Args:
         file_content: Raw uploaded file bytes.
@@ -91,13 +101,27 @@ def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[byte
     """
     try:
         with Image.open(io.BytesIO(file_content)) as img:
-            width, height = img.size
             img_format = img.format
+            orientation = img.getexif().get(EXIF_ORIENTATION_TAG, 1)
 
-            if img_format not in WEB_SAFE_FORMATS:
+            if img_format not in WEB_SAFE_FORMATS or orientation != 1:
+                oriented = ImageOps.exif_transpose(img)
+                width, height = oriented.size
+                target_format = img_format if img_format in WEB_SAFE_FORMATS else "JPEG"
+                if target_format == "JPEG":
+                    oriented = oriented.convert("RGB")
+
                 buffer = io.BytesIO()
-                img.convert("RGB").save(buffer, format="JPEG", quality=90)
-                return buffer.getvalue(), width, height, ".jpg", "image/jpeg"
+                save_kwargs = {"quality": 90} if target_format == "JPEG" else {}
+                oriented.save(buffer, format=target_format, **save_kwargs)
+
+                ext = Path(filename).suffix if img_format in WEB_SAFE_FORMATS else ".jpg"
+                return (
+                    buffer.getvalue(), width, height,
+                    ext or f".{target_format.lower()}", f"image/{target_format.lower()}",
+                )
+
+            width, height = img.size
     except HTTPException:
         raise
     except Exception as e:
