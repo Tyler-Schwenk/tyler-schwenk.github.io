@@ -18,7 +18,12 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 43200  # 30 days
-    
+
+    # Public Square — salt mixed into visitor IPs before hashing for anonymous
+    # vote/spam dedup. Raw IPs are never stored. Generate like JWT_SECRET,
+    # e.g. `openssl rand -hex 32`.
+    IP_HASH_SALT: str
+
     # CORS
     CORS_ORIGINS: str = ""
     
@@ -38,7 +43,7 @@ class Settings(BaseSettings):
     # API Metadata
     API_TITLE: str = "Website Backend API"
     API_VERSION: str = "1.0.0"
-    API_DESCRIPTION: str = "Backend API for forum (Public Square) and photo galleries"
+    API_DESCRIPTION: str = "Backend API for Public Square (forum) and photo galleries"
 
     @property
     def cors_origins_list(self) -> List[str]:

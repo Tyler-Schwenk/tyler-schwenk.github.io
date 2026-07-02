@@ -5,12 +5,12 @@
 **Base URL (local/NetBird):** `http://100.124.76.27:8000`
 
 Backend API for tyler-schwenk.com providing:
-- **Public Square Forum**: User authentication, posts, comments, and discussions
+- **Public Square**: Anonymous forum — anyone can post, comment, and vote; no account needed
 - **Photo Galleries**: Album management with automatic thumbnails and image serving
 - **Video Hosting**: Video upload, streaming, and thumbnail generation
 - **Pac-Tyler**: GeoJSON activity tracks and analytics dataset from Strava
 
-**Database:** Single SQLite file (`website_backend.db`) with separate tables for forum, gallery, and video features.
+**Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, and video features.
 
 ## Pac-Tyler
 
@@ -65,6 +65,8 @@ No authentication required. Data is written by the `pac-tyler-updater` systemd s
 ```
 
 ## Authentication
+
+Used only to protect admin-only write endpoints (gallery/video/RSVP management, Public Square moderation) — there's a single admin account (Tyler), not general user registration. Public Square posting/commenting/voting is anonymous and needs no token at all; see the Public Square section below.
 
 All authenticated endpoints require a JWT bearer token in the `Authorization` header.
 
@@ -150,19 +152,24 @@ Authorization: Bearer <your-token>
 }
 ```
 
-## Posts
+## Public Square
+
+Anonymous reddit-like forum. Anyone can create posts and comments and vote on them — no account, no login. Votes are deduped per post/comment by a salted hash of the visitor's IP (`sha256(ip + IP_HASH_SALT)`); raw IPs are never stored. Comments are flat (they reply to a post, not to each other) — there's no nested reply-to-reply threading in v1.
+
+Creating posts/comments/votes is public and rate-limited per IP. Deleting posts/comments is admin-only (JWT) and is a hard delete — there's no soft-delete or edit history, it's meant as a moderation kill switch, not a full moderation queue.
 
 ### List Posts
 
-Get a paginated list of all published posts.
+Get a page of posts, sorted by top score or most recent.
 
-**Endpoint:** `GET /posts`
+**Endpoint:** `GET /public-square/posts`
 
 **Query Parameters:**
+- `sort` (`top` | `new`, default: `top`): `top` orders by score desc then newest; `new` orders by newest first
 - `page` (integer, default: 1): Page number
 - `page_size` (integer, default: 20, max: 100): Items per page
 
-**Example:** `GET /posts?page=1&page_size=10`
+**Example:** `GET /public-square/posts?sort=new&page=1&page_size=10`
 
 **Response:** `200 OK`
 ```json
@@ -172,14 +179,10 @@ Get a paginated list of all published posts.
       "id": 1,
       "title": "Welcome to Public Square",
       "content": "This is the first post...",
-      "author_id": 1,
-      "author": {
-        "id": 1,
-        "username": "johndoe"
-      },
+      "nickname": "tyler",
+      "score": 3,
       "created_at": "2026-03-03T10:00:00Z",
-      "updated_at": null,
-      "is_published": true
+      "updated_at": null
     }
   ],
   "total": 1,
@@ -191,104 +194,41 @@ Get a paginated list of all published posts.
 
 ### Get Single Post
 
-Get a specific post by ID.
+**Endpoint:** `GET /public-square/posts/{id}`
 
-**Endpoint:** `GET /posts/{id}`
-
-**Response:** `200 OK`
-```json
-{
-  "id": 1,
-  "title": "Welcome to Public Square",
-  "content": "This is the first post...",
-  "author_id": 1,
-  "author": {
-    "id": 1,
-    "username": "johndoe"
-  },
-  "created_at": "2026-03-03T10:00:00Z",
-  "updated_at": null,
-  "is_published": true
-}
-```
+**Response:** `200 OK` — same shape as a list item above.
 
 **Response:** `404 Not Found` if post doesn't exist
 
 ### Create Post
 
-Create a new post (requires authentication).
+No auth — anyone can post.
 
-**Endpoint:** `POST /posts`
-
-**Headers:**
-```http
-Authorization: Bearer <your-token>
-Content-Type: application/json
-```
+**Endpoint:** `POST /public-square/posts`
 
 **Request Body:**
 ```json
 {
   "title": "My New Post",
   "content": "This is the content of my post...",
-  "is_published": true
+  "nickname": "optional display name"
 }
 ```
 
 **Validation:**
 - `title`: 1-200 characters
-- `content`: 1-50,000 characters
-- `is_published`: boolean (default: true)
+- `content`: 1-10,000 characters
+- `nickname`: optional, up to 50 characters, free text (not unique, not verified) — omit or leave blank to show as "Anonymous"
 
-**Response:** `201 Created`
-```json
-{
-  "id": 2,
-  "title": "My New Post",
-  "content": "This is the content of my post...",
-  "author_id": 1,
-  "author": {
-    "id": 1,
-    "username": "johndoe"
-  },
-  "created_at": "2026-03-03T11:00:00Z",
-  "updated_at": null,
-  "is_published": true
-}
-```
+**Response:** `201 Created` — the created post (same shape as list item)
 
-**Rate Limit:** 10 posts per minute
-
-### Update Post
-
-Update an existing post (requires authentication, must be author).
-
-**Endpoint:** `PUT /posts/{id}`
-
-**Headers:**
-```http
-Authorization: Bearer <your-token>
-Content-Type: application/json
-```
-
-**Request Body:** (all fields optional)
-```json
-{
-  "title": "Updated Title",
-  "content": "Updated content...",
-  "is_published": true
-}
-```
-
-**Response:** `200 OK` (same structure as Get Single Post)
-
-**Response:** `403 Forbidden` if not the author
+**Rate Limit:** 5 per hour per IP. Loose on purpose for a low-traffic site — meant to be tightened only if abuse actually shows up.
 
 ### Delete Post
 
-Delete a post (requires authentication, must be author).
+Admin only — deletes the post along with its comments and votes.
 
-**Endpoint:** `DELETE /posts/{id}`
+**Endpoint:** `DELETE /public-square/posts/{id}`
 
 **Headers:**
 ```http
@@ -297,15 +237,16 @@ Authorization: Bearer <your-token>
 
 **Response:** `204 No Content`
 
-**Response:** `403 Forbidden` if not the author
-
-## Comments
+**Response:** `404 Not Found` if post doesn't exist
 
 ### List Comments
 
-Get all comments for a specific post.
+Get a post's comments (flat, no nesting), sorted by top score or most recent.
 
-**Endpoint:** `GET /posts/{post_id}/comments`
+**Endpoint:** `GET /public-square/posts/{post_id}/comments`
+
+**Query Parameters:**
+- `sort` (`top` | `new`, default: `top`)
 
 **Response:** `200 OK`
 ```json
@@ -314,11 +255,8 @@ Get all comments for a specific post.
     "id": 1,
     "content": "Great post!",
     "post_id": 1,
-    "author_id": 2,
-    "author": {
-      "id": 2,
-      "username": "janedoe"
-    },
+    "nickname": null,
+    "score": 1,
     "created_at": "2026-03-03T10:30:00Z",
     "updated_at": null
   }
@@ -327,72 +265,33 @@ Get all comments for a specific post.
 
 ### Create Comment
 
-Add a comment to a post (requires authentication).
+No auth — anyone can comment.
 
-**Endpoint:** `POST /posts/{post_id}/comments`
-
-**Headers:**
-```http
-Authorization: Bearer <your-token>
-Content-Type: application/json
-```
+**Endpoint:** `POST /public-square/posts/{post_id}/comments`
 
 **Request Body:**
 ```json
 {
-  "content": "This is my comment..."
+  "content": "This is my comment...",
+  "nickname": "optional display name"
 }
 ```
 
 **Validation:**
-- `content`: 1-10,000 characters
+- `content`: 1-5,000 characters
+- `nickname`: optional, up to 50 characters
 
-**Response:** `201 Created`
-```json
-{
-  "id": 1,
-  "content": "This is my comment...",
-  "post_id": 1,
-  "author_id": 1,
-  "author": {
-    "id": 1,
-    "username": "johndoe"
-  },
-  "created_at": "2026-03-03T11:00:00Z",
-  "updated_at": null
-}
-```
+**Response:** `201 Created` — the created comment
 
-**Rate Limit:** 20 comments per minute
+**Rate Limit:** 20 per hour per IP
 
-### Update Comment
-
-Update a comment (requires authentication, must be author).
-
-**Endpoint:** `PUT /comments/{id}`
-
-**Headers:**
-```http
-Authorization: Bearer <your-token>
-Content-Type: application/json
-```
-
-**Request Body:**
-```json
-{
-  "content": "Updated comment text..."
-}
-```
-
-**Response:** `200 OK` (same structure as comment object)
-
-**Response:** `403 Forbidden` if not the author
+**Response:** `404 Not Found` if the post doesn't exist
 
 ### Delete Comment
 
-Delete a comment (requires authentication, must be author).
+Admin only.
 
-**Endpoint:** `DELETE /comments/{id}`
+**Endpoint:** `DELETE /public-square/comments/{id}`
 
 **Headers:**
 ```http
@@ -401,7 +300,37 @@ Authorization: Bearer <your-token>
 
 **Response:** `204 No Content`
 
-**Response:** `403 Forbidden` if not the author
+**Response:** `404 Not Found` if comment doesn't exist
+
+### Vote on a Post
+
+No auth — votes are deduped per post by hashed visitor IP, not accounts. Voting the same direction again retracts the vote; voting the opposite direction flips it.
+
+**Endpoint:** `POST /public-square/posts/{id}/vote`
+
+**Request Body:**
+```json
+{ "value": 1 }
+```
+`value` must be `1` (upvote) or `-1` (downvote).
+
+**Response:** `200 OK`
+```json
+{ "score": 4, "your_vote": 1 }
+```
+`your_vote` is `0` if this click retracted a previous vote.
+
+**Rate Limit:** 60 per minute per IP
+
+### Vote on a Comment
+
+Same semantics as voting on a post.
+
+**Endpoint:** `POST /public-square/comments/{id}/vote`
+
+**Request Body / Response:** same shape as Vote on a Post.
+
+**Rate Limit:** 60 per minute per IP
 
 ## Galleries
 
@@ -911,55 +840,77 @@ async function login(email, password) {
 }
 ```
 
-### Get Posts
+### Get Public Square Posts
 
 ```javascript
-async function getPosts(page = 1, pageSize = 20) {
+async function getPosts(sort = 'top', page = 1, pageSize = 20) {
   const response = await fetch(
-    `${API_URL}/posts?page=${page}&page_size=${pageSize}`
+    `${API_URL}/public-square/posts?sort=${sort}&page=${page}&page_size=${pageSize}`
   );
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch posts');
   }
-  
+
   return await response.json();
 }
 ```
 
-### Create Post
+### Create Public Square Post
+
+No auth needed — anonymous, rate-limited per IP.
 
 ```javascript
-async function createPost(title, content) {
-  const response = await fetch(`${API_URL}/posts`, {
+async function createPost(title, content, nickname) {
+  const response = await fetch(`${API_URL}/public-square/posts`, {
     method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ title, content, is_published: true })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, content, nickname: nickname || null })
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to create post');
   }
-  
+
   return await response.json();
 }
 ```
 
 ### Add Comment
 
+No auth needed — anonymous, rate-limited per IP.
+
 ```javascript
-async function addComment(postId, content) {
-  const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+async function addComment(postId, content, nickname) {
+  const response = await fetch(`${API_URL}/public-square/posts/${postId}/comments`, {
     method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ content })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, nickname: nickname || null })
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to add comment');
   }
-  
+
   return await response.json();
+}
+```
+
+### Vote on a Post
+
+```javascript
+async function voteOnPost(postId, value) {
+  const response = await fetch(`${API_URL}/public-square/posts/${postId}/vote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value }) // 1 or -1
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to vote');
+  }
+
+  return await response.json(); // { score, your_vote }
 }
 ```
 
@@ -1068,10 +1019,13 @@ document.getElementById('photoInput').addEventListener('change', async (e) => {
 
 ## Rate Limits
 
-- **Registration:** 3 requests/hour per IP
 - **Login:** 5 requests/minute per IP
-- **Create Post:** 10 requests/minute per user
-- **Create Comment:** 20 requests/minute per user
+- **Create RSVP:** 5/minute and 30/hour per IP
+- **Create Public Square Post:** 5 requests/hour per IP
+- **Create Public Square Comment:** 20 requests/hour per IP
+- **Vote (post or comment):** 60 requests/minute per IP
+
+All Public Square limits are intentionally loose for a low-traffic personal site — tighten them in `pi/services/website-backend/app/routers/public_square.py` only if abuse actually shows up.
 
 Rate limit exceeded responses include a `Retry-After` header indicating seconds until the limit resets.
 

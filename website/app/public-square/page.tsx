@@ -1,399 +1,298 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
 import Navigation from "@/components/Navigation";
+import VoteButtons from "@/components/VoteButtons";
 
-type Reply = {
-  id: string;
-  content: string;
-  authorName: string;
-};
+const API_BASE = "https://api.tyler-schwenk.com";
 
-type Thread = {
-  id: string;
+// mirrors MAX_POST_TITLE_LENGTH / MAX_POST_CONTENT_LENGTH / MAX_NICKNAME_LENGTH in the backend's schemas.py
+const MAX_TITLE_LENGTH = 200;
+const MAX_CONTENT_LENGTH = 10000;
+const MAX_NICKNAME_LENGTH = 50;
+
+type SortOption = "top" | "new";
+type SubmitState = "idle" | "submitting" | "success" | "error";
+
+interface ApiPost {
+  id: number;
   title: string;
-  authorName: string;
-  replies: Reply[];
-};
-
-type ReplyDraft = {
   content: string;
-  displayName: string;
-  postAnonymously: boolean;
-};
+  nickname: string | null;
+  score: number;
+  created_at: string;
+}
 
-const DEFAULT_ANONYMOUS_NAME = "Anonymous";
-const DEFAULT_NAMED_FALLBACK = "Guest";
-const MAX_TITLE_LENGTH = 160;
-const MAX_REPLY_LENGTH = 1000;
-
-const INITIAL_THREADS: Thread[] = [
-  {
-    id: "thread-streaming-alternatives",
-    title: "How do we move forward away from predatory streaming services without regressing?",
-    authorName: "",
-    replies: [],
-  },
-  {
-    id: "thread-small-internet",
-    title: "Building a Decentralized/\"small\" internet",
-    authorName: "",
-    replies: [],
-  },
-  {
-    id: "thread-homelabbing",
-    title: "Homelabbing Ideas",
-    authorName: "",
-    replies: [
-      {
-        id: "reply-strava",
-        content: "Improved Strava data - better analytics and visualizations",
-        authorName: "",
-      },
-      {
-        id: "reply-minecraft",
-        content: "Minecraft server",
-        authorName: "",
-      },
-      {
-        id: "reply-mattbot",
-        content: "MattBot",
-        authorName: "",
-      },
-      {
-        id: "reply-mallard",
-        content: "Mallard counter",
-        authorName: "",
-      },
-      {
-        id: "reply-navidrome",
-        content: "Music (Navidrome)",
-        authorName: "",
-      },
-      {
-        id: "reply-imich",
-        content: "Photos - Imich",
-        authorName: "",
-      },
-    ],
-  },
-  {
-    id: "thread-profit-vs-humanity",
-    title: "How a for profit business inherently works against the goals of humanity - and how data centers exemplify this",
-    authorName: "",
-    replies: [],
-  },
-];
-
-/**
- * Builds a display name from anonymity choice and optional text input.
- *
- * @param {string} rawName - User-provided display name.
- * @param {boolean} postAnonymously - Whether the user chose anonymous posting.
- * @returns {string} Name shown on a topic or reply.
- */
-function buildAuthorName(rawName: string, postAnonymously: boolean): string {
-  if (postAnonymously) {
-    return DEFAULT_ANONYMOUS_NAME;
-  }
-
-  const trimmedName = rawName.trim();
-  if (trimmedName.length === 0) {
-    return DEFAULT_NAMED_FALLBACK;
-  }
-
-  return trimmedName;
+interface ApiPostList {
+  posts: ApiPost[];
 }
 
 /**
- * Returns a default reply draft model.
+ * Formats an ISO timestamp as a short relative time string (e.g. "5m ago").
  *
- * @returns {ReplyDraft} Initial reply form state.
+ * @param {string} isoDate - ISO 8601 timestamp.
+ * @returns {string} Human-readable relative time.
  */
-function createInitialReplyDraft(): ReplyDraft {
-  return {
-    content: "",
-    displayName: "",
-    postAnonymously: true,
-  };
+function relativeTime(isoDate: string): string {
+  const seconds = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 /**
- * Renders the Public Square discussion board.
+ * Fetches Public Square posts from the Pi API in the given sort order.
  *
- * @returns {JSX.Element} Public Square page layout.
+ * @param {SortOption} sort - "top" or "new".
+ * @returns {Promise<ApiPost[]>} List of posts, or an empty array if the API is unreachable.
+ */
+async function fetchPosts(sort: SortOption): Promise<ApiPost[]> {
+  try {
+    const res = await fetch(`${API_BASE}/public-square/posts?sort=${sort}`);
+    if (!res.ok) return [];
+    const data: ApiPostList = await res.json();
+    return data.posts;
+  } catch {
+    console.warn("could not fetch Public Square posts from API");
+    return [];
+  }
+}
+
+/**
+ * Renders the Public Square post list, sort toggle, and new-post form.
+ *
+ * @returns {JSX.Element} The Public Square landing page.
  */
 export default function PublicSquarePage() {
-  const [threads, setThreads] = useState<Thread[]>(INITIAL_THREADS);
-  const [newTopicTitle, setNewTopicTitle] = useState("");
-  const [newTopicName, setNewTopicName] = useState("");
-  const [newTopicAnonymous, setNewTopicAnonymous] = useState(true);
-  const [replyDrafts, setReplyDrafts] = useState<Record<string, ReplyDraft>>(() => {
-    const initialDrafts: Record<string, ReplyDraft> = {};
+  const [sort, setSort] = useState<SortOption>("top");
+  const [posts, setPosts] = useState<ApiPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [votes, setVotes] = useState<Record<number, 1 | -1 | 0>>({});
 
-    for (const thread of INITIAL_THREADS) {
-      initialDrafts[thread.id] = createInitialReplyDraft();
-    }
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [formState, setFormState] = useState<SubmitState>("idle");
+  const [formError, setFormError] = useState<string | null>(null);
 
-    return initialDrafts;
-  });
-
-  const topicCountLabel = useMemo(() => {
-    return threads.length === 1 ? "1 topic" : `${threads.length} topics`;
-  }, [threads.length]);
-
-  /**
-   * Creates a new top-level thread from the topic form.
-   *
-   * @param {FormEvent<HTMLFormElement>} event - Form submission event.
-   */
-  function handleTopicSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const trimmedTitle = newTopicTitle.trim();
-    if (trimmedTitle.length === 0) {
-      return;
-    }
-
-    const threadId = `thread-${Date.now()}`;
-    const authorName = buildAuthorName(newTopicName, newTopicAnonymous);
-
-    const nextThread: Thread = {
-      id: threadId,
-      title: trimmedTitle,
-      authorName,
-      replies: [],
-    };
-
-    setThreads((previousThreads) => [nextThread, ...previousThreads]);
-    setNewTopicTitle("");
-    setNewTopicName("");
-    setNewTopicAnonymous(true);
-    setReplyDrafts((previousDrafts) => ({
-      ...previousDrafts,
-      [threadId]: createInitialReplyDraft(),
-    }));
-  }
-
-  /**
-   * Updates one field in a thread reply draft.
-   *
-   * @param {string} threadId - Target thread identifier.
-   * @param {keyof ReplyDraft} field - Draft field to update.
-   * @param {string | boolean} value - New field value.
-   */
-  function updateReplyDraft(threadId: string, field: keyof ReplyDraft, value: string | boolean) {
-    setReplyDrafts((previousDrafts) => {
-      const previousDraft = previousDrafts[threadId] ?? createInitialReplyDraft();
-
-      return {
-        ...previousDrafts,
-        [threadId]: {
-          ...previousDraft,
-          [field]: value,
-        },
-      };
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchPosts(sort).then((fetched) => {
+      if (!cancelled) {
+        setPosts(fetched);
+        setLoading(false);
+      }
     });
-  }
+    return () => {
+      cancelled = true;
+    };
+  }, [sort]);
 
   /**
-   * Submits a reply into a specific thread.
+   * Validates and submits the new-post form to the backend.
    *
-   * @param {string} threadId - Target thread identifier.
-   * @param {FormEvent<HTMLFormElement>} event - Form submission event.
+   * @param {React.FormEvent} e - The form submit event.
    */
-  function handleReplySubmit(threadId: string, event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
 
-    const currentDraft = replyDrafts[threadId] ?? createInitialReplyDraft();
-    const trimmedContent = currentDraft.content.trim();
-    if (trimmedContent.length === 0) {
+    if (!title.trim() || !content.trim()) {
+      setFormError("title and content can't be empty");
+      setFormState("error");
       return;
     }
 
-    const authorName = buildAuthorName(currentDraft.displayName, currentDraft.postAnonymously);
-
-    const nextReply: Reply = {
-      id: `reply-${Date.now()}`,
-      content: trimmedContent,
-      authorName,
-    };
-
-    setThreads((previousThreads) => {
-      return previousThreads.map((thread) => {
-        if (thread.id !== threadId) {
-          return thread;
-        }
-
-        return {
-          ...thread,
-          replies: [...thread.replies, nextReply],
-        };
+    setFormState("submitting");
+    try {
+      const res = await fetch(`${API_BASE}/public-square/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+          nickname: nickname.trim() || null,
+        }),
       });
-    });
 
-    setReplyDrafts((previousDrafts) => ({
-      ...previousDrafts,
-      [threadId]: createInitialReplyDraft(),
-    }));
+      if (res.status === 429) {
+        setFormError("too many posts from your network — give it a bit and try again");
+        setFormState("error");
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const detail =
+          typeof data.detail === "string" ? data.detail : "something went wrong — try again in a moment";
+        setFormError(detail);
+        setFormState("error");
+        return;
+      }
+
+      const created: ApiPost = await res.json();
+      setTitle("");
+      setContent("");
+      setNickname("");
+      setFormState("success");
+      setPosts((prev) => (sort === "new" ? [created, ...prev] : [...prev, created]));
+    } catch {
+      setFormError("couldn't reach the server — check your connection and try again");
+      setFormState("error");
+    }
   }
+
+  /**
+   * Casts a vote on a post and updates its score/vote state from the response.
+   *
+   * @param {number} postId - Post being voted on.
+   * @param {1 | -1} direction - Vote direction.
+   */
+  async function handleVote(postId: number, direction: 1 | -1) {
+    try {
+      const res = await fetch(`${API_BASE}/public-square/posts/${postId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: direction }),
+      });
+      if (!res.ok) return;
+      const result: { score: number; your_vote: 1 | -1 | 0 } = await res.json();
+      setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, score: result.score } : p)));
+      setVotes((prev) => ({ ...prev, [postId]: result.your_vote }));
+    } catch {
+      // vote just doesn't land this time — no need to surface an error for a click
+    }
+  }
+
+  const inputClass =
+    "w-full rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#e2a9f1] transition";
 
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-gradient-to-b from-stone-950 via-neutral-900 to-black text-stone-100 px-4 py-12">
-        <div className="mx-auto w-full max-w-4xl rounded-2xl border border-stone-700 bg-stone-900/70 p-6 md:p-10 shadow-2xl">
-        <h1 className="text-3xl md:text-5xl font-semibold tracking-wide text-stone-100">Public Square</h1>
-        <div className="mt-4 rounded-lg border border-amber-500/60 bg-amber-900/20 px-4 py-3 text-amber-100">
-          This discussion board is planned for a future build with a dedicated backend.
-        </div>
-        <p className="mt-3 text-stone-300 leading-relaxed">
-          Open discussions where people can post topics and reply to each other as either anonymous or named.
-        </p>
-        <p className="mt-1 text-sm text-stone-400">{topicCountLabel}</p>
+      <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-black px-4 py-16 sm:px-8">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="text-3xl font-bold text-white mb-2">Public Square</h1>
+          <p className="text-sm text-gray-400 mb-8">
+            Anonymous, open to anyone. Be nice, or don&apos;t — but abuse gets it shut down for everyone.
+          </p>
 
-        <section className="mt-8 rounded-xl border border-stone-700 bg-stone-900/60 p-4 md:p-6">
-          <h2 className="text-xl font-medium text-stone-100">Start a topic</h2>
-          <form onSubmit={handleTopicSubmit} className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="new-topic-title" className="text-sm text-stone-300">
-                Topic title
-              </label>
+          <div className="border-t border-slate-700 pt-8 mb-8">
+            <h2 className="text-lg font-semibold text-gray-300 mb-5">New Post</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <input
-                id="new-topic-title"
                 type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
                 maxLength={MAX_TITLE_LENGTH}
-                value={newTopicTitle}
-                onChange={(event) => setNewTopicTitle(event.target.value)}
-                className="w-full rounded-md border border-stone-600 bg-stone-950 px-3 py-2 text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-500"
-                placeholder="Enter a topic title"
+                className={inputClass}
               />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                id="new-topic-anon"
-                type="checkbox"
-                checked={newTopicAnonymous}
-                onChange={(event) => setNewTopicAnonymous(event.target.checked)}
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="What's on your mind?"
+                maxLength={MAX_CONTENT_LENGTH}
+                rows={4}
+                className={inputClass}
               />
-              <label htmlFor="new-topic-anon" className="text-sm text-stone-300">
-                Post anonymously
-              </label>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="new-topic-name" className="text-sm text-stone-300">
-                Name (optional)
-              </label>
               <input
-                id="new-topic-name"
                 type="text"
-                value={newTopicName}
-                onChange={(event) => setNewTopicName(event.target.value)}
-                disabled={newTopicAnonymous}
-                className="w-full rounded-md border border-stone-600 bg-stone-950 px-3 py-2 text-stone-100 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-stone-500"
-                placeholder="Your name"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="Nickname (optional — leave blank to stay Anonymous)"
+                maxLength={MAX_NICKNAME_LENGTH}
+                className={inputClass}
               />
-            </div>
-
-            <button
-              type="submit"
-              className="rounded-md border border-stone-500 bg-stone-800 px-4 py-2 text-stone-100 hover:bg-stone-700 transition-colors"
-            >
-              Post topic
-            </button>
-          </form>
-        </section>
-
-        <section className="mt-8 space-y-4">
-          <h2 className="text-xl font-medium text-stone-100">Threads</h2>
-          {threads.map((thread) => {
-            const draft = replyDrafts[thread.id] ?? createInitialReplyDraft();
-
-            return (
-              <article key={thread.id} className="rounded-xl border border-stone-700 bg-stone-900/60 p-4 md:p-6">
-                <h3 className="text-lg font-semibold text-stone-100">{thread.title}</h3>
-                {thread.authorName.trim().length > 0 ? (
-                  <p className="mt-1 text-xs text-stone-400">Started by {thread.authorName}</p>
-                ) : null}
-                <p className="mt-1 text-sm text-stone-400">
-                  {thread.replies.length === 0 ? "No replies yet" : `${thread.replies.length} replies`}
+              {formError && (
+                <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">
+                  {formError}
                 </p>
-
-                <div className="mt-4 space-y-3">
-                  {thread.replies.map((reply) => (
-                    <div key={reply.id} className="rounded-md border border-stone-700 bg-stone-950/70 px-3 py-2">
-                      <p className="text-sm text-stone-200">{reply.content}</p>
-                      <p className="mt-1 text-xs text-stone-400">Posted by {reply.authorName}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <form onSubmit={(event) => handleReplySubmit(thread.id, event)} className="mt-4 space-y-3">
-                  <div className="space-y-2">
-                    <label htmlFor={`reply-${thread.id}`} className="text-sm text-stone-300">
-                      Reply
-                    </label>
-                    <textarea
-                      id={`reply-${thread.id}`}
-                      maxLength={MAX_REPLY_LENGTH}
-                      value={draft.content}
-                      onChange={(event) => updateReplyDraft(thread.id, "content", event.target.value)}
-                      className="min-h-24 w-full rounded-md border border-stone-600 bg-stone-950 px-3 py-2 text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-500"
-                      placeholder="Write your reply"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      id={`reply-anon-${thread.id}`}
-                      type="checkbox"
-                      checked={draft.postAnonymously}
-                      onChange={(event) =>
-                        updateReplyDraft(thread.id, "postAnonymously", event.target.checked)
-                      }
-                    />
-                    <label htmlFor={`reply-anon-${thread.id}`} className="text-sm text-stone-300">
-                      Post anonymously
-                    </label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor={`reply-name-${thread.id}`} className="text-sm text-stone-300">
-                      Name (optional)
-                    </label>
-                    <input
-                      id={`reply-name-${thread.id}`}
-                      type="text"
-                      value={draft.displayName}
-                      onChange={(event) => updateReplyDraft(thread.id, "displayName", event.target.value)}
-                      disabled={draft.postAnonymously}
-                      className="w-full rounded-md border border-stone-600 bg-stone-950 px-3 py-2 text-stone-100 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-stone-500"
-                      placeholder="Your name"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="rounded-md border border-stone-500 bg-stone-800 px-4 py-2 text-stone-100 hover:bg-stone-700 transition-colors"
-                  >
-                    Post reply
-                  </button>
-                </form>
-              </article>
-            );
-          })}
-        </section>
-
-          <div className="mt-10">
-            <Link href="/" className="text-sm text-stone-300 hover:text-stone-100 underline underline-offset-4">
-              Return to main menu
-            </Link>
+              )}
+              <button
+                type="submit"
+                disabled={formState === "submitting"}
+                className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed transition"
+                style={{ backgroundColor: "#e2a9f1" }}
+              >
+                {formState === "submitting" ? "Posting..." : "Post"}
+              </button>
+            </form>
           </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-300">Posts</h2>
+            <SortToggle value={sort} onChange={setSort} />
+          </div>
+
+          {loading ? (
+            <p className="text-gray-500">Loading...</p>
+          ) : posts.length === 0 ? (
+            <p className="text-gray-500">No posts yet — be the first.</p>
+          ) : (
+            <ul className="space-y-3">
+              {posts.map((post) => (
+                <li
+                  key={post.id}
+                  className="flex items-start gap-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4"
+                >
+                  <VoteButtons
+                    score={post.score}
+                    yourVote={votes[post.id] ?? 0}
+                    onVote={(direction) => handleVote(post.id, direction)}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/public-square/thread?id=${post.id}`} className="text-white font-semibold hover:underline">
+                      {post.title}
+                    </Link>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {post.nickname || "Anonymous"} &middot; {relativeTime(post.created_at)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </main>
     </>
+  );
+}
+
+/**
+ * Segmented toggle for choosing "top" vs "new" post sort order.
+ *
+ * @param {object} props - Component props.
+ * @param {SortOption} props.value - Currently selected sort.
+ * @param {(s: SortOption) => void} props.onChange - Selection handler.
+ * @returns {JSX.Element} The toggle control.
+ */
+function SortToggle({ value, onChange }: { value: SortOption; onChange: (s: SortOption) => void }) {
+  const options: { key: SortOption; label: string }[] = [
+    { key: "top", label: "Top" },
+    { key: "new", label: "New" },
+  ];
+  return (
+    <div className="inline-flex rounded-full border border-slate-600 bg-slate-800/60 p-1">
+      {options.map((opt) => (
+        <button
+          key={opt.key}
+          type="button"
+          onClick={() => onChange(opt.key)}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            value === opt.key ? "text-black" : "text-gray-300 hover:text-white"
+          }`}
+          style={value === opt.key ? { backgroundColor: "#e2a9f1" } : undefined}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
   );
 }

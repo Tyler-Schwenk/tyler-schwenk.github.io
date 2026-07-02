@@ -424,6 +424,7 @@
         <button class="tab-btn active" data-tab="galleries">Galleries</button>
         <button class="tab-btn" data-tab="upload">Upload</button>
         <button class="tab-btn" data-tab="rsvps">RSVPs</button>
+        <button class="tab-btn" data-tab="publicSquare">Public Square</button>
     </div>
 
     <!-- ===== GALLERIES TAB ===== -->
@@ -539,6 +540,15 @@
         </div>
         <div id="rsvpList"></div>
     </div>
+
+    <!-- ===== PUBLIC SQUARE TAB ===== -->
+    <div class="tab-panel" id="tab-publicSquare">
+        <div class="galleries-toolbar">
+            <span style="font-size: 13px; color: var(--muted);" id="psCount"></span>
+            <button class="btn btn-ghost btn-sm" id="refreshPsBtn">Refresh</button>
+        </div>
+        <div id="psList"></div>
+    </div>
 </div>
 
 <script>
@@ -550,6 +560,8 @@
     let uploadFiles = [];
     let expandedIds = new Set();
     let rsvps = [];
+    let psPosts = [];
+    let psExpandedIds = new Set();
 
     // ---- boot ----
     token ? showAdmin() : showLogin();
@@ -609,6 +621,7 @@
             btn.classList.add('active');
             document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
             if (btn.dataset.tab === 'rsvps') loadRsvps();
+            if (btn.dataset.tab === 'publicSquare') loadPublicSquarePosts();
         });
     });
 
@@ -1199,6 +1212,134 @@
         if (res && (res.ok || res.status === 204)) {
             rsvps = rsvps.filter(r => r.id !== id);
             renderRsvps();
+        } else {
+            alert('Delete failed.');
+        }
+    }
+
+    // ---- public square (moderation only — posting/voting happens on the public site) ----
+    document.getElementById('refreshPsBtn').addEventListener('click', loadPublicSquarePosts);
+
+    async function loadPublicSquarePosts() {
+        const list = document.getElementById('psList');
+        list.innerHTML = '<span style="color:var(--muted); font-size:13px;">Loading...</span>';
+        const res = await aFetch(`${API}/public-square/posts?sort=new&page_size=100`);
+        if (!res) return;
+        const data = await res.json();
+        psPosts = data.posts;
+        renderPublicSquarePosts();
+    }
+
+    function renderPublicSquarePosts() {
+        document.getElementById('psCount').textContent = `${psPosts.length} post${psPosts.length !== 1 ? 's' : ''}`;
+        const list = document.getElementById('psList');
+        list.innerHTML = '';
+
+        if (!psPosts.length) {
+            list.innerHTML = '<span style="color:var(--muted); font-size:13px;">No posts yet.</span>';
+            return;
+        }
+
+        psPosts.forEach(p => list.appendChild(makePsCard(p)));
+    }
+
+    function makePsCard(p) {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        card.id = `psc-${p.id}`;
+        const open = psExpandedIds.has(p.id);
+
+        card.innerHTML = `
+            <div class="gallery-header">
+                <div class="gallery-info">
+                    <div class="gallery-name">${escH(p.title)}</div>
+                    <div class="gallery-meta">
+                        score ${p.score} &bull; ${escH(p.nickname || 'Anonymous')} &bull; ${fmtDate(p.created_at)}
+                    </div>
+                </div>
+                <div class="gallery-actions">
+                    <button class="btn btn-ghost btn-sm" data-ps-a="toggle" data-ps-id="${p.id}" title="Show comments">${open ? '&#8593;' : '&#8595;'}</button>
+                    <button class="btn btn-danger btn-sm" data-ps-a="del" data-ps-id="${p.id}" title="Delete post">&#128465;</button>
+                </div>
+            </div>
+            <div class="gallery-body ${open ? 'open' : ''}" id="psb-${p.id}">
+                <p style="font-size: 13px; color: var(--text); margin-bottom: 12px; white-space: pre-wrap;">${escH(p.content)}</p>
+                <div id="psComments-${p.id}"></div>
+            </div>
+        `;
+
+        card.addEventListener('click', e => {
+            const btn = e.target.closest('[data-ps-a]');
+            if (!btn) return;
+            const id = parseInt(btn.dataset.psId);
+            if (btn.dataset.psA === 'toggle') togglePsBody(id);
+            else if (btn.dataset.psA === 'del') deletePost(id);
+        });
+
+        if (open) loadPsComments(p.id);
+        return card;
+    }
+
+    async function togglePsBody(id) {
+        const body = document.getElementById(`psb-${id}`);
+        const nowOpen = !body.classList.contains('open');
+        body.classList.toggle('open', nowOpen);
+        if (nowOpen) {
+            psExpandedIds.add(id);
+            await loadPsComments(id);
+        } else {
+            psExpandedIds.delete(id);
+        }
+        const btn = document.querySelector(`[data-ps-a="toggle"][data-ps-id="${id}"]`);
+        if (btn) btn.innerHTML = nowOpen ? '&#8593;' : '&#8595;';
+    }
+
+    async function deletePost(id) {
+        if (!confirm('Delete this post and all its comments? Cannot be undone.')) return;
+        const res = await aFetch(`${API}/public-square/posts/${id}`, { method: 'DELETE' });
+        if (res && (res.ok || res.status === 204)) {
+            psExpandedIds.delete(id);
+            psPosts = psPosts.filter(p => p.id !== id);
+            renderPublicSquarePosts();
+        } else {
+            alert('Delete failed.');
+        }
+    }
+
+    async function loadPsComments(postId) {
+        const wrap = document.getElementById(`psComments-${postId}`);
+        wrap.innerHTML = '<span style="color:var(--muted); font-size:13px;">Loading comments...</span>';
+        const res = await aFetch(`${API}/public-square/posts/${postId}/comments?sort=new`);
+        if (!res) return;
+        const comments = await res.json();
+
+        if (!comments.length) {
+            wrap.innerHTML = '<span style="color:var(--muted); font-size:13px;">No comments.</span>';
+            return;
+        }
+
+        wrap.innerHTML = comments.map(c => `
+            <div class="gallery-header" style="padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px;">
+                <div class="gallery-info">
+                    <div style="font-size: 13px;">${escH(c.content)}</div>
+                    <div class="gallery-meta">score ${c.score} &bull; ${escH(c.nickname || 'Anonymous')} &bull; ${fmtDate(c.created_at)}</div>
+                </div>
+                <div class="gallery-actions">
+                    <button class="btn btn-danger btn-sm" data-del-comment="${c.id}" title="Delete comment">&#128465;</button>
+                </div>
+            </div>
+        `).join('');
+
+        wrap.querySelectorAll('[data-del-comment]').forEach(btn => {
+            btn.addEventListener('click', () => deleteComment(parseInt(btn.dataset.delComment), postId));
+        });
+    }
+
+    async function deleteComment(commentId, postId) {
+        if (!confirm('Delete this comment? Cannot be undone.')) return;
+        const res = await aFetch(`${API}/public-square/comments/${commentId}`, { method: 'DELETE' });
+        if (res && (res.ok || res.status === 204)) {
+            await loadPsComments(postId);
         } else {
             alert('Delete failed.');
         }

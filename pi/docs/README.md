@@ -14,7 +14,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Website Integration**](website-integration.md) - How to integrate GitHub Pages frontend with Pi backend
 
 ### Services
-- [**Website Backend**](api/website-backend-api.md) - Forum and photo gallery API
+- [**Website Backend**](api/website-backend-api.md) - Public Square (forum) and photo gallery API
 - [**Beszel**](services/beszel.md) - System monitoring and health tracking
 - [**Cloudflare Tunnel**](services/cloudflare-tunnel.md) - Public API access
 

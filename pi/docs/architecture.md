@@ -33,9 +33,9 @@ System architecture for fart-pi multi-service home server.
    - Features:
      - **Photo Galleries**: 13 albums (250+ photos), display_order sorting, admin panel management
      - **Video Hosting**: Upload, streaming, thumbnail generation with ffmpeg
-     - **Public Square Forum**: Posts, comments, discussions (routers pending implementation)
-     - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI
-     - JWT authentication (bcrypt password hashing, 30-day token expiry)
+     - **Public Square**: Anonymous forum — posts, comments, upvote/downvote, no login required (see `pi/docs/api/website-backend-api.md`)
+     - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI, plus Public Square moderation (hard delete posts/comments)
+     - JWT authentication (bcrypt password hashing, 30-day token expiry) — single admin account, not used by Public Square
    - Photo Storage: /media/tyler/FE645A9A645A558D/public-gallery
    - Video Storage: /media/tyler/FE645A9A645A558D/videos
 
@@ -91,14 +91,14 @@ System architecture for fart-pi multi-service home server.
 - **Features:**
   - **Photo Galleries**: 13 albums, 250+ photos, display_order sorting, automatic thumbnails (operational)
   - **Video Hosting**: Upload, streaming, automatic thumbnail generation (operational)
-  - **Public Square Forum**: Posts, comments, threads (routers pending implementation)
-  - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI
+  - **Public Square**: Anonymous forum — posts, comments, upvote/downvote (operational)
+  - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI, plus Public Square moderation
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:
   - Private: http://100.124.76.27:8000 (via NetBird) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
-- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, event_rsvps
+- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps
 - Storage:
   - Photos: /media/tyler/FE645A9A645A558D/public-gallery
   - Videos: /media/tyler/FE645A9A645A558D/videos
@@ -334,7 +334,7 @@ Visitor's Browser → Cloudflare Edge → Tunnel → Pi → Website Backend API
 
 **Remote Access:**
 - Private access via NetBird VPN (authenticated peers only)
-- Public access via Cloudflare Tunnel (gallery/forum read endpoints only)
+- Public access via Cloudflare Tunnel — gallery/video reads are public; Public Square reads AND writes (post/comment/vote) are public and rate-limited per IP; admin-only writes (gallery/video management, Public Square moderation) require a JWT
 - No ports exposed directly to internet
 - No router port forwarding
 
@@ -388,7 +388,7 @@ Probably Restic:
 - NetBird VPN (Bird Wide Web connection)
 - Website Backend API (FastAPI + SQLite)
   - Photo galleries: 16 albums, 255 photos migrated
-  - Forum routers: Pending implementation
+  - Public Square routers: Implemented — anonymous posts/comments/votes, admin moderation (see `pi/docs/api/website-backend-api.md`)
 - Beszel monitoring
 - Cloudflare Tunnel (quick tunnel mode)
 
@@ -410,10 +410,11 @@ Probably Restic:
 ## Open Questions
 
 ### Website Backend
-- [ ] Implement forum authentication routers
-- [ ] Add rate limiting to prevent spam
-- [ ] Moderation features for Public Square
+- [x] Public Square is anonymous by design — no auth routers, see `pi/docs/api/website-backend-api.md`
+- [x] Rate limiting on Public Square post/comment/vote creation, per IP
+- [x] Moderation: admin-only hard delete for posts/comments (via the `/admin` panel)
 - [ ] Custom domain for permanent tunnel URL
+- [ ] Deploy note: `Post`/`Comment` models existed in code (unused) before Public Square shipped. There's no Alembic — `init_db()` only creates missing tables, it won't alter existing ones. Before first deploying the new schema, drop the old (empty) tables on the Pi so they get recreated correctly: `sqlite3 website_backend.db "DROP TABLE IF EXISTS posts; DROP TABLE IF EXISTS comments;"`. Also set `IP_HASH_SALT` in the Pi's `.env` (e.g. `openssl rand -hex 32`) before starting the service.
 
 ### Future Services
 - [ ] Immich: Disable ML on Pi 5 for performance?

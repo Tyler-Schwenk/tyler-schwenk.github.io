@@ -20,47 +20,44 @@ class UserRead(BaseModel):
     is_active: bool
     is_verified: bool
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserPublic(BaseModel):
-    """Limited user data for public display (e.g., in posts/comments)."""
-    id: int
-    username: Optional[str] = None
-    
-    model_config = ConfigDict(from_attributes=True)
+# Public Square Schemas
+#
+# Posts and comments are anonymous -- there's no author FK, just an
+# optional free-text nickname. Length limits keep the SQLite file and the
+# UI sane; they're not a security control (that's the rate limiter's job).
+MAX_POST_TITLE_LENGTH = 200
+MAX_POST_CONTENT_LENGTH = 10000
+MAX_COMMENT_CONTENT_LENGTH = 5000
+MAX_NICKNAME_LENGTH = 50
 
 
-# Post Schemas
 class PostBase(BaseModel):
-    """Base post fields for creation and updates."""
-    title: str = Field(..., min_length=1, max_length=200, description="Post title")
-    content: str = Field(..., min_length=1, max_length=50000, description="Post content")
-    is_published: bool = Field(default=True, description="Whether post is visible")
+    """Base post fields for creation."""
+    title: str = Field(..., min_length=1, max_length=MAX_POST_TITLE_LENGTH, description="Post title")
+    content: str = Field(..., min_length=1, max_length=MAX_POST_CONTENT_LENGTH, description="Post content")
+    nickname: Optional[str] = Field(None, max_length=MAX_NICKNAME_LENGTH, description="Optional display name")
 
 
 class PostCreate(PostBase):
-    """Schema for creating a new post."""
+    """Schema for creating a new post. No auth -- anyone can post."""
     pass
-
-
-class PostUpdate(BaseModel):
-    """Schema for updating an existing post. All fields optional."""
-    title: Optional[str] = Field(None, min_length=1, max_length=200)
-    content: Optional[str] = Field(None, min_length=1, max_length=50000)
-    is_published: Optional[bool] = None
 
 
 class PostRead(PostBase):
     """Post data returned in API responses."""
     id: int
-    author_id: int
-    author: UserPublic
+    score: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
+
+
+PostSortLiteral = Literal["top", "new"]
 
 
 class PostList(BaseModel):
@@ -72,32 +69,37 @@ class PostList(BaseModel):
     total_pages: int
 
 
-# Comment Schemas
 class CommentBase(BaseModel):
-    """Base comment fields for creation and updates."""
-    content: str = Field(..., min_length=1, max_length=10000, description="Comment content")
+    """Base comment fields for creation."""
+    content: str = Field(..., min_length=1, max_length=MAX_COMMENT_CONTENT_LENGTH, description="Comment content")
+    nickname: Optional[str] = Field(None, max_length=MAX_NICKNAME_LENGTH, description="Optional display name")
 
 
 class CommentCreate(CommentBase):
-    """Schema for creating a new comment."""
+    """Schema for creating a new comment. No auth -- anyone can comment."""
     pass
-
-
-class CommentUpdate(BaseModel):
-    """Schema for updating an existing comment."""
-    content: str = Field(..., min_length=1, max_length=10000)
 
 
 class CommentRead(CommentBase):
     """Comment data returned in API responses."""
     id: int
     post_id: int
-    author_id: int
-    author: UserPublic
+    score: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
+
+
+class VoteRequest(BaseModel):
+    """Schema for casting a vote on a post or comment."""
+    value: Literal[1, -1] = Field(..., description="1 to upvote, -1 to downvote")
+
+
+class VoteResult(BaseModel):
+    """Schema returned after a vote is applied."""
+    score: int = Field(..., description="Updated net score after this vote")
+    your_vote: Literal[1, -1, 0] = Field(..., description="This visitor's current vote state; 0 means no vote (retracted)")
 
 
 # Gallery Schemas

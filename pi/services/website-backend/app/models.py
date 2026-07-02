@@ -1,10 +1,11 @@
 """
 SQLAlchemy database models.
 
-Defines database schema for users, posts, comments, galleries, and photos.
+Defines database schema for users, Public Square posts/comments/votes,
+galleries, and photos.
 """
 
-from sqlalchemy import Boolean, Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from fastapi_users.db import SQLAlchemyBaseUserTable
@@ -14,79 +15,147 @@ from app.database import Base
 class User(SQLAlchemyBaseUserTable[int], Base):
     """
     User model for authentication and profile.
-    
-    Extends FastAPI-Users base table with additional fields.
+
+    Extends FastAPI-Users base table with additional fields. In practice the
+    only account that ever gets created is the single site admin (see
+    auth.py) -- Public Square posts/comments are anonymous and don't link
+    back to this table.
     """
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
-    
+
     # Custom fields
     username = Column(String(50), unique=True, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    
-    # Relationships
-    posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
-    comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
 
 
 class Post(Base):
     """
-    Post model representing a forum thread or article.
-    
+    Post model representing a Public Square forum thread.
+
+    Anonymous by design -- no author FK. Anyone can post; an optional
+    free-text nickname is stored for display only (not verified, not
+    unique).
+
     Attributes:
         id: Unique identifier
         title: Post title
         content: Post body content
-        author_id: Foreign key to User
+        nickname: Optional free-text display name chosen by the poster
+        score: Denormalized net vote count (upvotes minus downvotes), kept
+            in sync by the public_square router whenever a PostVote changes
         created_at: Timestamp of creation
         updated_at: Timestamp of last update
         is_published: Whether post is visible to public
     """
     __tablename__ = "posts"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(200), nullable=False, index=True)
     content = Column(Text, nullable=False)
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    nickname = Column(String(50), nullable=True)
+    score = Column(Integer, default=0, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     is_published = Column(Boolean, default=True, nullable=False)
-    
+
     # Relationships
-    author = relationship("User", back_populates="posts")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+    votes = relationship("PostVote", back_populates="post", cascade="all, delete-orphan")
 
 
 class Comment(Base):
     """
-    Comment model representing a reply to a post.
-    
+    Comment model representing a reply to a Public Square post.
+
+    Flat/top-level only in v1 -- comments reply to a post, not to each
+    other. Anonymous by design, same as Post.
+
     Attributes:
         id: Unique identifier
         content: Comment text
         post_id: Foreign key to Post
-        author_id: Foreign key to User
+        nickname: Optional free-text display name chosen by the commenter
+        score: Denormalized net vote count, kept in sync by the
+            public_square router whenever a CommentVote changes
         created_at: Timestamp of creation
         updated_at: Timestamp of last update
     """
     __tablename__ = "comments"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     content = Column(Text, nullable=False)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    nickname = Column(String(50), nullable=True)
+    score = Column(Integer, default=0, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     post = relationship("Post", back_populates="comments")
-    author = relationship("User", back_populates="comments")
+    votes = relationship("CommentVote", back_populates="comment", cascade="all, delete-orphan")
+
+
+class PostVote(Base):
+    """
+    One anonymous vote on a Post, keyed by hashed visitor IP.
+
+    Raw IPs are never stored -- ip_hash is sha256(ip + IP_HASH_SALT). The
+    unique constraint on (post_id, ip_hash) is what makes one IP = one vote
+    per post, and lets the router detect "voting again" as a toggle/flip
+    instead of a duplicate.
+
+    Attributes:
+        id: Unique identifier
+        post_id: Foreign key to Post
+        ip_hash: Hashed visitor IP this vote belongs to
+        value: 1 for upvote, -1 for downvote
+        created_at: Timestamp of the (most recent) vote
+    """
+    __tablename__ = "post_votes"
+    __table_args__ = (UniqueConstraint("post_id", "ip_hash", name="uq_post_votes_post_ip"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False, index=True)
+    ip_hash = Column(String(64), nullable=False, index=True)
+    value = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    post = relationship("Post", back_populates="votes")
+
+
+class CommentVote(Base):
+    """
+    One anonymous vote on a Comment, keyed by hashed visitor IP.
+
+    Same shape and semantics as PostVote -- see that docstring for details
+    on the IP hashing and unique-constraint-based toggle behavior.
+
+    Attributes:
+        id: Unique identifier
+        comment_id: Foreign key to Comment
+        ip_hash: Hashed visitor IP this vote belongs to
+        value: 1 for upvote, -1 for downvote
+        created_at: Timestamp of the (most recent) vote
+    """
+    __tablename__ = "comment_votes"
+    __table_args__ = (UniqueConstraint("comment_id", "ip_hash", name="uq_comment_votes_comment_ip"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    comment_id = Column(Integer, ForeignKey("comments.id"), nullable=False, index=True)
+    ip_hash = Column(String(64), nullable=False, index=True)
+    value = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    comment = relationship("Comment", back_populates="votes")
 
 
 class Gallery(Base):
