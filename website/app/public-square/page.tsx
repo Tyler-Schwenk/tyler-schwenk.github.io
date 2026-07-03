@@ -178,9 +178,9 @@ export default function PublicSquarePage() {
       <Navigation />
       <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-black px-4 py-16 sm:px-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-bold text-white mb-2">Public Square</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Round Table</h1>
           <p className="text-sm text-gray-400 mb-8">
-            Anonymous, open to anyone. Be nice, or don&apos;t — but abuse gets it shut down for everyone.
+            Its pretty much just reddit. But its here on my website. I have things I want to write about but and get feedback on, so hopefully this can be a place for that. Hoping that the forum style of this helps make it feel more approachable and will just get some ideas flowing. I'd love for yall to join! You can leave posts anonymously or with your name if youd like.
           </p>
 
           <div className="border-t border-slate-700 pt-8 mb-8">

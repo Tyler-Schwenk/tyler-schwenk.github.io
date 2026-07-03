@@ -1,7 +1,7 @@
 # Public Square
 
 ## Overview
-Public Square (`/public-square`) is an anonymous, reddit-like forum. Anyone can post, comment, and upvote/downvote — no login. It's linked from the home page's MAIN MENU. Content lives entirely on the Pi backend (`https://api.tyler-schwenk.com/public-square/...`); see `pi/docs/api/website-backend-api.md` for the API reference.
+Public Square (`/public-square`) is an anonymous, reddit-like forum. Anyone can post, comment, and upvote/downvote — no login. On the public site it's branded "Round Table" — the home page MAIN MENU links to it under the label "ROUND TABLE" with `/images/8bit/round_table.png` as its icon, and the page's own heading and back-links say "Round Table" too. "Public Square" remains the internal/code name (routes, API, docstrings) and still appears in the admin panel's moderation tab. Content lives entirely on the Pi backend (`https://api.tyler-schwenk.com/public-square/...`); see `pi/docs/api/website-backend-api.md` for the API reference.
 
 ## Routes
 - `/public-square` — post list, sort toggle (Top/New), and a "New Post" form

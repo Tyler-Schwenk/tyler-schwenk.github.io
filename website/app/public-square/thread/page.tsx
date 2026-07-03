@@ -258,7 +258,7 @@ function ThreadContent() {
           <div className="mx-auto max-w-3xl">
             <p className="text-gray-400">No post specified.</p>
             <Link href="/public-square" className="text-sm text-gray-400 hover:text-white transition">
-              &larr; Public Square
+              &larr; Round Table
             </Link>
           </div>
         </main>
@@ -272,7 +272,7 @@ function ThreadContent() {
       <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-black px-4 py-16 sm:px-8">
         <div className="mx-auto max-w-3xl">
           <Link href="/public-square" className="text-sm text-gray-400 hover:text-white transition">
-            &larr; Public Square
+            &larr; Round Table
           </Link>
 
           {!post ? (

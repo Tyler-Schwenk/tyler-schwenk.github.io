@@ -126,21 +126,23 @@ export default function Others() {
                   href="https://p5js.org/sketches/2213463/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block space-y-2"
+                  className="flex items-start gap-4"
                 >
                   <Image
                     src="/images/slime.jpg"
                     alt="Slime mold simulation"
-                    width={800}
-                    height={523}
-                    className="w-full rounded-lg"
+                    width={64}
+                    height={64}
+                    className="w-16 h-16 rounded-lg object-cover shrink-0"
                   />
-                  <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
-                    Slime Mold Simulation
-                  </h3>
-                  <p className="text-slate-300">
-                    I really enjoy this and lots of the other projects on this site
-                  </p>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
+                      Slime Mold Simulation
+                    </h3>
+                    <p className="text-slate-300">
+                      I really enjoy this and lots of the other projects on this site
+                    </p>
+                  </div>
                 </a>
               </div>
               <div className="bg-slate-800/50 rounded-lg p-6 hover:bg-slate-800/70 transition-colors">
