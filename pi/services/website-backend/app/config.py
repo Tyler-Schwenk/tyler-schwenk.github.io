@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     VIDEOS_DIR: str = "/app/videos"
     VIDEO_THUMBNAIL_WIDTH: int = 1280
 
+    # Recipe Photo Storage
+    RECIPE_PHOTOS_DIR: str = "/app/recipe_photos"
+
     # Pac-Tyler data (written by pac-tyler-updater, mounted as a volume)
     PAC_TYLER_DATA_DIR: str = "/app/pac-tyler"
     

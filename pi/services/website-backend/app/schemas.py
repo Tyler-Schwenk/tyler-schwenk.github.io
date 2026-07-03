@@ -284,6 +284,74 @@ class VideoRead(VideoBase):
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
+
+
+# Recipe Schemas
+#
+# Recipes are submitted anonymously from a public form (no author FK, same
+# pattern as Public Square) -- every field is optional so the form can be
+# filled out quickly from a phone. Create is public + rate-limited; edit and
+# delete require admin auth (see recipes.py).
+MAX_RECIPE_NAME_LENGTH = 200
+MAX_RECIPE_DESCRIPTION_LENGTH = 10000
+MAX_TAG_NAME_LENGTH = 50
+MAX_TAGS_PER_RECIPE = 20
+MAX_PHOTOS_PER_RECIPE = 12
+
+
+class TagRead(BaseModel):
+    """Tag data returned in API responses."""
+    id: int
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TagWithCount(TagRead):
+    """Tag data with how many recipes currently use it, for the filter UI."""
+    recipe_count: int = Field(..., description="Number of recipes tagged with this tag")
+
+
+class RecipePhotoRead(BaseModel):
+    """Recipe photo data returned in API responses."""
+    id: int
+    recipe_id: int
+    filename: str
+    width: Optional[int] = None
+    height: Optional[int] = None
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    display_order: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RecipeRead(BaseModel):
+    """Recipe data returned in API responses, including tags and photos."""
+    id: int
+    name: Optional[str] = None
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    tags: list[TagRead] = []
+    photos: list[RecipePhotoRead] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RecipeUpdate(BaseModel):
+    """
+    Schema for editing an existing recipe. Admin-only.
+
+    `tags`, when provided, is a full replacement of the recipe's tag list
+    (not a merge) -- the router diffs it against the current tags.
+    """
+    name: Optional[str] = Field(None, max_length=MAX_RECIPE_NAME_LENGTH)
+    description: Optional[str] = Field(None, max_length=MAX_RECIPE_DESCRIPTION_LENGTH)
+    tags: Optional[list[str]] = Field(
+        None, max_length=MAX_TAGS_PER_RECIPE, description="Full replacement tag list"
+    )
 

@@ -92,16 +92,18 @@ System architecture for fart-pi multi-service home server.
   - **Photo Galleries**: 13 albums, 250+ photos, display_order sorting, automatic thumbnails (operational)
   - **Video Hosting**: Upload, streaming, automatic thumbnail generation (operational)
   - **Public Square**: Anonymous forum — posts, comments, upvote/downvote (operational)
+  - **The Kitchen (Recipes)**: Public, rate-limited recipe submission (name/description/tags/photos, all optional) with search/tag-filter/random browsing; admin-only edit/delete (see `pi/docs/api/website-backend-api.md`)
   - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI, plus Public Square moderation
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:
   - Private: http://100.124.76.27:8000 (via NetBird) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
-- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps
+- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos
 - Storage:
   - Photos: /media/tyler/FE645A9A645A558D/public-gallery
   - Videos: /media/tyler/FE645A9A645A558D/videos
+  - Recipe photos: /media/tyler/FE645A9A645A558D/recipe-photos
 - Dependencies: ffmpeg for video processing
 
 **NetBird VPN**
@@ -415,6 +417,7 @@ Probably Restic:
 - [x] Moderation: admin-only hard delete for posts/comments (via the `/admin` panel)
 - [ ] Custom domain for permanent tunnel URL
 - [ ] Deploy note: `Post`/`Comment` models existed in code (unused) before Public Square shipped. There's no Alembic — `init_db()` only creates missing tables, it won't alter existing ones. Before first deploying the new schema, drop the old (empty) tables on the Pi so they get recreated correctly: `sqlite3 website_backend.db "DROP TABLE IF EXISTS posts; DROP TABLE IF EXISTS comments;"`. Also set `IP_HASH_SALT` in the Pi's `.env` (e.g. `openssl rand -hex 32`) before starting the service.
+- [ ] Deploy note: The Kitchen (recipes) adds new tables only (`recipes`, `tags`, `recipe_tags`, `recipe_photos`) so `init_db()` creates them automatically on first startup after deploy -- no manual SQL needed. It does need a new bind mount, `/media/tyler/FE645A9A645A558D/recipe-photos:/app/recipe_photos` (see `docker-compose.yml`); Docker creates that host directory automatically if it doesn't exist yet, but confirm the external SSD is mounted first.
 
 ### Future Services
 - [ ] Immich: Disable ML on Pi 5 for performance?

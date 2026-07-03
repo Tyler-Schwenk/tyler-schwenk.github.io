@@ -19,6 +19,7 @@ services:
       - ./scripts:/app/scripts
       - /media/tyler/FE645A9A645A558D/public-gallery:/app/photos
       - /media/tyler/FE645A9A645A558D/videos:/app/videos
+      - /media/tyler/FE645A9A645A558D/recipe-photos:/app/recipe_photos
       - /home/tyler/pac-tyler-data:/app/pac-tyler:ro
     restart: unless-stopped
     healthcheck:

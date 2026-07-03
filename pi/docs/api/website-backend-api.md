@@ -9,8 +9,9 @@ Backend API for tyler-schwenk.com providing:
 - **Photo Galleries**: Album management with automatic thumbnails and image serving
 - **Video Hosting**: Video upload, streaming, and thumbnail generation
 - **Pac-Tyler**: GeoJSON activity tracks and analytics dataset from Strava
+- **Recipes (The Kitchen)**: Anonymous, rate-limited recipe submission with tags and photos; admin-only edit/delete
 
-**Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, and video features.
+**Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, and recipe features.
 
 ## Pac-Tyler
 
@@ -674,6 +675,171 @@ Authorization: Bearer <your-token>
 
 **Errors:** `404 Not Found` if no RSVP with that id exists.
 
+## Recipes (The Kitchen)
+
+Public recipe box: anyone can submit a recipe (name, description, tags, and photos, all optional) from the site's `/kitchen` page. Creating a recipe is public and rate-limited per IP, same pattern as Public Square and Event RSVPs. Editing and deleting a recipe requires the admin JWT, same as gallery photo management. Tags are freeform — submitting an unknown tag name creates it on the fly (matched case-insensitively so "Breakfast" and "breakfast" reuse the same tag).
+
+### List Recipes
+
+**Endpoint:** `GET /recipes`
+
+**Query Parameters:**
+- `search` (optional): substring match against name or description (case-insensitive)
+- `tags` (optional): comma-separated tag names — a recipe must have *all* of them to match
+- `skip` (integer, default: 0), `limit` (integer, default: 200)
+
+**Response:** `200 OK` — array of recipe objects (see Get Recipe), newest first.
+
+### Get Random Recipe
+
+Picks one recipe at random, honoring the same filters as List Recipes. Powers the "Random Recipe" button.
+
+**Endpoint:** `GET /recipes/random`
+
+**Query Parameters:** same as List Recipes (`search`, `tags`)
+
+**Response:** `200 OK` — a single recipe object
+
+**Response:** `404 Not Found` if no recipe matches the filters
+
+### List Tags
+
+All tags currently in use, alphabetically, with how many recipes use each. Powers the filter chips and the add-recipe form's tag suggestions.
+
+**Endpoint:** `GET /recipes/tags`
+
+**Response:** `200 OK`
+```json
+[
+  { "id": 1, "name": "breakfast", "recipe_count": 3 },
+  { "id": 2, "name": "quick", "recipe_count": 5 }
+]
+```
+
+### Get Recipe
+
+**Endpoint:** `GET /recipes/{recipe_id}`
+
+**Response:** `200 OK`
+```json
+{
+  "id": 1,
+  "name": "Grandma's Lasagna",
+  "description": "Layer noodles, sauce, cheese...",
+  "created_at": "2026-06-01T10:00:00Z",
+  "updated_at": null,
+  "tags": [{ "id": 1, "name": "dinner" }],
+  "photos": [
+    {
+      "id": 1,
+      "recipe_id": 1,
+      "filename": "lasagna.jpg",
+      "width": 3000,
+      "height": 2000,
+      "file_size": 1245678,
+      "mime_type": "image/jpeg",
+      "display_order": 0,
+      "created_at": "2026-06-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Response:** `404 Not Found` if recipe doesn't exist
+
+### Create Recipe
+
+No auth — anyone can submit a recipe. All fields are optional so the form can be filled out quickly from a phone.
+
+**Endpoint:** `POST /recipes`
+
+**Content-Type:** `multipart/form-data`
+
+**Form Fields:**
+- `name` (string, optional, max 200 chars)
+- `description` (string, optional, max 10,000 chars)
+- `tags` (string, optional): comma-separated tag names, e.g. `"dinner,quick,vegan"` — max 20 tags, unknown ones are created
+- `files` (file[], optional): photo uploads — max 12 per recipe
+
+**Example with JavaScript:**
+```javascript
+const formData = new FormData();
+formData.append('name', "Grandma's Lasagna");
+formData.append('description', 'Layer noodles, sauce, cheese...');
+formData.append('tags', 'dinner,italian');
+for (const file of photoFiles) formData.append('files', file);
+
+const response = await fetch(`${API_URL}/recipes`, { method: 'POST', body: formData });
+```
+
+**Response:** `201 Created` — the created recipe (same shape as Get Recipe)
+
+**Response:** `400 Bad Request` if more than 12 photos are attached, or if a file isn't a decodable image
+
+**Rate Limit:** 10 per hour per IP
+
+### Update Recipe
+
+Edit a recipe's name, description, and/or tags. Admin only.
+
+**Endpoint:** `PATCH /recipes/{recipe_id}`
+
+**Headers:** `Authorization: Bearer <your-token>`
+
+**Request Body:** (all fields optional)
+```json
+{
+  "name": "Grandma's Lasagna (updated)",
+  "description": "New instructions...",
+  "tags": ["dinner", "italian", "freezer-friendly"]
+}
+```
+`tags`, if provided, **fully replaces** the recipe's tag list rather than merging with it.
+
+**Response:** `200 OK` — the updated recipe
+
+### Delete Recipe
+
+Deletes the recipe, its tag associations, and its photo files. Admin only.
+
+**Endpoint:** `DELETE /recipes/{recipe_id}`
+
+**Headers:** `Authorization: Bearer <your-token>`
+
+**Response:** `204 No Content`
+
+### Add Photos to a Recipe
+
+Attach more photos to an existing recipe. Admin only.
+
+**Endpoint:** `POST /recipes/{recipe_id}/photos`
+
+**Content-Type:** `multipart/form-data`
+
+**Form Fields:** `files` (file[], required)
+
+**Response:** `200 OK` — the recipe with its updated photo list
+
+**Response:** `400 Bad Request` if the total photo count would exceed 12
+
+### Delete a Recipe Photo
+
+Admin only.
+
+**Endpoint:** `DELETE /recipes/{recipe_id}/photos/{photo_id}`
+
+**Headers:** `Authorization: Bearer <your-token>`
+
+**Response:** `204 No Content`
+
+### Get Recipe Photo File
+
+**Endpoint:** `GET /recipes/photos/{photo_id}/file`
+
+**Query Parameters:** `thumbnail` (boolean, default: false)
+
+**Response:** Image file with appropriate `Content-Type`
+
 ## System Endpoints
 
 ### Health Check
@@ -1024,8 +1190,10 @@ document.getElementById('photoInput').addEventListener('change', async (e) => {
 - **Create Public Square Post:** 5 requests/hour per IP
 - **Create Public Square Comment:** 20 requests/hour per IP
 - **Vote (post or comment):** 60 requests/minute per IP
+- **Create Recipe:** 10 requests/hour per IP
+- **Add Recipe Photos:** 30 requests/hour per IP
 
-All Public Square limits are intentionally loose for a low-traffic personal site — tighten them in `pi/services/website-backend/app/routers/public_square.py` only if abuse actually shows up.
+All Public Square and Recipe limits are intentionally loose for a low-traffic personal site — tighten them in `pi/services/website-backend/app/routers/public_square.py` or `pi/services/website-backend/app/routers/recipes.py` only if abuse actually shows up.
 
 Rate limit exceeded responses include a `Retry-After` header indicating seconds until the limit resets.
 

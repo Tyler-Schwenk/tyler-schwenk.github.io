@@ -2,10 +2,10 @@
 SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
-galleries, and photos.
+galleries, photos, and recipes.
 """
 
-from sqlalchemy import Boolean, Column, Integer, String, Text, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Boolean, Column, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from fastapi_users.db import SQLAlchemyBaseUserTable
@@ -294,3 +294,108 @@ class Video(Base):
     is_public = Column(Boolean, default=True, nullable=False)
     slug = Column(String(200), unique=True, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+# Many-to-many join between recipes and tags. A plain association table (no
+# extra columns needed) rather than a mapped class, per SQLAlchemy convention.
+recipe_tags = Table(
+    "recipe_tags",
+    Base.metadata,
+    Column("recipe_id", Integer, ForeignKey("recipes.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
+)
+
+
+class Recipe(Base):
+    """
+    Recipe model for The Kitchen recipe box.
+
+    Submitted from the public "add a recipe" form -- every field but the
+    id/timestamps is optional, since the form is meant to be filled out
+    quickly from a phone. Anonymous by design (no author FK), same as
+    Public Square posts; only admin can edit/delete via the JWT-gated
+    endpoints.
+
+    Attributes:
+        id: Unique identifier
+        name: Recipe name
+        description: Recipe description/instructions
+        created_at: Timestamp of submission
+        updated_at: Timestamp of last edit
+    """
+    __tablename__ = "recipes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=True, index=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    photos = relationship(
+        "RecipePhoto", back_populates="recipe", cascade="all, delete-orphan",
+        order_by="RecipePhoto.display_order",
+    )
+    tags = relationship("Tag", secondary=recipe_tags, back_populates="recipes")
+
+
+class Tag(Base):
+    """
+    Freeform tag usable across recipes (e.g. "breakfast", "quick", "vegan").
+
+    Created on the fly when a recipe is submitted with a tag name that
+    doesn't exist yet -- see recipes.py's `_get_or_create_tags`.
+
+    Attributes:
+        id: Unique identifier
+        name: Tag label, unique (case-insensitive matching handled by the router)
+        created_at: Timestamp the tag was first created
+    """
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    recipes = relationship("Recipe", secondary=recipe_tags, back_populates="tags")
+
+
+class RecipePhoto(Base):
+    """
+    RecipePhoto model representing a photo attached to a recipe.
+
+    Same shape as GalleryPhoto -- see that model's docstring for field
+    semantics. Stored under settings.RECIPE_PHOTOS_DIR instead of
+    settings.PHOTOS_DIR so recipe photos don't mix into the gallery's
+    directory tree.
+
+    Attributes:
+        id: Unique identifier
+        recipe_id: Foreign key to Recipe
+        filename: Original uploaded filename
+        file_path: Path to stored file on disk (relative to RECIPE_PHOTOS_DIR)
+        thumbnail_path: Path to thumbnail file (relative to RECIPE_PHOTOS_DIR)
+        width: Image width in pixels
+        height: Image height in pixels
+        file_size: File size in bytes
+        mime_type: File MIME type
+        display_order: Order of photo within the recipe
+        created_at: Timestamp of upload
+    """
+    __tablename__ = "recipe_photos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recipe_id = Column(Integer, ForeignKey("recipes.id"), nullable=False)
+    filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    thumbnail_path = Column(String(500), nullable=True)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    file_size = Column(Integer, nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    display_order = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    recipe = relationship("Recipe", back_populates="photos")
