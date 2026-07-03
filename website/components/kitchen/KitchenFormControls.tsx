@@ -39,3 +39,21 @@ export function KitchenInput({ className = "", ...rest }: InputHTMLAttributes<HT
 export function KitchenTextarea({ className = "", ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea className={`${FIELD_CLASSES} resize-y ${className}`} {...rest} />;
 }
+
+/**
+ * A file picker styled to match the rest of the retro-OS form controls --
+ * the browser's native "Choose Files" button gets bordered/flat-button
+ * treatment via the `file:` variant classes.
+ *
+ * @param {InputHTMLAttributes<HTMLInputElement>} props - Standard input props (type is forced to "file").
+ * @returns {JSX.Element} The file input.
+ */
+export function KitchenFileInput({ className = "", ...rest }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  return (
+    <input
+      type="file"
+      className={`block w-full text-[13px] text-[var(--k-body)] font-[family-name:var(--k-font-sans)] file:mr-3 file:rounded-[3px] file:border file:border-[var(--k-border-default)] file:bg-[var(--k-neutral-primary-soft)] file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-[var(--k-heading)] hover:file:bg-[var(--k-neutral-secondary-medium)] ${className}`}
+      {...rest}
+    />
+  );
+}

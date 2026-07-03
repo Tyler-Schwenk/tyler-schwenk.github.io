@@ -320,6 +320,7 @@ class Recipe(Base):
         id: Unique identifier
         name: Recipe name
         description: Recipe description/instructions
+        link: Optional URL to an external source for the recipe
         created_at: Timestamp of submission
         updated_at: Timestamp of last edit
     """
@@ -328,6 +329,7 @@ class Recipe(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=True, index=True)
     description = Column(Text, nullable=True)
+    link = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

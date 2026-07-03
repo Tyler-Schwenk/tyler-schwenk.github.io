@@ -29,6 +29,7 @@ export interface Recipe {
   id: number;
   name: string | null;
   description: string | null;
+  link: string | null;
   created_at: string;
   updated_at: string | null;
   tags: Tag[];

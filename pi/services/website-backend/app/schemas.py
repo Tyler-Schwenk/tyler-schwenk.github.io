@@ -296,9 +296,39 @@ class VideoRead(VideoBase):
 # delete require admin auth (see recipes.py).
 MAX_RECIPE_NAME_LENGTH = 200
 MAX_RECIPE_DESCRIPTION_LENGTH = 10000
+MAX_RECIPE_LINK_LENGTH = 500
 MAX_TAG_NAME_LENGTH = 50
 MAX_TAGS_PER_RECIPE = 20
 MAX_PHOTOS_PER_RECIPE = 12
+
+LINK_SCHEME_PATTERN = re.compile(r"^https?://", re.IGNORECASE)
+
+
+def normalize_recipe_link(link: Optional[str]) -> Optional[str]:
+    """
+    Clean up a recipe link so it's always a clickable, absolute URL.
+
+    Trims whitespace and prepends `https://` if the user typed a bare
+    domain (e.g. "allrecipes.com/..." instead of "https://allrecipes.com/...")
+    -- otherwise it'd render as a broken relative link on the frontend.
+    Used by both recipe creation (multipart form field, no pydantic model)
+    and RecipeUpdate's validator below, so the behavior stays identical
+    however the link was set.
+
+    Args:
+        link: Raw link text as submitted, or None.
+
+    Returns:
+        A normalized absolute URL, or None if link was empty/None.
+    """
+    if link is None:
+        return None
+    trimmed = link.strip()
+    if not trimmed:
+        return None
+    if not LINK_SCHEME_PATTERN.match(trimmed):
+        trimmed = f"https://{trimmed}"
+    return trimmed
 
 
 class TagRead(BaseModel):
@@ -334,6 +364,7 @@ class RecipeRead(BaseModel):
     id: int
     name: Optional[str] = None
     description: Optional[str] = None
+    link: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     tags: list[TagRead] = []
@@ -351,7 +382,14 @@ class RecipeUpdate(BaseModel):
     """
     name: Optional[str] = Field(None, max_length=MAX_RECIPE_NAME_LENGTH)
     description: Optional[str] = Field(None, max_length=MAX_RECIPE_DESCRIPTION_LENGTH)
+    link: Optional[str] = Field(None, max_length=MAX_RECIPE_LINK_LENGTH)
     tags: Optional[list[str]] = Field(
         None, max_length=MAX_TAGS_PER_RECIPE, description="Full replacement tag list"
     )
+
+    @field_validator("link")
+    @classmethod
+    def _normalize_link(cls, v: Optional[str]) -> Optional[str]:
+        """Reuses normalize_recipe_link so edits get the same https:// prepend as creation."""
+        return normalize_recipe_link(v)
 

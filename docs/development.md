@@ -27,3 +27,7 @@ cd ~/tyler-schwenk.github.io && git pull
 cd pi/services/website-backend
 docker compose up -d --build
 
+
+docker compose ps
+docker compose logs -f    # Ctrl+C to stop tailing
+curl http://localhost:8000/health

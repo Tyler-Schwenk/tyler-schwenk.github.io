@@ -25,11 +25,13 @@ from app.models import Recipe, RecipePhoto, Tag
 from app.rate_limit import limiter
 from app.schemas import (
     MAX_PHOTOS_PER_RECIPE,
+    MAX_RECIPE_LINK_LENGTH,
     MAX_TAG_NAME_LENGTH,
     MAX_TAGS_PER_RECIPE,
     RecipeRead,
     RecipeUpdate,
     TagWithCount,
+    normalize_recipe_link,
 )
 
 logger = logging.getLogger(__name__)
@@ -262,6 +264,7 @@ async def create_recipe(
     request: Request,
     name: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    link: Optional[str] = Form(None, max_length=MAX_RECIPE_LINK_LENGTH),
     tags: Optional[str] = Form(None, description="Comma-separated tag names"),
     files: List[UploadFile] = File(default=[]),
     db: Session = Depends(get_db),
@@ -277,6 +280,8 @@ async def create_recipe(
         request: Incoming request (required by the rate limiter for the client IP).
         name: Recipe name.
         description: Recipe description/instructions.
+        link: Optional URL to an external source for the recipe; a bare domain
+            (no scheme) gets `https://` prepended, see normalize_recipe_link.
         tags: Comma-separated tag names; unknown ones are created on the fly.
         files: Photo uploads, if any.
         db: Database session.
@@ -294,7 +299,7 @@ async def create_recipe(
             detail=f"too many photos -- attach at most {MAX_PHOTOS_PER_RECIPE}",
         )
 
-    recipe = Recipe(name=name or None, description=description or None)
+    recipe = Recipe(name=name or None, description=description or None, link=normalize_recipe_link(link))
     recipe.tags = _get_or_create_tags(db, _split_tag_names(tags))
     db.add(recipe)
     db.flush()
@@ -455,6 +460,53 @@ async def delete_recipe_photo(
     _delete_photo_files(Path(settings.RECIPE_PHOTOS_DIR), photo)
     db.delete(photo)
     db.commit()
+
+
+@router.post("/{recipe_id}/photos/{photo_id}/thumbnail", response_model=RecipeRead)
+async def set_recipe_thumbnail(
+    recipe_id: int,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+):
+    """
+    Promote a photo to be the recipe's cover/thumbnail image. Admin-only.
+
+    There's no separate "is_thumbnail" flag to keep in sync -- the cover is
+    just whichever photo sorts first by display_order (see RecipeCard on the
+    frontend and the `photos` relationship's order_by). This endpoint makes
+    that happen by giving the chosen photo a lower display_order than every
+    other photo on the recipe. Calling it again on the current cover is a
+    no-op.
+
+    Args:
+        recipe_id: Recipe ID the photo should belong to.
+        photo_id: Photo ID to promote.
+        db: Database session.
+
+    Returns:
+        The recipe with its photos re-ordered.
+
+    Raises:
+        HTTPException: 404 if the photo doesn't exist under that recipe.
+    """
+    photo = (
+        db.query(RecipePhoto)
+        .filter(RecipePhoto.id == photo_id, RecipePhoto.recipe_id == recipe_id)
+        .first()
+    )
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    min_order = db.query(func.min(RecipePhoto.display_order)).filter(
+        RecipePhoto.recipe_id == recipe_id
+    ).scalar() or 0
+    if photo.display_order > min_order:
+        photo.display_order = min_order - 1
+        db.commit()
+
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    return recipe
 
 
 def _delete_photo_files(photos_base: Path, photo: RecipePhoto) -> None:

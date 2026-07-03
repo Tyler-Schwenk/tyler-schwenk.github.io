@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import KitchenModal from "./KitchenModal";
 import KitchenButton from "./KitchenButton";
-import { KitchenInput, KitchenLabel, KitchenTextarea } from "./KitchenFormControls";
+import { KitchenFileInput, KitchenInput, KitchenLabel, KitchenTextarea } from "./KitchenFormControls";
 import TagPicker from "./TagPicker";
 import { API_BASE, Recipe, TagWithCount } from "./types";
 
@@ -36,6 +36,7 @@ interface AddRecipeModalProps {
 export default function AddRecipeModal({ availableTags, onClose, onCreated }: AddRecipeModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [link, setLink] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [photos, setPhotos] = useState<PhotoDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -82,6 +83,7 @@ export default function AddRecipeModal({ availableTags, onClose, onCreated }: Ad
     const formData = new FormData();
     if (name.trim()) formData.append("name", name.trim());
     if (description.trim()) formData.append("description", description.trim());
+    if (link.trim()) formData.append("link", link.trim());
     if (tags.length > 0) formData.append("tags", tags.join(","));
     photos.forEach((photo) => formData.append("files", photo.file));
 
@@ -134,17 +136,27 @@ export default function AddRecipeModal({ availableTags, onClose, onCreated }: Ad
           />
         </div>
 
+        <div>
+          <KitchenLabel htmlFor="recipe-link">Link</KitchenLabel>
+          <KitchenInput
+            id="recipe-link"
+            type="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="link to the original recipe, if there is one"
+            maxLength={500}
+          />
+        </div>
+
         <TagPicker availableTags={availableTags} selected={tags} onChange={setTags} />
 
         <div>
           <KitchenLabel htmlFor="recipe-photos">Photos</KitchenLabel>
-          <input
+          <KitchenFileInput
             id="recipe-photos"
-            type="file"
             accept="image/*"
             multiple
             onChange={(e) => addPhotos(e.target.files)}
-            className="block w-full text-[13px] text-[var(--k-body)] font-[family-name:var(--k-font-sans)] file:mr-3 file:rounded-[3px] file:border file:border-[var(--k-border-default)] file:bg-[var(--k-neutral-primary-soft)] file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-[var(--k-heading)] hover:file:bg-[var(--k-neutral-secondary-medium)]"
           />
           {photos.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">

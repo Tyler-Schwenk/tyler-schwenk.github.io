@@ -677,7 +677,7 @@ Authorization: Bearer <your-token>
 
 ## Recipes (The Kitchen)
 
-Public recipe box: anyone can submit a recipe (name, description, tags, and photos, all optional) from the site's `/kitchen` page. Creating a recipe is public and rate-limited per IP, same pattern as Public Square and Event RSVPs. Editing and deleting a recipe requires the admin JWT, same as gallery photo management. Tags are freeform — submitting an unknown tag name creates it on the fly (matched case-insensitively so "Breakfast" and "breakfast" reuse the same tag).
+Public recipe box: anyone can submit a recipe (name, description, link, tags, and photos, all optional) from the site's `/kitchen` page. Creating a recipe is public and rate-limited per IP, same pattern as Public Square and Event RSVPs. Editing and deleting a recipe requires the admin JWT, same as gallery photo management. Tags are freeform — submitting an unknown tag name creates it on the fly (matched case-insensitively so "Breakfast" and "breakfast" reuse the same tag). The "cover photo" (used by the frontend grid) is always whichever photo has the lowest `display_order` — see Set Recipe Thumbnail below to change it.
 
 ### List Recipes
 
@@ -726,6 +726,7 @@ All tags currently in use, alphabetically, with how many recipes use each. Power
   "id": 1,
   "name": "Grandma's Lasagna",
   "description": "Layer noodles, sauce, cheese...",
+  "link": "https://example.com/lasagna-recipe",
   "created_at": "2026-06-01T10:00:00Z",
   "updated_at": null,
   "tags": [{ "id": 1, "name": "dinner" }],
@@ -758,14 +759,16 @@ No auth — anyone can submit a recipe. All fields are optional so the form can 
 **Form Fields:**
 - `name` (string, optional, max 200 chars)
 - `description` (string, optional, max 10,000 chars)
+- `link` (string, optional, max 500 chars): URL to an external source for the recipe. A bare domain (no `http(s)://`) gets `https://` prepended automatically.
 - `tags` (string, optional): comma-separated tag names, e.g. `"dinner,quick,vegan"` — max 20 tags, unknown ones are created
-- `files` (file[], optional): photo uploads — max 12 per recipe
+- `files` (file[], optional): photo uploads — max 12 per recipe. The first photo (by upload order) becomes the cover; see Set Recipe Thumbnail to change it later.
 
 **Example with JavaScript:**
 ```javascript
 const formData = new FormData();
 formData.append('name', "Grandma's Lasagna");
 formData.append('description', 'Layer noodles, sauce, cheese...');
+formData.append('link', 'https://example.com/lasagna-recipe');
 formData.append('tags', 'dinner,italian');
 for (const file of photoFiles) formData.append('files', file);
 
@@ -780,7 +783,7 @@ const response = await fetch(`${API_URL}/recipes`, { method: 'POST', body: formD
 
 ### Update Recipe
 
-Edit a recipe's name, description, and/or tags. Admin only.
+Edit a recipe's name, description, link, and/or tags. Admin only.
 
 **Endpoint:** `PATCH /recipes/{recipe_id}`
 
@@ -791,10 +794,11 @@ Edit a recipe's name, description, and/or tags. Admin only.
 {
   "name": "Grandma's Lasagna (updated)",
   "description": "New instructions...",
+  "link": "https://example.com/lasagna-recipe",
   "tags": ["dinner", "italian", "freezer-friendly"]
 }
 ```
-`tags`, if provided, **fully replaces** the recipe's tag list rather than merging with it.
+`tags`, if provided, **fully replaces** the recipe's tag list rather than merging with it. `link` is normalized the same way as on creation (bare domains get `https://` prepended); set it to `null` or `""` to clear it.
 
 **Response:** `200 OK` — the updated recipe
 
@@ -821,6 +825,18 @@ Attach more photos to an existing recipe. Admin only.
 **Response:** `200 OK` — the recipe with its updated photo list
 
 **Response:** `400 Bad Request` if the total photo count would exceed 12
+
+### Set Recipe Thumbnail
+
+Promote a photo to be the recipe's cover image. Admin only. There's no separate "is thumbnail" flag — this works by giving the chosen photo a lower `display_order` than every other photo on the recipe (the cover is always whichever photo sorts first). Calling it again on the current cover is a no-op.
+
+**Endpoint:** `POST /recipes/{recipe_id}/photos/{photo_id}/thumbnail`
+
+**Headers:** `Authorization: Bearer <your-token>`
+
+**Response:** `200 OK` — the recipe with its photos re-ordered
+
+**Response:** `404 Not Found` if the photo doesn't exist under that recipe
 
 ### Delete a Recipe Photo
 

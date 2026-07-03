@@ -2,11 +2,11 @@
 
 ## Overview
 
-`/kitchen` is a recipe box: a public, phone-friendly form for adding recipes (name, description, tags, photos — all optional), plus a browse view with search, tag filtering, and a "random recipe" picker. It also keeps the original friends-and-family cookbook PDF as a separate section.
+`/kitchen` is a recipe box: a public, phone-friendly form for adding recipes (name, description, link, tags, photos — all optional), plus a browse view with search, tag filtering, and a "random recipe" picker. It also keeps the original friends-and-family cookbook PDF as a separate section.
 
 All recipe data and photos are served from the Pi backend at `https://api.tyler-schwenk.com`. Unlike the gallery (which fetches at build time), the recipe browser fetches client-side at runtime, so new recipes show up immediately without a frontend redeploy.
 
-Anyone can submit a recipe (rate-limited per IP, no login). Editing or deleting a recipe requires logging in as admin via the "Admin" link in the Recipe Box title bar — same JWT account used by the gallery admin panel (`public/admin/index.html`).
+Anyone can submit a recipe (rate-limited per IP, no login). Editing or deleting a recipe requires logging in as admin via the "Admin" link in the Recipe Box title bar — same JWT account used by the gallery admin panel (`public/admin/index.html`). Editing also covers retroactive photo management: admins can add more photos to an existing recipe, remove individual photos, and choose which photo is the cover/thumbnail.
 
 ---
 
@@ -16,7 +16,7 @@ The Kitchen is the first section to use the retro desktop-OS theme documented in
 
 - **Tokens**: CSS custom properties defined in [app/globals.css](../app/globals.css) under `.kitchen-theme` (light) and `.kitchen-theme` inside `@media (prefers-color-scheme: dark)` (dark). Named `--k-*` to avoid clashing with other tokens.
 - **Fonts**: Newsreader (serif, headings), DM Sans (sans, body/UI), Geist Mono (mono, not currently used on this page but registered for future use) — loaded via `next/font/google` in [app/layout.tsx](../app/layout.tsx) as `--font-kitchen-serif` / `--font-kitchen-sans` / `--font-kitchen-mono`.
-- **Components**: [components/kitchen/](../components/kitchen/) — `KitchenWindow` (title-bar + body chrome), `KitchenButton`, `KitchenFormControls` (input/textarea/label), `TagChip`, `KitchenModal`. Any future work in this section should reuse these instead of inlining new styles.
+- **Components**: [components/kitchen/](../components/kitchen/) — `KitchenWindow` (title-bar + body chrome), `KitchenButton`, `KitchenFormControls` (input/textarea/label/file input), `TagChip`, `KitchenModal`. Any future work in this section should reuse these instead of inlining new styles.
 
 To extend the theme to a new page, wrap it in a `.kitchen-theme` div and use the same components/tokens — see [app/kitchen/page.tsx](../app/kitchen/page.tsx) for the pattern.
 
@@ -32,8 +32,11 @@ RecipeBrowser (client component)
   ├── GET /recipes/tags              → all tags + counts, for filter chips and the tag picker
   ├── GET /recipes/random?search=&tags= → random pick within current filters
   ├── POST /recipes                  → create (multipart, public, rate-limited)
-  ├── PATCH /recipes/{id}            → edit (admin only)
+  ├── PATCH /recipes/{id}            → edit name/description/link/tags (admin only)
   ├── DELETE /recipes/{id}           → delete (admin only)
+  ├── POST /recipes/{id}/photos      → add photos to an existing recipe (admin only)
+  ├── DELETE /recipes/{id}/photos/{photoId}       → remove one photo (admin only)
+  ├── POST /recipes/{id}/photos/{photoId}/thumbnail → set the cover photo (admin only)
   └── POST /auth/login               → admin login, JWT stored in localStorage
 ```
 
@@ -57,7 +60,7 @@ RecipeBrowser (client component)
 | `KitchenModal.tsx` | Floating modal dialog (backdrop + title bar + body + optional footer) |
 | `RecipeCard.tsx` | Grid tile — cover photo, name, up to 3 tags |
 | `RecipeBrowser.tsx` | Owns all data fetching; renders search/filter/random/add controls and the grid |
-| `RecipeDetailModal.tsx` | Full recipe view; admin sees Edit/Delete, edit mode reuses `TagPicker` |
+| `RecipeDetailModal.tsx` | Full recipe view; admin sees Edit/Delete, edit mode reuses `TagPicker` and adds photo management (add/remove/set cover) |
 | `AddRecipeModal.tsx` | The public add-recipe form; submits multipart `FormData` |
 | `AdminLoginModal.tsx` | Email/password form calling `POST /auth/login` |
 
@@ -70,6 +73,10 @@ Freeform: typing a tag name that doesn't exist yet creates it on submit (server-
 Tag filtering in the browse view is **AND**-based: selecting multiple tag chips shows only recipes that have all of them.
 
 ---
+
+## Cover Photo
+
+There's no separate "is thumbnail" flag on a photo — `RecipeCard` always shows `recipe.photos[0]`, and the backend keeps `photos` sorted by `display_order`. Newly uploaded photos get the next available `display_order`, so by default the cover is the first photo ever added. In the edit view, clicking "Make cover" on a non-first photo calls `POST /recipes/{id}/photos/{photoId}/thumbnail`, which gives that photo a lower `display_order` than the rest — no reordering UI needed for the other photos.
 
 ## Media URLs
 
