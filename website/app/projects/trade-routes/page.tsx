@@ -23,7 +23,7 @@ export default function TradeRoutes() {
                 aria-label="Visit Trade Routes website"
               >
                 <Image
-                  src="/images/trade-routes-logo.png"
+                  src="/images/traderoutes/trade-routes-logo.png"
                   alt="Trade Routes Logo"
                   width={250}
                   height={250}
