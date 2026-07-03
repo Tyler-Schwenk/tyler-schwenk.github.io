@@ -27,8 +27,6 @@ export default function Kitchen() {
             The Kitchen
           </h1>
 
-          <RecipeBrowser />
-
           <KitchenWindow title="Download the Cookbook" floating>
             <div className="flex justify-center mb-5">
               <Image
@@ -50,6 +48,8 @@ export default function Kitchen() {
               </a>
             </div>
           </KitchenWindow>
+
+          <RecipeBrowser />
         </div>
       </div>
     </PageWrapper>

@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
 import VoteButtons from "@/components/VoteButtons";
+import NeoBlock from "@/components/neobrutalism/NeoBlock";
+import NeoButton from "@/components/neobrutalism/NeoButton";
+import NeoBadge from "@/components/neobrutalism/NeoBadge";
+import NeoSortToggle, { SortOption } from "@/components/neobrutalism/NeoSortToggle";
+import { NeoInput, NeoLabel, NeoTextarea } from "@/components/neobrutalism/NeoFormControls";
 
 const API_BASE = "https://api.tyler-schwenk.com";
 
@@ -12,7 +17,6 @@ const MAX_TITLE_LENGTH = 200;
 const MAX_CONTENT_LENGTH = 10000;
 const MAX_NICKNAME_LENGTH = 50;
 
-type SortOption = "top" | "new";
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
 interface ApiPost {
@@ -64,9 +68,10 @@ async function fetchPosts(sort: SortOption): Promise<ApiPost[]> {
 }
 
 /**
- * Renders the Public Square post list, sort toggle, and new-post form.
+ * Renders the Round Table post list, sort toggle, and new-post form. Styled
+ * per the neobrutalism theme (see website/docs/themes/neobrutalism.md).
  *
- * @returns {JSX.Element} The Public Square landing page.
+ * @returns {JSX.Element} The Round Table landing page.
  */
 export default function PublicSquarePage() {
   const [sort, setSort] = useState<SortOption>("top");
@@ -170,129 +175,112 @@ export default function PublicSquarePage() {
     }
   }
 
-  const inputClass =
-    "w-full rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#e2a9f1] transition";
-
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-black px-4 py-16 sm:px-8">
-        <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-bold text-white mb-2">Round Table</h1>
-          <p className="text-sm text-gray-400 mb-8">
-            Its pretty much just reddit. But its here on my website. I have things I want to write about but and get feedback on, so hopefully this can be a place for that. Hoping that the forum style of this helps make it feel more approachable and will just get some ideas flowing. I'd love for yall to join! You can leave posts anonymously or with your name if youd like.
-          </p>
+      <main className="neobrutalism-theme min-h-screen bg-[var(--n-neutral-primary-soft)] px-4 py-16 sm:px-8">
+        <div className="mx-auto max-w-3xl space-y-8">
+          <div>
+            <h1 className="text-4xl sm:text-5xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)] mb-3">
+              Round Table
+            </h1>
+            <p className="text-base text-[var(--n-body)] font-[family-name:var(--n-font-sans)] max-w-2xl">
+              Its pretty much just reddit. But its here on my website. I have things I want to write about but and get feedback on, so hopefully this can be a place for that. Hoping that the forum style of this helps make it feel more approachable and will just get some ideas flowing. I&apos;d love for yall to join! You can leave posts anonymously or with your name if youd like.
+            </p>
+          </div>
 
-          <div className="border-t border-slate-700 pt-8 mb-8">
-            <h2 className="text-lg font-semibold text-gray-300 mb-5">New Post</h2>
+          <NeoBlock>
+            <h2 className="text-xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)] mb-5">
+              New Post
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title"
-                maxLength={MAX_TITLE_LENGTH}
-                className={inputClass}
-              />
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="What's on your mind?"
-                maxLength={MAX_CONTENT_LENGTH}
-                rows={4}
-                className={inputClass}
-              />
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="Nickname (optional — leave blank to stay Anonymous)"
-                maxLength={MAX_NICKNAME_LENGTH}
-                className={inputClass}
-              />
+              <div>
+                <NeoLabel htmlFor="post-title">Title</NeoLabel>
+                <NeoInput
+                  id="post-title"
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Title"
+                  maxLength={MAX_TITLE_LENGTH}
+                />
+              </div>
+              <div>
+                <NeoLabel htmlFor="post-content">What&apos;s on your mind?</NeoLabel>
+                <NeoTextarea
+                  id="post-content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="What's on your mind?"
+                  maxLength={MAX_CONTENT_LENGTH}
+                  rows={4}
+                />
+              </div>
+              <div>
+                <NeoLabel htmlFor="post-nickname">Nickname</NeoLabel>
+                <NeoInput
+                  id="post-nickname"
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="Optional — leave blank to stay Anonymous"
+                  maxLength={MAX_NICKNAME_LENGTH}
+                />
+              </div>
               {formError && (
-                <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">
+                <p className="text-sm font-bold text-[var(--n-danger)] bg-[var(--n-danger-soft)] border-[3px] border-[var(--n-border-default)] px-4 py-2.5 font-[family-name:var(--n-font-sans)]">
                   {formError}
                 </p>
               )}
-              <button
-                type="submit"
-                disabled={formState === "submitting"}
-                className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed transition"
-                style={{ backgroundColor: "#e2a9f1" }}
-              >
+              <NeoButton type="submit" variant="primary" disabled={formState === "submitting"}>
                 {formState === "submitting" ? "Posting..." : "Post"}
-              </button>
+              </NeoButton>
             </form>
-          </div>
+          </NeoBlock>
 
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-300">Posts</h2>
-            <SortToggle value={sort} onChange={setSort} />
-          </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)]">
+                Posts
+              </h2>
+              <NeoSortToggle value={sort} onChange={setSort} />
+            </div>
 
-          {loading ? (
-            <p className="text-gray-500">Loading...</p>
-          ) : posts.length === 0 ? (
-            <p className="text-gray-500">No posts yet — be the first.</p>
-          ) : (
-            <ul className="space-y-3">
-              {posts.map((post) => (
-                <li
-                  key={post.id}
-                  className="flex items-start gap-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4"
-                >
-                  <VoteButtons
-                    score={post.score}
-                    yourVote={votes[post.id] ?? 0}
-                    onVote={(direction) => handleVote(post.id, direction)}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/public-square/thread?id=${post.id}`} className="text-white font-semibold hover:underline">
-                      {post.title}
-                    </Link>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {post.nickname || "Anonymous"} &middot; {relativeTime(post.created_at)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+            {loading ? (
+              <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">Loading...</p>
+            ) : posts.length === 0 ? (
+              <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">
+                No posts yet — be the first.
+              </p>
+            ) : (
+              <ul className="space-y-4">
+                {posts.map((post) => (
+                  <li key={post.id}>
+                    <NeoBlock floating={false} className="flex items-start gap-4">
+                      <VoteButtons
+                        score={post.score}
+                        yourVote={votes[post.id] ?? 0}
+                        onVote={(direction) => handleVote(post.id, direction)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/public-square/thread?id=${post.id}`}
+                          className="text-[var(--n-heading)] font-bold text-lg font-[family-name:var(--n-font-sans)] underline decoration-2 underline-offset-2 hover:bg-[var(--n-brand)] hover:text-black transition-colors duration-100"
+                        >
+                          {post.title}
+                        </Link>
+                        <div className="mt-2">
+                          <NeoBadge>{post.nickname || "Anonymous"} &middot; {relativeTime(post.created_at)}</NeoBadge>
+                        </div>
+                      </div>
+                    </NeoBlock>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </main>
     </>
-  );
-}
-
-/**
- * Segmented toggle for choosing "top" vs "new" post sort order.
- *
- * @param {object} props - Component props.
- * @param {SortOption} props.value - Currently selected sort.
- * @param {(s: SortOption) => void} props.onChange - Selection handler.
- * @returns {JSX.Element} The toggle control.
- */
-function SortToggle({ value, onChange }: { value: SortOption; onChange: (s: SortOption) => void }) {
-  const options: { key: SortOption; label: string }[] = [
-    { key: "top", label: "Top" },
-    { key: "new", label: "New" },
-  ];
-  return (
-    <div className="inline-flex rounded-full border border-slate-600 bg-slate-800/60 p-1">
-      {options.map((opt) => (
-        <button
-          key={opt.key}
-          type="button"
-          onClick={() => onChange(opt.key)}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-            value === opt.key ? "text-black" : "text-gray-300 hover:text-white"
-          }`}
-          style={value === opt.key ? { backgroundColor: "#e2a9f1" } : undefined}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
   );
 }

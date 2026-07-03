@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono } from "next/font/google";
+import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -33,6 +33,21 @@ const dmSans = DM_Sans({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-kitchen-mono",
+});
+
+// Round Table (/public-square) uses the neobrutalism design system (see
+// website/docs/themes/neobrutalism.md) -- a heavy display font for its
+// shouty headings, plus a dedicated mono for tags/timestamps. Body/UI text
+// reuses the site's existing Inter font (--font-inter above).
+const archivoBlack = Archivo_Black({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-neo-display",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-neo-mono",
 });
 
 const SITE_NAME = "Tyler Schwenk";
@@ -115,7 +130,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
-      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

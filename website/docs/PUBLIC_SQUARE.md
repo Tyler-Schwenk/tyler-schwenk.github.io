@@ -9,8 +9,16 @@ Public Square (`/public-square`) is an anonymous, reddit-like forum. Anyone can 
 
 The thread page uses a `?id=` query param rather than a `[id]` dynamic segment. This site is a Next.js static export (`output: 'export'` in `next.config.ts`), which requires `generateStaticParams` to enumerate every dynamic route at build time — but post ids don't exist until users create them at runtime, so they can't be pre-generated. Reading `id` from `useSearchParams()` on a plain static route sidesteps that, the same way gallery detail views render from a single static page instead of per-item routes. Since `useSearchParams()` requires a Suspense boundary during static rendering, the thread page wraps its content in `<Suspense>`.
 
+## Design System
+
+Round Table uses the neobrutalism design system documented in [docs/themes/neobrutalism.md](themes/neobrutalism.md) — flat saturated color blocks, thick black/white borders, hard zero-blur offset shadows, square corners, and a "press" interaction where buttons/blocks lose their shadow and slam flush against the page on click. It's scoped to the page via a `.neobrutalism-theme` wrapper class (same pattern as The Kitchen's `.kitchen-theme`) so it doesn't affect the rest of the site.
+
+- **Tokens**: CSS custom properties in [app/globals.css](../app/globals.css) under `.neobrutalism-theme`, named `--n-*`.
+- **Fonts**: Archivo Black (display/headings, `--font-neo-display`) and JetBrains Mono (`--font-neo-mono`) are loaded in [app/layout.tsx](../app/layout.tsx). Body/UI text reuses the site's existing Inter font (`--font-inter`) rather than loading a separate sans.
+- **Components**: [components/neobrutalism/](../components/neobrutalism/) — `NeoBlock` (the bordered/shadowed card), `NeoButton`, `NeoFormControls` (input/textarea/label), `NeoBadge`, `NeoSortToggle`. `components/VoteButtons.tsx` (below) is also themed with these tokens directly since it's Round Table's only consumer.
+
 ## Components
-- `components/VoteButtons.tsx` — up/down arrows plus a score display. Dumb and reusable: it doesn't own vote state, it just renders `score`/`yourVote` props and calls `onVote(direction)`. The parent page owns the fetch and updates local state from the response.
+- `components/VoteButtons.tsx` — up/down arrows plus a score display. Dumb and reusable: it doesn't own vote state, it just renders `score`/`yourVote` props and calls `onVote(direction)`. The parent page owns the fetch and updates local state from the response. Styled with the neobrutalism tokens (bordered block, hard shadow) since Round Table is its only consumer.
 
 ## Data flow
 - Post/comment lists and votes are fetched directly with inline `fetch()` calls (no shared API client layer exists in this codebase — this matches the pattern in `gallery/page.tsx` and `EventRsvpForm.tsx`).

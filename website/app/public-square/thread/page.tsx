@@ -5,6 +5,11 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
 import VoteButtons from "@/components/VoteButtons";
+import NeoBlock from "@/components/neobrutalism/NeoBlock";
+import NeoButton from "@/components/neobrutalism/NeoButton";
+import NeoBadge from "@/components/neobrutalism/NeoBadge";
+import NeoSortToggle, { SortOption } from "@/components/neobrutalism/NeoSortToggle";
+import { NeoInput, NeoLabel, NeoTextarea } from "@/components/neobrutalism/NeoFormControls";
 
 const API_BASE = "https://api.tyler-schwenk.com";
 
@@ -12,7 +17,6 @@ const API_BASE = "https://api.tyler-schwenk.com";
 const MAX_COMMENT_LENGTH = 5000;
 const MAX_NICKNAME_LENGTH = 50;
 
-type SortOption = "top" | "new";
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
 interface ApiPost {
@@ -105,8 +109,9 @@ export default function PublicSquareThreadPage() {
 }
 
 /**
- * Renders a single Public Square thread: the post, its comments, and a
- * comment form.
+ * Renders a single Round Table thread: the post, its comments, and a
+ * comment form. Styled per the neobrutalism theme (see
+ * website/docs/themes/neobrutalism.md).
  *
  * @returns {JSX.Element} The thread detail content.
  */
@@ -247,17 +252,17 @@ function ThreadContent() {
     }
   }
 
-  const inputClass =
-    "w-full rounded-lg border border-slate-600 bg-slate-800/60 px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#e2a9f1] transition";
-
   if (!postId) {
     return (
       <>
         <Navigation />
-        <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-black px-4 py-16 sm:px-8">
+        <main className="neobrutalism-theme min-h-screen bg-[var(--n-neutral-primary-soft)] px-4 py-16 sm:px-8">
           <div className="mx-auto max-w-3xl">
-            <p className="text-gray-400">No post specified.</p>
-            <Link href="/public-square" className="text-sm text-gray-400 hover:text-white transition">
+            <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">No post specified.</p>
+            <Link
+              href="/public-square"
+              className="inline-block mt-2 text-sm font-bold text-[var(--n-heading)] font-[family-name:var(--n-font-sans)] underline decoration-2 underline-offset-2 hover:bg-[var(--n-brand)] transition-colors duration-100"
+            >
               &larr; Round Table
             </Link>
           </div>
@@ -269,127 +274,108 @@ function ThreadContent() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-black px-4 py-16 sm:px-8">
-        <div className="mx-auto max-w-3xl">
-          <Link href="/public-square" className="text-sm text-gray-400 hover:text-white transition">
+      <main className="neobrutalism-theme min-h-screen bg-[var(--n-neutral-primary-soft)] px-4 py-16 sm:px-8">
+        <div className="mx-auto max-w-3xl space-y-8">
+          <Link
+            href="/public-square"
+            className="inline-block text-sm font-bold text-[var(--n-heading)] font-[family-name:var(--n-font-sans)] underline decoration-2 underline-offset-2 hover:bg-[var(--n-brand)] transition-colors duration-100"
+          >
             &larr; Round Table
           </Link>
 
           {!post ? (
-            <p className="text-gray-500 mt-8">Loading...</p>
+            <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">Loading...</p>
           ) : (
-            <div className="flex items-start gap-4 mt-6 mb-10 rounded-lg border border-slate-700 bg-slate-800/40 p-5">
+            <NeoBlock className="flex items-start gap-4">
               <VoteButtons score={post.score} yourVote={postVote} onVote={handlePostVote} />
               <div className="min-w-0 flex-1">
-                <h1 className="text-2xl font-bold text-white">{post.title}</h1>
-                <p className="text-xs text-gray-500 mt-1 mb-4">
-                  {post.nickname || "Anonymous"} &middot; {relativeTime(post.created_at)}
+                <h1 className="text-2xl sm:text-3xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)]">
+                  {post.title}
+                </h1>
+                <div className="mt-2 mb-4">
+                  <NeoBadge>{post.nickname || "Anonymous"} &middot; {relativeTime(post.created_at)}</NeoBadge>
+                </div>
+                <p className="text-[var(--n-body)] font-[family-name:var(--n-font-sans)] whitespace-pre-wrap leading-relaxed">
+                  {post.content}
                 </p>
-                <p className="text-gray-200 whitespace-pre-wrap">{post.content}</p>
               </div>
-            </div>
+            </NeoBlock>
           )}
 
-          <div className="border-t border-slate-700 pt-8 mb-8">
-            <h2 className="text-lg font-semibold text-gray-300 mb-5">Add a Comment</h2>
+          <NeoBlock floating={false}>
+            <h2 className="text-xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)] mb-5">
+              Add a Comment
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Say something..."
-                maxLength={MAX_COMMENT_LENGTH}
-                rows={3}
-                className={inputClass}
-              />
-              <input
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="Nickname (optional — leave blank to stay Anonymous)"
-                maxLength={MAX_NICKNAME_LENGTH}
-                className={inputClass}
-              />
+              <div>
+                <NeoLabel htmlFor="comment-content">Say something...</NeoLabel>
+                <NeoTextarea
+                  id="comment-content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Say something..."
+                  maxLength={MAX_COMMENT_LENGTH}
+                  rows={3}
+                />
+              </div>
+              <div>
+                <NeoLabel htmlFor="comment-nickname">Nickname</NeoLabel>
+                <NeoInput
+                  id="comment-nickname"
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="Optional — leave blank to stay Anonymous"
+                  maxLength={MAX_NICKNAME_LENGTH}
+                />
+              </div>
               {formError && (
-                <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">
+                <p className="text-sm font-bold text-[var(--n-danger)] bg-[var(--n-danger-soft)] border-[3px] border-[var(--n-border-default)] px-4 py-2.5 font-[family-name:var(--n-font-sans)]">
                   {formError}
                 </p>
               )}
-              <button
-                type="submit"
-                disabled={formState === "submitting"}
-                className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed transition"
-                style={{ backgroundColor: "#e2a9f1" }}
-              >
+              <NeoButton type="submit" variant="primary" disabled={formState === "submitting"}>
                 {formState === "submitting" ? "Posting..." : "Comment"}
-              </button>
+              </NeoButton>
             </form>
-          </div>
+          </NeoBlock>
 
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-300">Comments</h2>
-            <SortToggle value={sort} onChange={setSort} />
-          </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)]">
+                Comments
+              </h2>
+              <NeoSortToggle value={sort} onChange={setSort} />
+            </div>
 
-          {loading ? (
-            <p className="text-gray-500">Loading...</p>
-          ) : comments.length === 0 ? (
-            <p className="text-gray-500">No comments yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {comments.map((comment) => (
-                <li
-                  key={comment.id}
-                  className="flex items-start gap-4 rounded-lg border border-slate-700 bg-slate-800/40 p-4"
-                >
-                  <VoteButtons
-                    score={comment.score}
-                    yourVote={commentVotes[comment.id] ?? 0}
-                    onVote={(direction) => handleCommentVote(comment.id, direction)}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500 mb-1">
-                      {comment.nickname || "Anonymous"} &middot; {relativeTime(comment.created_at)}
-                    </p>
-                    <p className="text-gray-200 whitespace-pre-wrap">{comment.content}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+            {loading ? (
+              <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">Loading...</p>
+            ) : comments.length === 0 ? (
+              <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">No comments yet.</p>
+            ) : (
+              <ul className="space-y-4">
+                {comments.map((comment) => (
+                  <li key={comment.id}>
+                    <NeoBlock floating={false} className="flex items-start gap-4">
+                      <VoteButtons
+                        score={comment.score}
+                        yourVote={commentVotes[comment.id] ?? 0}
+                        onVote={(direction) => handleCommentVote(comment.id, direction)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <NeoBadge>{comment.nickname || "Anonymous"} &middot; {relativeTime(comment.created_at)}</NeoBadge>
+                        <p className="text-[var(--n-body)] font-[family-name:var(--n-font-sans)] whitespace-pre-wrap leading-relaxed mt-2">
+                          {comment.content}
+                        </p>
+                      </div>
+                    </NeoBlock>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </main>
     </>
-  );
-}
-
-/**
- * Segmented toggle for choosing "top" vs "new" comment sort order.
- *
- * @param {object} props - Component props.
- * @param {SortOption} props.value - Currently selected sort.
- * @param {(s: SortOption) => void} props.onChange - Selection handler.
- * @returns {JSX.Element} The toggle control.
- */
-function SortToggle({ value, onChange }: { value: SortOption; onChange: (s: SortOption) => void }) {
-  const options: { key: SortOption; label: string }[] = [
-    { key: "top", label: "Top" },
-    { key: "new", label: "New" },
-  ];
-  return (
-    <div className="inline-flex rounded-full border border-slate-600 bg-slate-800/60 p-1">
-      {options.map((opt) => (
-        <button
-          key={opt.key}
-          type="button"
-          onClick={() => onChange(opt.key)}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-            value === opt.key ? "text-black" : "text-gray-300 hover:text-white"
-          }`}
-          style={value === opt.key ? { backgroundColor: "#e2a9f1" } : undefined}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
   );
 }
