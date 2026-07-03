@@ -22,7 +22,7 @@ git push
 
 first connect to netbird on laptop
 
- ssh tyler@100.124.76.27
+ssh tyler@192.168.1.116
 cd ~/tyler-schwenk.github.io && git pull
 cd pi/services/website-backend
 docker compose up -d --build
