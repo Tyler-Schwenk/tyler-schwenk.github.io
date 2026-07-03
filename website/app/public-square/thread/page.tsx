@@ -131,6 +131,9 @@ function ThreadContent() {
   const [nickname, setNickname] = useState("");
   const [formState, setFormState] = useState<SubmitState>("idle");
   const [formError, setFormError] = useState<string | null>(null);
+  // comment form starts collapsed so the thread itself is what fills the screen;
+  // it's opened on demand via the "Add a comment" button.
+  const [showCommentForm, setShowCommentForm] = useState(false);
 
   useEffect(() => {
     if (!postId) return;
@@ -246,6 +249,7 @@ function ThreadContent() {
       setContent("");
       setNickname("");
       setFormState("success");
+      setShowCommentForm(false);
       setComments((prev) => (sort === "new" ? [created, ...prev] : [...prev, created]));
     } catch {
       setFormError("couldn't reach the server — check your connection and try again");
@@ -306,43 +310,55 @@ function ThreadContent() {
             </NeoBlock>
           )}
 
-          <NeoBlock floating={false}>
-            <h2 className="text-xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)] mb-5">
+          {showCommentForm ? (
+            <NeoBlock floating={false}>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)]">
+                  Add a Comment
+                </h2>
+                <NeoButton type="button" variant="tertiary" size="sm" onClick={() => setShowCommentForm(false)}>
+                  Cancel
+                </NeoButton>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <NeoLabel htmlFor="comment-content">Say something...</NeoLabel>
+                  <NeoTextarea
+                    id="comment-content"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Say something..."
+                    maxLength={MAX_COMMENT_LENGTH}
+                    rows={3}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <NeoLabel htmlFor="comment-nickname">Nickname</NeoLabel>
+                  <NeoInput
+                    id="comment-nickname"
+                    type="text"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    placeholder="Optional — leave blank to stay Anonymous"
+                    maxLength={MAX_NICKNAME_LENGTH}
+                  />
+                </div>
+                {formError && (
+                  <p className="text-sm font-bold text-[var(--n-danger)] bg-[var(--n-danger-soft)] border-[3px] border-[var(--n-border-default)] px-4 py-2.5 font-[family-name:var(--n-font-sans)]">
+                    {formError}
+                  </p>
+                )}
+                <NeoButton type="submit" variant="primary" disabled={formState === "submitting"}>
+                  {formState === "submitting" ? "Posting..." : "Comment"}
+                </NeoButton>
+              </form>
+            </NeoBlock>
+          ) : (
+            <NeoButton type="button" variant="primary" size="lg" onClick={() => setShowCommentForm(true)}>
               Add a Comment
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <NeoLabel htmlFor="comment-content">Say something...</NeoLabel>
-                <NeoTextarea
-                  id="comment-content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Say something..."
-                  maxLength={MAX_COMMENT_LENGTH}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <NeoLabel htmlFor="comment-nickname">Nickname</NeoLabel>
-                <NeoInput
-                  id="comment-nickname"
-                  type="text"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  placeholder="Optional — leave blank to stay Anonymous"
-                  maxLength={MAX_NICKNAME_LENGTH}
-                />
-              </div>
-              {formError && (
-                <p className="text-sm font-bold text-[var(--n-danger)] bg-[var(--n-danger-soft)] border-[3px] border-[var(--n-border-default)] px-4 py-2.5 font-[family-name:var(--n-font-sans)]">
-                  {formError}
-                </p>
-              )}
-              <NeoButton type="submit" variant="primary" disabled={formState === "submitting"}>
-                {formState === "submitting" ? "Posting..." : "Comment"}
-              </NeoButton>
-            </form>
-          </NeoBlock>
+            </NeoButton>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-4">

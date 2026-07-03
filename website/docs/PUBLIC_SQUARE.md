@@ -5,7 +5,7 @@ Public Square (`/public-square`) is an anonymous, reddit-like forum. Anyone can 
 
 ## Routes
 - `/public-square` — post list, sort toggle (Top/New), and a "New Post" form. Each post card shows the score, title, a reddit-style body preview (visually clamped to ~6 lines with `line-clamp`; posts longer than `PREVIEW_CHAR_THRESHOLD` also get a "Read more" link into the thread), the author/time, and a comment count (`comment_count` from the API).
-- `/public-square/thread?id={postId}` — a single post's thread: full content, its comments, and a "New Comment" form
+- `/public-square/thread?id={postId}` — a single post's thread: full content and its comments. The comment form starts collapsed behind an "Add a comment" button so the thread fills the screen; opening it reveals the form (autofocused), and a successful submit (or Cancel) collapses it again.
 
 The thread page uses a `?id=` query param rather than a `[id]` dynamic segment. This site is a Next.js static export (`output: 'export'` in `next.config.ts`), which requires `generateStaticParams` to enumerate every dynamic route at build time — but post ids don't exist until users create them at runtime, so they can't be pre-generated. Reading `id` from `useSearchParams()` on a plain static route sidesteps that, the same way gallery detail views render from a single static page instead of per-item routes. Since `useSearchParams()` requires a Suspense boundary during static rendering, the thread page wraps its content in `<Suspense>`.
 
