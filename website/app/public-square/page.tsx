@@ -222,7 +222,7 @@ export default function PublicSquarePage() {
                   id="post-content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="What's on your mind?"
+                  placeholder="Thinking about frogs.."
                   maxLength={MAX_CONTENT_LENGTH}
                   rows={4}
                 />
@@ -234,7 +234,7 @@ export default function PublicSquarePage() {
                   type="text"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
-                  placeholder="Optional — leave blank to stay Anonymous"
+                  placeholder="Anonymous"
                   maxLength={MAX_NICKNAME_LENGTH}
                 />
               </div>
