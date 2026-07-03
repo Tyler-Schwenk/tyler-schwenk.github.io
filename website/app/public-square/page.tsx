@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
 import VoteButtons from "@/components/VoteButtons";
@@ -9,6 +10,7 @@ import NeoButton from "@/components/neobrutalism/NeoButton";
 import NeoBadge from "@/components/neobrutalism/NeoBadge";
 import NeoSortToggle, { SortOption } from "@/components/neobrutalism/NeoSortToggle";
 import { NeoInput, NeoLabel, NeoTextarea } from "@/components/neobrutalism/NeoFormControls";
+import { postAccentColor } from "@/components/neobrutalism/postAccent";
 
 const API_BASE = "https://api.tyler-schwenk.com";
 
@@ -16,6 +18,11 @@ const API_BASE = "https://api.tyler-schwenk.com";
 const MAX_TITLE_LENGTH = 200;
 const MAX_CONTENT_LENGTH = 10000;
 const MAX_NICKNAME_LENGTH = 50;
+
+// past this many characters a post body is long enough to be worth a "read more"
+// nudge into the thread. the preview itself is also visually clamped (line-clamp
+// below), so short posts show in full and only longer ones get cut off.
+const PREVIEW_CHAR_THRESHOLD = 280;
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -25,6 +32,7 @@ interface ApiPost {
   content: string;
   nickname: string | null;
   score: number;
+  comment_count: number;
   created_at: string;
 }
 
@@ -178,18 +186,21 @@ export default function PublicSquarePage() {
   return (
     <>
       <Navigation />
-      <main className="neobrutalism-theme min-h-screen bg-[var(--n-neutral-primary-soft)] px-4 py-16 sm:px-8">
+      <main className="neobrutalism-theme min-h-screen bg-[var(--n-canvas)] px-4 py-16 sm:px-8">
         <div className="mx-auto max-w-3xl space-y-8">
-          <div>
-            <h1 className="text-4xl sm:text-5xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)] mb-3">
-              Round Table
-            </h1>
-            <p className="text-base text-[var(--n-body)] font-[family-name:var(--n-font-sans)] max-w-2xl">
-              Its pretty much just reddit. But its here on my website. I have things I want to write about but and get feedback on, so hopefully this can be a place for that. Hoping that the forum style of this helps make it feel more approachable and will just get some ideas flowing. I&apos;d love for yall to join! You can leave posts anonymously or with your name if youd like.
+          <NeoBlock background="bg-[var(--n-purple)]">
+            <div className="flex items-center gap-3 mb-3">
+              <Image src="/images/8bit/round_table.png" alt="" width={48} height={48} />
+              <h1 className="text-4xl sm:text-5xl font-[family-name:var(--n-font-display)] uppercase text-white">
+                Round Table
+              </h1>
+            </div>
+            <p className="text-base text-white/95 font-[family-name:var(--n-font-sans)] max-w-2xl">
+              Its pretty much just reddit. But its here on my website. I have things I want to write about and get feedback on, so hopefully this can be a place for that. Hoping that the forum style of this helps make it feel more approachable and will just get some ideas flowing. I&apos;d love for yall to join! You can leave posts anonymously or with your name if youd like.
             </p>
-          </div>
+          </NeoBlock>
 
-          <NeoBlock>
+          <NeoBlock background="bg-[var(--n-cyan-soft)]">
             <h2 className="text-xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)] mb-5">
               New Post
             </h2>
@@ -254,28 +265,52 @@ export default function PublicSquarePage() {
               </p>
             ) : (
               <ul className="space-y-4">
-                {posts.map((post) => (
-                  <li key={post.id}>
-                    <NeoBlock floating={false} className="flex items-start gap-4">
-                      <VoteButtons
-                        score={post.score}
-                        yourVote={votes[post.id] ?? 0}
-                        onVote={(direction) => handleVote(post.id, direction)}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <Link
-                          href={`/public-square/thread?id=${post.id}`}
-                          className="text-[var(--n-heading)] font-bold text-lg font-[family-name:var(--n-font-sans)] underline decoration-2 underline-offset-2 hover:bg-[var(--n-brand)] hover:text-black transition-colors duration-100"
-                        >
-                          {post.title}
-                        </Link>
-                        <div className="mt-2">
-                          <NeoBadge>{post.nickname || "Anonymous"} &middot; {relativeTime(post.created_at)}</NeoBadge>
+                {posts.map((post) => {
+                  const threadHref = `/public-square/thread?id=${post.id}`;
+                  const isLong = post.content.length > PREVIEW_CHAR_THRESHOLD;
+                  return (
+                    <li key={post.id}>
+                      <NeoBlock
+                        floating={false}
+                        className="flex items-start gap-4 border-l-[10px]"
+                        style={{ borderLeftColor: postAccentColor(post.id) }}
+                      >
+                        <VoteButtons
+                          score={post.score}
+                          yourVote={votes[post.id] ?? 0}
+                          onVote={(direction) => handleVote(post.id, direction)}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={threadHref}
+                            className="text-[var(--n-heading)] font-bold text-lg font-[family-name:var(--n-font-sans)] underline decoration-2 underline-offset-2 hover:bg-[var(--n-brand)] hover:text-black transition-colors duration-100"
+                          >
+                            {post.title}
+                          </Link>
+                          <p className="mt-2 text-[var(--n-body)] font-[family-name:var(--n-font-sans)] whitespace-pre-wrap leading-relaxed line-clamp-6">
+                            {post.content}
+                          </p>
+                          {isLong && (
+                            <Link
+                              href={threadHref}
+                              className="inline-block mt-1 text-sm font-bold text-[var(--n-fg-brand)] font-[family-name:var(--n-font-sans)] underline decoration-2 underline-offset-2 hover:bg-[var(--n-brand)] hover:text-black transition-colors duration-100"
+                            >
+                              Read more &rarr;
+                            </Link>
+                          )}
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <NeoBadge>{post.nickname || "Anonymous"} &middot; {relativeTime(post.created_at)}</NeoBadge>
+                            <Link href={threadHref}>
+                              <NeoBadge color="bg-[var(--n-cyan)]" textColor="text-black">
+                                {post.comment_count} {post.comment_count === 1 ? "reply" : "replies"}
+                              </NeoBadge>
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    </NeoBlock>
-                  </li>
-                ))}
+                      </NeoBlock>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

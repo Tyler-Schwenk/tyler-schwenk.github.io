@@ -170,6 +170,8 @@ Get a page of posts, sorted by top score or most recent.
 - `page` (integer, default: 1): Page number
 - `page_size` (integer, default: 20, max: 100): Items per page
 
+Each post includes `comment_count`, the number of comments on it (computed per request; not a stored column).
+
 **Example:** `GET /public-square/posts?sort=new&page=1&page_size=10`
 
 **Response:** `200 OK`
@@ -182,6 +184,7 @@ Get a page of posts, sorted by top score or most recent.
       "content": "This is the first post...",
       "nickname": "tyler",
       "score": 3,
+      "comment_count": 2,
       "created_at": "2026-03-03T10:00:00Z",
       "updated_at": null
     }

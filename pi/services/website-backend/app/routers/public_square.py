@@ -11,6 +11,7 @@ import hashlib
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -103,6 +104,31 @@ def _get_post_or_404(db: Session, post_id: int) -> Post:
     return post
 
 
+def _attach_comment_counts(db: Session, posts: list[Post]) -> None:
+    """
+    Set a non-persisted `comment_count` on each post so PostRead can include it.
+
+    Uses one grouped COUNT query for the whole batch (not one per post) to avoid
+    an N+1, then stamps each post; posts with no comments get 0. `comment_count`
+    isn't a mapped column -- it's a plain instance attribute the response schema
+    reads via from_attributes.
+
+    Args:
+        db: Database session.
+        posts: Posts to annotate in place.
+    """
+    if not posts:
+        return
+    counts = dict(
+        db.query(Comment.post_id, func.count(Comment.id))
+        .filter(Comment.post_id.in_([p.id for p in posts]))
+        .group_by(Comment.post_id)
+        .all()
+    )
+    for post in posts:
+        post.comment_count = counts.get(post.id, 0)
+
+
 def _get_comment_or_404(db: Session, comment_id: int) -> Comment:
     """Fetch a comment by id or raise 404."""
     comment = db.query(Comment).filter(Comment.id == comment_id).first()
@@ -142,6 +168,7 @@ async def list_posts(
 
     total = query.count()
     posts = query.offset((page - 1) * page_size).limit(page_size).all()
+    _attach_comment_counts(db, posts)
     total_pages = (total + page_size - 1) // page_size if total else 0
 
     return PostList(posts=posts, total=total, page=page, page_size=page_size, total_pages=total_pages)
@@ -162,7 +189,9 @@ async def get_post(post_id: int, db: Session = Depends(get_db)):
     Raises:
         HTTPException: 404 if no post with that id exists.
     """
-    return _get_post_or_404(db, post_id)
+    post = _get_post_or_404(db, post_id)
+    _attach_comment_counts(db, [post])
+    return post
 
 
 @router.post("/posts", response_model=PostRead, status_code=status.HTTP_201_CREATED)
@@ -186,6 +215,7 @@ async def create_post(request: Request, post: PostCreate, db: Session = Depends(
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
+    db_post.comment_count = 0  # brand new post, nothing to count yet
     return db_post
 
 

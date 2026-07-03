@@ -10,6 +10,7 @@ import NeoButton from "@/components/neobrutalism/NeoButton";
 import NeoBadge from "@/components/neobrutalism/NeoBadge";
 import NeoSortToggle, { SortOption } from "@/components/neobrutalism/NeoSortToggle";
 import { NeoInput, NeoLabel, NeoTextarea } from "@/components/neobrutalism/NeoFormControls";
+import { postAccentColor } from "@/components/neobrutalism/postAccent";
 
 const API_BASE = "https://api.tyler-schwenk.com";
 
@@ -256,7 +257,7 @@ function ThreadContent() {
     return (
       <>
         <Navigation />
-        <main className="neobrutalism-theme min-h-screen bg-[var(--n-neutral-primary-soft)] px-4 py-16 sm:px-8">
+        <main className="neobrutalism-theme min-h-screen bg-[var(--n-canvas)] px-4 py-16 sm:px-8">
           <div className="mx-auto max-w-3xl">
             <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">No post specified.</p>
             <Link
@@ -286,7 +287,10 @@ function ThreadContent() {
           {!post ? (
             <p className="text-[var(--n-body-subtle)] font-[family-name:var(--n-font-sans)]">Loading...</p>
           ) : (
-            <NeoBlock className="flex items-start gap-4">
+            <NeoBlock
+              className="flex items-start gap-4 border-l-[10px]"
+              style={{ borderLeftColor: postAccentColor(post.id) }}
+            >
               <VoteButtons score={post.score} yourVote={postVote} onVote={handlePostVote} />
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl sm:text-3xl font-[family-name:var(--n-font-display)] uppercase text-[var(--n-heading)]">
@@ -356,7 +360,11 @@ function ThreadContent() {
               <ul className="space-y-4">
                 {comments.map((comment) => (
                   <li key={comment.id}>
-                    <NeoBlock floating={false} className="flex items-start gap-4">
+                    <NeoBlock
+                      floating={false}
+                      className="flex items-start gap-4 border-l-[10px]"
+                      style={{ borderLeftColor: postAccentColor(comment.id) }}
+                    >
                       <VoteButtons
                         score={comment.score}
                         yourVote={commentVotes[comment.id] ?? 0}

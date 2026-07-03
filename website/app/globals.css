@@ -204,6 +204,11 @@ body {
   --n-neutral-secondary-medium: #D9D9D9;
   --n-neutral-tertiary: #D9D9D9;
 
+  /* Page canvas (a soft accent wash so the page isn't stark white) and a
+     couple of soft accent panel fills for "quiet" colored blocks */
+  --n-canvas: #F3F1FC;
+  --n-cyan-soft: #D6FAFF;
+
   /* Brand (electric yellow) */
   --n-brand-softer: #FFFBE0;
   --n-brand-soft: #FFF0A8;
@@ -259,6 +264,9 @@ body {
     --n-neutral-secondary: #1F1F1F;
     --n-neutral-secondary-medium: #2B2B2B;
     --n-neutral-tertiary: #262626;
+
+    --n-canvas: #0B0A10;
+    --n-cyan-soft: #06232B;
 
     --n-brand-softer: #332B00;
     --n-brand-soft: #4D3F00;

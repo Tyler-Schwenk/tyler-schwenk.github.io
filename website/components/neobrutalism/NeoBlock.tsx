@@ -1,12 +1,13 @@
 "use client";
 
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 
 interface NeoBlockProps {
   children: ReactNode;
   className?: string;
   background?: string;
   floating?: boolean;
+  style?: CSSProperties;
 }
 
 /**
@@ -20,6 +21,7 @@ interface NeoBlockProps {
  * @param {string} [props.className] - Extra classes (e.g. padding overrides).
  * @param {string} [props.background] - Background color class; defaults to the neutral surface.
  * @param {boolean} [props.floating=true] - Whether to use the larger `shadow-lg` (floating) vs `shadow-md` (in-flow).
+ * @param {CSSProperties} [props.style] - Inline style passthrough, e.g. a dynamic accent border color.
  * @returns {JSX.Element} The block.
  */
 export default function NeoBlock({
@@ -27,9 +29,11 @@ export default function NeoBlock({
   className = "",
   background = "bg-[var(--n-neutral-primary-soft)]",
   floating = true,
+  style,
 }: NeoBlockProps) {
   return (
     <div
+      style={style}
       className={`border-[3px] border-[var(--n-border-default)] p-5 md:p-6 ${background} ${
         floating ? "shadow-[var(--n-shadow-lg)]" : "shadow-[var(--n-shadow-md)]"
       } ${className}`}
