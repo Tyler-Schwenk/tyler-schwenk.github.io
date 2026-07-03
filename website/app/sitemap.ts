@@ -12,7 +12,7 @@ const STATIC_ROUTES = [
   "/events/fuck-ice-punk-fundraiser",
   "/pac-tyler",
   "/gallery",
-  "/cookbook",
+  "/kitchen",
   "/community-board",
   "/opium-den",
   "/public-square",

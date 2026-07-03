@@ -36,3 +36,155 @@ body {
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
 }
+
+/*
+ * "The Kitchen" design system -- a nostalgic desktop-OS theme (toasted-cream
+ * surfaces, espresso ink, glowing orange accent). Scoped to `.kitchen-theme`
+ * so it doesn't leak into the rest of the site, which uses its own look.
+ * Source of truth for these tokens: website/docs/themes/cookbook.md
+ */
+.kitchen-theme {
+  /* Neutral backgrounds */
+  --k-neutral-primary-soft: #FFEEDD;
+  --k-neutral-primary: #FFEEDD;
+  --k-neutral-primary-medium: #F6E3D2;
+  --k-neutral-primary-strong: #ECD9C8;
+  --k-neutral-secondary-soft: #F6E6D6;
+  --k-neutral-secondary: #E5D4C5;
+  --k-neutral-secondary-medium: #DBC8B6;
+  --k-neutral-secondary-strong: #CDB7A1;
+  --k-neutral-tertiary-soft: #EADAC9;
+  --k-neutral-tertiary: #DBC8B6;
+  --k-neutral-quaternary: #C3A98E;
+
+  /* Brand (orange accent) */
+  --k-brand-softer: #FFF1EB;
+  --k-brand-soft: #FFD2B8;
+  --k-brand: #FF631A;
+  --k-brand-medium: #FFBA94;
+  --k-brand-strong: #D94A00;
+
+  /* Status */
+  --k-success-soft: #E2F4DB;
+  --k-success: #2F6C2D;
+  --k-success-medium: #CDEAC4;
+  --k-danger-soft: #FFF1EB;
+  --k-danger: #B0300A;
+  --k-danger-medium: #F6DDD2;
+  --k-warning-soft: #FFEFD6;
+  --k-warning: #C2410C;
+  --k-warning-medium: #FBE3C0;
+
+  /* Desktop / OS surfaces */
+  --k-bg-desktop: #FF631A;
+  --k-bg-fourth: #8D6C5D;
+  --k-menu-bar: #E5D4C5;
+  --k-button-primary: #3F1400;
+  --k-button-primary-text: #FFF6EE;
+  --k-button-secondary: #9D3200;
+  --k-code-bg: #2B1B11;
+  --k-code-text: #FFE6D1;
+  --k-inset-press: rgba(56, 28, 0, 0.28);
+  --k-dark: #3F1400;
+  --k-disabled: #E5D4C5;
+
+  /* Text */
+  --k-white: #FFF6EE;
+  --k-heading: #381C00;
+  --k-body: #4A3826;
+  --k-body-subtle: #6C5945;
+  --k-fg-brand: #9D3200;
+  --k-fg-brand-strong: #7A2200;
+  --k-fg-success-strong: #1F4F1D;
+  --k-fg-danger-strong: #5A1800;
+  --k-fg-warning: #8A4A08;
+  --k-fg-disabled: #A8917C;
+
+  /* Borders */
+  --k-border-buffer: #FFEEDD;
+  --k-border-default-subtle: #C3A98E;
+  --k-border-default: #8D6C5D;
+  --k-border-default-strong: #3F1400;
+  --k-border-brand: #FF631A;
+  --k-border-brand-subtle: #FFD2B8;
+  --k-border-success-subtle: #CDEAC4;
+  --k-border-danger-subtle: #F6DDD2;
+  --k-border-warning-subtle: #FBE3C0;
+
+  /* Shadows (warm, espresso-tinted) */
+  --k-shadow-menu: 0 5px 16px rgba(56, 28, 0, 0.15);
+  --k-shadow-window: 0 4px 10px rgba(56, 28, 0, 0.18), 0 20px 38px rgba(56, 28, 0, 0.28);
+
+  /* Fonts */
+  --k-font-serif: var(--font-kitchen-serif), Georgia, serif;
+  --k-font-sans: var(--font-kitchen-sans), system-ui, sans-serif;
+  --k-font-mono: var(--font-kitchen-mono), ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  .kitchen-theme {
+    --k-neutral-primary-soft: #221811;
+    --k-neutral-primary: #1F150E;
+    --k-neutral-primary-medium: #2A1E15;
+    --k-neutral-primary-strong: #30231B;
+    --k-neutral-secondary-soft: #2A1E15;
+    --k-neutral-secondary: #30231B;
+    --k-neutral-secondary-medium: #3A2A1F;
+    --k-neutral-secondary-strong: #463225;
+    --k-neutral-tertiary-soft: #2A1E15;
+    --k-neutral-tertiary: #30231B;
+    --k-neutral-quaternary: #463225;
+
+    --k-brand-softer: #2E1C12;
+    --k-brand-soft: #3C2519;
+    --k-brand: #FF9A63;
+    --k-brand-medium: #4A3120;
+    --k-brand-strong: #FFB07E;
+
+    --k-success-soft: #182A14;
+    --k-success: #6FBF6A;
+    --k-success-medium: #20361C;
+    --k-danger-soft: #2E1410;
+    --k-danger: #FF8F7E;
+    --k-danger-medium: #4A1A12;
+    --k-warning-soft: #2E2110;
+    --k-warning: #E5A85A;
+    --k-warning-medium: #46341A;
+
+    --k-bg-desktop: #7F492F;
+    --k-bg-fourth: #7F6759;
+    --k-menu-bar: #30231B;
+    --k-button-primary: #FF9A63;
+    --k-button-primary-text: #381C00;
+    --k-button-secondary: #BE7247;
+    --k-code-bg: #130D09;
+    --k-code-text: #EAD7C4;
+    --k-inset-press: rgba(0, 0, 0, 0.55);
+    --k-dark: #2A1E15;
+    --k-disabled: #30231B;
+
+    --k-white: #FFF6EE;
+    --k-heading: #F2DFCB;
+    --k-body: #E4D3C0;
+    --k-body-subtle: #C3AB97;
+    --k-fg-brand: #FF9A63;
+    --k-fg-brand-strong: #FFB07E;
+    --k-fg-success-strong: #98E2A8;
+    --k-fg-danger-strong: #FFB0A3;
+    --k-fg-warning: #F0C58A;
+    --k-fg-disabled: #7F6B59;
+
+    --k-border-buffer: #221811;
+    --k-border-default-subtle: #5A4233;
+    --k-border-default: #7F6759;
+    --k-border-default-strong: #A8876F;
+    --k-border-brand: #FF9A63;
+    --k-border-brand-subtle: #4A3120;
+    --k-border-success-subtle: #20361C;
+    --k-border-danger-subtle: #4A1A12;
+    --k-border-warning-subtle: #46341A;
+
+    --k-shadow-menu: 0 5px 16px rgba(0, 0, 0, 0.40);
+    --k-shadow-window: 0 4px 10px rgba(0, 0, 0, 0.46), 0 20px 38px rgba(0, 0, 0, 0.62);
+  }
+}

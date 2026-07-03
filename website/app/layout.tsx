@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Press_Start_2P, Caveat } from "next/font/google";
+import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,6 +16,23 @@ const pressStart2P = Press_Start_2P({
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
+});
+
+// The Kitchen section uses its own retro desktop-OS design system (see
+// website/docs/themes/cookbook.md) with a dedicated serif/sans/mono stack.
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-kitchen-serif",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-kitchen-sans",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-kitchen-mono",
 });
 
 const SITE_NAME = "Tyler Schwenk";
@@ -98,7 +115,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
-      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>
