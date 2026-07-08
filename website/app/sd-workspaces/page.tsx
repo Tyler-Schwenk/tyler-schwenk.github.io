@@ -38,12 +38,36 @@ export default function SDWorkspaces() {
           {/* Embedded Google Sheets */}
           <div className="bg-white border-4 border-black shadow-2xl">
             <div className="w-full" style={{ height: 'calc(100vh - 350px)', minHeight: '600px' }}>
-              <iframe 
+              <iframe
                 src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQb8v471W90j8OrmKpMlij5kMDcZBvbOMaYNJnM_8RwnGw4LGEIAy4gl1aFUk6B8ZSavJ83Nw_-dnDz/pubhtml?gid=0&amp;single=true&amp;widget=true&amp;headers=false"
                 className="w-full h-full border-0"
                 title="SD Workspaces Rating System"
               />
             </div>
+          </div>
+
+          {/* Bozeman Workspaces Section */}
+          <div className="bg-[#3850A0] border-4 border-black p-6 mt-16 mb-8 shadow-2xl">
+            <h2 className="text-2xl md:text-4xl font-bold text-[#F8D030] text-center pixel-font tracking-wider drop-shadow-[3px_3px_0_rgba(0,0,0,1)]">
+              BOZEMAN WORKSPACES
+            </h2>
+          </div>
+
+          <div className="bg-[#2840A0] border-2 border-black p-6 mb-6 shadow-md">
+            <p className="text-white pixel-font text-sm leading-relaxed">
+              New sheet made by Tava since he moved to Bozeman :(
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <a
+              href="https://docs.google.com/spreadsheets/d/1O4NNZY3f4KaZtZf8Irwbr3dvEzESs9g3nltQSwEez6I/edit?gid=0#gid=0"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-[#F8D030] border-2 border-black px-4 py-2 text-black pixel-font text-xs hover:bg-yellow-300 transition-colors"
+            >
+              Open Bozeman Spreadsheet in Google Sheets
+            </a>
           </div>
 
         </div>
