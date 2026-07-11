@@ -7,6 +7,8 @@ redeploy... or else
 
 static site got me fucking up the readme just to upload some photos
 
+literally mobile deploy from the airport. get me the hell out of denver
+
 why was 6 afraid of 7
 
 6 7
