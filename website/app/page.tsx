@@ -44,9 +44,6 @@ export default function Home() {
                 <MenuOption href="/gallery" iconSrc="/images/8bit/camera.png">
                   GALLERY
                 </MenuOption>
-                <MenuOption href="/public-square" iconSrc="/images/8bit/round_table.png">
-                  ROUND TABLE
-                </MenuOption>
                 <MenuOption href="/biking" iconSrc="/images/8bit/bike.png">
                   BIKING
                 </MenuOption>
@@ -74,11 +71,14 @@ export default function Home() {
                 <MenuOption href="/community-board" iconSrc="/images/8bit/community.png">
                   COMMUNITY BOARD
                 </MenuOption>
-                <MenuOption href="/opium-den">
-                  ENTER THE VIRTUAL OPIUM DEN
+                <MenuOption href="/public-square" iconSrc="/images/8bit/round_table.png">
+                  ROUND TABLE
                 </MenuOption>
                 <MenuOption href="/projects/others" iconSrc="/images/8bit/lightbulb.png">
                   INSPIRATION/MISC
+                </MenuOption>
+                <MenuOption href="/opium-den">
+                  ENTER THE VIRTUAL OPIUM DEN
                 </MenuOption>
               </div>
             </div>

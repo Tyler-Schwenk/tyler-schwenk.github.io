@@ -161,10 +161,10 @@ export default function RibbitRadar() {
       <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto space-y-6">
-            <h2 className="text-4xl font-bold text-white">2025 Report for The Nature Conservancy</h2>
-           
-            
-            {/* Documentation Link Card */}
+            <h2 className="text-4xl font-bold text-white">Reports for The Nature Conservancy</h2>
+
+
+            {/* Documentation Link Cards */}
             <a
               href="https://tnc-conservation-technology.gitbook.io/acoustic-frog-monitoring"
               target="_blank"
@@ -178,10 +178,36 @@ export default function RibbitRadar() {
                   </div>
                   <div className="space-y-2">
                     <div className="text-2xl font-bold text-white group-hover:text-orange-400 transition-colors">
-                      Acoustic Frog Monitoring Guide
+                      2025: Acoustic Frog Monitoring Guide
                     </div>
                     <div className="text-slate-400 text-lg">
                       Technical documentation of my model development, and field deployment guide
+                    </div>
+                  </div>
+                </div>
+                <div className="text-4xl text-orange-500 group-hover:translate-x-2 transition-transform">
+                  →
+                </div>
+              </div>
+            </a>
+
+            <a
+              href="https://tyler-schwenk-1.gitbook.io/southern-ca-stewardship-2026-acoustic-monitoring"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mt-4 p-8 bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-orange-500/30 rounded-lg shadow-xl hover:border-orange-500 hover:shadow-orange-500/20 transition-all duration-300 group"
+            >
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-6 flex-1">
+                  <div className="flex-shrink-0 bg-white p-3 rounded-lg">
+                    <Image src="/images/TheNatureConservancy.png" alt="The Nature Conservancy" width={100} height={60} className="object-contain" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-2xl font-bold text-white group-hover:text-orange-400 transition-colors">
+                      2026: Southern CA Stewardship Acoustic Monitoring
+                    </div>
+                    <div className="text-slate-400 text-lg">
+                      Field deployment and monitoring report
                     </div>
                   </div>
                 </div>
