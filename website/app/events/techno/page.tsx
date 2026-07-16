@@ -166,6 +166,13 @@ export default function LavenderBayPage() {
               </div>
             </div>
 
+            {/* Unpermitted Event Notice */}
+            <p className="text-center text-gray-400 text-sm">
+              Please note this is an unpermitted event, and so we ask that you
+              avoid congregating and making too much noise in the parking lot
+              area - as it is near an RV resort... thank you!
+            </p>
+
             {/* Info Notes */}
             <div className="text-center space-y-2">
               {INFO_NOTES.map((note) => (
