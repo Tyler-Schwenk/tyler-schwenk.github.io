@@ -44,6 +44,25 @@ const DJS = [
   },
 ];
 
+const LOCATION_LINKS = [
+  {
+    label: 'Parking',
+    coords: '32.794507, -117.216033',
+    link: 'https://maps.app.goo.gl/itedwFoKybZW8DaHA',
+  },
+  {
+    label: 'Lav Bay',
+    coords: '32.794334, -117.211582',
+    link: 'https://maps.app.goo.gl/QNSF2j93MD3TwmD36',
+  },
+];
+
+const INFO_NOTES = [
+  'We will be dancing on the sand',
+  'Hot dogs and veggie dogs for sale',
+  'Art for sale',
+];
+
 export default function LavenderBayPage() {
   return (
     <PageWrapper hideFooter hideNavigation>
@@ -75,7 +94,7 @@ export default function LavenderBayPage() {
               </div>
             </div>
             <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2">
-              <p className="text-sm tracking-widest" style={{ color: LAVENDER }}>LINEUP</p>
+              <p className="text-sm tracking-widest" style={{ color: LAVENDER }}>LINEUP & LOCATION</p>
               <svg className="w-6 h-6 bobbing-chevron" style={{ color: LAVENDER }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
@@ -120,6 +139,40 @@ export default function LavenderBayPage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Location Section */}
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <Image
+                src="/images/events/lav_location.jpg"
+                alt="Lavender Bay location"
+                width={600}
+                height={400}
+                className="rounded-xl w-full md:w-1/2 h-auto object-cover"
+              />
+              <div className="flex flex-col gap-3 md:w-1/2">
+                {LOCATION_LINKS.map((location) => (
+                  <a
+                    key={location.label}
+                    href={location.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xl font-bold tracking-wide hover:opacity-80 transition"
+                  >
+                    <span style={{ color: LAVENDER }}>{location.label}</span>
+                    <span className="text-gray-400"> - {location.coords}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Info Notes */}
+            <div className="text-center space-y-2">
+              {INFO_NOTES.map((note) => (
+                <p key={note} className="text-gray-300">
+                  {note}
+                </p>
+              ))}
             </div>
 
           </div>
