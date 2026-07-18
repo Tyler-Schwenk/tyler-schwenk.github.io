@@ -141,45 +141,13 @@ export default function LavenderBayPage() {
               </div>
             </div>
 
-            {/* Location Section */}
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <Image
-                src="/images/events/lav_location.jpg"
-                alt="Lavender Bay location"
-                width={600}
-                height={400}
-                className="rounded-xl w-full md:w-1/2 h-auto object-cover"
+            {/* Recap Video */}
+            <div>
+              <video
+                src="/video/lavender-bay.mp4"
+                controls
+                className="w-full rounded-xl bg-black"
               />
-              <div className="flex flex-col gap-3 md:w-1/2">
-                {LOCATION_LINKS.map((location) => (
-                  <a
-                    key={location.label}
-                    href={location.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xl font-bold tracking-wide hover:opacity-80 transition"
-                  >
-                    <span style={{ color: LAVENDER }}>{location.label}</span>
-                    <span className="text-gray-400"> - {location.coords}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Unpermitted Event Notice */}
-            <p className="text-center text-gray-400 text-sm">
-              Please note this is an unpermitted event, and so we ask that you
-              avoid congregating and making too much noise in the parking lot
-              area - as it is near an RV resort... thank you!
-            </p>
-
-            {/* Info Notes */}
-            <div className="text-center space-y-2">
-              {INFO_NOTES.map((note) => (
-                <p key={note} className="text-gray-300">
-                  {note}
-                </p>
-              ))}
             </div>
 
           </div>

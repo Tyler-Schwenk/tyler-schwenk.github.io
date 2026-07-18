@@ -60,6 +60,7 @@ export const EVENTS: EventEntry[] = [
       },
     ],
   },
+  // Past — most recent first
   {
     slug: "techno",
     title: "Lavender Bay",
@@ -67,6 +68,7 @@ export const EVENTS: EventEntry[] = [
     locationText: "Mission Bay - exact location sent the day before",
     summary: "Techno renegade fundraiser. All proceeds to Al Otro Lado.",
     type: "flier",
+    past: true,
     flierImage: {
       src: "/images/events/lavbay2.JPG",
       alt: "Lavender Bay techno fundraiser flier",
@@ -74,7 +76,6 @@ export const EVENTS: EventEntry[] = [
     highlights: ["Free entry", "Food + art + visuals"],
     rsvpForm: true,
   },
-  // Past — most recent first
   {
     slug: "fuck-ice-punk-fundraiser",
     title: '"Fuck Ice" Punk Concert/Fundraiser',
