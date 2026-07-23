@@ -354,11 +354,11 @@ export default function GardenPage() {
               className="block bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group max-w-md mx-auto text-center"
             >
               <div className="text-green-400 font-bold text-xl mb-1 group-hover:text-green-300">
-                Shimmer Hybrid
+                "Shimmer"
               </div>
               <div className="text-slate-400 text-sm mb-2">burpee.com</div>
               <div className="text-slate-500 text-xs">
-                bicolor cherry tomato, sweet and productive — the standout of the season
+                Soooo good. and it held up really well to powdery mildew in the garden. And very bountiful
               </div>
             </a>
           </div>
