@@ -342,6 +342,27 @@ export default function GardenPage() {
             )}
           </div>
 
+          {/* Favorite Tomato */}
+          <div className="mb-16">
+            <h2 className="text-lg font-bold text-green-300 pixel-font mb-5 text-center tracking-wide">
+              FAVORITE TOMATO THIS YEAR
+            </h2>
+            <a
+              href="https://www.burpee.com/tomato-shimmer-hybrid-prod500101.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group max-w-md mx-auto text-center"
+            >
+              <div className="text-green-400 font-bold text-xl mb-1 group-hover:text-green-300">
+                Shimmer Hybrid
+              </div>
+              <div className="text-slate-400 text-sm mb-2">burpee.com</div>
+              <div className="text-slate-500 text-xs">
+                bicolor cherry tomato, sweet and productive — the standout of the season
+              </div>
+            </a>
+          </div>
+
           {/* Gardening Inspiration */}
           <div className="mb-16">
             <h2 className="text-lg font-bold text-green-300 pixel-font mb-6 text-center tracking-wide">
