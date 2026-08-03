@@ -1,8 +1,20 @@
 # pac-tyler-updater
 
-daily script that fetches new Strava activities and writes updated GeoJSON and
-activity dataset files to disk. runs headlessly on fart-pi via systemd timer.
-the website-backend FastAPI service then serves those files to the frontend.
+script that fetches new Strava activities and writes updated GeoJSON and
+activity dataset files to disk. the website-backend FastAPI service then
+serves those files to the frontend.
+
+## status: paused (June 2026)
+
+Strava restricted API access to premium members only in June 2026, so this
+script no longer works for the free-tier account it was authenticated with.
+The `pac-tyler-updater.timer` has been disabled on fart-pi — it's not running
+daily anymore. Data on the site is frozen as of the last successful run
+(activities through 2026-06-30).
+
+Plan is to run `main.py` manually one last time when Tyler moves out of San
+Diego, to capture the tail end of the challenge, then leave the project as a
+static archive.
 
 ## how it works
 

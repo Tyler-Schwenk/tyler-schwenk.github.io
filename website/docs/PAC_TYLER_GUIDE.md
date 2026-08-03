@@ -3,6 +3,9 @@
 ## Overview
 Pac-Tyler is a modern, interactive web page showcasing a gamified biking challenge where the goal is to bike every street in San Diego. The implementation integrates with Strava activity data served by the Pi backend.
 
+### Status: Data Updates Paused (June 2026)
+Strava restricted API access to premium members only in June 2026, breaking the free-tier token this project authenticates with. The daily `pac-tyler-updater.timer` on fart-pi has been disabled — data is frozen as of the last successful run (activities through 2026-06-30). The plan is to run `main.py` manually one more time when Tyler moves out of San Diego to capture the tail end of the challenge, then leave the page as a static archive. See `pi/services/pac-tyler-updater/README.md` for details.
+
 ## Architecture
 
 ### Frontend (This Repository)
@@ -184,8 +187,8 @@ The build process:
 3. Optimizes images
 4. Creates static export for GitHub Pages
 
-### Updating Activity Data (Automated)
-The `pac-tyler-updater` service on fart-pi runs every day at 3am via systemd timer. No manual steps needed.
+### Updating Activity Data (Paused)
+The `pac-tyler-updater` service on fart-pi previously ran every day at 3am via systemd timer. As of June 2026 this is paused (see Status note above) — Strava's API is no longer accessible with the free-tier token, so the timer has been disabled and data will only be updated with a manual run.
 
 See `pi/services/pac-tyler-updater/README.md` for setup and first-time auth instructions.
 

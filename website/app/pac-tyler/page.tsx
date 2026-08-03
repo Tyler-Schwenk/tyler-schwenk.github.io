@@ -37,6 +37,9 @@ export default function PacTyler() {
           {/* Project Description */}
           <section className="mb-12">
             <div className="bg-[#1a1a1a] border-2 border-[#E3B800] rounded-lg p-8 shadow-[0_0_20px_rgba(227,184,0,0.2)]">
+              <p className="text-sm text-gray-400 font-mono mb-6">
+                Strava restricted their API to only premium members in June 2026, so my data ends there :/
+              </p>
               <p className="text-lg text-[#E3B800] leading-relaxed font-mono">
                 This is an ongoing project where I am attempting to bike the
                 length of every street in San Diego, and have developed software
