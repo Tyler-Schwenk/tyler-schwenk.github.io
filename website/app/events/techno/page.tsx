@@ -150,6 +150,17 @@ export default function LavenderBayPage() {
               />
             </div>
 
+            {/* Donation Receipt */}
+            <div>
+              <Image
+                src="/images/events/aol_reciept_2.jpg"
+                alt="Al Otro Lado donation receipt"
+                width={1292}
+                height={1270}
+                className="w-full h-auto rounded-xl"
+              />
+            </div>
+
           </div>
         </section>
 

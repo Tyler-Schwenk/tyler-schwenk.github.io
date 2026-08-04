@@ -59,6 +59,9 @@ export default function Home() {
                 <MenuOption href="/projects/ribbit-radar" iconSrc="/images/8bit/crlf_8bit.png">
                   FROG WORK
                 </MenuOption>
+                <MenuOption href="/solar" iconSrc="/images/solar/solar_icon.png">
+                  SOLAR SETUP
+                </MenuOption>
                 <MenuOption href="/mallard" iconSrc="/images/8bit/mallard_8bit.png">
                   MALLARD COUNTER
                 </MenuOption>
