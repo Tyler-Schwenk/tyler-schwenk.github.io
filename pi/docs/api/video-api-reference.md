@@ -429,8 +429,8 @@ loadVideoGallery();
 ## Storage
 
 Videos are stored on the external SSD at:
-- **Videos:** `/media/tyler/FE645A9A645A558D/videos/`
-- **Thumbnails:** `/media/tyler/FE645A9A645A558D/videos/thumbnails/`
+- **Videos:** `/mnt/ssd/videos/`
+- **Thumbnails:** `/mnt/ssd/videos/thumbnails/`
 
 Files are named using the video slug plus the appropriate file extension.
 

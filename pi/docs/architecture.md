@@ -29,8 +29,8 @@ System architecture for fart-pi multi-service home server.
      - **Public Square**: Anonymous forum — posts, comments, upvote/downvote, no login required (see `pi/docs/api/website-backend-api.md`)
      - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI, plus Public Square moderation (hard delete posts/comments)
      - JWT authentication (bcrypt password hashing, 30-day token expiry) — single admin account, not used by Public Square
-   - Photo Storage: /media/tyler/FE645A9A645A558D/public-gallery
-   - Video Storage: /media/tyler/FE645A9A645A558D/videos
+   - Photo Storage: /mnt/ssd/public-gallery
+   - Video Storage: /mnt/ssd/videos
 
 2. **Beszel** - System monitoring and health tracking
    - Status: Running and operational
@@ -59,7 +59,7 @@ System architecture for fart-pi multi-service home server.
    - Port: 2283
    - Access: http://192.168.1.116:2283 (home LAN)
    - Features: Mobile backup, face recognition, object detection, albums
-   - Storage: /media/tyler/FE645A9A645A558D/photos
+   - Storage: /mnt/ssd/photos
    - Components: Server, microservices, ML, Redis, PostgreSQL
    - Setup guide: docs/FORTYLER/immich-setup.md
 
@@ -94,9 +94,9 @@ System architecture for fart-pi multi-service home server.
 - Port: 8000
 - Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos
 - Storage:
-  - Photos: /media/tyler/FE645A9A645A558D/public-gallery
-  - Videos: /media/tyler/FE645A9A645A558D/videos
-  - Recipe photos: /media/tyler/FE645A9A645A558D/recipe-photos
+  - Photos: /mnt/ssd/public-gallery
+  - Videos: /mnt/ssd/videos
+  - Recipe photos: /mnt/ssd/recipe-photos
 - Dependencies: ffmpeg for video processing
 
 **Beszel Monitoring**
@@ -133,7 +133,7 @@ System architecture for fart-pi multi-service home server.
   - immich-machine-learning (AI features)
   - Redis (caching)
   - PostgreSQL (database)
-- Storage: /media/tyler/FE645A9A645A558D/photos
+- Storage: /mnt/ssd/photos
 - Port: 2283
 - Access: http://192.168.1.116:2283 (home LAN)
 - Status: Configured, ready to deploy
@@ -157,24 +157,27 @@ System architecture for fart-pi multi-service home server.
 
 ## Storage Architecture
 
-### External SSD (`/media/tyler/FE645A9A645A558D/`)
+### External SSD (`/mnt/ssd/`)
 **Purpose**: Store large media files
 
-**Device**: `/dev/sda1` - 193GB NTFS partition (1% used, 193GB available)
+**Device**: `/dev/sda2` - ext4 partition on a 500GB USB SSD (~268GB usable), mounted by UUID with `nofail`. Mount configuration, safety guards, and recovery steps are in [internal/hardware.md](internal/hardware.md#external-ssd-media-storage).
 
 Directories:
 ```
-/media/tyler/FE645A9A645A558D/
+/mnt/ssd/
 ├── photos/             # Personal photo library (Immich - future)
 ├── public-gallery/     # Curated photos for website galleries (Website Backend API)
 │   ├── jordan/
 │   │   ├── *.jpg       # Original images
 │   │   └── thumbnails/ # Auto-generated thumbnails (400x400px)
 │   ├── durango/
-│   ├── friends/
-│   └── ... # 16 galleries total, 255 photos
-└── files/              # General file storage
+│   └── ...             # one folder per gallery
+├── videos/             # Website videos, named by slug
+│   └── thumbnails/     # Video poster frames, named by slug
+└── recipe-photos/      # The Kitchen photos
 ```
+
+Containers mount these as `/app/photos`, `/app/videos`, and `/app/recipe_photos`. The database stores the container paths, so moving the host directory doesn't change any rows.
 
 ## Website Architecture (tyler-schwenk.github.io)
 
@@ -205,7 +208,7 @@ Directories:
 - Forum posts and comments (Public Square)
 - User-uploaded content
 - Any content managed via API
-- Location: `/media/tyler/FE645A9A645A558D/public-gallery/` on Pi
+- Location: `/mnt/ssd/public-gallery/` on Pi
 - **Why**: Easy to update, no Git commits needed, dynamic management
 
 ### Gallery Management
@@ -264,7 +267,7 @@ Raspberry Pi OS (Host)
 services:
   website-backend:
     volumes:
-      - /media/tyler/FE645A9A645A558D/public-gallery:/app/photos:ro
+      - /mnt/ssd/public-gallery:/app/photos:ro
       - ./data:/app/data
 ```
 
@@ -388,7 +391,7 @@ Probably Restic:
 - [x] Moderation: admin-only hard delete for posts/comments (via the `/admin` panel)
 - [ ] Custom domain for permanent tunnel URL
 - [ ] Deploy note: `Post`/`Comment` models existed in code (unused) before Public Square shipped. There's no Alembic — `init_db()` only creates missing tables, it won't alter existing ones. Before first deploying the new schema, drop the old (empty) tables on the Pi so they get recreated correctly: `sqlite3 website_backend.db "DROP TABLE IF EXISTS posts; DROP TABLE IF EXISTS comments;"`. Also set `IP_HASH_SALT` in the Pi's `.env` (e.g. `openssl rand -hex 32`) before starting the service.
-- [ ] Deploy note: The Kitchen (recipes) adds new tables only (`recipes`, `tags`, `recipe_tags`, `recipe_photos`, including the `recipes.link` column) so `init_db()` creates them automatically on first startup after deploy -- no manual SQL needed **as long as this is the first deploy of the feature**. If `recipes` was already created on the Pi from an earlier deploy (before `link` was added), `init_db()` won't retroactively add the column -- add it manually first: `sqlite3 website_backend.db "ALTER TABLE recipes ADD COLUMN link VARCHAR(500)"`. It does need a new bind mount, `/media/tyler/FE645A9A645A558D/recipe-photos:/app/recipe_photos` (see `docker-compose.yml`); Docker creates that host directory automatically if it doesn't exist yet, but confirm the external SSD is mounted first.
+- [ ] Deploy note: The Kitchen (recipes) adds new tables only (`recipes`, `tags`, `recipe_tags`, `recipe_photos`, including the `recipes.link` column) so `init_db()` creates them automatically on first startup after deploy -- no manual SQL needed **as long as this is the first deploy of the feature**. If `recipes` was already created on the Pi from an earlier deploy (before `link` was added), `init_db()` won't retroactively add the column -- add it manually first: `sqlite3 website_backend.db "ALTER TABLE recipes ADD COLUMN link VARCHAR(500)"`. It does need a new bind mount, `/mnt/ssd/recipe-photos:/app/recipe_photos` (see `docker-compose.yml`); Docker creates that host directory automatically if it doesn't exist yet, but confirm the external SSD is mounted first.
 
 ### Future Services
 - [ ] Immich: Disable ML on Pi 5 for performance?

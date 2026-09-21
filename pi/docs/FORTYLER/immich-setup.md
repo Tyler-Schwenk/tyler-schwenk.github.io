@@ -100,14 +100,14 @@ Create admin account on first visit.
 
 ## Storage Location
 
-Photos stored at: `/media/tyler/FE645A9A645A558D/photos/`
+Photos stored at: `/mnt/ssd/photos/`
 
 Check disk usage:
 ```bash
-df -h /media/tyler/FE645A9A645A558D/
+df -h /mnt/ssd/
 ```
 
-External SSD has 193GB total. Monitor as your photo library grows.
+The SSD has about 268GB usable. Monitor as your photo library grows.
 
 ## Common Commands
 
@@ -166,7 +166,7 @@ Face detection and object recognition will be disabled, but basic functionality 
 
 Check what's using space:
 ```bash
-du -sh /media/tyler/FE645A9A645A558D/photos/*
+du -sh /mnt/ssd/photos/*
 ```
 
 Options:
@@ -180,7 +180,7 @@ Photos are stored on external SSD. Set up regular backups to prevent data loss.
 
 Simple backup to USB drive:
 ```bash
-rsync -avh /media/tyler/FE645A9A645A558D/photos/ /path/to/backup/
+rsync -avh /mnt/ssd/photos/ /path/to/backup/
 ```
 
 ## Resources

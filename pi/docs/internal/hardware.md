@@ -5,7 +5,7 @@
 ### Device
 - **Model**: Raspberry Pi 5
 - **Power Supply**: Official Raspberry Pi 5 USB-C (5V 5A)
-- **Storage**: MicroSD card with Raspberry Pi OS (64-bit)
+- **Storage**: MicroSD card with Raspberry Pi OS (64-bit); external USB SSD for media (see [External SSD](#external-ssd-media-storage))
 - **Operation Mode**: Headless (no monitor)
 
 ### Boot Behavior
@@ -106,6 +106,65 @@ Future network enhancements:
 - **Managed by**: NetworkManager (`/etc/resolv.conf` is generated, don't edit it by hand)
 - **Nameserver**: router at 192.168.1.254 (plus the router's IPv6 address)
 - **Search Domain**: attlocal.net
+
+## External SSD (media storage)
+
+All media (photos, videos, recipe photos) lives on a 500 GB USB SSD, mounted at `/mnt/ssd`. The SD card holds the OS, Docker, this repo, and per-service state (for example the website-backend SQLite database in `services/website-backend/data/`).
+
+| Partition | Filesystem | Use |
+|---|---|---|
+| `/dev/sda2` | ext4, label `fartdata`, ~268 GB usable | mounted at `/mnt/ssd` |
+| `/dev/sda1` | NTFS, 193 GB, corrupt MFT | unused, never mounted |
+
+`sda1` is left untouched on purpose: Linux can't read it (`$MFTMirr does not match $MFT`). If you ever want to check it for data, plug the SSD into Windows and run `chkdsk /f`.
+
+### Layout
+
+```
+/mnt/ssd/
+├── public-gallery/   # website photo galleries (+ thumbnails/ per gallery)
+├── videos/           # website videos (+ thumbnails/)
+├── recipe-photos/    # The Kitchen photos
+└── photos/           # Immich library (not deployed yet)
+```
+
+Compose files read the root from `MEDIA_ROOT` (website-backend, default `/mnt/ssd`) and `UPLOAD_LOCATION` (Immich `.env`), so the path is defined in one place per service.
+
+### Mount configuration
+
+`/etc/fstab`:
+```
+UUID=4a936e8f-d789-4a00-80b9-93e5a82a8302 /mnt/ssd ext4 defaults,noatime,nofail 0 2
+```
+
+- Mounted by UUID, not `/dev/sdX`, so it survives device renaming.
+- `nofail` so a missing or dead drive doesn't hang boot.
+- The empty `/mnt/ssd` directory on the SD card is marked immutable (`chattr +i`). If the SSD isn't mounted, nothing can create files under that path, so a container fails to start ("bind source path does not exist") instead of silently filling the SD card.
+- `/etc/systemd/system/docker.service.d/wait-for-ssd.conf` orders Docker after `mnt-ssd.mount` (`After=` + `Wants=`, not `Requires=`, so a dead SSD only takes down the containers that need it).
+
+### Health checks
+
+```bash
+findmnt /mnt/ssd           # should show /dev/sda2 ext4
+df -h /mnt/ssd             # free space
+sudo findmnt --verify      # fstab sanity check
+sudo dmesg | grep -i sda   # kernel errors for the drive
+```
+
+### If the SSD is missing or unmounted
+
+1. Check the USB cable, then `lsblk -f` to confirm `sda2` shows up.
+2. `sudo mount /mnt/ssd`
+3. `cd ~/tyler-schwenk.github.io/pi/services/website-backend && docker compose up -d`
+
+Don't delete or recreate the immutable mount-point directory unless you're replacing the drive.
+
+### Replacing the drive
+
+1. Format the new partition as ext4: `sudo mkfs.ext4 -m 1 -L fartdata /dev/sdXN`
+2. Get its UUID with `sudo blkid` and update the `/etc/fstab` line.
+3. `sudo mount /mnt/ssd`, then copy data over with `sudo rsync -aHAX old-source/ /mnt/ssd/` (preserves ownership and permissions).
+4. `docker compose up -d` in each service.
 
 ## GPIO Pin Usage
 

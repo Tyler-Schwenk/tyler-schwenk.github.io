@@ -22,7 +22,7 @@ Self-hosted photo and video management solution with automatic backup from mobil
 
 ### Prerequisites
 
-1. External SSD mounted at `/media/tyler/FE645A9A645A558D/`
+1. External SSD mounted at `/mnt/ssd/`
 2. Docker and Docker Compose installed
 
 ### Initial Setup
@@ -88,7 +88,7 @@ On first visit, create an admin account.
 
 ## Storage
 
-**Photos stored at:** `/media/tyler/FE645A9A645A558D/photos/`
+**Photos stored at:** `/mnt/ssd/photos/`
 
 This directory structure is created by Immich:
 ```
@@ -137,7 +137,7 @@ Immich database and photos should be backed up regularly.
 Photos are stored on external SSD. Backup entire directory:
 
 ```bash
-rsync -avh /media/tyler/FE645A9A645A558D/photos/ /backup/location/
+rsync -avh /mnt/ssd/photos/ /backup/location/
 ```
 
 ### Backup Database
@@ -206,11 +206,11 @@ ML models download on first start (~1-2GB). May take time on first run.
 
 Check disk usage:
 ```bash
-df -h /media/tyler/FE645A9A645A558D/
-du -sh /media/tyler/FE645A9A645A558D/photos/*
+df -h /mnt/ssd/
+du -sh /mnt/ssd/photos/*
 ```
 
-External SSD has 193GB. Monitor usage and upgrade if needed.
+The SSD has about 268GB usable. Monitor usage and upgrade if needed.
 
 ## Resources
 

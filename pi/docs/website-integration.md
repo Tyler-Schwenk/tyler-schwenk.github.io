@@ -65,7 +65,7 @@ const photos = fs.readdirSync('/public/images/gallery/jordan');
 
 **Storage:**
 ```
-fart-pi:/media/tyler/FE645A9A645A558D/public-gallery/
+fart-pi:/mnt/ssd/public-gallery/
 ├── jordan/
 │   ├── photo1.jpg        # Original
 │   └── thumbnails/
@@ -97,7 +97,7 @@ gallery.photos.map(photo => (
 From your local machine with the website repo:
 
 ```bash
-scp -r "C:\path\to\tyler-schwenk.github.io\public\images\gallery\*" tyler@192.168.1.116:/media/tyler/FE645A9A645A558D/public-gallery/
+scp -r "C:\path\to\tyler-schwenk.github.io\public\images\gallery\*" tyler@192.168.1.116:/mnt/ssd/public-gallery/
 ```
 
 This preserves your folder structure (jordan/, durango/, friends/, etc.).
@@ -112,7 +112,7 @@ docker exec website-backend-api python scripts/migrate_photos.py
 ```
 
 The script will:
-- Scan all folders in `/media/tyler/FE645A9A645A558D/public-gallery/`
+- Scan all folders in `/mnt/ssd/public-gallery/`
 - Create a gallery for each folder
 - Upload each image (generates thumbnails automatically)
 - Preserve organization

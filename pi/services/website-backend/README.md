@@ -100,10 +100,21 @@ openssl rand -hex 32
 Update `.env`:
 ```env
 JWT_SECRET=<your-generated-secret>
+IP_HASH_SALT=<another-generated-secret>
 CORS_ORIGINS=https://yourusername.github.io
 ```
 
-Note: UpdateCreate Storage Directory
+Optional: `MEDIA_ROOT` sets the host directory that holds photos, videos, and recipe photos (default `/mnt/ssd`).
+
+### Step 2: Storage Directories
+
+The external SSD must be mounted at `/mnt/ssd` first (see [hardware.md](../../docs/internal/hardware.md#external-ssd-media-storage)). Then create the media directories:
+
+```bash
+sudo mkdir -p /mnt/ssd/public-gallery /mnt/ssd/videos /mnt/ssd/recipe-photos
+```
+
+If the SSD isn't mounted, the container refuses to start instead of writing media to the SD card.
 
 ### Step 3: Build and Deploy
 
@@ -118,16 +129,7 @@ docker compose up -d
 docker compose logs -f
 ```
 
-### Step 4ectory on external SSD for photo storage:
-
-```bash
-sudo mkdir -p /mnt/external-ssd/public-gallery
-sudo chown tyler:tyler /mnt/external-ssd/public-gallery
-```
-
-### Step 2: Build and Deploy
-
-```bash4: Verify Deployment
+### Step 4: Verify Deployment
 
 ```bash
 # Check service health
@@ -162,7 +164,7 @@ Or keep it private: the API is reachable on the home LAN at `http://192.168.1.11
 
 ### Storage Structure
 ```
-/media/tyler/FE645A9A645A558D/public-gallery/
+/mnt/ssd/public-gallery/
 ├── gallery_1/
 │   ├── abc123.jpg          # Original image
 │   ├── def456.png
@@ -412,13 +414,13 @@ If you have existing photo folders to migrate into the gallery system:
 **Step 1: Copy photos to external SSD**
 ```bash
 # From your local machine
-scp -r /path/to/photos/* tyler@192.168.1.116:/media/tyler/FE645A9A645A558D/public-gallery/
+scp -r /path/to/photos/* tyler@192.168.1.116:/mnt/ssd/public-gallery/
 ```
 
 **Step 2: Verify folder structure**
 ```bash
 # On the Pi
-ls /media/tyler/FE645A9A645A558D/public-gallery/
+ls /mnt/ssd/public-gallery/
 # Should show: jordan/, durango/, friends/, etc.
 ```
 

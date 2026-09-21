@@ -4,7 +4,7 @@ services:
     image: ghcr.io/immich-app/immich-server:release
     command: ['start.sh', 'immich']
     volumes:
-      - /media/tyler/FE645A9A645A558D/photos:/usr/src/app/upload
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
@@ -20,7 +20,7 @@ services:
     image: ghcr.io/immich-app/immich-server:release
     command: ['start.sh', 'microservices']
     volumes:
-      - /media/tyler/FE645A9A645A558D/photos:/usr/src/app/upload
+      - ${UPLOAD_LOCATION}:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
