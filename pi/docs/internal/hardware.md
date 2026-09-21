@@ -109,7 +109,7 @@ Future network enhancements:
 
 ## External SSD (media storage)
 
-All media (photos, videos, recipe photos) lives on a 500 GB USB SSD, mounted at `/mnt/ssd`. The SD card holds the OS, Docker, this repo, and per-service state (for example the website-backend SQLite database in `services/website-backend/data/`).
+All media (photos, videos, recipe photos) and the website-backend SQLite database live on a 500 GB USB SSD, mounted at `/mnt/ssd`. The SD card holds the OS, Docker, this repo, and small per-service state (for example Beszel's `./data`).
 
 | Partition | Filesystem | Use |
 |---|---|---|
@@ -122,13 +122,14 @@ All media (photos, videos, recipe photos) lives on a 500 GB USB SSD, mounted at 
 
 ```
 /mnt/ssd/
+├── db/               # website-backend sqlite database (website_backend.db)
 ├── public-gallery/   # website photo galleries (+ thumbnails/ per gallery)
 ├── videos/           # website videos (+ thumbnails/)
 ├── recipe-photos/    # The Kitchen photos
 └── photos/           # Immich library (not deployed yet)
 ```
 
-Compose files read the root from `MEDIA_ROOT` (website-backend, default `/mnt/ssd`) and `UPLOAD_LOCATION` (Immich `.env`), so the path is defined in one place per service.
+Compose files read these locations from variables, so each path is defined in one place per service: `MEDIA_ROOT` (website-backend media, default `/mnt/ssd`), `DB_DIR` (website-backend database, default `/mnt/ssd/db`), and `UPLOAD_LOCATION` (Immich `.env`).
 
 ### Mount configuration
 

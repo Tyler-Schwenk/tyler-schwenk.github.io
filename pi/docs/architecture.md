@@ -22,7 +22,7 @@ System architecture for fart-pi multi-service home server.
    - Public Access: https://api.tyler-schwenk.com
    - API Documentation: http://192.168.1.116:8000/docs or https://api.tyler-schwenk.com/docs
    - Health Check: http://192.168.1.116:8000/health or https://api.tyler-schwenk.com/health
-   - Database: SQLite at /app/data/website_backend.db
+   - Database: SQLite at /app/data/website_backend.db (host: /mnt/ssd/db/website_backend.db)
    - Features:
      - **Photo Galleries**: 13 albums (250+ photos), display_order sorting, admin panel management
      - **Video Hosting**: Upload, streaming, thumbnail generation with ffmpeg
@@ -165,6 +165,7 @@ System architecture for fart-pi multi-service home server.
 Directories:
 ```
 /mnt/ssd/
+├── db/                 # Website Backend sqlite database (website_backend.db)
 ├── photos/             # Personal photo library (Immich - future)
 ├── public-gallery/     # Curated photos for website galleries (Website Backend API)
 │   ├── jordan/

@@ -104,14 +104,14 @@ IP_HASH_SALT=<another-generated-secret>
 CORS_ORIGINS=https://yourusername.github.io
 ```
 
-Optional: `MEDIA_ROOT` sets the host directory that holds photos, videos, and recipe photos (default `/mnt/ssd`).
+Optional: `MEDIA_ROOT` sets the host directory that holds photos, videos, and recipe photos (default `/mnt/ssd`). `DB_DIR` sets the host directory for the sqlite database (default `/mnt/ssd/db`).
 
 ### Step 2: Storage Directories
 
 The external SSD must be mounted at `/mnt/ssd` first (see [hardware.md](../../docs/internal/hardware.md#external-ssd-media-storage)). Then create the media directories:
 
 ```bash
-sudo mkdir -p /mnt/ssd/public-gallery /mnt/ssd/videos /mnt/ssd/recipe-photos
+sudo mkdir -p /mnt/ssd/db /mnt/ssd/public-gallery /mnt/ssd/videos /mnt/ssd/recipe-photos
 ```
 
 If the SSD isn't mounted, the container refuses to start instead of writing media to the SD card.
