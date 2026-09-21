@@ -1,0 +1,7 @@
+.venv/
+*.mp3
+*.m4a
+*.opus
+*.flac
+*.wav
+.spotdl-cache

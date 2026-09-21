@@ -113,7 +113,7 @@ After any file modifications:
 - **GitHub Actions**: Build runs from `website/` subdirectory (see `.github/workflows/deploy.yml`)
 - **Pi deployment**: SSH to fart-pi, pull from this repo, run services from `pi/services/`
 - **Public API**: `https://api.tyler-schwenk.com` via Cloudflare Tunnel pointing to Pi port 8000
-- **Pi access via NetBird VPN**: `ssh tyler@100.124.76.27`
+- **Pi access over LAN**: `ssh tyler@192.168.1.116` (Ethernet, primary). Must be on the home network (192.168.1.0/24). Private service ports (8000 API, 8090 Beszel, 2283 Immich) are LAN-only too
 - **PowerShell**: Quote comma-separated lists when needed
 
 ## When Making Changes

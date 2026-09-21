@@ -5,7 +5,7 @@ System monitoring dashboard for fart-pi.
 ## Status
 
 **Deployed and operational**
-- Dashboard accessible at http://100.124.76.27:8090
+- Dashboard accessible at http://192.168.1.116:8090 (home LAN)
 - Monitoring system: fart-pi
 - Current metrics: CPU, RAM, disk, temperature, Docker containers
 
@@ -44,15 +44,12 @@ Two-container deployment:
 
 ## Access
 
-**Via NetBird IP (private):**
+**Via home LAN (Ethernet):**
 ```
-http://100.124.76.27:8090
+http://192.168.1.116:8090
 ```
 
-**Via local network:**
-```
-http://192.168.1.115:8090
-```
+The port isn't reachable from outside the home network.
 
 ## Configuration
 
@@ -82,7 +79,7 @@ Default: 30 days of historical data. Configurable in web UI settings.
 ## Security
 
 **Private access (recommended):**
-- Only accessible via NetBird network or local network
+- Only accessible from the home LAN
 - Protected by Beszel's built-in authentication
 
 **Public access (optional):**

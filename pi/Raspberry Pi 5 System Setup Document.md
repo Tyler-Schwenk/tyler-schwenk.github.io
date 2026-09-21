@@ -111,10 +111,10 @@ MAC Address:
 88:a2:9e:09:3b:eb
 ```
 
-IP Address (DHCP):
+IP Address (DHCP, drifts over time; 192.168.1.167 at last check):
 
 ```
-192.168.1.115
+192.168.1.167
 ```
 
 SSID:
@@ -141,16 +141,16 @@ Signal Strength:
 
 ### Local Network SSH
 
-Primary connection method:
-
-```
-ssh tyler@192.168.1.115
-```
-
-Alternate (Ethernet):
+Primary connection method (Ethernet):
 
 ```
 ssh tyler@192.168.1.116
+```
+
+Alternate (Wi-Fi, address drifts):
+
+```
+ssh tyler@192.168.1.167
 ```
 
 ---
@@ -279,8 +279,7 @@ Wi-Fi:
 
 Suggested upgrades:
 
-- Static DHCP reservation for Wi-Fi IP
-- NetBird installation for reliable remote SSH
+- Static DHCP reservation for Ethernet and Wi-Fi IPs
 - Automatic updates configuration
 - SSH key authentication
 
@@ -291,13 +290,13 @@ Suggested upgrades:
 Test SSH:
 
 ```
-ssh tyler@192.168.1.115
+ssh tyler@192.168.1.116
 ```
 
 Test connectivity:
 
 ```
-ping 192.168.1.115
+ping 192.168.1.116
 ```
 
 ---
@@ -316,10 +315,10 @@ Primary User:
 tyler
 ```
 
-Wi-Fi IP:
+Wi-Fi IP (DHCP, drifts):
 
 ```
-192.168.1.115
+192.168.1.167
 ```
 
 Ethernet IP:

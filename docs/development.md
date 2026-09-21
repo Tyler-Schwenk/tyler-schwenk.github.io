@@ -1,14 +1,13 @@
 ## This is for tyler to use himself whikle dvelopmeing
 
 # SSH to Pi
-Netbird: CURRENTLY BROKEN!
-ssh tyler@100.124.76.27
+Must be on the home network (192.168.1.0/24).
 
-Ethernet:
+Ethernet (primary):
 ssh tyler@192.168.1.116
 
-WiFi:
-ssh tyler@192.168.1.115
+WiFi (DHCP, address drifts - check `ip -4 -br addr` on the Pi or the router):
+ssh tyler@192.168.1.167
  
 ## Frontend deploy
  Push to main (deploys frontend automatically):
@@ -19,8 +18,6 @@ git push
 
 ## Backend deploy
  Pull and restart on fart-pi:
-
-first connect to netbird on laptop
 
 ssh tyler@192.168.1.116
 cd ~/tyler-schwenk.github.io && git pull

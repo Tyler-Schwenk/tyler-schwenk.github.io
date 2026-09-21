@@ -45,13 +45,13 @@ npm run dev
 Configuration and code for **fart-pi** (Raspberry Pi 5 home server). Contains Docker Compose service definitions and the FastAPI backend that powers the site's photo galleries, video hosting, and Public Square forum.
 
 - Public API: `https://api.tyler-schwenk.com` (via Cloudflare Tunnel)
-- Private access: `ssh tyler@100.124.76.27` (NetBird VPN)
+- Private access: `ssh tyler@192.168.1.116` (home LAN, Ethernet)
 - Docs: `pi/docs/`
 
 To deploy or update services, SSH to fart-pi. On first setup, use sparse checkout so only `pi/` is downloaded (not the full frontend):
 
 ```bash
-ssh tyler@100.124.76.27
+ssh tyler@192.168.1.116
 # First-time setup (sparse checkout — only clones pi/, skips website/)
 git clone --filter=blob:none --no-checkout https://github.com/Tyler-Schwenk/tyler-schwenk.github.io.git ~/tyler-schwenk.github.io
 cd ~/tyler-schwenk.github.io

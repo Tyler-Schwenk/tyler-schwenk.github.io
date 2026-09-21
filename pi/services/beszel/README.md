@@ -23,9 +23,9 @@ docker compose up -d beszel
 
 ### 2. Access Dashboard and Get Agent Key
 
-Via NetBird (from anywhere):
+From the home LAN:
 ```
-http://100.72.84.128:8090
+http://192.168.1.116:8090
 ```
 
 1. Create admin account

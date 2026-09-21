@@ -82,7 +82,6 @@ This service powers the backend for tyler-schwenk.com.
 ## Prerequisites
 
 - Docker and Docker Compose
-- NetBird deployed (for Bird Wide Web access)
 
 ## Configuration
 
@@ -145,7 +144,7 @@ For public internet access, set up Cloudflare Tunnel:
 - Provides free SSL and public URL
 - No port forwarding required
 
-Or use NetBird for private access only (already configured).
+Or keep it private: the API is reachable on the home LAN at `http://192.168.1.116:8000` without the tunnel.
 
 ## Photo Gallery Features
 
@@ -478,7 +477,7 @@ sudo chown -R $USER:$USER data/
 Public Square (posts, comments, votes) is implemented — see the API Endpoints section above and `pi/docs/api/website-backend-api.md`.
 
 1. Connect frontend to API
-2. Access via NetBird network
+2. Access via the home LAN (`http://192.168.1.116:8000`) or the Cloudflare Tunnel
 
 ## References
 

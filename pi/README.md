@@ -10,17 +10,9 @@ Raspberry Pi 5 home server configuration — the `pi/` subdirectory of the [tyle
 - Docker installed on Pi
 
 **Deployed Services:**
-1. **NetBird** - VPN for secure remote access (Bird Wide Web)
+1. **Website Backend** - FastAPI + SQLite backend (forum + gallery)
    - Status: Running and operational
-   - Network: Bird Wide Web (johnserv.garrepi.dev)
-   - NetBird IP: 100.124.76.27
-   - NetBird hostname: fart-pi.johnserv.garrepi.dev
-   - Management: Self-hosted by John at https://johnserv.garrepi.dev
-   - Connected Peers: JohnSERV, JohnNAS, Bebop
-
-2. **Website Backend** - FastAPI + SQLite backend (forum + gallery)
-   - Status: Running and operational
-   - Private Access: http://100.124.76.27:8000 (via NetBird) or http://localhost:8000 (on Pi)
+   - Private Access: http://192.168.1.116:8000 (home LAN) or http://localhost:8000 (on Pi)
    - Public Access: https://api.tyler-schwenk.com
    - API Docs: https://api.tyler-schwenk.com/docs
    - Features:
@@ -28,12 +20,12 @@ Raspberry Pi 5 home server configuration — the `pi/` subdirectory of the [tyle
      - Public Square forum: Posts, comments (routers pending implementation)
      - JWT authentication ready
 
-3. **Beszel** - System monitoring
+2. **Beszel** - System monitoring
    - Status: Running and operational
-   - Dashboard: http://100.124.76.27:8090 (via NetBird)
+   - Dashboard: http://192.168.1.116:8090 (home LAN)
    - Monitoring: CPU, RAM, disk, temperature, network, containers
 
-4. **Cloudflare Tunnel** - Public API access
+3. **Cloudflare Tunnel** - Public API access
    - Status: Running with named tunnel
    - Domain: api.tyler-schwenk.com
    - Tunnel: fart-pi-tunnel
@@ -52,9 +44,8 @@ See [docs/architecture.md](docs/architecture.md) for complete architecture and p
 - **Hostname**: fart-pi
 - **OS**: Raspberry Pi OS (64-bit)
 - **Network**: 
-  - Local Wi-Fi: 192.168.1.115
-  - Local Ethernet: 192.168.1.116
-  - NetBird: 100.124.76.27 (Bird Wide Web access)
+  - Local Ethernet: 192.168.1.116 (primary, use this for SSH)
+  - Local Wi-Fi: DHCP-assigned, address drifts (was 192.168.1.167 at last check)
 - **Storage**: External SSD via USB (for media files)
 - **Docker**: Version 29.2.1, Compose v5.1.0
 
@@ -91,23 +82,20 @@ pi/
 
 For deploying new services or making changes, see [docs/architecture.md](docs/architecture.md).
    - Follow step-by-step: [docs/phase1-deployment.md](docs/phase1-deployment.md)
-   - Deploy NetBird first (~5 min)
-   - Then deploy Website Backend (~10 min)
+   - Deploy Website Backend (~10 min)
 
 3. **Test everything:**
-   - SSH via NetBird
-   - Access services via NetBird network
-   - Verify connectivity with other Bird Wide Web peers
+   - SSH over the home LAN (`ssh tyler@192.168.1.116`)
+   - Access services on their LAN ports (8000 API, 8090 Beszel)
 
 ## Planning & Architecture
 
 **Current Focus: Phase 1 Deployment**
 
 Building the initial infrastructure:
-1. **NetBird** - Secure VPN access as part of the Bird Wide Web
-2. **Website Backend** - Unified API for Public Square forum and photo galleries
+1. **Website Backend** - Unified API for Public Square forum and photo galleries
 
-Service structures are created in this repository. Frontend is deployed on GitHub Pages. Backend runs on Pi and is accessible via the NetBird network.
+Service structures are created in this repository. Frontend is deployed on GitHub Pages. Backend runs on Pi and is reachable on the home LAN, and publicly through the Cloudflare Tunnel.
 
 **Phase 2+ services:**
 - Navidrome for music streaming
@@ -129,8 +117,8 @@ Service structures are created in this repository. Frontend is deployed on GitHu
 # Via Ethernet (recommended)
 ssh tyler@192.168.1.116
 
-# Or via WiFi
-ssh tyler@192.168.1.115
+# Or via WiFi (DHCP address, check `ip -4 -br addr` on the Pi if it changed)
+ssh tyler@192.168.1.167
 ```
 
 **Check if Docker is installed:**
@@ -165,12 +153,10 @@ All documentation is in the [docs/](docs) directory:
 
 **Current:**
 - No ports exposed to internet
-- Local network access only
+- SSH and private service ports are reachable on the home LAN only
+- Public API goes through the Cloudflare Tunnel (no router port forwarding needed)
 
 **Planned:**
-- All remote access via encrypted VPN (NetBird/WireGuard)
-- Bird Wide Web peer-to-peer connectivity
-- No router port forwarding needed
 - JWT authentication for API
 - Rate limiting on all endpoints
 - Container isolation

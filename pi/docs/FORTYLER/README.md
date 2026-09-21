@@ -3,14 +3,13 @@ This folder contains practical guides for tasks Tyler will actually do, like upl
 Keep guides concise - just the overview and essential steps. The AI can read detailed docs if questions arise.
 
 # SSH to Pi
-Netbird:
-ssh tyler@100.124.76.27
+Must be on the home network (192.168.1.0/24).
 
-Ethernet:
+Ethernet (primary):
 ssh tyler@192.168.1.116
 
-WiFi:
-ssh tyler@192.168.1.115
+WiFi (DHCP, address drifts - check `ip -4 -br addr` on the Pi or the router):
+ssh tyler@192.168.1.167
 
 ## Quick Guides
 

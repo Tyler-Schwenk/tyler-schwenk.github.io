@@ -26,7 +26,6 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 **What's deployed:**
 - Raspberry Pi 5 running Pi OS (hostname: fart-pi)
 - Website Backend API (forum + photo galleries)
-- NetBird VPN (Bird Wide Web network)
 - Beszel system monitoring
 - Cloudflare Tunnel (public API access)
 - External SSD for media storage
@@ -42,22 +41,18 @@ See [Architecture Plan](architecture.md) for full details.
 
 ### Access
 
-**SSH (Remote via NetBird)**: 
+**SSH (home LAN only, 192.168.1.0/24)**:
 ```bash
-ssh tyler@fart-pi.johnserv.garrepi.dev
-ssh tyler@100.124.76.27
+ssh tyler@192.168.1.116      # Via Ethernet (primary)
+ssh tyler@192.168.1.167      # Via Wi-Fi (DHCP, address drifts)
 ```
 
-**SSH (Local Network)**:
-```bash
-ssh tyler@192.168.1.115      # Via Wi-Fi
-ssh tyler@192.168.1.116      # Via Ethernet
-```
+Off the home network, use Raspberry Pi Connect (see [hardware.md](internal/hardware.md)).
 
 **Web Services**:
-- Website Backend API: http://100.124.76.27:8000 (via NetBird) or http://localhost:8000 (on Pi)
+- Website Backend API: http://192.168.1.116:8000 (home LAN) or http://localhost:8000 (on Pi)
 - Public API: https://api.tyler-schwenk.com
-- Beszel: http://100.124.76.27:8090 (via NetBird)
+- Beszel: http://192.168.1.116:8090 (home LAN)
 
 ### Common Commands
 
@@ -117,4 +112,3 @@ docs/
 
 - [Docker Compose Docs](https://docs.docker.com/compose/)
 - [Raspberry Pi Documentation](https://www.raspberrypi.com/documentation/)
-- [NetBird Documentation](https://docs.netbird.io/)

@@ -24,4 +24,3 @@ docs/internal/
 
 - [Docker Compose Docs](https://docs.docker.com/compose/)
 - [Raspberry Pi Documentation](https://www.raspberrypi.com/documentation/)
-- [NetBird Documentation](https://docs.netbird.io/) (for VPN setup)

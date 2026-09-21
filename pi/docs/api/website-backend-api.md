@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Base URL (public):** `https://api.tyler-schwenk.com`  
-**Base URL (local/NetBird):** `http://100.124.76.27:8000`
+**Base URL (home LAN):** `http://192.168.1.116:8000`
 
 Backend API for tyler-schwenk.com providing:
 - **Public Square**: Anonymous forum — anyone can post, comment, and vote; no account needed

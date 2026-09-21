@@ -71,10 +71,7 @@ docker compose logs -f
 
 ### Access Immich
 
-**Via NetBird:**
-- URL: http://100.124.76.27:2283
-
-**Via Local Network:**
+**Via home LAN:**
 - URL: http://192.168.1.116:2283
 
 On first visit, create an admin account.
@@ -83,11 +80,11 @@ On first visit, create an admin account.
 
 1. Download Immich app from App Store or Google Play
 2. Open app and connect to server
-3. Server URL: `http://100.124.76.27:2283` (via NetBird)
+3. Server URL: `http://192.168.1.116:2283`
 4. Login with admin credentials
 5. Enable automatic backup in settings
 
-**Note:** For backup to work outside home network, ensure NetBird is running on your phone.
+**Note:** Backup only runs while the phone is on the home network. Immich isn't reachable from outside the LAN.
 
 ## Storage
 
@@ -200,8 +197,8 @@ ML models download on first start (~1-2GB). May take time on first run.
 
 ### Mobile app can't connect
 
-- Verify NetBird is running on phone
-- Verify server URL is correct: `http://100.124.76.27:2283`
+- Verify the phone is on the home Wi-Fi (Immich is LAN-only)
+- Verify server URL is correct: `http://192.168.1.116:2283`
 - Check firewall isn't blocking port 2283
 - Test from Pi: `curl http://localhost:2283`
 
@@ -224,11 +221,7 @@ External SSD has 193GB. Monitor usage and upgrade if needed.
 
 ## Network Access
 
-**Private (NetBird):**
-- From Bebop: http://100.124.76.27:2283
-- From JohnSERV: http://100.124.76.27:2283
-
-**Local Network:**
+**Home LAN:**
 - From home devices: http://192.168.1.116:2283
 
 **Not publicly accessible** - Immich contains personal photos and should remain private.
@@ -237,7 +230,7 @@ External SSD has 193GB. Monitor usage and upgrade if needed.
 
 - Keep admin password secure
 - Don't expose port 2283 to public internet
-- Use NetBird for remote access
+- Keep it LAN-only; no remote access path is set up
 - Consider setting up additional user accounts for family members
 - Enable 2FA if available in future Immich versions
 

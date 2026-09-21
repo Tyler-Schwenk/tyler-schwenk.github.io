@@ -1,6 +1,6 @@
 ﻿# Architecture Plan
 
-**Status**: Phase 1 deployed and operational - Website Backend (gallery + forum + pac-tyler), NetBird, Beszel, Cloudflare Tunnel all running; Pac-Tyler updater pending first-time setup
+**Status**: Phase 1 deployed and operational - Website Backend (gallery + forum + pac-tyler), Beszel, Cloudflare Tunnel all running; Pac-Tyler updater pending first-time setup
 
 ## Overview
 
@@ -16,19 +16,12 @@ System architecture for fart-pi multi-service home server.
 - External SSD connected to Pi via USB
 
 **Deployed Services:**
-1. **NetBird** - VPN for secure remote access (Bird Wide Web)
-   - Status: Running on fart-pi
-   - NetBird IP: 100.124.76.27
-   - Network Domain: johnserv.garrepi.dev
-   - Management: Self-hosted by John at https://johnserv.garrepi.dev
-   - Connected Peers: JohnSERV (100.124.56.240), JohnNAS, Bebop
-
-2. **Website Backend** - FastAPI backend for tyler-schwenk.com
+1. **Website Backend** - FastAPI backend for tyler-schwenk.com
    - Status: Running and operational
-   - Access: http://fart-pi.johnserv.garrepi.dev:8000 or http://100.124.76.27:8000
+   - Access (home LAN): http://192.168.1.116:8000
    - Public Access: https://api.tyler-schwenk.com
-   - API Documentation: http://100.124.76.27:8000/docs or https://api.tyler-schwenk.com/docs
-   - Health Check: http://100.124.76.27:8000/health or https://api.tyler-schwenk.com/health
+   - API Documentation: http://192.168.1.116:8000/docs or https://api.tyler-schwenk.com/docs
+   - Health Check: http://192.168.1.116:8000/health or https://api.tyler-schwenk.com/health
    - Database: SQLite at /app/data/website_backend.db
    - Features:
      - **Photo Galleries**: 13 albums (250+ photos), display_order sorting, admin panel management
@@ -39,20 +32,20 @@ System architecture for fart-pi multi-service home server.
    - Photo Storage: /media/tyler/FE645A9A645A558D/public-gallery
    - Video Storage: /media/tyler/FE645A9A645A558D/videos
 
-3. **Beszel** - System monitoring and health tracking
+2. **Beszel** - System monitoring and health tracking
    - Status: Running and operational
-   - Dashboard: http://100.124.76.27:8090 (via NetBird)
+   - Dashboard: http://192.168.1.116:8090 (home LAN)
    - Hub + Agent architecture
    - Monitoring: CPU, RAM, disk, temperature, network, Docker containers
    - Resource usage: <1% CPU, ~50MB RAM
 
-4. **Cloudflare Tunnel** - Public API access
+3. **Cloudflare Tunnel** - Public API access
    - Status: Running with named tunnel
    - Domain: api.tyler-schwenk.com
    - Tunnel Name: fart-pi-tunnel
    - Target: website-backend-api:8000
 
-5. **Pac-Tyler Updater** - Daily Strava data sync
+4. **Pac-Tyler Updater** - Daily Strava data sync
    - Status: Code ready, pending first-time setup on Pi (see pi/services/pac-tyler-updater/README.md)
    - Service: `pi/services/pac-tyler-updater/`
    - Auth: Strava refresh token (headless, no browser required after first-time setup)
@@ -61,10 +54,10 @@ System architecture for fart-pi multi-service home server.
    - Logs: `journalctl -u pac-tyler-updater.service`
 
 **Ready to deploy (Phase 2):**
-6. **Immich** - Photo and video management
+5. **Immich** - Photo and video management
    - Status: Configured, ready to deploy
    - Port: 2283
-   - Access: http://100.124.76.27:2283 (via NetBird)
+   - Access: http://192.168.1.116:2283 (home LAN)
    - Features: Mobile backup, face recognition, object detection, albums
    - Storage: /media/tyler/FE645A9A645A558D/photos
    - Components: Server, microservices, ML, Redis, PostgreSQL
@@ -96,7 +89,7 @@ System architecture for fart-pi multi-service home server.
   - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI, plus Public Square moderation
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:
-  - Private: http://100.124.76.27:8000 (via NetBird) or http://localhost:8000 (on Pi)
+  - Private: http://192.168.1.116:8000 (home LAN) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
 - Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos
@@ -106,17 +99,9 @@ System architecture for fart-pi multi-service home server.
   - Recipe photos: /media/tyler/FE645A9A645A558D/recipe-photos
 - Dependencies: ffmpeg for video processing
 
-**NetBird VPN**
-- WireGuard-based mesh network (Bird Wide Web)
-- Self-hosted by John at https://johnserv.garrepi.dev
-- NetBird IP: 100.124.76.27
-- NetBird hostname: fart-pi.johnserv.garrepi.dev
-- Connected peers: JohnSERV, JohnNAS, Bebop
-- Status: Running and operational
-
 **Beszel Monitoring**
 - System health tracking
-- Dashboard: http://100.124.76.27:8090 (via NetBird)
+- Dashboard: http://192.168.1.116:8090 (home LAN)
 - Monitoring: CPU, RAM, disk, temperature, Docker containers
 - Resource usage: <1% CPU, ~50MB RAM
 - Status: Running and operational
@@ -150,7 +135,7 @@ System architecture for fart-pi multi-service home server.
   - PostgreSQL (database)
 - Storage: /media/tyler/FE645A9A645A558D/photos
 - Port: 2283
-- Access: http://100.124.76.27:2283 (via NetBird) or http://192.168.1.116:2283 (local)
+- Access: http://192.168.1.116:2283 (home LAN)
 - Status: Configured, ready to deploy
 - Setup: See docs/FORTYLER/immich-setup.md
 
@@ -168,7 +153,7 @@ System architecture for fart-pi multi-service home server.
   - Automated encrypted backups
   - Tool: Probably Restic
   - Target: Another Raspberry Pi
-  - Connected via NetBird
+  - Transport between the two houses is undecided (the parents' house is off the home LAN)
 
 ## Storage Architecture
 
@@ -242,7 +227,6 @@ All gallery photos and videos are managed via the admin panel at `https://tyler-
 /home/tyler/tyler-schwenk.github.io/pi/    # This repo
 ├── services/                         # Service configs
 │   ├── website-backend/             # Deployed
-│   ├── netbird/                     # Deployed
 │   ├── beszel/                      # Deployed
 │   ├── cloudflared/                 # Deployed
 │   └── ...                          # Future services
@@ -268,7 +252,6 @@ Each service directory contains:
 Raspberry Pi OS (Host)
 ├── Docker Engine
 │   ├── website-backend-api (deployed)
-│   ├── netbird (deployed)
 │   ├── beszel-hub (deployed)
 │   ├── beszel-agent (deployed)
 │   ├── cloudflared-tunnel (deployed)
@@ -289,18 +272,12 @@ services:
 
 ### Local Network Access
 ```
-Your Browser → 192.168.1.115:8000 → Website Backend API
+Your Browser → 192.168.1.116:8000 → Website Backend API
 ```
 - Direct access when on home network
 - Fast (local speeds)
-
-### Private Remote Access (via NetBird)
-```
-Your Device (anywhere) → NetBird VPN → fart-pi:8000 → Website Backend API
-```
-- Peer-to-peer encrypted connection
-- No port forwarding needed
-- Access via: `http://fart-pi.johnserv.garrepi.dev:8000` or `http://100.124.76.27:8000`
+- SSH and every private service port (8000, 8090, 2283) work this way, LAN only
+- Away from home, Raspberry Pi Connect is the only way to a shell (see `pi/docs/internal/hardware.md`)
 
 ### Public Access (via Cloudflare Tunnel)
 ```
@@ -310,32 +287,27 @@ Visitor's Browser → Cloudflare Edge → Tunnel → Pi → Website Backend API
 - No VPN required
 - Domain: https://api.tyler-schwenk.com
 
-**NetBird Benefits:**
-- No open ports on home router
-- End-to-end encrypted (WireGuard)
-- Works from anywhere
-- Automatic local network optimization
-- Part of Bird Wide Web collaborative network
-
 **Cloudflare Tunnel Benefits:**
-- Public access without VPN
+- Public access, no router configuration
 - Free SSL/TLS certificates
 - DDoS protection
-- No router configuration
+
+**Cloudflare Tunnel Limits:**
+- Request bodies are capped at 100 MB on the free plan, so large uploads (videos over 100 MB) can't go through `api.tyler-schwenk.com`. Upload those directly to the Pi over the LAN (`http://192.168.1.116:8000/videos`)
 
 ### Service Port Plan
 
-| Service | Port | Local Access | Private Remote | Public Remote |
-|---------|------|--------------|----------------|---------------|
-| Website Backend | 8000 | Yes | Via NetBird | Via Tunnel |
-| Beszel | 8090 | Yes | Via NetBird | No |
-| Immich | 2283 | Planned | Planned | No |
-| Samba | 445 | Planned | No | No |
+| Service | Port | Home LAN | Public Remote |
+|---------|------|----------|---------------|
+| Website Backend | 8000 | Yes | Via Tunnel |
+| Beszel | 8090 | Yes | No |
+| Immich | 2283 | Planned | No |
+| Samba | 445 | Planned | No |
 
 ## Security Approach
 
 **Remote Access:**
-- Private access via NetBird VPN (authenticated peers only)
+- Private access (SSH, Beszel, direct API) is home LAN only; Raspberry Pi Connect for a remote shell
 - Public access via Cloudflare Tunnel — gallery/video reads are public; Public Square reads AND writes (post/comment/vote) are public and rate-limited per IP; admin-only writes (gallery/video management, Public Square moderation) require a JWT
 - No ports exposed directly to internet
 - No router port forwarding
@@ -372,7 +344,7 @@ Visitor's Browser → Cloudflare Edge → Tunnel → Pi → Website Backend API
 
 ### Backup Target
 - Another Raspberry Pi at parents' house
-- Connected via NetBird
+- Transport undecided (off the home LAN)
 - Automated via cron
 
 ### Backup Tool
@@ -387,7 +359,6 @@ Probably Restic:
 ### Phase 1: Core Infrastructure (COMPLETED)
 
 **Deployed:**
-- NetBird VPN (Bird Wide Web connection)
 - Website Backend API (FastAPI + SQLite)
   - Photo galleries: 16 albums, 255 photos migrated
   - Public Square routers: Implemented — anonymous posts/comments/votes, admin moderation (see `pi/docs/api/website-backend-api.md`)
@@ -398,7 +369,7 @@ Probably Restic:
 - Gallery API endpoints functional
 - Public access via Cloudflare tunnel working
 - Automatic thumbnail generation
-- NetBird connectivity to John's network
+- SSH and direct service access over the home LAN
 - Beszel monitoring active
 
 ### Phase 2: Expand Services (PLANNED)
@@ -432,12 +403,6 @@ Probably Restic:
 
 ## Key Learning Points
 
-### From Network Discussion
-- **NetBird routing**: WireGuard-based peer-to-peer connections
-- **Local optimization**: When on same network, stays local
-- **Relay servers**: Used as fallback when direct connection fails
-- **Signal servers**: Only for initial handshake, not data transfer
-
 ### From Docker Discussion
 - **Containers are siblings**: Not nested, all at same level
 - **This repo is config**: Not a running container itself
@@ -446,8 +411,6 @@ Probably Restic:
 
 ### From Architecture Discussion
 - **Orchestration**: Docker Compose reads configs and manages containers
-- **No special container**: NetBird is a container like any other
-- **Network paths**: Local traffic stays local, remote goes through NetBird
 
 ## Design Principles
 
@@ -461,7 +424,6 @@ Probably Restic:
 ## Resources
 
 - [Docker Compose Docs](https://docs.docker.com/compose/)
-- [NetBird Documentation](https://docs.netbird.io/)
 - [Raspberry Pi Docs](https://www.raspberrypi.com/documentation/)
 
 ---

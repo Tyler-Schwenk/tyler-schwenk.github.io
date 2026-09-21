@@ -20,8 +20,8 @@
 From your Windows machine, copy the setup script to the Pi and run it:
 
 ```bash
-scp scripts/setup-docker.sh tyler@192.168.1.115:~/
-ssh tyler@192.168.1.115
+scp scripts/setup-docker.sh tyler@192.168.1.116:~/
+ssh tyler@192.168.1.116
 chmod +x setup-docker.sh
 ./setup-docker.sh
 ```
@@ -46,7 +46,7 @@ Each service in the `services/` directory contains:
 
 To deploy a service:
 
-1. SSH into fart-pi: `ssh tyler@100.124.76.27`
+1. SSH into fart-pi (must be on the home LAN): `ssh tyler@192.168.1.116`
 2. Clone with sparse checkout if not already present (only downloads `pi/`, not the full frontend):
    ```bash
    git clone --filter=blob:none --no-checkout https://github.com/Tyler-Schwenk/tyler-schwenk.github.io.git ~/tyler-schwenk.github.io
@@ -128,7 +128,7 @@ From your Windows machine:
 
 Using Git (recommended):
 ```bash
-ssh tyler@100.124.76.27
+ssh tyler@192.168.1.116
 cd ~/tyler-schwenk.github.io
 git pull origin main
 ```
@@ -144,8 +144,8 @@ Deployed services:
 - Beszel: 8090
 
 To access services:
-- **Local**: http://192.168.1.115:PORT
-- **Remote**: Via NetBird VPN or Cloudflare Tunnel
+- **Local (home LAN)**: http://192.168.1.116:PORT
+- **Remote**: Cloudflare Tunnel only (public API); other ports are LAN-only
 
 ### Firewall Configuration
 
@@ -238,7 +238,7 @@ ssh-keygen -t ed25519
 
 Copy to Pi:
 ```powershell
-type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh tyler@192.168.1.115 "cat >> ~/.ssh/authorized_keys"
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh tyler@192.168.1.116 "cat >> ~/.ssh/authorized_keys"
 ```
 
 ### Keep System Updated
@@ -253,17 +253,9 @@ sudo apt upgrade -y
 
 Change default passwords for all services after deployment.
 
-### Consider NetBird
+### Remote Access
 
-For secure remote access without port forwarding:
-
-See [services/netbird/README.md](../../services/netbird/README.md) for Docker-based setup.
-
-Alternatively, install natively:
-```bash
-curl -fsSL https://pkgs.netbird.io/install.sh | sh
-sudo netbird up
-```
+Nothing is port-forwarded on the router. SSH and private service ports are LAN-only; use Raspberry Pi Connect (see [hardware.md](hardware.md)) when away from home.
 
 ## Monitoring
 

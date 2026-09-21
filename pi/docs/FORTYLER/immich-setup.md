@@ -16,12 +16,7 @@ Self-hosted alternative to Google Photos with:
 
 ### 1. SSH to Pi
 
-Via NetBird:
-```bash
-ssh tyler@100.124.76.27
-```
-
-Via local network:
+From the home network:
 ```bash
 ssh tyler@192.168.1.116
 ```
@@ -80,9 +75,8 @@ Press `Ctrl+C` to exit logs.
 
 ### 6. Access Immich
 
-Open browser and go to:
-- **Via NetBird:** http://100.124.76.27:2283
-- **Via local network:** http://192.168.1.116:2283
+Open browser (on the home network) and go to:
+- http://192.168.1.116:2283
 
 Create admin account on first visit.
 
@@ -93,7 +87,7 @@ Create admin account on first visit.
 1. Download "Immich" from App Store
 2. Open app
 3. Tap "Connect to server"
-4. Enter server URL: `http://100.124.76.27:2283`
+4. Enter server URL: `http://192.168.1.116:2283`
 5. Login with admin credentials
 6. Enable automatic backup in settings
 
@@ -102,7 +96,7 @@ Create admin account on first visit.
 1. Download "Immich" from Google Play
 2. Same steps as iPhone
 
-**Note:** For backup to work outside home network, install NetBird on your phone and connect to "johnserv.garrepi.dev" network.
+**Note:** Backup only runs while the phone is on the home network. Immich isn't reachable from outside the LAN.
 
 ## Storage Location
 
@@ -149,10 +143,10 @@ docker compose up -d
 
 ### Can't connect from mobile app
 
-1. Check NetBird is running on phone
-2. Verify Pi is accessible: ping `100.124.76.27`
+1. Check the phone is on the home Wi-Fi (Immich is LAN-only)
+2. Verify Pi is accessible: ping `192.168.1.116`
 3. Check Immich is running: `docker compose ps`
-4. Try local network URL if at home: `http://192.168.1.116:2283`
+4. Try the URL directly in a browser: `http://192.168.1.116:2283`
 
 ### ML features using too much CPU
 

@@ -23,7 +23,7 @@ How tyler-schwenk.github.io integrates with the Website Backend API on fart-pi.
 - Repository: pi/services/website-backend/
 - Hosting: fart-pi (home server)
 - Framework: FastAPI + SQLite
-- Access: Via Cloudflare Tunnel (public) or NetBird (private)
+- Access: Via Cloudflare Tunnel (public) or home LAN (private)
 
 ### Content Distribution
 
@@ -303,13 +303,13 @@ Provides public HTTPS URL without port forwarding:
 
 **API URL:** `https://api.yoursite.com`
 
-### Option B: NetBird Only (Private)
+### Option B: Home LAN Only (Private)
 
-Keep API private, only accessible via Bird Wide Web:
+Keep API private, only accessible from the home network:
 
-**API URL:** `http://fart-pi.johnserv.garrepi.dev:8000`
+**API URL:** `http://192.168.1.116:8000`
 
-**Note:** Frontend on GitHub Pages can't directly access NetBird IPs (CORS, latency). This only works for development or if you deploy frontend on Pi too.
+**Note:** Frontend on GitHub Pages can't reach a private LAN address for real visitors (CORS, and it's not routable from outside). This only works for local development or if you deploy frontend on Pi too.
 
 **Recommendation:** Use Cloudflare Tunnel for public API access.
 
@@ -345,7 +345,7 @@ All tables share the same database file: `website_backend.db`
 
 1. Update Next.js code to use API URLs
 2. Run locally: `npm run dev`
-3. Test against Pi API (via NetBird or Cloudflare)
+3. Test against Pi API (via home LAN or Cloudflare)
 4. Build and deploy: `npm run build && git push`
 
 ### Full Stack Testing
