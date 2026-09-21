@@ -20,7 +20,7 @@ next build
   └── GalleryPage (async server component)
         ├── GET /galleries          → all public galleries, sorted by display_order DESC
         ├── GET /galleries/slug/{slug} for each → photos list
-        ├── GET /videos             → all public videos
+        ├── GET /videos             → all public videos, sorted newest first (by created_at) in fetchAllVideos
         └── builds GalleryEntry objects → passed to GalleryModal
 ```
 
@@ -45,6 +45,8 @@ Galleries whose slug is in this set render under **People**; all others render u
 ### Gallery Sort Order
 
 Galleries are sorted by `display_order` descending (higher value = shown first). New galleries created via the upload API automatically get `max(display_order) + 10`, so they appear at the front. Reorder galleries via the admin panel at `https://tyler-schwenk.com/admin/`.
+
+Videos have no manual order. They're sorted by upload date (`created_at`), newest first, in `fetchAllVideos`.
 
 ### External-Link Entries
 

@@ -32,6 +32,7 @@ interface ApiVideo {
   title: string;
   description: string | null;
   slug: string;
+  created_at: string;
 }
 
 // slugs that belong under the People section; everything else is Trips
@@ -110,14 +111,15 @@ async function fetchGalleryBySlug(slug: string): Promise<ApiGalleryDetail | null
 }
 
 /**
- * Fetches all public videos from the Pi API.
+ * Fetches all public videos from the Pi API, newest upload first.
  * Returns empty array if the API is unreachable.
  */
 async function fetchAllVideos(): Promise<ApiVideo[]> {
   try {
     const res = await fetch(`${API_BASE}/videos`);
     if (!res.ok) return [];
-    return res.json();
+    const videos: ApiVideo[] = await res.json();
+    return videos.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
   } catch {
     console.warn("could not fetch videos from API — skipping video section");
     return [];
