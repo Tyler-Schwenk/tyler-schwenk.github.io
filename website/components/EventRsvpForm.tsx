@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const API_BASE = "https://api.tyler-schwenk.com";
+import { API_BASE } from "@/lib/api";
 
 type ContactType = "phone" | "email";
 type SubmitState = "idle" | "submitting" | "success" | "error";

@@ -10,16 +10,18 @@ from fastapi.responses import StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pathlib import Path
-import shutil
 import subprocess
 import json
+import logging
 
 from app.database import get_db
 from app.dependencies import require_admin
+from app.image_utils import save_upload_file
 from app.models import Video
 from app.schemas import VideoCreate, VideoUpdate, VideoRead
 from app.config import settings
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/videos", tags=["Videos"])
 
@@ -30,18 +32,8 @@ SUPPORTED_VIDEO_TYPES = {
     "video/quicktime": ".mov"
 }
 
-
-def save_upload_file(upload_file: UploadFile, destination: Path) -> None:
-    """
-    Save uploaded file to destination path.
-    
-    Args:
-        upload_file: The uploaded file object
-        destination: Path where file should be saved
-    """
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with destination.open("wb") as buffer:
-        shutil.copyfileobj(upload_file.file, buffer)
+# ffprobe/ffmpeg can hang on a corrupt file, so cap how long we wait
+FFMPEG_TIMEOUT_S = 30
 
 
 def extract_video_metadata(video_path: Path) -> dict:
@@ -63,26 +55,31 @@ def extract_video_metadata(video_path: Path) -> dict:
             "-show_streams",
             str(video_path)
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=FFMPEG_TIMEOUT_S)
+
         if result.returncode != 0:
+            logger.warning(
+                "ffprobe exited %s for %s: %s",
+                result.returncode, video_path.name, result.stderr.strip(),
+            )
             return {}
-        
+
         data = json.loads(result.stdout)
         video_stream = next(
             (s for s in data.get("streams", []) if s.get("codec_type") == "video"),
             None
         )
-        
+
         if not video_stream:
             return {}
-        
+
         return {
             "width": video_stream.get("width"),
             "height": video_stream.get("height"),
             "duration": int(float(data.get("format", {}).get("duration", 0)))
         }
-    except Exception:
+    except Exception as e:
+        logger.warning("ffprobe failed for %s: %s", video_path.name, e)
         return {}
 
 
@@ -109,9 +106,10 @@ def generate_video_thumbnail(video_path: Path, thumbnail_path: Path, time_offset
             "-y",
             str(thumbnail_path)
         ]
-        result = subprocess.run(cmd, capture_output=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, timeout=FFMPEG_TIMEOUT_S)
         return result.returncode == 0
-    except Exception:
+    except Exception as e:
+        logger.warning("thumbnail generation failed for %s: %s", video_path.name, e)
         return False
 
 

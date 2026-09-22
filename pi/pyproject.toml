@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".venv", "__pycache__"]
+
+[tool.ruff.lint]
+# E/F = pycodestyle + pyflakes, I = import sorting, B = common bugs,
+# UP = flag deprecated syntax for the python version above
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    # long lines are caught by the formatter, not worth failing on
+    "E501",
+]

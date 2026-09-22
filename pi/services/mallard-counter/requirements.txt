@@ -1,5 +1,5 @@
-adafruit-circuitpython-ssd1306
-adafruit-blinka
-Pillow
-lgpio
-requests
+adafruit-circuitpython-ssd1306==2.12.24
+adafruit-blinka==9.1.0
+Pillow==12.2.0
+lgpio==0.2.2.0
+requests==2.33.1

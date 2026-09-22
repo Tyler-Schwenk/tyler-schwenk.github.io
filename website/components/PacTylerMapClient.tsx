@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { API_BASE } from "@/lib/api";
 
 const EARTH_RADIUS_METERS = 6371000;
 const METERS_PER_KM = 1000;
@@ -10,7 +11,8 @@ const METERS_PER_MILE = 1609.34;
 const DISPLAY_MERGE_THRESHOLD_KM = 2;
 const DISPLAY_MERGE_THRESHOLD_METERS =
   DISPLAY_MERGE_THRESHOLD_KM * METERS_PER_KM;
-const ACTIVITY_DATASET_URL = "https://api.tyler-schwenk.com/pac-tyler/activities";
+const ACTIVITY_DATASET_URL = `${API_BASE}/pac-tyler/activities`;
+const ACTIVITY_GEOJSON_URL = `${API_BASE}/pac-tyler/geojson`;
 const FILTER_MODE_ALL = "all";
 const FILTER_MODE_YEAR = "year";
 const FILTER_MODE_MONTH = "month";
@@ -789,6 +791,16 @@ function MonthlyDistanceChart({
   onPointSelect,
   isPointSelectable,
 }: MonthlyDistanceChartProps) {
+  // must run before any early return -- hooks have to be called in the same
+  // order on every render, and this component renders nothing when empty
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    key: string;
+    label: string;
+    miles: number;
+    x: number;
+    y: number;
+  } | null>(null);
+
   if (data.length === 0) {
     return null;
   }
@@ -798,13 +810,6 @@ function MonthlyDistanceChart({
   const path = buildChartPath(points);
   const tickIndices = buildTickIndices(data.length);
   const yTickStep = maxMiles / CHART_Y_TICK_COUNT;
-  const [hoveredPoint, setHoveredPoint] = useState<{
-    key: string;
-    label: string;
-    miles: number;
-    x: number;
-    y: number;
-  } | null>(null);
 
   return (
     <div className="bg-[#1a1a1a] border-2 border-[#E3B800] rounded-lg p-4">
@@ -1131,9 +1136,7 @@ export default function PacTylerMapClient() {
     const loadGeoJSON = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          "https://api.tyler-schwenk.com/pac-tyler/geojson"
-        );
+        const response = await fetch(ACTIVITY_GEOJSON_URL);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch data: ${response.statusText}`);

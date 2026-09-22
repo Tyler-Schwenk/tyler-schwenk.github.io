@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { API_BASE } from "@/lib/api";
 
-const ACTIVITIES_API_URL = "https://api.tyler-schwenk.com/pac-tyler/activities";
+const ACTIVITIES_API_URL = `${API_BASE}/pac-tyler/activities`;
 
 /**
  * Bike data structure

@@ -1,8 +1,6 @@
-import Image from "next/image";
 import GalleryModal from "@/components/GalleryModal";
 import PageWrapper from "@/components/PageWrapper";
-
-const API_BASE = "https://api.tyler-schwenk.com";
+import { API_BASE, photoUrl, videoStreamUrl, videoThumbnailUrl } from "@/lib/api";
 
 // --- API types ---
 
@@ -124,26 +122,6 @@ async function fetchAllVideos(): Promise<ApiVideo[]> {
     console.warn("could not fetch videos from API — skipping video section");
     return [];
   }
-}
-
-/**
- * Returns the URL for a gallery photo file.
- * @param photoId - Photo ID from the API
- * @param thumbnail - If true, returns the 400x400 thumbnail instead of full resolution
- */
-function photoUrl(photoId: number, thumbnail = false): string {
-  const params = thumbnail ? "?thumbnail=true" : "";
-  return `${API_BASE}/galleries/photos/${photoId}/file${params}`;
-}
-
-/** Returns the streaming URL for a video. */
-function videoStreamUrl(videoId: number): string {
-  return `${API_BASE}/videos/${videoId}/stream`;
-}
-
-/** Returns the thumbnail image URL for a video. */
-function videoThumbnailUrl(videoId: number): string {
-  return `${API_BASE}/videos/${videoId}/thumbnail`;
 }
 
 /**

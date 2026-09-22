@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import PeopleGalleryClient from "./PeopleGalleryClient";
 import PageWrapper from "@/components/PageWrapper";
-
-const API_BASE = "https://api.tyler-schwenk.com";
+import { API_BASE, photoUrl } from "@/lib/api";
 
 interface ApiPhoto {
   id: number;
@@ -46,7 +45,7 @@ export default async function PeopleGallery({ params }: { params: Promise<{ cate
 
   const gallery = await fetchGalleryBySlug(config.slug);
   const photos = (gallery?.photos ?? []).map((photo) => ({
-    src: `${API_BASE}/galleries/photos/${photo.id}/file`,
+    src: photoUrl(photo.id),
     alt: config.title,
     caption: "",
   }));

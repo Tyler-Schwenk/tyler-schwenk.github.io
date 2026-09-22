@@ -9,6 +9,7 @@ import io
 import logging
 import shutil
 from pathlib import Path
+from typing import Optional
 
 from fastapi import HTTPException, UploadFile
 from PIL import Image, ImageOps
@@ -45,7 +46,9 @@ def save_upload_file(upload_file: UploadFile, destination: Path) -> None:
         shutil.copyfileobj(upload_file.file, buffer)
 
 
-def create_thumbnail(image_path: Path, thumbnail_path: Path, size: tuple = None) -> None:
+def create_thumbnail(
+    image_path: Path, thumbnail_path: Path, size: Optional[tuple[int, int]] = None
+) -> None:
     """
     Create a thumbnail from an image.
 
@@ -99,7 +102,11 @@ def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[byte
                     oriented = oriented.convert("RGB")
 
                 buffer = io.BytesIO()
-                save_kwargs = {"quality": 90} if target_format == "JPEG" else {}
+                save_kwargs = (
+                    {"quality": settings.UPLOAD_JPEG_QUALITY}
+                    if target_format == "JPEG"
+                    else {}
+                )
                 oriented.save(buffer, format=target_format, **save_kwargs)
 
                 ext = Path(filename).suffix if img_format in WEB_SAFE_FORMATS else ".jpg"

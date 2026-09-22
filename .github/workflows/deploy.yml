@@ -32,7 +32,15 @@ jobs:
       - name: Install dependencies
         working-directory: ./website
         run: npm ci
-      
+
+      - name: Type check
+        working-directory: ./website
+        run: npm run type-check
+
+      - name: Lint
+        working-directory: ./website
+        run: npm run lint
+
       - name: Build with Next.js
         working-directory: ./website
         run: npm run build

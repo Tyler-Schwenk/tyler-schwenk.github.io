@@ -2,6 +2,7 @@
 HEIC to JPG Converter for Gallery Images
 Converts all .heic and .HEIC files in the gallery folders to .jpg format
 Then deletes the original HEIC files after successful conversion
+Run from the repo root: python website/scripts/convert_gallery_heic.py
 """
 
 from PIL import Image
@@ -13,7 +14,7 @@ from pathlib import Path
 pillow_heif.register_heif_opener()
 
 # Base gallery directory
-gallery_dir = Path("public/images/gallery")
+gallery_dir = Path("website/public/images/gallery")
 
 # Find all HEIC files recursively
 heic_files = list(gallery_dir.rglob("*.heic")) + list(gallery_dir.rglob("*.HEIC"))
@@ -29,20 +30,20 @@ for heic_path in heic_files:
         img = Image.open(heic_path)
         if img.mode != 'RGB':
             img = img.convert('RGB')
-        
+
         # Create JPG path (same location, different extension)
         jpg_path = heic_path.with_suffix('.jpg')
-        
+
         # Save as JPG
         img.save(jpg_path, 'JPEG', quality=95)
         print(f"✓ Converted: {heic_path.name} -> {jpg_path.name}")
         converted_count += 1
-        
+
         # Delete the original HEIC file
         heic_path.unlink()
         print(f"  Deleted: {heic_path.name}")
         deleted_count += 1
-        
+
     except Exception as e:
         print(f"✗ Error converting {heic_path}: {e}")
 

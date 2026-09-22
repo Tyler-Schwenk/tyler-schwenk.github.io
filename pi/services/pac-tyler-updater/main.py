@@ -375,8 +375,11 @@ def main() -> Optional[Dict[str, Any]]:
 
     if not strava.authenticate_from_token_file(TOKEN_FILE):
         logging.error(
-            "No valid token at %s. Run auth_setup.py once to authorize with Strava, "
-            "then try again.",
+            "No valid Strava token at %s. Note that as of June 2026 Strava "
+            "restricts API access to premium accounts, so re-running "
+            "auth_setup.py only works if the account has premium. This "
+            "project is archived -- see README.md. Existing data on the site "
+            "is served from the last successful run and is unaffected.",
             TOKEN_FILE,
         )
         return None

@@ -6,8 +6,8 @@ import Link from "next/link";
 import PageWrapper from "@/components/PageWrapper";
 import PhotoLightboxGrid from "@/components/PhotoLightboxGrid";
 import { TIMELAPSE_TIMESTAMPS } from "./timelapse-timestamps";
+import { API_BASE, photoUrl, videoStreamUrl } from "@/lib/api";
 
-const API_BASE = "https://api.tyler-schwenk.com";
 const TIMELAPSE_SLUG = "garden-timelapse";
 // slug of the Pi gallery that feeds the "Garden Photos" section below — create this
 // gallery once via the admin panel (Galleries tab -> New Gallery) with this exact slug,
@@ -186,7 +186,7 @@ export default function GardenPage() {
     if (isEnded && direction < 0) setIsEnded(false);
   }, [isEnded]);
 
-  const videoSrc = videoMeta ? `${API_BASE}/videos/${videoMeta.id}/stream` : null;
+  const videoSrc = videoMeta ? videoStreamUrl(videoMeta.id) : null;
 
   return (
     <PageWrapper>
@@ -334,8 +334,8 @@ export default function GardenPage() {
             ) : (
               <PhotoLightboxGrid
                 photos={galleryPhotos.map((photo) => ({
-                  src: `${API_BASE}/galleries/photos/${photo.id}/file`,
-                  thumbSrc: `${API_BASE}/galleries/photos/${photo.id}/file?thumbnail=true`,
+                  src: photoUrl(photo.id),
+                  thumbSrc: photoUrl(photo.id, true),
                   alt: "Garden photo",
                 }))}
               />

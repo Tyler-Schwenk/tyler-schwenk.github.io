@@ -16,7 +16,7 @@ Strava restricted API access to premium members only in June 2026, breaking the 
 - **Data Fetching**: Client-side fetch from `https://api.tyler-schwenk.com`
 
 ### Backend (Pi)
-- **Service**: `pi/services/pac-tyler-updater/` — daily Python script on fart-pi
+- **Service**: `pi/services/pac-tyler-updater/` — archived Python script, run manually
 - **API**: `pi/services/website-backend/` — FastAPI serving the data files
 - **Data Source**: Strava API (via refresh token, no browser needed)
 - **Output**: GeoJSON + activity dataset written to `/home/tyler/pac-tyler-data/` on the Pi
@@ -151,7 +151,7 @@ interface ActivityDatasetEntry {
 - No API key required
 
 ### Why Client-Side Data Fetching?
-- Data updates daily without any website rebuild or deployment
+- Data is served from the API at runtime, so refreshing it needs no website rebuild or deployment (the dataset is currently frozen — see Status above)
 - Latest activity data loads automatically on each page visit
 - Reduces build time (no static generation of data)
 
@@ -324,5 +324,3 @@ For questions or issues with the Pac-Tyler implementation:
 - **GitHub**: [@Tyler-Schwenk](https://github.com/Tyler-Schwenk)
 
 ---
-
-*Last Updated: December 2025*

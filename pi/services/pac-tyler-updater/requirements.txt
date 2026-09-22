@@ -1,4 +1,4 @@
-stravalib
-requests
-geopy
-python-dotenv
+stravalib==2.4
+requests==2.33.1
+geopy==2.4.1
+python-dotenv==1.2.2

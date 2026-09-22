@@ -4,13 +4,15 @@ Configuration settings for Website Backend API.
 Loads environment variables and provides typed configuration objects.
 """
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
-    
+
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
     # Database
     DATABASE_URL: str = "sqlite:///data/website_backend.db"
     
@@ -32,6 +34,9 @@ class Settings(BaseSettings):
     THUMBNAIL_MAX_WIDTH: int = 400
     THUMBNAIL_MAX_HEIGHT: int = 400
     THUMBNAIL_QUALITY: int = 85
+    # quality for re-encoding HEIC/rotated uploads to JPEG (distinct from
+    # THUMBNAIL_QUALITY -- this one is the full-size image, so it's higher)
+    UPLOAD_JPEG_QUALITY: int = 90
     
     # Video Storage
     VIDEOS_DIR: str = "/app/videos"
@@ -54,10 +59,6 @@ class Settings(BaseSettings):
         if not self.CORS_ORIGINS:
             return []
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
 # Global settings instance

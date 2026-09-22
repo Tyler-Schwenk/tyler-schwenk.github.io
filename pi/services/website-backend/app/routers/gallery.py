@@ -54,16 +54,21 @@ async def list_galleries(
     
     galleries = query.order_by(Gallery.display_order.desc(), Gallery.id.desc()).offset(skip).limit(limit).all()
     
-    # Add photo count to each gallery
+    # one grouped COUNT for the whole page instead of one query per gallery
+    gallery_ids = [gallery.id for gallery in galleries]
+    counts = dict(
+        db.query(GalleryPhoto.gallery_id, func.count(GalleryPhoto.id))
+        .filter(GalleryPhoto.gallery_id.in_(gallery_ids))
+        .group_by(GalleryPhoto.gallery_id)
+        .all()
+    )
+
     result = []
     for gallery in galleries:
         gallery_dict = GalleryRead.model_validate(gallery).model_dump()
-        photo_count = db.query(func.count(GalleryPhoto.id)).filter(
-            GalleryPhoto.gallery_id == gallery.id
-        ).scalar()
-        gallery_dict["photo_count"] = photo_count
+        gallery_dict["photo_count"] = counts.get(gallery.id, 0)
         result.append(GalleryRead(**gallery_dict))
-    
+
     return result
 
 

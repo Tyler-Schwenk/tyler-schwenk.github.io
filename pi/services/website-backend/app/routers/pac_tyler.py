@@ -1,9 +1,11 @@
 """
 Pac-Tyler router for serving Strava activity data.
 
-Serves the GeoJSON track file and derived activity dataset that the
-pac-tyler-updater writes daily. data lives at PAC_TYLER_DATA_DIR on the
-host, mounted into the container as a read-only volume.
+Serves the GeoJSON track file and derived activity dataset produced by the
+pac-tyler-updater. That updater is archived (Strava cut off free-tier API
+access in June 2026), so these files are a frozen snapshot rather than a
+daily feed. Data lives at PAC_TYLER_DATA_DIR on the host, mounted into the
+container as a read-only volume.
 """
 
 from pathlib import Path
@@ -29,13 +31,16 @@ def _get_data_file(filename: str) -> Path:
         Path: Resolved path to the file.
 
     Raises:
-        HTTPException: 503 if the file hasnt been generated yet.
+        HTTPException: 503 if the archived data file is missing from disk.
     """
     path = Path(settings.PAC_TYLER_DATA_DIR) / filename
     if not path.exists():
         raise HTTPException(
             status_code=503,
-            detail=f"{filename} not yet available. The updater may not have run yet.",
+            detail=(
+                f"{filename} is not available on the server. This data is an "
+                "archived snapshot -- check that PAC_TYLER_DATA_DIR is mounted."
+            ),
         )
     return path
 

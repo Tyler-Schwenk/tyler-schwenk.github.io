@@ -2,7 +2,6 @@
 
 
 import Image from 'next/image';
-import Link from 'next/link';
 import PageWrapper from '@/components/PageWrapper';
 import EventRsvpForm from '@/components/EventRsvpForm';
 
@@ -42,25 +41,6 @@ const DJS = [
     name: 'TRACEPOINT',
     link: 'https://www.youtube.com/@tracepoint.tracepoint',
   },
-];
-
-const LOCATION_LINKS = [
-  {
-    label: 'Parking',
-    coords: '32.794507, -117.216033',
-    link: 'https://maps.app.goo.gl/itedwFoKybZW8DaHA',
-  },
-  {
-    label: 'Lav Bay',
-    coords: '32.794334, -117.211582',
-    link: 'https://maps.app.goo.gl/QNSF2j93MD3TwmD36',
-  },
-];
-
-const INFO_NOTES = [
-  'We will be dancing on the sand',
-  'Hot dogs and veggie dogs for sale',
-  'Art for sale',
 ];
 
 export default function LavenderBayPage() {

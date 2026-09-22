@@ -8,18 +8,16 @@ galleries, photos, and recipes.
 from sqlalchemy import Boolean, Column, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from fastapi_users.db import SQLAlchemyBaseUserTable
 from app.database import Base
 
 
-class User(SQLAlchemyBaseUserTable[int], Base):
+class User(Base):
     """
     User model for authentication and profile.
 
-    Extends FastAPI-Users base table with additional fields. In practice the
-    only account that ever gets created is the single site admin (see
-    auth.py) -- Public Square posts/comments are anonymous and don't link
-    back to this table.
+    In practice the only account that ever gets created is the single site
+    admin (see auth.py) -- Public Square posts/comments are anonymous and
+    don't link back to this table.
     """
     __tablename__ = "users"
 

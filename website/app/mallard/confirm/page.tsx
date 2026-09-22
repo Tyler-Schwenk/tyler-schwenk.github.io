@@ -2,7 +2,7 @@
 
 import PageWrapper from "@/components/PageWrapper";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
 export default function MallardConfirm() {
   const [realMallardsChecked, setRealMallardsChecked] = useState(false);

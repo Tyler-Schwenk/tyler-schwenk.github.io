@@ -1,5 +1,19 @@
+# ARCHIVED -- do not enable.
+#
+# Strava restricted API access to premium accounts in June 2026, so the
+# free-tier token this service used no longer authenticates. The timer is
+# disabled on fart-pi and this unit is kept only as a record of the schedule
+# it used to run on. Re-enabling it just produces a nightly auth failure.
+#
+# The updater is still runnable by hand for the final data capture:
+#   systemctl start pac-tyler-updater.service
+# or directly:
+#   /home/tyler/pac-tyler-venv/bin/python main.py
+#
+# See README.md in this directory for the full status.
+
 [Unit]
-Description=Run Pac-Tyler updater daily
+Description=Run Pac-Tyler updater daily (ARCHIVED -- disabled, see README)
 
 [Timer]
 OnCalendar=*-*-* 03:00:00

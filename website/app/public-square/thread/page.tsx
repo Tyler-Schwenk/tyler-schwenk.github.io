@@ -11,8 +11,7 @@ import NeoBadge from "@/components/neobrutalism/NeoBadge";
 import NeoSortToggle, { SortOption } from "@/components/neobrutalism/NeoSortToggle";
 import { NeoInput, NeoLabel, NeoTextarea } from "@/components/neobrutalism/NeoFormControls";
 import { postAccentColor } from "@/components/neobrutalism/postAccent";
-
-const API_BASE = "https://api.tyler-schwenk.com";
+import { API_BASE } from "@/lib/api";
 
 // mirrors MAX_COMMENT_CONTENT_LENGTH / MAX_NICKNAME_LENGTH in the backend's schemas.py
 const MAX_COMMENT_LENGTH = 5000;

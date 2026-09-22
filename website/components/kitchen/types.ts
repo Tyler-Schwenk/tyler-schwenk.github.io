@@ -1,5 +1,4 @@
-/** Base URL of the Pi-hosted backend API. */
-export const API_BASE = "https://api.tyler-schwenk.com";
+export { API_BASE, recipePhotoUrl } from "@/lib/api";
 
 /** localStorage key the admin JWT is stashed under (see useAdminAuth). */
 export const ADMIN_TOKEN_STORAGE_KEY = "kitchen-admin-token";
@@ -34,15 +33,4 @@ export interface Recipe {
   updated_at: string | null;
   tags: Tag[];
   photos: RecipePhoto[];
-}
-
-/**
- * Builds the URL for a recipe photo file.
- *
- * @param {number} photoId - The photo's id.
- * @param {boolean} [thumbnail=false] - Whether to request the thumbnail variant.
- * @returns {string} Full URL to fetch the image from.
- */
-export function recipePhotoUrl(photoId: number, thumbnail = false): string {
-  return `${API_BASE}/recipes/photos/${photoId}/file${thumbnail ? "?thumbnail=true" : ""}`;
 }

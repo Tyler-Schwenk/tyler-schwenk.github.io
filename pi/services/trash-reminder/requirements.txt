@@ -1,2 +1,2 @@
-gpiozero
-lgpio
+gpiozero==2.0.1
+lgpio==0.2.2.0
