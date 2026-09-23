@@ -11,6 +11,9 @@ services/*/config/*.log
 services/trash-reminder/audio/
 services/trash-reminder/trash_state.json
 
+# deploy.sh's per-service "last deployed commit" markers -- Pi-local state
+scripts/.deploy-state/
+
 # Credentials and secrets
 secrets/
 keys/
