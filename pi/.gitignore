@@ -7,6 +7,10 @@ services/*/data/
 services/*/config/*.db
 services/*/config/*.log
 
+# trash-reminder: hand-placed audio clips and runtime state, not source
+services/trash-reminder/audio/
+services/trash-reminder/trash_state.json
+
 # Credentials and secrets
 secrets/
 keys/
