@@ -202,8 +202,8 @@ export default function RibbitRadar() {
             <p className="text-lg text-slate-300 leading-relaxed">
               To aid in my model development I have been building this application. 
               It automates the full ML pipeline - from data prep through hyperparameter sweeps, training, inference, and model evaluation. 
-              You can just set a single config and then click "go". It will train and evaluate hundreds of models while you sleep. 
-              I'm pretty stoked on it, and plan to package it to send out to the bioacoustic community in 2026.
+              You can just set a single config and then click &quot;go&quot;. It will train and evaluate hundreds of models while you sleep. 
+              I&apos;m pretty stoked on it, and plan to package it to send out to the bioacoustic community in 2026.
             </p>
             
             {/* GitHub Link Card */}

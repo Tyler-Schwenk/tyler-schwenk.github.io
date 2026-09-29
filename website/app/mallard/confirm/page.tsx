@@ -82,11 +82,11 @@ export default function MallardConfirm() {
                     <p className="font-bold text-lg text-white">MALLARD COUNTER TERMS & CONDITIONS</p>
                     
                     <p><strong>ARTICLE I: DEFINITIONS</strong></p>
-                    <p>1.1 "Mallard" shall mean any waterfowl of the species Anas platyrhynchos, living or deceased, but explicitly EXCLUDING any and all non-mallard waterfowl including but not limited to: ducks, geese, swans, coots, grebes, and any avian species that may resemble a mallard to the untrained eye.</p>
+                    <p>1.1 &quot;Mallard&quot; shall mean any waterfowl of the species Anas platyrhynchos, living or deceased, but explicitly EXCLUDING any and all non-mallard waterfowl including but not limited to: ducks, geese, swans, coots, grebes, and any avian species that may resemble a mallard to the untrained eye.</p>
                     
-                    <p>1.2 "Count" shall mean the act of numerical enumeration performed by the User with full cognitive awareness and intent, excluding accidental clicks, pocket dials, or counts performed under duress, intoxication, or while operating heavy machinery.</p>
+                    <p>1.2 &quot;Count&quot; shall mean the act of numerical enumeration performed by the User with full cognitive awareness and intent, excluding accidental clicks, pocket dials, or counts performed under duress, intoxication, or while operating heavy machinery.</p>
                     
-                    <p>1.3 "Delinquent Count" shall mean any count performed in violation of Section 2.3 or any count deemed by Kyle or Tyler, in their sole and absolute discretion, to be fraudulent, frivolous, or otherwise not in keeping with the spirit of mallard enumeration.</p>
+                    <p>1.3 &quot;Delinquent Count&quot; shall mean any count performed in violation of Section 2.3 or any count deemed by Kyle or Tyler, in their sole and absolute discretion, to be fraudulent, frivolous, or otherwise not in keeping with the spirit of mallard enumeration.</p>
                     
                     <p><strong>ARTICLE II: USER OBLIGATIONS</strong></p>
                     <p>2.1 User hereby agrees to count only genuine mallards and to exercise reasonable care and diligence in mallard identification.</p>

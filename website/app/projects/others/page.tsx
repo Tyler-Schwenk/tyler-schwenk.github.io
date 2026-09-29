@@ -43,7 +43,7 @@ export default function Others() {
       <section className="py-16 bg-slate-800/50">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto space-y-8">
-            <h2 className="text-3xl font-bold text-white">"Earthrise"</h2>
+            <h2 className="text-3xl font-bold text-white">&quot;Earthrise&quot;</h2>
             <div 
               className="relative cursor-pointer group overflow-hidden rounded-lg"
               onClick={() => setFullscreenImage("/images/earthride.jpg")}
@@ -94,7 +94,7 @@ export default function Others() {
                   className="block space-y-2"
                 >
                   <h3 className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
-                    Cameron's World
+                    Cameron&apos;s World
                   </h3>
                   <p className="text-slate-300">
                     GeoCities was a web-hosting service that made it possible for people to build their own homepages. During the 90s, users from all over the world created personalised corners of the Internet.</p>
@@ -115,7 +115,7 @@ export default function Others() {
                     Coevolution Ecology
                   </h3>
                   <p className="text-slate-300">
-                    I'm a big fan of this guy in general. I think this video hows his interesting perspective on species interactions. It changed my understanding of invasive species and gave me more hope for the world.
+                    I&apos;m a big fan of this guy in general. I think this video hows his interesting perspective on species interactions. It changed my understanding of invasive species and gave me more hope for the world.
                   </p>
                 </a>
               </div>
