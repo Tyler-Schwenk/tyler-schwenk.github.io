@@ -3,6 +3,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { ADMIN_TOKEN_STORAGE_KEY, API_BASE } from "./types";
 
+const MS_PER_S = 1000;
+
+/**
+ * Checks whether a JWT's `exp` claim has passed. Only reads the
+ * payload client-side (no signature check) -- the backend is still the real
+ * gatekeeper, this just stops us showing admin controls for a dead token.
+ *
+ * @param {string} token - The stored JWT.
+ * @returns {boolean} True if the token is expired or unreadable; false if it's still valid.
+ */
+function isTokenExpired(token: string): boolean {
+  try {
+    const payloadB64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(window.atob(payloadB64));
+    return typeof payload.exp !== "number" || payload.exp * MS_PER_S <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
 interface AdminAuth {
   token: string | null;
   isAdmin: boolean;
@@ -16,7 +36,8 @@ interface AdminAuth {
  * The token is the same one used by the gallery admin tooling (see
  * pi/services/website-backend/app/routers/auth.py) -- it's just stashed in
  * localStorage here so edit/delete buttons can show up after logging in
- * from a phone.
+ * from a phone. An already-expired stored token is discarded on mount so
+ * the "Admin" login button shows up again instead of dead edit controls.
  *
  * @returns {AdminAuth} Current token/admin state plus login and logout actions.
  */
@@ -27,8 +48,13 @@ export function useAdminAuth(): AdminAuth {
     // deliberately deferred to after mount -- reading localStorage during
     // render would mismatch the static-exported (server) HTML, which has no
     // window and always renders as logged-out
+    const stored = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+    if (stored && isTokenExpired(stored)) {
+      window.localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+      return;
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setToken(window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY));
+    setToken(stored);
   }, []);
 
   /**

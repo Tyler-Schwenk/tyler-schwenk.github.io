@@ -218,6 +218,7 @@ export default function RecipeBrowser() {
             setSelectedRecipe(null);
             refreshTags();
           }}
+          onAuthExpired={logout}
         />
       )}
 

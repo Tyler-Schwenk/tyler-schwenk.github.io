@@ -60,7 +60,7 @@ RecipeBrowser (client component)
 | `KitchenModal.tsx` | Floating modal dialog (backdrop + title bar + body + optional footer) |
 | `RecipeCard.tsx` | Grid tile — cover photo, name, up to 3 tags |
 | `RecipeBrowser.tsx` | Owns all data fetching; renders search/filter/random/add controls and the grid |
-| `RecipeDetailModal.tsx` | Full recipe view; admin sees Edit/Delete, edit mode reuses `TagPicker` and adds photo management (add/remove/set cover) |
+| `RecipeDetailModal.tsx` | Full recipe view; clicking a photo opens it fullscreen via the shared `components/PhotoLightbox.tsx` (arrows/Escape to navigate/close). Admin sees Edit/Delete, edit mode reuses `TagPicker` and adds photo management (add/remove/set cover) |
 | `AddRecipeModal.tsx` | The public add-recipe form; submits multipart `FormData` |
 | `AdminLoginModal.tsx` | Email/password form calling `POST /auth/login` |
 
@@ -92,6 +92,8 @@ Photos are decoded/normalized/thumbnailed the same way gallery photos are (see [
 ## Admin Login
 
 Click "Admin" in the Recipe Box title bar, log in with the same email/password as the gallery admin panel. The JWT is stored in localStorage under `kitchen-admin-token` (separate key from the gallery admin panel's `adminToken` — logging into one doesn't log you into the other). Once logged in, recipe detail modals show Edit/Delete buttons; "Admin" changes to "Log Out".
+
+Tokens expire after 30 days (`JWT_EXPIRATION_MINUTES` on the backend). On page load, `useAdminAuth` reads the stored token's `exp` claim and discards it if it's expired, so "Admin" shows again. If the backend rejects a token mid-session (401 from any admin endpoint), `RecipeDetailModal` logs out and shows a "log in again" message.
 
 ## See Also
 

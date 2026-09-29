@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import PhotoLightbox from "@/components/PhotoLightbox";
 import KitchenModal from "./KitchenModal";
 import KitchenButton from "./KitchenButton";
 import { KitchenFileInput, KitchenInput, KitchenLabel, KitchenTextarea } from "./KitchenFormControls";
@@ -11,6 +12,7 @@ import { API_BASE, Recipe, TagWithCount, recipePhotoUrl } from "./types";
 
 // keep in sync with MAX_PHOTOS_PER_RECIPE in pi/services/website-backend/app/schemas.py
 const MAX_PHOTOS = 12;
+const HTTP_UNAUTHORIZED = 401;
 
 interface RecipeDetailModalProps {
   recipe: Recipe;
@@ -20,11 +22,13 @@ interface RecipeDetailModalProps {
   onClose: () => void;
   onUpdated: (recipe: Recipe) => void;
   onDeleted: (recipeId: number) => void;
+  onAuthExpired: () => void;
 }
 
 /**
  * Expanded view of a single recipe: all its photos, name, description,
- * link, and tags. When logged in as admin, offers inline editing (including
+ * link, and tags. Clicking a photo (outside edit mode) opens it fullscreen.
+ * When logged in as admin, offers inline editing (including
  * adding/removing photos and choosing the cover photo) and deletion.
  *
  * @param {RecipeDetailModalProps} props - Component props.
@@ -38,6 +42,7 @@ export default function RecipeDetailModal({
   onClose,
   onUpdated,
   onDeleted,
+  onAuthExpired,
 }: RecipeDetailModalProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(recipe.name ?? "");
@@ -47,8 +52,24 @@ export default function RecipeDetailModal({
   const [saving, setSaving] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const authHeaders = { Authorization: `Bearer ${token}` };
+
+  /**
+   * Handles the backend rejecting our admin token: drops out of edit mode,
+   * logs out, and tells the user to log in again.
+   *
+   * @param {Response} res - Response from an admin-only endpoint.
+   * @returns {boolean} True if the token was rejected and the caller should stop.
+   */
+  function handleRejectedToken(res: Response): boolean {
+    if (res.status !== HTTP_UNAUTHORIZED) return false;
+    setEditing(false);
+    setError("your admin login expired - log in again with the Admin button, then retry");
+    onAuthExpired();
+    return true;
+  }
 
   /** Saves the edited name/description/link/tags via the admin-only PATCH endpoint. */
   async function handleSave() {
@@ -65,10 +86,10 @@ export default function RecipeDetailModal({
           tags,
         }),
       });
+      if (handleRejectedToken(res)) return;
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(typeof data.detail === "string" ? data.detail : "couldn't save - try again");
-        setSaving(false);
         return;
       }
       const updated: Recipe = await res.json();
@@ -87,6 +108,7 @@ export default function RecipeDetailModal({
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/recipes/${recipe.id}`, { method: "DELETE", headers: authHeaders });
+      if (handleRejectedToken(res)) return;
       if (!res.ok && res.status !== 204) {
         setError("couldn't delete - try again");
         return;
@@ -119,6 +141,7 @@ export default function RecipeDetailModal({
         headers: authHeaders,
         body: formData,
       });
+      if (handleRejectedToken(res)) return;
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(typeof data.detail === "string" ? data.detail : "couldn't add photos - try again");
@@ -145,6 +168,7 @@ export default function RecipeDetailModal({
         method: "POST",
         headers: authHeaders,
       });
+      if (handleRejectedToken(res)) return;
       if (!res.ok) {
         setError("couldn't set cover photo - try again");
         return;
@@ -170,6 +194,7 @@ export default function RecipeDetailModal({
         method: "DELETE",
         headers: authHeaders,
       });
+      if (handleRejectedToken(res)) return;
       if (!res.ok && res.status !== 204) {
         setError("couldn't remove photo - try again");
         return;
@@ -227,6 +252,14 @@ export default function RecipeDetailModal({
                   sizes="200px"
                   className="object-cover"
                 />
+                {!editing && (
+                  <button
+                    type="button"
+                    aria-label="view photo fullscreen"
+                    onClick={() => setLightboxIndex(i)}
+                    className="absolute inset-0 cursor-zoom-in hover:bg-black/10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--k-border-brand)]"
+                  />
+                )}
                 {editing && (
                   <div className="absolute inset-0 flex flex-col justify-between p-1">
                     <button
@@ -327,6 +360,18 @@ export default function RecipeDetailModal({
           </>
         )}
       </div>
+
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={recipe.photos.map((photo) => ({
+            src: recipePhotoUrl(photo.id),
+            alt: recipe.name ?? "recipe photo",
+          }))}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </KitchenModal>
   );
 }
