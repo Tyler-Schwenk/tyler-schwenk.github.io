@@ -17,9 +17,14 @@ const MALLARD_FETCH_INTERVAL_MS = 60_000;
 
 const MALLARD_EMOJI = "\u{1F986}"; // duck emoji — closest standard emoji to a mallard
 
-// ducks are drawn at DUCK_SIZE_{MIN,MAX}_PX when the count is at or below
-// DUCK_SIZE_REFERENCE_COUNT, and shrink (down to a visible floor) as the
-// count grows past that, so density stays roughly constant on screen
+// caps how many ducks actually get drawn -- the real count still shows in the
+// big number text, but the Pi this runs on can't smoothly animate hundreds
+// of sprites, so rendering stops scaling up density past this point
+const MAX_RENDERED_DUCKS = 180;
+
+// ducks are drawn at DUCK_SIZE_{MIN,MAX}_PX when the rendered count is at or
+// below DUCK_SIZE_REFERENCE_COUNT, and shrink (down to a visible floor) as
+// it grows past that, so density stays roughly constant on screen
 const DUCK_SIZE_REFERENCE_COUNT = 60;
 const DUCK_SIZE_MIN_PX = 40;
 const DUCK_SIZE_MAX_PX = 90;
@@ -163,7 +168,8 @@ export default function MallardPanel() {
     mallardCountRef.current = mallardCount;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    flockRef.current = adjustFlock(flockRef.current, mallardCount ?? 0, canvas.width, canvas.height);
+    const renderedCount = Math.min(mallardCount ?? 0, MAX_RENDERED_DUCKS);
+    flockRef.current = adjustFlock(flockRef.current, renderedCount, canvas.width, canvas.height);
   }, [mallardCount]);
 
   useEffect(() => {
@@ -176,12 +182,8 @@ export default function MallardPanel() {
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      flockRef.current = adjustFlock(
-        flockRef.current,
-        mallardCountRef.current ?? 0,
-        canvas.width,
-        canvas.height
-      );
+      const renderedCount = Math.min(mallardCountRef.current ?? 0, MAX_RENDERED_DUCKS);
+      flockRef.current = adjustFlock(flockRef.current, renderedCount, canvas.width, canvas.height);
     };
     resize();
     window.addEventListener("resize", resize);
