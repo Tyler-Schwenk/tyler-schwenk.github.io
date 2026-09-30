@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { API_BASE } from "@/lib/api";
 
 /**
  * Display panel: current mallard count, with a floating background of duck
  * emoji (one per mallard, capped for performance).
  */
 
-// endpoint and cadence — matches pi/services/mallard-counter/main.py
-const MALLARD_COUNT_API_URL = "https://api.traderoutes.cards/api/mallard-counter/count/";
+// proxied through our own backend (see pi/services/website-backend/app/routers/mallard.py)
+// because the real source, api.traderoutes.cards, doesn't send CORS headers
+const MALLARD_COUNT_API_URL = `${API_BASE}/mallard-count`;
 const MALLARD_FETCH_INTERVAL_MS = 60_000;
 
 const MALLARD_EMOJI = "\u{1F986}"; // duck emoji — closest standard emoji to a mallard

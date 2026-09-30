@@ -187,6 +187,12 @@ class HealthCheck(BaseModel):
     timestamp: datetime
 
 
+# Mallard Count Schema
+class MallardCount(BaseModel):
+    """Current mallard count, proxied from the external counter API."""
+    count: int
+
+
 # Event RSVP Schemas
 
 # a contact is reachable by exactly one of these

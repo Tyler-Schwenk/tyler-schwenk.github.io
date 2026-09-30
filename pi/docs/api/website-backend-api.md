@@ -10,6 +10,7 @@ Backend API for tyler-schwenk.com providing:
 - **Video Hosting**: Video upload, streaming, and thumbnail generation
 - **Pac-Tyler**: GeoJSON activity tracks and analytics dataset from Strava
 - **Recipes (The Kitchen)**: Anonymous, rate-limited recipe submission with tags and photos; admin-only edit/delete
+- **Mallard Count**: Server-side proxy for the external mallard counter API (sidesteps that API's missing CORS headers)
 
 **Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, and recipe features.
 
@@ -858,6 +859,22 @@ Admin only.
 **Query Parameters:** `thumbnail` (boolean, default: false)
 
 **Response:** Image file with appropriate `Content-Type`
+
+## Mallard Count
+
+No authentication required. Proxies the external mallard counter API (`api.traderoutes.cards`) server-side, since that API doesn't send CORS headers and browsers can't fetch it directly from tyler-schwenk.com.
+
+### Get Mallard Count
+
+**Endpoint:** `GET /mallard-count`
+
+**Response:** `200 OK`
+
+```json
+{ "count": 764 }
+```
+
+**Response:** `502 Bad Gateway` if the external API is unreachable.
 
 ## System Endpoints
 

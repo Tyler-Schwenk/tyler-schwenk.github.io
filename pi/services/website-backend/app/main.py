@@ -16,7 +16,7 @@ from app.config import settings
 from app.database import init_db
 from app.rate_limit import limiter
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes
+from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard
 
 
 @asynccontextmanager
@@ -93,3 +93,4 @@ app.include_router(pac_tyler.router)
 app.include_router(rsvp.router)
 app.include_router(public_square.router)
 app.include_router(recipes.router)
+app.include_router(mallard.router)
