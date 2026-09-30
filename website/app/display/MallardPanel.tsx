@@ -26,9 +26,9 @@ const MAX_RENDERED_DUCKS = 180;
 // below DUCK_SIZE_REFERENCE_COUNT, and shrink (down to a visible floor) as
 // it grows past that, so density stays roughly constant on screen
 const DUCK_SIZE_REFERENCE_COUNT = 60;
-const DUCK_SIZE_MIN_PX = 40;
-const DUCK_SIZE_MAX_PX = 90;
-const DUCK_SIZE_FLOOR_PX = 16;
+const DUCK_SIZE_MIN_PX = 80;
+const DUCK_SIZE_MAX_PX = 180;
+const DUCK_SIZE_FLOOR_PX = 32;
 
 // gentle drifting motion (px/second)
 const DUCK_SPEED_MIN_PX_S = 4;
@@ -40,7 +40,7 @@ const ANIMATION_FRAME_INTERVAL_MS = 1000 / ANIMATION_TARGET_FPS;
 
 // resolution the emoji is pre-rendered at once onto an offscreen canvas, then
 // scaled per-duck via drawImage instead of calling fillText hundreds of times a frame
-const DUCK_SPRITE_SIZE_PX = 128;
+const DUCK_SPRITE_SIZE_PX = 256;
 
 interface Duck {
   x: number;
