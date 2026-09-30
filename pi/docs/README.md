@@ -17,6 +17,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Website Backend**](api/website-backend-api.md) - Public Square (forum) and photo gallery API
 - [**Beszel**](services/beszel.md) - System monitoring and health tracking
 - [**Cloudflare Tunnel**](services/cloudflare-tunnel.md) - Public API access
+- [**Display Kiosk**](services/display-kiosk.md) - Always-on monitor (displaypi) showing the `/display` rotation
 
 ### For Tyler
 - [**Tyler's Quick Reference**](FORTYLER/README.md) - Practical guides and workflows
@@ -29,6 +30,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - Beszel system monitoring
 - Cloudflare Tunnel (public API access)
 - External SSD for media storage
+- Display Kiosk (hostname: displaypi) - separate Raspberry Pi 3 B+ driving an always-on monitor
 
 **What's planned:**
 - Immich photo management
@@ -97,7 +99,8 @@ docs/
 │   └── website-backend-api.md     # API documentation
 ├── services/
 │   ├── beszel.md                  # Monitoring setup
-│   └── cloudflare-tunnel.md       # Public access setup
+│   ├── cloudflare-tunnel.md       # Public access setup
+│   └── display-kiosk.md           # displaypi: always-on monitor kiosk setup
 ├── FORTYLER/
 │   ├── README.md                  # Quick reference index
 │   ├── photo-upload-workflow.md   # Adding new photos

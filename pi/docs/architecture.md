@@ -73,6 +73,17 @@ System architecture for fart-pi multi-service home server.
 - **Storage**: External SSD via USB (for large media files)
 - **Network**: Dual connectivity (Ethernet + WiFi)
 
+## Display Kiosk (displaypi)
+
+A second, separate Raspberry Pi (not part of fart-pi) drives an always-on monitor
+powered off the home solar battery setup. It runs a kiosk browser pointed at
+`https://tyler-schwenk.com/display`, a page on the main website that rotates through
+panels (photos, mallard count, more planned). See
+[`pi/docs/services/display-kiosk.md`](services/display-kiosk.md) for hardware, kiosk
+software setup, and update workflow, and
+[`website/docs/DISPLAY.md`](../../website/docs/DISPLAY.md) for the page's panel
+architecture.
+
 ## Services
 
 ### Phase 1: Core Infrastructure (DEPLOYED)

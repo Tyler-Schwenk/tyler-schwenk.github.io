@@ -373,7 +373,10 @@ website-backend/
 │       ├── videos.py     # Video endpoints
 │       ├── auth.py       # Admin login
 │       ├── rsvp.py       # Event RSVP endpoints
-│       └── public_square.py  # Public Square: posts, comments, votes
+│       ├── public_square.py  # Public Square: posts, comments, votes
+│       ├── recipes.py    # The Kitchen: recipes, tags, photos
+│       ├── pac_tyler.py  # Pac-Tyler GeoJSON/activity data
+│       └── mallard.py    # Mallard count proxy (sidesteps upstream CORS)
 ├── scripts/
 │   └── migrate_photos.py # Photo migration utility
 ├── data/                 # SQLite database (not in Git)
