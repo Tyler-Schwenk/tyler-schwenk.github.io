@@ -37,21 +37,6 @@ body {
   image-rendering: crisp-edges;
 }
 
-/* Gentle drifting motion for the mallard display panel's background emoji. */
-@keyframes mallard-float {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(var(--mallard-drift-x), calc(var(--mallard-drift-y) * -1)) rotate(8deg); }
-  50% { transform: translate(calc(var(--mallard-drift-x) * -1), 0) rotate(-6deg); }
-  75% { transform: translate(0, var(--mallard-drift-y)) rotate(5deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
-}
-
-.animate-mallard-float {
-  animation-name: mallard-float;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
 /*
  * "The Kitchen" design system -- a nostalgic desktop-OS theme (toasted-cream
  * surfaces, espresso ink, glowing orange accent). Scoped to `.kitchen-theme`
