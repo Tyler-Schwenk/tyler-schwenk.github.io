@@ -193,6 +193,13 @@ class MallardCount(BaseModel):
     count: int
 
 
+# BPM Schema
+class BpmState(BaseModel):
+    """Current BPM estimate from the mic-based beat detector on fart-pi."""
+    bpm: Optional[float] = Field(None, description="Current BPM estimate, or null if there's no recent beat")
+    updated_at: Optional[datetime] = Field(None, description="When this estimate was last updated, or null if unavailable")
+
+
 # Event RSVP Schemas
 
 # a contact is reachable by exactly one of these

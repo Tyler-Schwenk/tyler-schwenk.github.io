@@ -47,6 +47,9 @@ class Settings(BaseSettings):
 
     # Pac-Tyler data (written by pac-tyler-updater, mounted as a volume)
     PAC_TYLER_DATA_DIR: str = "/app/pac-tyler"
+
+    # BPM detector state (written by pi/services/bpm-detector, mounted as a volume)
+    BPM_STATE_DIR: str = "/app/bpm_state"
     
     # API Metadata
     API_TITLE: str = "Website Backend API"

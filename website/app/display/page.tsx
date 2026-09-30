@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import PhotoPanel from "./PhotoPanel";
 import MallardPanel from "./MallardPanel";
+import BpmDebugPanel from "./BpmDebugPanel";
 
 /**
  * Always-on kiosk display page. Rotates through a fixed list of panels, each
@@ -16,13 +17,20 @@ import MallardPanel from "./MallardPanel";
  * trolley info, surf cam, Pac-Tyler bike map, BPM visualizer, server status.
  */
 
+// TEMPORARY: while tuning pi/services/bpm-detector, show only the raw BPM
+// debug readout instead of the normal rotation, so it's visible live on
+// displaypi. Set back to false (and remove BpmDebugPanel) once tuned.
+const BPM_DEBUG_MODE = true;
+
 // how long each panel stays on screen before rotating to the next (ms)
 const PANEL_ROTATE_INTERVAL_MS = 45_000;
 
-const PANELS = [
-  { id: "photos", render: () => <PhotoPanel /> },
-  { id: "mallards", render: () => <MallardPanel /> },
-];
+const PANELS = BPM_DEBUG_MODE
+  ? [{ id: "bpm-debug", render: () => <BpmDebugPanel /> }]
+  : [
+      { id: "photos", render: () => <PhotoPanel /> },
+      { id: "mallards", render: () => <MallardPanel /> },
+    ];
 
 export default function DisplayPage() {
   const [panelIndex, setPanelIndex] = useState(0);

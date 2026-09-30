@@ -40,8 +40,8 @@ with `PlaceholderPanel` first as a stub) once it's actually being worked on.
 - MTS trolley info
 - Surf cam
 - Pac-Tyler bike map
-- BPM audio visualizer — a separate Raspberry Pi listens via mic, detects the BPM of
-  whatever's playing, and this panel shows a visual synced to it
+- BPM audio visualizer — a USB mic on fart-pi listens to ambient music, detects the
+  BPM, and this panel shows a visual synced to it. See "BPM Audio Visualizer" below.
 - Server status (Beszel) — blocked on Beszel having no public/read-only API access
   (confirmed: the anonymous `systems` records endpoint returns zero items even though
   it responds 200). Needs either a persistent authenticated Chromium session (simple,
@@ -57,6 +57,37 @@ proxies `api.traderoutes.cards` server-side. That external API doesn't send CORS
 headers, so a direct browser fetch from `tyler-schwenk.com` is silently blocked —
 routing it through our own backend sidesteps the problem since server-to-server
 requests aren't subject to browser CORS rules.
+
+## BPM Audio Visualizer (planned)
+
+A USB mic on fart-pi (see `pi/docs/internal/hardware.md`) continuously listens to
+ambient music and estimates its tempo. The display panel polls for the current BPM
+and renders a visual that moves/pulses in time with it.
+
+### Beat sync strategy
+
+There are two latency sources between "a beat happens in the room" and "the panel
+shows something for it":
+
+- **Fixed pipeline latency** — audio buffering, the beat-detection algorithm's
+  required lookahead window, and network/render delay to the kiosk. This is roughly
+  constant for a given setup regardless of what's playing, so it can be calibrated
+  once (play a metronome click, compare detected-beat-time to actual click-time, take
+  the average delta) and compensated with a fixed offset going forward. No live manual
+  tuning needed for this part.
+- **Residual jitter** — beat trackers don't produce a perfectly steady phase; the
+  estimate wobbles beat-to-beat depending on how clean the onset is. A static offset
+  can't fix this. The plan is a lightweight phase-locked loop on the display side: it
+  runs its own beat clock forward at the current tempo estimate and nudges the phase
+  toward each newly detected beat rather than snapping to it, smoothing out jitter
+  instead of visibly jumping.
+
+**Fallback if precise sync proves too hard:** use a continuous (non-discrete) motion
+that just completes exactly one full cycle per beat period — e.g. a smooth oscillation
+or gradient sweep — rather than a discrete per-beat pulse. This only needs the tempo
+(cycle duration) to be right, not phase-locked alignment to the exact instant of each
+beat, so it's far more forgiving of detection latency and jitter. Worth falling back to
+if the fixed-offset-plus-PLL approach above doesn't feel tight enough in practice.
 
 ## Hardware Constraints
 

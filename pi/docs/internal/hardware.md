@@ -214,6 +214,15 @@ Channel select (SD pin on each amp):
 - Left amp SD → 5V rail (selects left channel)
 - Right amp SD → GND rail (selects right channel)
 
+**USB microphone** (TI PCM2902 USB audio codec, "USB PnP Sound Device")
+- Bus: USB (no GPIO pins used)
+- ALSA: card 3, mono capture, native rate 44100-48000 Hz, 16-bit
+- Device string: `plughw:3,0` (card index may shift if other USB audio devices are
+  added/removed — check with `arecord -l`)
+- Capture is unmuted by default, gain at 100% (`amixer -c 3 sget Mic`), with hardware
+  Auto Gain Control on
+- Service: none yet — for the planned BPM audio visualizer display panel
+
 ## Status
 
 All systems operational and verified working:
