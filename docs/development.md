@@ -1,6 +1,6 @@
 ## This is for tyler to use himself whikle dvelopmeing
 
-# SSH to Pi
+# SSH to fart-Pi
 Must be on the home network (192.168.1.0/24).
 
 Ethernet (primary):
@@ -8,6 +8,10 @@ ssh tyler@192.168.1.116
 
 WiFi (DHCP, address drifts - check `ip -4 -br addr` on the Pi or the router):
 ssh tyler@192.168.1.167
+
+# displaypi ssh via ethernet
+ssh tyler@192.168.1.187
+
  
 ## Frontend deploy
  Push to main (deploys frontend automatically):
