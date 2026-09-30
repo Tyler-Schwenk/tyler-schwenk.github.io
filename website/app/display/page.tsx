@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { API_BASE } from "@/lib/api";
 
 /**
@@ -12,6 +11,9 @@ import { API_BASE } from "@/lib/api";
 
 // how long each photo stays on screen (ms)
 const PHOTO_ROTATE_INTERVAL_MS = 15_000;
+
+// how many photos ahead of the current one to keep preloaded in the browser cache
+const PRELOAD_AHEAD_COUNT = 2;
 
 // how often to re-fetch the gallery list, so new photos show up without a restart (ms)
 const PHOTO_LIST_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
@@ -104,6 +106,21 @@ export default function DisplayPage() {
     photoUrlsRef.current = photoUrls;
   }, [photoUrls]);
 
+  // holds references to preloaded Image objects so the browser cache stays warm
+  // (and the objects aren't garbage-collected) until each photo has been shown
+  const preloadCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  useEffect(() => {
+    if (photoUrls.length === 0) return;
+    for (let offset = 0; offset <= PRELOAD_AHEAD_COUNT; offset++) {
+      const url = photoUrls[(photoIndex + offset) % photoUrls.length];
+      if (preloadCacheRef.current.has(url)) continue;
+      const image = new window.Image();
+      image.src = url;
+      preloadCacheRef.current.set(url, image);
+    }
+  }, [photoIndex, photoUrls]);
+
   useEffect(() => {
     const loadPhotos = () => {
       fetchAllPhotoUrls().then((urls) => {
@@ -141,14 +158,9 @@ export default function DisplayPage() {
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
       {currentUrl && (
-        <Image
-          key={currentUrl}
-          src={currentUrl}
-          alt=""
-          fill
-          className="object-contain"
-          priority
-        />
+        // plain img (not next/image) so switching src reuses preloaded/cached bytes instead of remounting
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={currentUrl} alt="" className="w-full h-full object-contain" />
       )}
 
       <div className="absolute top-6 right-6 bg-black/60 rounded-lg px-6 py-3 text-white font-mono">
