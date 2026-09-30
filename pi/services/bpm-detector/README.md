@@ -6,28 +6,25 @@ panel (see `website/docs/DISPLAY.md`).
 
 ## How it works
 
-Streams raw audio from the mic via `arecord`, compares each ~23ms chunk's
-energy against a rolling local average, and treats a chunk that spikes above
-the average as a beat (subject to a debounce window so one hit doesn't
-double-trigger). BPM is the median of the last few inter-beat intervals.
+Streams raw audio from the mic via `arecord` into a rolling buffer (last
+`BUFFER_DURATION_S` seconds), then every `ANALYSIS_INTERVAL_S` runs it
+through `librosa`: a bass-focused onset strength envelope (restricted to
+`ONSET_FMIN_HZ`-`ONSET_FMAX_HZ`, since the kick/bass carries the beat far
+more reliably than broadband energy, which picks up hi-hats/vocals/cymbals
+at the wrong rate) feeds librosa's autocorrelation-based tempo estimator.
 
-This is a simple energy-based detector, not a full onset/tempo-tracking
-library -- `aubio` was tried first but its last release (2018) doesn't build
-against any numpy/gcc combination available on Python 3.13, so this was
-written from scratch instead. Works best on music with a clear, percussive
-beat (most dance/pop/rock); quiet or beat-less music will report no signal.
+Each estimate's tempo prior is centered on the previous accepted BPM
+(`start_bpm`), which gives continuity between windows and damps octave
+errors -- locking onto 2x or 0.5x the real tempo, a known hard problem in
+all beat trackers. It doesn't eliminate octave errors outright (nothing
+does), just makes a stable wrong-octave lock less likely than analyzing
+each window from scratch.
 
-**Known limitation, not yet resolved:** tested against a synthetic 120 BPM
-click track played through fart-pi's own speakers and picked up by the mic
-(acoustic loopback, not a direct feed). Room echo/reverb off a single click
-can itself cross the beat threshold a fraction of a second later, producing
-occasional doubled or fractional BPM readings (e.g. 160 or 240 instead of
-120) rather than a clean, stable estimate. `MIN_BEAT_INTERVAL_S` and
-`BEAT_THRESHOLD_MULTIPLIER` will likely need further tuning against real
-music (continuous ambient loudness, not near-silence between clicks) before
-this is reliable enough to run as an always-on systemd service. Not yet
-installed as a service for that reason -- run it manually per "Running"
-below until the detection is solid.
+Two earlier approaches didn't work out: `aubio` (a purpose-built C library)
+doesn't build against any numpy/gcc combination available on Python 3.13.
+A from-scratch energy-threshold detector (broadband, edge-triggered on a
+rolling average) ran fine but was too easily confused by room echo and
+non-bass transients -- see git history for both attempts.
 
 ## Configuration
 
@@ -36,14 +33,16 @@ Tunable constants in `main.py`:
 | Constant | Default | Description |
 |---|---|---|
 | `ALSA_DEVICE` | `plughw:3,0` | USB mic device -- verify with `arecord -l` if it ever changes |
-| `BEAT_THRESHOLD_MULTIPLIER` | `1.4` | How far above the local average energy counts as a beat |
-| `MIN_BEAT_INTERVAL_S` | `0.25` | Debounce window (caps detection at 240 BPM) |
-| `STALE_THRESHOLD_S` | `3.0` | How long without a beat before reporting "no signal" |
+| `BUFFER_DURATION_S` | `8.0` | How much recent audio each estimate is based on |
+| `ANALYSIS_INTERVAL_S` | `2.0` | How often to re-analyze the buffer |
+| `SILENCE_RMS_THRESHOLD` | `800` | Below this RMS, report no signal instead of a meaningless guess -- needs tuning against the real room/speaker volume |
+| `ONSET_FMIN_HZ` / `ONSET_FMAX_HZ` | `20` / `150` | Frequency band used for onset detection (bass/kick range) |
+| `TEMPO_PRIOR_STD_BPM` | `2.0` | How tightly each estimate is pulled toward the previous one -- lower damps jitter/octave-flips harder but responds slower to a real tempo change |
+| `MAX_TEMPO_BPM` | `200.0` | Upper bound on estimated tempo |
 
 ## Output
 
-Writes `state/bpm_state.json` on every detected beat (and once more when the
-signal goes stale):
+Writes `state/bpm_state.json` roughly every `ANALYSIS_INTERVAL_S` seconds:
 
 ```json
 {"bpm": 122.4, "updated_at": 1735689600.123}

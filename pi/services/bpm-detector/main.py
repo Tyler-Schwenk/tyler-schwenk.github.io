@@ -2,33 +2,43 @@
 BPM detector service.
 
 Runs on fart-pi as a systemd service. Continuously listens to a USB mic and
-estimates the tempo (BPM) of ambient music using a simple energy-based beat
-detector, then writes the current estimate to a state file that
-website-backend reads and serves to the BPM visualizer display panel.
+estimates the tempo (BPM) of ambient music, writing the current estimate to
+a state file that website-backend reads and serves to the BPM visualizer
+display panel.
 
-Algorithm: compares each audio chunk's energy against a rolling local
-average. A chunk that exceeds the average by BEAT_THRESHOLD_MULTIPLIER
-counts as a beat, subject to a debounce window. BPM is the median of the
-most recent inter-beat intervals, which is more robust to a single missed
-or double-triggered beat than a plain average would be.
+Uses librosa: a rolling audio buffer is periodically analyzed with a
+bass-focused onset strength envelope (the kick/bass carries the beat far
+more reliably than broadband energy, which picks up hi-hats/vocals/cymbals
+at the wrong rate) and librosa's autocorrelation-based tempo estimator.
+Each estimate's tempo prior is centered on the previous accepted BPM, which
+gives continuity between windows and damps octave errors (locking onto 2x
+or 0.5x the real tempo) -- a known hard problem in all beat trackers, not
+something any single technique eliminates outright.
 
-We tried aubio (a purpose-built beat tracking library) first, but its last
-release (2018) doesn't build against any numpy/gcc combination available on
-Python 3.13 -- a real C-API incompatibility, not a version mismatch we could
-pin around. This hand-rolled detector needs only numpy.
+We tried a from-scratch energy-threshold detector first (too easily
+confused by room echo and non-bass transients) and aubio before that
+(doesn't build against any numpy/gcc combination on Python 3.13). This
+replaces both.
 """
 
 import json
 import logging
-import statistics
 import subprocess
 import time
+import warnings
 from pathlib import Path
 
+import librosa
+import librosa.feature.rhythm as rhythm
 import numpy as np
 
+# librosa warns about empty mel filter bins at our narrow bass-only
+# frequency range -- expected and harmless, we don't use the full-spectrum
+# bins it's warning about
+warnings.filterwarnings("ignore", message="Empty filters detected")
+
 logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S"
 )
 logger = logging.getLogger(__name__)
 
@@ -39,30 +49,46 @@ logger = logging.getLogger(__name__)
 # audio devices are added/removed, verify with `arecord -l`
 ALSA_DEVICE = "plughw:3,0"
 SAMPLE_RATE_HZ = 44100
-CHUNK_SAMPLES = 1024  # ~23ms per chunk at 44100Hz
+CHUNK_SAMPLES = 4096  # read size from arecord's pipe -- just I/O granularity
 BYTES_PER_SAMPLE = 2  # S16_LE
 
 
-# ---- beat detection ----
+# ---- rolling buffer + analysis cadence ----
 
-# local average energy window (s) -- the baseline a chunk's energy is compared against
-ENERGY_WINDOW_S = 1.0
-ENERGY_WINDOW_CHUNKS = int(ENERGY_WINDOW_S * SAMPLE_RATE_HZ / CHUNK_SAMPLES)
+# how much recent audio each tempo estimate is based on -- long enough to
+# span several beats at typical tempos, matches librosa's own
+# autocorrelation window default (ac_size)
+BUFFER_DURATION_S = 8.0
+BUFFER_SAMPLES = int(BUFFER_DURATION_S * SAMPLE_RATE_HZ)
 
-# a chunk counts as a beat when its energy exceeds the local average by this factor
-BEAT_THRESHOLD_MULTIPLIER = 2.5
+# how often to re-run tempo analysis on the current buffer
+ANALYSIS_INTERVAL_S = 2.0
 
-# minimum gap between detected beats (s) -- debounce, caps detectable tempo at 200 BPM
-MIN_BEAT_INTERVAL_S = 0.3
+# below this RMS (int16 scale), treat the room as silent rather than report
+# a meaningless tempo guess off the noise floor -- a starting point, likely
+# needs tuning against the real room/speaker volume
+SILENCE_RMS_THRESHOLD = 800
 
-# ignore gaps longer than this when estimating tempo (s) -- corresponds to a 30 BPM floor
-MAX_BEAT_INTERVAL_S = 2.0
 
-# how many recent inter-beat intervals to use for the BPM estimate
-BEAT_HISTORY_COUNT = 8
+# ---- bass-focused onset detection ----
+#
+# the beat is far more reliably carried by the kick/bass than by broadband
+# energy, which picks up hi-hats, vocals, and cymbals at the wrong rate.
+# Restricting onset detection to a narrow low mel range isolates it.
+ONSET_FMIN_HZ = 20
+ONSET_FMAX_HZ = 150
+ONSET_N_MELS = 16
 
-# if no beat has landed in this long, report "no signal" instead of a stale BPM
-STALE_THRESHOLD_S = 3.0
+
+# ---- tempo estimation ----
+
+# librosa's tempo prior is a log-normal centered on start_bpm with this std
+# (in BPM). Feeding the previous estimate back in as start_bpm gives
+# continuity between analysis windows and damps octave jumps, without
+# locking so tight (a small std) that a genuine tempo change can't move it
+DEFAULT_START_BPM = 120.0
+TEMPO_PRIOR_STD_BPM = 2.0
+MAX_TEMPO_BPM = 200.0
 
 
 # ---- output ----
@@ -102,36 +128,34 @@ def read_chunk(proc: subprocess.Popen) -> np.ndarray:
     return np.frombuffer(raw, dtype=np.int16)
 
 
-def chunk_energy(chunk: np.ndarray) -> float:
-    """Compute the mean-square energy of an audio chunk.
+def estimate_bpm(buffer: np.ndarray, previous_bpm: float | None) -> float | None:
+    """Estimate BPM from a buffer of recent audio.
 
     Args:
-        chunk: int16 samples.
+        buffer: int16 samples, up to BUFFER_SAMPLES long.
+        previous_bpm: The last accepted estimate, used as this call's tempo
+            prior center for continuity. None on the very first call.
 
     Returns:
-        Mean of squared sample values. Unnormalized -- only meaningful as a
-        relative comparison against the rolling local average.
+        Estimated BPM, or None if the buffer is too quiet to mean anything.
     """
-    return float(np.mean(chunk.astype(np.float64) ** 2))
-
-
-def estimate_bpm(beat_times: list[float]) -> float | None:
-    """Estimate BPM from recent beat timestamps.
-
-    Args:
-        beat_times: Monotonic timestamps of detected beats, oldest first.
-
-    Returns:
-        Estimated BPM, or None if there aren't enough recent beats yet.
-    """
-    if len(beat_times) < 3:
+    rms = float(np.sqrt(np.mean(buffer.astype(np.float64) ** 2)))
+    if rms < SILENCE_RMS_THRESHOLD:
         return None
-    intervals = [b - a for a, b in zip(beat_times[:-1], beat_times[1:])]
-    intervals = [i for i in intervals if i <= MAX_BEAT_INTERVAL_S]
-    if len(intervals) < 2:
-        return None
-    median_interval = statistics.median(intervals[-BEAT_HISTORY_COUNT:])
-    return 60.0 / median_interval
+
+    y = buffer.astype(np.float32) / 32768.0
+    onset_env = librosa.onset.onset_strength(
+        y=y, sr=SAMPLE_RATE_HZ, fmin=ONSET_FMIN_HZ, fmax=ONSET_FMAX_HZ, n_mels=ONSET_N_MELS
+    )
+    start_bpm = previous_bpm if previous_bpm is not None else DEFAULT_START_BPM
+    tempo = rhythm.tempo(
+        onset_envelope=onset_env,
+        sr=SAMPLE_RATE_HZ,
+        start_bpm=start_bpm,
+        std_bpm=TEMPO_PRIOR_STD_BPM,
+        max_tempo=MAX_TEMPO_BPM,
+    )
+    return float(tempo[0])
 
 
 def write_state(bpm: float | None) -> None:
@@ -152,24 +176,17 @@ def write_state(bpm: float | None) -> None:
 
 
 def main() -> None:
-    """Run the capture and beat detection loop forever.
+    """Run the capture and periodic tempo analysis loop forever.
 
     Side effects:
-        Blocks. Writes STATE_FILE on every detected beat and again once the
-        signal goes stale (no beat for STALE_THRESHOLD_S).
+        Blocks. Writes STATE_FILE roughly every ANALYSIS_INTERVAL_S seconds.
     """
     logger.info("Starting capture on %s at %d Hz", ALSA_DEVICE, SAMPLE_RATE_HZ)
     proc = start_capture()
 
-    # background-only energy history -- chunks classified as "above threshold"
-    # are excluded so a beat's own loudness doesn't drag up the baseline it's
-    # compared against
-    energy_history: list[float] = []
-    beat_times: list[float] = []
-    last_beat_time = 0.0
-    reported_stale = True
-    was_above_threshold = False
-    chunks_since_debug_log = 0
+    buffer = np.zeros(0, dtype=np.int16)
+    previous_bpm: float | None = None
+    last_analysis_time = 0.0
 
     try:
         while True:
@@ -178,52 +195,25 @@ def main() -> None:
                 logger.error("arecord produced no data -- is the mic still connected?")
                 break
 
-            energy = chunk_energy(chunk)
+            buffer = np.concatenate([buffer, chunk])[-BUFFER_SAMPLES:]
+
             now = time.monotonic()
+            enough_buffered = buffer.size >= BUFFER_SAMPLES // 2
+            if now - last_analysis_time < ANALYSIS_INTERVAL_S or not enough_buffered:
+                continue
+            last_analysis_time = now
 
-            local_avg = statistics.mean(energy_history) if energy_history else energy
-            ratio = energy / local_avg if local_avg > 0 else 0.0
-            is_above_threshold = ratio > BEAT_THRESHOLD_MULTIPLIER
-
-            # edge-triggered: only the rising edge counts as a beat, so a
-            # click's decaying tail staying above threshold for a couple
-            # chunks doesn't register as several beats
-            is_beat = (
-                is_above_threshold
-                and not was_above_threshold
-                and now - last_beat_time >= MIN_BEAT_INTERVAL_S
-            )
-            was_above_threshold = is_above_threshold
-
-            if not is_above_threshold:
-                energy_history.append(energy)
-                if len(energy_history) > ENERGY_WINDOW_CHUNKS:
-                    energy_history.pop(0)
-
-            if is_beat:
-                last_beat_time = now
-                beat_times.append(now)
-                if len(beat_times) > BEAT_HISTORY_COUNT + 1:
-                    beat_times.pop(0)
-
-                bpm = estimate_bpm(beat_times)
-                if bpm is not None:
-                    logger.info("Beat detected (ratio %.1fx) -- BPM estimate: %.1f", ratio, bpm)
-                    write_state(bpm)
-                    reported_stale = False
-
-            # periodic diagnostic line (~once/s) so the current energy ratio is
-            # visible even between beats -- useful for picking a threshold
-            chunks_since_debug_log += 1
-            if chunks_since_debug_log >= ENERGY_WINDOW_CHUNKS:
-                chunks_since_debug_log = 0
-                logger.debug("current ratio: %.2fx (threshold %.1fx)", ratio, BEAT_THRESHOLD_MULTIPLIER)
-
-            elif not reported_stale and now - last_beat_time > STALE_THRESHOLD_S:
-                logger.info("No beat in %.0fs -- reporting no signal", STALE_THRESHOLD_S)
+            bpm = estimate_bpm(buffer, previous_bpm)
+            if bpm is None:
+                if previous_bpm is not None:
+                    logger.info("No signal -- reporting no signal")
                 write_state(None)
-                beat_times.clear()
-                reported_stale = True
+                previous_bpm = None
+                continue
+
+            logger.info("BPM estimate: %.1f", bpm)
+            write_state(bpm)
+            previous_bpm = bpm
 
     finally:
         proc.terminate()

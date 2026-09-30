@@ -17,10 +17,11 @@ import BpmDebugPanel from "./BpmDebugPanel";
  * trolley info, surf cam, Pac-Tyler bike map, BPM visualizer, server status.
  */
 
-// TEMPORARY: while tuning pi/services/bpm-detector, show only the raw BPM
-// debug readout instead of the normal rotation, so it's visible live on
-// displaypi. Set back to false (and remove BpmDebugPanel) once tuned.
-const BPM_DEBUG_MODE = true;
+// TEMPORARY: while tuning pi/services/bpm-detector, this can be flipped to
+// true to show only the raw BPM debug readout instead of the normal
+// rotation, so it's visible live on displaypi. Remove BpmDebugPanel once
+// the detector is tuned and the real BPM visualizer panel replaces it.
+const BPM_DEBUG_MODE = false;
 
 // how long each panel stays on screen before rotating to the next (ms)
 const PANEL_ROTATE_INTERVAL_MS = 45_000;
