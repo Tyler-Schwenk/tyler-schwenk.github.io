@@ -28,10 +28,11 @@ in_sleep_window() {
 monitor_off() { xset +dpms; xset dpms force off; }
 monitor_on() { xset dpms force on; xset -dpms; xset s off; xset s noblank; }
 
-# lay the external monitor out to the right of the built-in screen (both stay on, each
-# gets its own browser) and make it primary, which is where mpv opens the surf cams.
-# with no external monitor the built-in screen just runs alone. re-run on every browser
-# relaunch so a monitor plugged in later gets picked up.
+# lay the external monitor out below the built-in screen, matching how they physically
+# sit (laptop open on top, monitor underneath), and make it primary, which is where mpv
+# opens the surf cams. both stay on and each gets its own browser. with no external
+# monitor the built-in screen just runs alone. re-run on every browser relaunch so a
+# monitor plugged in later gets picked up.
 arrange_outputs() {
   local internal external
   internal=$(xrandr | awk '/^eDP/ {print $1; exit}')
@@ -39,22 +40,24 @@ arrange_outputs() {
   [ -n "$external" ] || return 0
   # fall back to the monitor's preferred mode if it doesn't offer EXTERNAL_MODE
   xrandr --output "$internal" --auto --pos 0x0 \
-    --output "$external" --mode "$EXTERNAL_MODE" --primary --right-of "$internal" ||
+    --output "$external" --mode "$EXTERNAL_MODE" --primary --below "$internal" ||
     xrandr --output "$internal" --auto --pos 0x0 \
-      --output "$external" --auto --primary --right-of "$internal"
+      --output "$external" --auto --primary --below "$internal"
 }
 
-# one "x y width height" line per active monitor, from `xrandr --listmonitors` rows like
-# " 0: +*eDP-1 2256/285x1504/190+0+0  eDP-1"
+# one "x y width height role" line per active monitor, from `xrandr --listmonitors` rows
+# like " 0: +*eDP-1 2256/285x1504/190+0+0  eDP-1" (the * marks the primary). role is
+# "primary" for the screen mpv plays on, else "secondary"; a lone screen is always primary
 monitor_geometries() {
-  xrandr --listmonitors | awk 'NR > 1 { split($3, g, /[\/x+]/); print g[5], g[6], g[1], g[3] }'
+  xrandr --listmonitors | awk '
+    NR > 1 { split($3, g, /[\/x+]/); n++; geom[n] = g[5] " " g[6] " " g[1] " " g[3]; star[n] = ($2 ~ /\*/) }
+    END { for (i = 1; i <= n; i++) print geom[i], ((star[i] || n == 1) ? "primary" : "secondary") }'
 }
 
 # names of the currently connected outputs, sorted. a change means a monitor was plugged in,
 # unplugged, or powered on/off, and the screens need laying out again
 connected_outputs() {
-  xrandr | awk '/ connected/ {print $1}' | sort | tr '
-' ' '
+  xrandr | awk '/ connected/ {print $1}' | sort | tr '\n' ' '
 }
 
 # true if any of the given pids is no longer running
@@ -68,11 +71,12 @@ any_dead() {
 
 # starts one browser per monitor and waits; kills them all if one dies, the monitors change
 # (so the caller can re-arrange them), or the sleep window begins. each needs its own
-# profile dir or chrome would hand the second window to the first.
+# profile dir or chrome would hand the second window to the first. the page gets the
+# screen's role as ?screen= so only the primary screen's page drives the surf cams.
 run_browsers() {
-  local x y w h dir index=0 pids=() outputs
+  local x y w h role dir index=0 pids=() outputs
   outputs=$(connected_outputs)
-  while read -r x y w h; do
+  while read -r x y w h role; do
     dir="$HOME/.config/$BROWSER_DIR-screen$index"
     # the site is served with max-age=600, so clear the cache or a restart can show a stale
     # deploy. singleton files are stale locks left by an unclean shutdown
@@ -80,7 +84,7 @@ run_browsers() {
     $BROWSER --kiosk --user-data-dir="$dir" --window-position="$x,$y" --window-size="$w,$h" \
       --noerrdialogs --disable-infobars --disable-session-crashed-bubble --no-first-run \
       --check-for-update-interval=31536000 --password-store=basic \
-      "$DISPLAY_URL" &
+      "$DISPLAY_URL?screen=$role" &
     pids+=($!)
     index=$((index + 1))
   done < <(monitor_geometries)
@@ -90,11 +94,15 @@ run_browsers() {
     sleep "$POLL_INTERVAL_S"
   done
   pkill -x "$BROWSER_PROC"
+  # a killed page never gets to send the agent `stop`, so a cam that was showing would keep
+  # streaming on top of the next page (or all night through the sleep window)
+  pkill -x mpv
   wait "${pids[@]}" 2>/dev/null
 }
 
-# surf cam player agent; restarted if it ever dies. see pi/services/surfcam-agent/README.md
-( while true; do python3 ~/surfcam-agent/surfcam_agent.py >> /tmp/surfcam-agent.log 2>&1; sleep $RELAUNCH_DELAY_S; done ) &
+# surf cam player agent; restarted if it ever dies. any mpv left over from a previous agent
+# is killed first, since the new one can't see or stop it. see pi/services/surfcam-agent/README.md
+( while true; do pkill -x mpv; python3 ~/surfcam-agent/surfcam_agent.py >> /tmp/surfcam-agent.log 2>&1; sleep $RELAUNCH_DELAY_S; done ) &
 
 # make sure the monitor is on at startup, in case a previous run left it blanked
 monitor_on

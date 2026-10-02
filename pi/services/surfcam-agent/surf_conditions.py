@@ -310,16 +310,16 @@ def get_metrics(site: Site) -> list[Metric]:
     returns:
         metrics in display order (possibly empty if every source failed).
     """
+    site_key = f"{site.lat},{site.lon}"
     sources = [
-        ("swell", lambda: fetch_swell(site)),
-        ("wind", lambda: fetch_wind(site)),
+        ("swell", lambda: cached(f"swell:{site_key}", lambda: fetch_swell(site))),
+        ("wind", lambda: cached(f"wind:{site_key}", lambda: fetch_wind(site))),
+        # not cached as text: fetch_tide caches the predictions itself and works out the
+        # height fresh each time, so a stale "rising, high at 1:25 PM" can't outlive 1:25
         ("tide", lambda: fetch_tide(site)),
     ]
     with ThreadPoolExecutor(max_workers=len(sources)) as pool:
-        futures = [
-            (name, pool.submit(cached, f"{name}:{site.lat},{site.lon}", fetch))
-            for name, fetch in sources
-        ]
+        futures = [(name, pool.submit(fetch)) for name, fetch in sources]
     metrics = []
     for name, future in futures:
         try:

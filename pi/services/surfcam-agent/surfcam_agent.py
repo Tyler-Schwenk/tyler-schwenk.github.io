@@ -18,8 +18,10 @@ see pi/services/surfcam-agent/README.md for setup.
 import json
 import logging
 import re
+import signal
 import socket
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -118,6 +120,10 @@ _players: dict[str, subprocess.Popen] = {}
 # keeps one ipc connection open for as long as it's playing
 _overlay_connections: dict[str, socket.socket] = {}
 _state_lock = threading.Lock()
+# held while a cam's mpv is started or stopped. without it two requests landing together
+# (the stream scrape takes ~1s) both see no player and both start one, and the first mpv
+# is orphaned: its socket gets taken over, so stop can never reach it
+_cam_locks = {cam: threading.Lock() for cam in CAMS}
 
 
 def fetch_stream_url(page_url: str) -> str:
@@ -321,18 +327,23 @@ def show_overlay(cam: str) -> None:
         _overlay_connections[cam] = sock
 
 
-def stop_player(cam: str) -> None:
-    """kills a cam's mpv if it's running. safe to call when nothing's running."""
-    close_overlay(cam)
-    with _state_lock:
-        process = _players.pop(cam, None)
-    if process is None or process.poll() is not None:
-        return
+def terminate_process(process: subprocess.Popen) -> None:
+    """asks a process to exit, killing it if it hasn't within MPV_EXIT_TIMEOUT_S."""
     process.terminate()
     try:
         process.wait(timeout=MPV_EXIT_TIMEOUT_S)
     except subprocess.TimeoutExpired:
         process.kill()
+
+
+def stop_player(cam: str) -> None:
+    """kills a cam's mpv if it's running. safe to call when nothing's running."""
+    close_overlay(cam)
+    with _cam_locks[cam]:
+        with _state_lock:
+            process = _players.pop(cam, None)
+        if process is not None and process.poll() is None:
+            terminate_process(process)
 
 
 def prepare_player(cam: str) -> None:
@@ -347,13 +358,30 @@ def prepare_player(cam: str) -> None:
     raises:
         StreamUnavailableError: stream url couldn't be fetched, or mpv isn't installed.
     """
+    with _cam_locks[cam]:
+        start_player(cam)
+    # warm the conditions cache now, while the stream buffers, so show doesn't wait on the apis
+    get_metrics(CAMS[cam].site)
+
+
+def start_player(cam: str) -> None:
+    """launches a cam's mpv unless one's already running. caller holds the cam's lock.
+
+    args:
+        cam: cam id from CAMS.
+
+    raises:
+        StreamUnavailableError: stream url couldn't be fetched, or mpv isn't installed.
+    """
     with _state_lock:
         existing = _players.get(cam)
     if existing is not None and existing.poll() is None:
         return
     url = get_stream_url(cam)
+    # no default key bindings: mpv takes keyboard focus when it comes on top, and keys
+    # meant for the kiosk (q, space, f...) would otherwise quit, pause, or shrink it
     command = [
-        "mpv", "--no-terminal", "--no-osc", "--no-audio",
+        "mpv", "--no-terminal", "--no-osc", "--no-audio", "--no-input-default-bindings",
         "--pause", "--window-minimized=yes", "--fullscreen", "--ontop",
         f"--hwdec={MPV_HWDEC}",
         f"--demuxer-readahead-secs={DEMUXER_READAHEAD_S}",
@@ -368,8 +396,6 @@ def prepare_player(cam: str) -> None:
         ) from err
     with _state_lock:
         _players[cam] = process
-    # warm the conditions cache now, while the stream buffers, so show doesn't wait on the apis
-    get_metrics(CAMS[cam].site)
     log.info("prepared %s (pid %d)", cam, process.pid)
 
 
@@ -432,8 +458,14 @@ class AgentHandler(BaseHTTPRequestHandler):
         """silences per-request access logs; actions are logged by the player functions."""
 
 
+def exit_on_sigterm(signum: int, frame) -> None:
+    """turns SIGTERM (pkill's default) into a normal exit so main's cleanup still runs."""
+    sys.exit(0)
+
+
 def main() -> None:
     """runs the agent until killed, cleaning up any mpv it started on the way out."""
+    signal.signal(signal.SIGTERM, exit_on_sigterm)
     server = ThreadingHTTPServer((LISTEN_HOST, LISTEN_PORT), AgentHandler)
     log.info("listening on %s:%d", LISTEN_HOST, LISTEN_PORT)
     try:

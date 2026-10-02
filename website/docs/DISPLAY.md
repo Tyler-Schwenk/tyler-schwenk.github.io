@@ -4,9 +4,9 @@
 
 `/display` is a full-screen kiosk page, not a normal site page — it has no navigation
 or footer and isn't linked from anywhere on the public site. It's meant to be opened in
-a kiosk browser on a dedicated monitor (see `pi/docs/services/display-kiosk.md` for the
-Raspberry Pi that runs it) and rotates through a fixed list of "panels," each a
-self-contained view.
+a kiosk browser on the always-on screens (see `pi/docs/services/display-kiosk.md` for
+displaytop, the laptop that runs them) and rotates through a fixed list of "panels," each
+a self-contained view.
 
 Only the currently-active panel is mounted. Switching panels unmounts the previous one,
 so its polling/timers stop automatically — an inactive panel costs nothing.
@@ -19,7 +19,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 
 | File | Purpose |
 |------|---------|
-| `website/app/display/page.tsx` | Rotation controller — cycles through `PANELS` every `PANEL_ROTATE_INTERVAL_MS` |
+| `website/app/display/page.tsx` | Rotation controller — picks this screen's panel list from `?screen=` and shows one panel per `PANEL_ROTATE_INTERVAL_MS` slot |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos |
 | `website/app/display/MallardPanel.tsx` | Current mallard count with a canvas-animated duck background |
 | `website/app/display/SurfCamPanel.tsx` | Live surf cam; asks the surfcam agent on displaytop to play it (see "Surf Cams") |
@@ -31,18 +31,41 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 1. Build the panel as its own component in `website/app/display/`, following
    `MallardPanel.tsx` as a template: fetch its own data, manage its own polling, render
    `fixed inset-0` full-bleed.
-2. Add it to the `PANELS` array in `page.tsx`.
-3. If it's slow to start, give its `PANELS` entry a `prepare` hook (see below).
+2. Add it to the `primary` and/or `secondary` list in `PANELS_BY_ROLE` in `page.tsx`.
+3. If it's slow to start, give its panel entry a `prepare` hook (see below).
+
+### Screens and Rotation
+
+The kiosk runs one browser per screen and opens this page as `/display?screen=primary`
+on the screen surf cams play on (the external monitor) and `/display?screen=secondary`
+on the other (the laptop's own screen). No param means primary, so opening `/display`
+in a normal browser shows the full primary rotation. Each role has its own panel list in
+`PANELS_BY_ROLE`:
+
+| Role | Panels |
+|------|--------|
+| `primary` | photos, mallards, the three surf cams |
+| `secondary` | photos, mallards |
+
+Surf cams are only on the primary list on purpose: the agent plays one mpv on the primary
+screen, so exactly one page may send it `show`/`stop`, or the two pages would start and
+kill each other's video.
+
+The active panel comes from the wall clock, not a timer chain: time is cut into
+`PANEL_ROTATE_INTERVAL_MS` slots counted from the epoch, and slot `n` shows
+`panels[n % panels.length]`. Both screens share the laptop's clock, so they switch at the
+same instant and can't drift apart, and a reloaded page lands straight on the current
+panel.
 
 ### Preparing Panels Ahead of Time
 
-A `PANELS` entry can define `prepare()`. The rotation controller calls it
+A panel entry can define `prepare()`. The rotation controller calls it
 `PANEL_PREPARE_LEAD_MS` before that panel is due on screen, so slow-starting content
 (a live video stream) loads in the background and appears already running. Panels
 without `prepare` are unaffected. Right now only surf cams use it.
 
 Panels not yet built are listed in a comment at the top of `page.tsx` rather than kept
-in the active rotation with `PlaceholderPanel` — add a panel to `PANELS` (optionally
+in the active rotation with `PlaceholderPanel` — add a panel to a list (optionally
 with `PlaceholderPanel` first as a stub) once it's actually being worked on.
 
 ### Planned Panels (not yet built)
@@ -83,8 +106,9 @@ While a cam shows, the agent draws an overlay on the video (place name, swell, w
 tide; readings from somewhere other than the cam are tagged with where they came from).
 That lives entirely in the agent -- see `pi/services/surfcam-agent/README.md`.
 
-The kiosk drives two screens, each running this page; surf cam video
-plays on the external monitor only (see `pi/docs/services/display-kiosk.md`).
+Surf cams are only in the primary screen's rotation (see "Screens and Rotation"); the
+video plays on the external monitor, which the kiosk makes primary (see
+`pi/docs/services/display-kiosk.md`).
 
 The page talks to the agent at `http://127.0.0.1:8765`, which only exists on displaytop.
 Anywhere else the panel just shows "surfcam agent unreachable". Cam ids in

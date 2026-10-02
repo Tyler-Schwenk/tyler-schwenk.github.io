@@ -1,0 +1,5 @@
+# scripts and services that run on linux machines (fart-pi, displaytop) need lf endings,
+# even when checked out on windows with core.autocrlf=true
+*.sh text eol=lf
+*.py text eol=lf
+*.service text eol=lf

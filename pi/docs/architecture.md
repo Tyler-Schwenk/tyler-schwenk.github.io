@@ -75,10 +75,11 @@ System architecture for fart-pi multi-service home server.
 
 ## Display Kiosk (displaytop)
 
-A separate machine (displaytop, a Surface Laptop 3; not part of fart-pi) drives an
-always-on monitor powered off the home solar battery setup. It runs a kiosk browser pointed at
+A separate machine (displaytop, a Surface Laptop 3; not part of fart-pi) drives two
+always-on screens powered off the home solar battery setup: its own screen (always open,
+on top) and an external monitor underneath. Each screen runs a kiosk browser pointed at
 `https://tyler-schwenk.com/display`, a page on the main website that rotates through
-panels (photos, mallard count, live surf cams, more planned). See
+panels (photos, mallard count, live surf cams on the external monitor, more planned). See
 [`pi/docs/services/display-kiosk.md`](services/display-kiosk.md) for hardware, kiosk
 software setup, and update workflow, and
 [`website/docs/DISPLAY.md`](../../website/docs/DISPLAY.md) for the page's panel

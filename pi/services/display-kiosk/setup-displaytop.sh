@@ -111,7 +111,7 @@ for agent_file in "${AGENT_FILES[@]}"; do
   install_user_file 755 "$AGENT_SRC_DIR/$agent_file" "$KIOSK_HOME/surfcam-agent/$agent_file"
 done
 
-echo "== laptop: never suspend, ignore the lid (it runs closed, plugged in)"
+echo "== laptop: never suspend, ignore the lid (it runs open and plugged in; closing it changes nothing)"
 install -d /etc/systemd/logind.conf.d
 cat > /etc/systemd/logind.conf.d/kiosk.conf <<EOF
 [Login]

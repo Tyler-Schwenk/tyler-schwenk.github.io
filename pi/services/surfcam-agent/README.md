@@ -23,7 +23,20 @@ Single-file stdlib Python server on `127.0.0.1:8765`, no dependencies beyond `mp
 | `POST /cams/<cam>/stop` | Kill that cam's mpv. |
 
 The rotation controller calls `prepare` `PANEL_PREPARE_LEAD_MS` before a surf cam
-panel is due, the panel calls `show` on mount and `stop` on unmount.
+panel is due, the panel calls `show` on mount and `stop` on unmount. Only the primary
+screen's page (`/display?screen=primary`) has surf cam panels, so only it calls the agent.
+
+Starting and stopping a cam's mpv is serialized by a per-cam lock: without it, two
+requests arriving together (the stream scrape takes about a second) would each start an
+mpv, and the first would be orphaned, since the second takes over its control socket.
+
+mpv runs with `--no-input-default-bindings`, because it takes keyboard focus when it comes
+on top and keys pressed at the kiosk would otherwise quit, pause, or resize it.
+
+**Cleanup:** the agent stops its mpv processes when it exits, including on SIGTERM
+(`pkill`'s default). `kiosk-run.sh` also runs `pkill -x mpv` whenever it kills the
+browsers (a killed page never sends `stop`) and before every agent start (a new agent
+can't see the old one's players).
 
 Stream URLs carry an expiring token (~12 hours); one is reused until under an hour
 remains, then re-scraped.
@@ -93,7 +106,7 @@ playlist) so decode and rendering stay light.
 
 To add a cam: find its page on hdontap.com (the page source has a `"streamSrc"`
 entry), add it to `CAMS` with its name and coordinates, add the id to `SurfCamId`, and add a `surfCamPanel("<id>")`
-entry to `PANELS` in `website/app/display/page.tsx`.
+entry to the `primary` list in `PANELS_BY_ROLE` in `website/app/display/page.tsx`.
 
 ## Setup
 
@@ -125,6 +138,9 @@ site calls `127.0.0.1`, which would pop a dialog on the kiosk:
   reports `hwdec=vaapi` (`hwdec-current` over the IPC socket).
 - **Video shows on the wrong screen:** the external monitor should be `primary` in
   `xrandr`; `pkill -x chrome` re-runs the layout.
+- **Checking for stray players:** `ps -o pid,etimes,args -C mpv` should list at most the
+  cam on screen plus the one being prepared. Anything older than a rotation is a leak;
+  `pkill -x mpv` clears it and the next `prepare` starts fresh.
 - **No overlay on a cam:** see the agent log for `overlay for <cam> not shown` or
   `no <swell|wind|tide> for ...` warnings (an API down, or the kiosk offline). A bar with
   only the name means every reading failed.

@@ -9,9 +9,10 @@ by a dedicated laptop running kiosk browsers pointed at
 ## Hardware
 
 - **Device**: Surface Laptop 3 (Intel Core i5-1035G7, Iris Plus graphics, 8 GB RAM,
-  128 GB SSD), run lid-closed and plugged in. Hostname `displaytop`
+  128 GB SSD), always open and plugged in. Hostname `displaytop`
 - **Screens**: its built-in 2256x1504 panel plus an external monitor on the USB-C port
-  through a USB-C to HDMI adapter
+  through a USB-C to HDMI adapter. Physically the open laptop sits on top with the
+  monitor underneath it, and the laptop's own keyboard stays reachable
 - **Network**: Wi-Fi (Intel AX201), `192.168.1.192`. Set a DHCP reservation in the
   router so the address doesn't drift. The laptop has no Ethernet port
 - **OS**: Ubuntu Server 26.04 LTS (no desktop environment)
@@ -39,7 +40,9 @@ Minimal X setup — just enough to run full-screen browsers:
    agent (restarted if it dies, logging to `/tmp/surfcam-agent.log`), then loops: lay
    out the screens, clear each browser's disk cache, launch one browser per screen in
    `--kiosk` mode on the display page, relaunch after a 5s pause if any exits or
-   crashes. Also handles the overnight sleep window (below)
+   crashes. Whenever the browsers are killed it also kills any `mpv`, since a killed
+   page can't tell the agent to stop its cam. Also handles the overnight sleep window
+   (below)
 
 ### Multiple screens
 
@@ -47,9 +50,9 @@ Minimal X setup — just enough to run full-screen browsers:
 (`~/.config/google-chrome-screen<N>`, since a second window would otherwise be handed to
 the first browser) placed with `--window-position`/`--window-size` from
 `xrandr --listmonitors`. With an external monitor connected, `arrange_outputs` places it
-to the right of the built-in screen at `EXTERNAL_MODE` (2560x1440), and makes it primary
-(mpv opens on the primary screen, so the surf cams play there). With no external monitor
-the built-in screen runs alone. The script also polls the connected outputs every 30
+below the built-in screen (matching the physical setup) at `EXTERNAL_MODE` (2560x1440),
+and makes it primary (mpv opens on the primary screen, so the surf cams play there). With
+no external monitor the built-in screen runs alone. The script also polls the connected outputs every 30
 seconds while the browsers run, and when they change (a monitor plugged in, unplugged, or
 powered on or off) it relaunches the browsers and lays the screens out again. That covers
 a power outage where the laptop boots before the monitor wakes. To force it immediately
@@ -58,15 +61,18 @@ run `pkill -x chrome`.
 `EXTERNAL_MODE` is 1440p rather than the monitor's native 4K because a 4K monitor behind
 the USB-C/HDMI adapter only gets 30 Hz at 3840x2160 (HDMI 1.4 bandwidth).
 
-Both screens currently load the same `/display` page, so they rotate independently and
-the surf cam video only appears on the external monitor (the built-in screen shows
-"loading surf cam..." during surf cam panels).
+Each browser opens `/display?screen=primary` or `/display?screen=secondary`, from whether
+its monitor is the xrandr primary (a lone screen is always primary). The page keeps a
+separate panel list per role: surf cams are only on the primary list, so exactly one page
+drives the surf cam agent. Both pages pick the current panel from the clock, so they
+switch at the same moment (see `website/docs/DISPLAY.md`).
 
 ### Power and network behavior
 
-The laptop runs lid-closed and plugged in:
+The laptop stays open and plugged in:
 - `/etc/systemd/logind.conf.d/kiosk.conf` ignores the lid switch and idle actions, and
-  the sleep/suspend/hibernate targets are masked, so it never suspends
+  the sleep/suspend/hibernate targets are masked, so it never suspends (closing the lid
+  by accident doesn't either)
 - The battery acts as a short-outage UPS. A laptop only powers itself back on after a
   full battery drain if its UEFI has an AC-recovery setting, which should be checked in
   the UEFI menu (`sudo systemctl reboot --firmware-setup`)
@@ -125,9 +131,10 @@ Set by `setup-displaytop.sh`, so a rebuild gets them automatically:
 - **Logs**: `journalctl` for the system, `/tmp/surfcam-agent.log` for the agent (cleared on
   reboot)
 - **Updating the kiosk's own code**: copy the files over and re-run the script (the same
-  two commands as in the runbook); it's idempotent. The overlay and kiosk script changes
-  take effect after the agent or browsers restart (`pkill -f "[s]urfcam_agent.py"` and
-  `pkill -x chrome`, or a reboot)
+  two commands as in the runbook); it's idempotent. Agent changes take effect when the
+  agent restarts (`pkill -f "[s]urfcam_agent.py"`; the loop in `kiosk-run.sh` brings it
+  back). `kiosk-run.sh` changes need a reboot, since the running copy keeps going until
+  X restarts
 
 ## Setting Up From Scratch
 
@@ -335,4 +342,5 @@ profile; it must be owned by `tyler`.
 ```bash
 DISPLAY=:0 XAUTHORITY=$(ls /tmp/serverauth.* | head -1) scrot -o /tmp/check.png
 ```
-then `scp` the file off to inspect it (it covers both screens side by side).
+then `scp` the file off to inspect it (it covers both screens, laid out as xrandr has
+them: the laptop screen on top, the monitor below).
