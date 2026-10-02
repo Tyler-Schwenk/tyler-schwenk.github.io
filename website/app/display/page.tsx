@@ -5,31 +5,32 @@ import PhotoPanel from "./PhotoPanel";
 import MallardPanel from "./MallardPanel";
 import BpmDebugPanel from "./BpmDebugPanel";
 import SurfCamPanel from "./SurfCamPanel";
+import SurfConditionsPanel from "./SurfConditionsPanel";
 import { prepareSurfCam, type SurfCamId } from "./surfCams";
+import { msUntilNextClockSlot, useClockSlot } from "./useClockSlot";
 
 /**
- * Always-on kiosk display page. Rotates through a fixed list of panels, each
- * a self-contained view (photos, mallard count, etc). Only the active panel
- * is mounted, so an inactive panel's polling/timers stop automatically.
- * Meant to be opened in a kiosk browser (e.g. Chrome --kiosk) on a
- * dedicated monitor, not browsed normally.
+ * Always-on kiosk display page. Rotates through a fixed list of slots, each
+ * pairing what the two screens show at the same time (photos on both, a surf
+ * cam below with its conditions on top, etc). Only the active panel is
+ * mounted, so an inactive panel's polling/timers stop automatically. Meant to
+ * be opened in a kiosk browser (e.g. Chrome --kiosk) on a dedicated monitor,
+ * not browsed normally.
  *
- * The kiosk opens one copy per screen with `?screen=primary|secondary`, and
- * each role has its own panel list. Surf cams only go on the primary list,
- * since mpv plays on the primary screen and one page has to own the agent.
- * No param means primary.
+ * The kiosk opens one copy per screen with `?screen=primary|secondary`
+ * (primary is the external monitor, where mpv plays the surf cams; secondary
+ * is the laptop's own screen above it). No param means primary.
  *
- * The active panel comes from the wall clock (one slot per
- * PANEL_ROTATE_INTERVAL_MS), not a timer chain, so both screens switch at
- * exactly the same moment and never drift apart.
+ * The active slot comes from the wall clock (see useClockSlot), not a timer
+ * chain, so both screens switch at exactly the same moment and stay paired.
  *
  * A panel with slow startup (a live video stream) can define `prepare`,
  * which fires PANEL_PREPARE_LEAD_MS before the panel is due on screen so it
  * can load in the background and appear already running.
  *
- * Planned panels not yet implemented (add back to a panel list as each one
- * is built, using PlaceholderPanel to stub it out first if useful): MTS
- * trolley info, Pac-Tyler bike map, BPM visualizer, server status.
+ * Planned panels not yet implemented (add to ROTATION as each one is built,
+ * using PlaceholderPanel to stub it out first if useful): MTS trolley info,
+ * Pac-Tyler bike map, BPM visualizer, server status.
  */
 
 interface DisplayPanel {
@@ -41,18 +42,8 @@ interface DisplayPanel {
 
 type ScreenRole = "primary" | "secondary";
 
-/**
- * Builds a rotation entry for a live surf cam.
- * @param camId - Cam id known to the surfcam agent.
- * @returns A panel that preloads the cam before it's shown.
- */
-function surfCamPanel(camId: SurfCamId): DisplayPanel {
-  return {
-    id: `surf-${camId}`,
-    render: () => <SurfCamPanel camId={camId} />,
-    prepare: () => prepareSurfCam(camId),
-  };
-}
+/** What each screen shows during one rotation slot. */
+type RotationSlot = Record<ScreenRole, DisplayPanel>;
 
 // TEMPORARY: while tuning pi/services/bpm-detector, this can be flipped to
 // true to show only the raw BPM debug readout instead of the normal
@@ -60,7 +51,7 @@ function surfCamPanel(camId: SurfCamId): DisplayPanel {
 // the detector is tuned and the real BPM visualizer panel replaces it.
 const BPM_DEBUG_MODE = false;
 
-// how long each panel stays on screen before rotating to the next (ms)
+// how long each slot stays on screen before rotating to the next (ms)
 const PANEL_ROTATE_INTERVAL_MS = 45_000;
 
 // how long before a panel is due on screen its `prepare` hook fires. needs to
@@ -69,22 +60,42 @@ const PANEL_PREPARE_LEAD_MS = 5_000;
 
 const SCREEN_ROLE_PARAM = "screen";
 
-const PHOTO_PANEL: DisplayPanel = { id: "photos", render: () => <PhotoPanel /> };
-const MALLARD_PANEL: DisplayPanel = { id: "mallards", render: () => <MallardPanel /> };
-const BPM_DEBUG_PANEL: DisplayPanel = { id: "bpm-debug", render: () => <BpmDebugPanel /> };
+// the secondary screen's photos change halfway between the primary's, so the two take turns.
+// rendered identically in consecutive slots, React keeps it mounted and the photos carry on
+const PRIMARY_PHOTOS: DisplayPanel = { id: "photos", render: () => <PhotoPanel /> };
+const SECONDARY_PHOTOS: DisplayPanel = { id: "photos-staggered", render: () => <PhotoPanel staggered /> };
+const MALLARDS: DisplayPanel = { id: "mallards", render: () => <MallardPanel /> };
+const BPM_DEBUG: DisplayPanel = { id: "bpm-debug", render: () => <BpmDebugPanel /> };
 
-const PANELS_BY_ROLE: Record<ScreenRole, DisplayPanel[]> = BPM_DEBUG_MODE
-  ? { primary: [BPM_DEBUG_PANEL], secondary: [BPM_DEBUG_PANEL] }
-  : {
-      primary: [
-        PHOTO_PANEL,
-        MALLARD_PANEL,
-        surfCamPanel("pb"),
-        surfCamPanel("la-jolla-shores"),
-        surfCamPanel("scripps-underwater"),
-      ],
-      secondary: [PHOTO_PANEL, MALLARD_PANEL],
-    };
+/**
+ * Builds a slot for a live surf cam: the video below, its conditions on top.
+ * Only the primary panel talks to the agent's player, since mpv plays there.
+ * @param camId - Cam id known to the surfcam agent.
+ * @returns A slot that preloads the cam before it's shown.
+ */
+function surfCamSlot(camId: SurfCamId): RotationSlot {
+  return {
+    primary: {
+      id: `surf-${camId}`,
+      render: () => <SurfCamPanel camId={camId} />,
+      prepare: () => prepareSurfCam(camId),
+    },
+    secondary: {
+      id: `surf-conditions-${camId}`,
+      render: () => <SurfConditionsPanel camId={camId} />,
+    },
+  };
+}
+
+const ROTATION: RotationSlot[] = BPM_DEBUG_MODE
+  ? [{ primary: BPM_DEBUG, secondary: BPM_DEBUG }]
+  : [
+      { primary: PRIMARY_PHOTOS, secondary: SECONDARY_PHOTOS },
+      { primary: MALLARDS, secondary: SECONDARY_PHOTOS },
+      surfCamSlot("pb"),
+      surfCamSlot("la-jolla-shores"),
+      surfCamSlot("scripps-underwater"),
+    ];
 
 /**
  * Reads this screen's role from the `?screen=` query param.
@@ -96,42 +107,6 @@ function readScreenRole(): ScreenRole {
 }
 
 /**
- * Rotation slot number for a moment in time. Every screen on the same clock
- * gets the same slot.
- * @param nowMs - Epoch time in ms.
- * @returns How many full rotation intervals have passed since the epoch.
- */
-function slotAt(nowMs: number): number {
-  return Math.floor(nowMs / PANEL_ROTATE_INTERVAL_MS);
-}
-
-/**
- * How long until the next slot starts.
- * @returns Milliseconds until the next PANEL_ROTATE_INTERVAL_MS boundary.
- */
-function msUntilNextSlot(): number {
-  return PANEL_ROTATE_INTERVAL_MS - (Date.now() % PANEL_ROTATE_INTERVAL_MS);
-}
-
-/**
- * useSyncExternalStore subscription that fires at every slot boundary.
- * A timer that fires a hair early just re-arms for the remaining ms.
- * @param onSlotChange - React's change callback.
- * @returns Unsubscribe function.
- */
-function subscribeToSlots(onSlotChange: () => void): () => void {
-  let timer: ReturnType<typeof setTimeout>;
-  const armNext = () => {
-    timer = setTimeout(() => {
-      onSlotChange();
-      armNext();
-    }, msUntilNextSlot());
-  };
-  armNext();
-  return () => clearTimeout(timer);
-}
-
-/**
  * useSyncExternalStore subscription for values that never change (the url).
  * @returns A no-op unsubscribe function.
  */
@@ -139,25 +114,24 @@ function subscribeNever(): () => void {
   return () => {};
 }
 
-// the page is statically exported, so the url and clock only exist in the browser; on the
-// server (build) both read as null and the page renders black until it hydrates
+// the page is statically exported, so there's no url at build time; the role reads as
+// null on the server and the page renders black until it hydrates
 const readNothingOnServer = () => null;
 
 export default function DisplayPage() {
   const role = useSyncExternalStore(subscribeNever, readScreenRole, readNothingOnServer);
-  const slot = useSyncExternalStore(subscribeToSlots, () => slotAt(Date.now()), readNothingOnServer);
-  const panels = role ? PANELS_BY_ROLE[role] : null;
+  const slot = useClockSlot(PANEL_ROTATE_INTERVAL_MS);
 
   useEffect(() => {
-    if (!panels || slot === null) return;
-    const nextPanel = panels[(slot + 1) % panels.length];
+    if (!role || slot === null) return;
+    const nextPanel = ROTATION[(slot + 1) % ROTATION.length][role];
     const prepareTimer = setTimeout(
       () => nextPanel.prepare?.(),
-      Math.max(0, msUntilNextSlot() - PANEL_PREPARE_LEAD_MS)
+      Math.max(0, msUntilNextClockSlot(PANEL_ROTATE_INTERVAL_MS) - PANEL_PREPARE_LEAD_MS)
     );
     return () => clearTimeout(prepareTimer);
-  }, [panels, slot]);
+  }, [role, slot]);
 
-  if (!panels || slot === null) return <div className="fixed inset-0 bg-black" />;
-  return panels[slot % panels.length].render();
+  if (!role || slot === null) return <div className="fixed inset-0 bg-black" />;
+  return ROTATION[slot % ROTATION.length][role].render();
 }

@@ -1,11 +1,13 @@
-"""surf conditions for the cam overlays: swell and wind from open-meteo, tides from noaa.
+"""surf conditions for the cams: swell and wind from open-meteo, tides from noaa.
 
-get_metrics() turns a cam's location into a few short display strings (swell, wind,
-tide). anything that comes from somewhere other than the cam's own spot says where,
-so the overlay never passes off a faraway reading as local.
+get_conditions() turns a cam's location into structured readings (swell, wind, tide).
+two views are built from them: get_metrics() makes the short lines for the video
+overlay, and conditions_to_json() feeds the /display page's conditions panel (served by
+the agent at GET /cams/<cam>/conditions). anything that comes from somewhere other than
+the cam's own spot says where, so a faraway reading is never passed off as local.
 
-built so a flaky api can't take the overlay down:
-  - each metric is fetched on its own thread and fails on its own, so a missing swell
+built so a flaky api can't take the overlay or panel down:
+  - each reading is fetched on its own thread and fails on its own, so a missing swell
     reading still leaves wind and tide, and a hanging api only costs one timeout
   - any error at all (network, bad json, a field we didn't expect) just drops that line
   - if a refresh fails, the last good reading is reused for a while before being dropped
@@ -81,6 +83,44 @@ class Metric:
 
     text: str
     source: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class Swell:
+    """the swell at a site. direction is where it comes from, in degrees clockwise from north."""
+
+    height_ft: float
+    period_s: float
+    direction_deg: float
+
+
+@dataclass(frozen=True)
+class Wind:
+    """the wind at a site. direction is where it comes from, in degrees clockwise from north."""
+
+    speed_mph: float
+    direction_deg: float
+    gusts_mph: Optional[float]
+
+
+@dataclass(frozen=True)
+class Tide:
+    """the tide right now and its next turn. source is set when the station isn't at the cam."""
+
+    height_ft: float
+    rising: bool
+    next_turn_kind: str  # "high" or "low"
+    next_turn_at: datetime  # local time, no tzinfo
+    source: Optional[str]
+
+
+@dataclass(frozen=True)
+class Conditions:
+    """everything known about a site right now. a reading that couldn't be had is None."""
+
+    swell: Optional[Swell]
+    wind: Optional[Wind]
+    tide: Optional[Tide]
 
 
 # the only tide station near the cams (at the scripps pier, la jolla)
@@ -190,15 +230,14 @@ def format_clock(moment: datetime) -> str:
     return moment.strftime("%I:%M %p").lstrip("0")
 
 
-def fetch_swell(site: Site) -> Optional[Metric]:
+def fetch_swell(site: Site) -> Optional[Swell]:
     """swell height, period and direction from the open-meteo marine model at the site.
 
     args:
         site: where to read the model.
 
     returns:
-        a metric like 'Swell 1.9 ft at 10 s from SSW', or None when the model has no
-        swell value for that point.
+        the swell, or None when the model has no swell value for that point.
     """
     params = {
         "latitude": site.lat, "longitude": site.lon, "timezone": TIMEZONE,
@@ -210,18 +249,17 @@ def fetch_swell(site: Site) -> Optional[Metric]:
     direction = current.get("swell_wave_direction")
     if height is None or period is None or direction is None:
         return None
-    return Metric(f"Swell {height:.1f} ft at {period:.0f} s from {compass(direction)}")
+    return Swell(height, period, direction)
 
 
-def fetch_wind(site: Site) -> Optional[Metric]:
+def fetch_wind(site: Site) -> Optional[Wind]:
     """wind speed, direction and gusts from the open-meteo forecast model at the site.
 
     args:
         site: where to read the model.
 
     returns:
-        a metric like 'Wind 5 mph from WSW', with gusts noted when they're notably
-        higher, or None when the model has no wind value.
+        the wind, or None when the model has no wind value.
     """
     params = {
         "latitude": site.lat, "longitude": site.lon, "timezone": TIMEZONE,
@@ -232,11 +270,7 @@ def fetch_wind(site: Site) -> Optional[Metric]:
     speed, direction = current.get("wind_speed_10m"), current.get("wind_direction_10m")
     if speed is None or direction is None:
         return None
-    text = f"Wind {speed:.0f} mph from {compass(direction)}"
-    gusts = current.get("wind_gusts_10m")
-    if gusts is not None and gusts - speed >= GUST_NOTE_MIN_MPH:
-        text += f" (gusts {gusts:.0f})"
-    return Metric(text)
+    return Wind(speed, direction, current.get("wind_gusts_10m"))
 
 
 def fetch_tide_extremes() -> list[tuple[datetime, float, str]]:
@@ -256,8 +290,10 @@ def fetch_tide_extremes() -> list[tuple[datetime, float, str]]:
     return [(datetime.strptime(p["t"], "%Y-%m-%d %H:%M"), float(p["v"]), p["type"]) for p in predictions]
 
 
-def current_tide_text(extremes: list[tuple[datetime, float, str]], now: datetime) -> Optional[str]:
-    """describes the tide right now: height, direction, and the next high or low.
+def current_tide(
+    extremes: list[tuple[datetime, float, str]], now: datetime, source: Optional[str]
+) -> Optional[Tide]:
+    """works out the tide right now: height, direction, and the next high or low.
 
     the current height is a cosine blend between the extremes either side of now, which
     is close to how real tides move.
@@ -265,10 +301,10 @@ def current_tide_text(extremes: list[tuple[datetime, float, str]], now: datetime
     args:
         extremes: (time, height in ft, 'H' or 'L') tuples in time order.
         now: current local time, without a timezone, to compare against.
+        source: where the predictions are from, if not the cam's own spot.
 
     returns:
-        text like 'Tide 3.8 ft rising, high at 1:25 PM', or None when now isn't between
-        two known extremes.
+        the tide, or None when now isn't between two known extremes.
     """
     for prev, nxt in zip(extremes, extremes[1:]):
         if prev[0] <= now < nxt[0]:
@@ -277,30 +313,27 @@ def current_tide_text(extremes: list[tuple[datetime, float, str]], now: datetime
         return None
     fraction = (now - prev[0]) / (nxt[0] - prev[0])
     height = prev[1] + (nxt[1] - prev[1]) * (1 - math.cos(math.pi * fraction)) / 2
-    direction, kind = ("rising", "high") if nxt[2] == "H" else ("falling", "low")
-    return f"Tide {height:.1f} ft {direction}, {kind} at {format_clock(nxt[0])}"
+    rising = nxt[2] == "H"
+    return Tide(height, rising, "high" if rising else "low", nxt[0], source)
 
 
-def fetch_tide(site: Site) -> Optional[Metric]:
+def fetch_tide(site: Site) -> Optional[Tide]:
     """the current tide, tagged with the station's name when it isn't at the cam's spot.
 
     args:
         site: the cam's location, to decide whether the station counts as local.
 
     returns:
-        a tide metric, or None when predictions don't cover now.
+        the tide, or None when predictions don't cover now.
     """
     extremes = cached("tide-extremes", fetch_tide_extremes, TIDE_STALE_MAX_AGE_S)
     now = datetime.now(ZoneInfo(TIMEZONE)).replace(tzinfo=None)
-    text = current_tide_text(extremes, now)
-    if text is None:
-        return None
     is_local = distance_km(site, TIDE_STATION) <= LOCAL_RADIUS_KM
-    return Metric(text, None if is_local else TIDE_STATION.name)
+    return current_tide(extremes, now, None if is_local else TIDE_STATION.name)
 
 
-def get_metrics(site: Site) -> list[Metric]:
-    """the overlay lines for a cam: swell, wind, tide. any that fail are left out.
+def get_conditions(site: Site) -> Conditions:
+    """the swell, wind and tide at a cam. any that fail are left as None.
 
     never raises. the readings are fetched in parallel, so the slowest one sets the wait.
 
@@ -308,25 +341,94 @@ def get_metrics(site: Site) -> list[Metric]:
         site: the cam's location.
 
     returns:
-        metrics in display order (possibly empty if every source failed).
+        the conditions (every field None if every source failed).
     """
     site_key = f"{site.lat},{site.lon}"
     sources = [
         ("swell", lambda: cached(f"swell:{site_key}", lambda: fetch_swell(site))),
         ("wind", lambda: cached(f"wind:{site_key}", lambda: fetch_wind(site))),
-        # not cached as text: fetch_tide caches the predictions itself and works out the
-        # height fresh each time, so a stale "rising, high at 1:25 PM" can't outlive 1:25
+        # not cached itself: fetch_tide caches the predictions and works out the height
+        # fresh each time, so a stale "rising, high at 1:25 PM" can't outlive 1:25
         ("tide", lambda: fetch_tide(site)),
     ]
     with ThreadPoolExecutor(max_workers=len(sources)) as pool:
         futures = [(name, pool.submit(fetch)) for name, fetch in sources]
-    metrics = []
+    readings = {}
     for name, future in futures:
         try:
-            metric = future.result()
-        except Exception as err:  # noqa: BLE001 -- see cached(): any failure drops just this line
+            readings[name] = future.result()
+        except Exception as err:  # noqa: BLE001 -- see cached(): any failure drops just this reading
             log.warning("no %s for %s: %s", name, site.name, err)
-            continue
-        if metric is not None:
-            metrics.append(metric)
+            readings[name] = None
+    return Conditions(**readings)
+
+
+def wind_text(wind: Wind) -> str:
+    """formats the wind like 'Wind 5 mph from WSW', noting gusts when they're notably higher."""
+    text = f"Wind {wind.speed_mph:.0f} mph from {compass(wind.direction_deg)}"
+    if wind.gusts_mph is not None and wind.gusts_mph - wind.speed_mph >= GUST_NOTE_MIN_MPH:
+        text += f" (gusts {wind.gusts_mph:.0f})"
+    return text
+
+
+def get_metrics(site: Site) -> list[Metric]:
+    """the overlay lines for a cam: swell, wind, tide. any that fail are left out.
+
+    never raises.
+
+    args:
+        site: the cam's location.
+
+    returns:
+        metrics in display order (possibly empty if every source failed).
+    """
+    conditions = get_conditions(site)
+    swell, wind, tide = conditions.swell, conditions.wind, conditions.tide
+    metrics = []
+    if swell:
+        metrics.append(Metric(
+            f"Swell {swell.height_ft:.1f} ft at {swell.period_s:.0f} s from {compass(swell.direction_deg)}"
+        ))
+    if wind:
+        metrics.append(Metric(wind_text(wind)))
+    if tide:
+        direction = "rising" if tide.rising else "falling"
+        turn = f"{tide.next_turn_kind} at {format_clock(tide.next_turn_at)}"
+        metrics.append(Metric(f"Tide {tide.height_ft:.1f} ft {direction}, {turn}", tide.source))
     return metrics
+
+
+def conditions_to_json(conditions: Conditions) -> dict:
+    """turns conditions into the json the /display conditions panel reads.
+
+    directions are where the swell/wind comes from, in degrees clockwise from north, plus
+    the 16-point compass name. a missing reading is null. the shape is in the agent README.
+
+    args:
+        conditions: from get_conditions.
+
+    returns:
+        a json-serializable dict with swell, wind and tide keys.
+    """
+    swell, wind, tide = conditions.swell, conditions.wind, conditions.tide
+    return {
+        "swell": swell and {
+            "height_ft": swell.height_ft,
+            "period_s": swell.period_s,
+            "direction_deg": swell.direction_deg,
+            "direction_compass": compass(swell.direction_deg),
+        },
+        "wind": wind and {
+            "speed_mph": wind.speed_mph,
+            "gusts_mph": wind.gusts_mph,
+            "direction_deg": wind.direction_deg,
+            "direction_compass": compass(wind.direction_deg),
+        },
+        "tide": tide and {
+            "height_ft": tide.height_ft,
+            "rising": tide.rising,
+            "next_turn_kind": tide.next_turn_kind,
+            "next_turn_at": format_clock(tide.next_turn_at),
+            "source": tide.source,
+        },
+    }

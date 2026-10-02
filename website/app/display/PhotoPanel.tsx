@@ -2,19 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "@/lib/api";
+import { useClockSlot } from "./useClockSlot";
 
 /**
  * Display panel: full-bleed rotation through random photos from every public
- * gallery.
+ * gallery. The photo changes on wall-clock boundaries, so when both screens
+ * show photos, a `staggered` panel changes halfway between the other's changes
+ * and the two screens take turns instead of flipping together.
  */
 
 // how long each photo stays on screen (ms)
 const PHOTO_ROTATE_INTERVAL_MS = 15_000;
 
+// a staggered panel changes this far after a normal one: halfway, so changes are evenly spaced
+const PHOTO_STAGGER_OFFSET_MS = PHOTO_ROTATE_INTERVAL_MS / 2;
+
 // how many photos ahead of the current one to keep preloaded in the browser cache
 const PRELOAD_AHEAD_COUNT = 2;
 
-// how often to re-fetch the gallery list, so new photos show up without a restart (ms)
+// how often to re-fetch the gallery list while the panel stays up, so new photos show up (ms)
 const PHOTO_LIST_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
 
 interface ApiGallery {
@@ -28,6 +34,11 @@ interface ApiPhoto {
 
 interface ApiGalleryWithPhotos {
   photos: ApiPhoto[];
+}
+
+interface PhotoPanelProps {
+  /** Change photos half an interval out of step with an unstaggered panel. */
+  staggered?: boolean;
 }
 
 /**
@@ -74,22 +85,18 @@ async function fetchAllPhotoUrls(): Promise<string[]> {
   }
 }
 
-export default function PhotoPanel() {
+export default function PhotoPanel({ staggered = false }: PhotoPanelProps) {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [photoIndex, setPhotoIndex] = useState(0);
-
-  // keep the rotation timer from jumping past the end of a freshly-refreshed, shorter list
-  const photoUrlsRef = useRef<string[]>([]);
-  useEffect(() => {
-    photoUrlsRef.current = photoUrls;
-  }, [photoUrls]);
+  const slot = useClockSlot(PHOTO_ROTATE_INTERVAL_MS, staggered ? PHOTO_STAGGER_OFFSET_MS : 0);
+  // each screen shuffles its own list, so the same clock still gives each screen different photos
+  const photoIndex = slot !== null && photoUrls.length > 0 ? slot % photoUrls.length : null;
 
   // holds references to preloaded Image objects so the browser cache stays warm
   // (and the objects aren't garbage-collected) until each photo has been shown
   const preloadCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   useEffect(() => {
-    if (photoUrls.length === 0) return;
+    if (photoIndex === null) return;
     for (let offset = 0; offset <= PRELOAD_AHEAD_COUNT; offset++) {
       const url = photoUrls[(photoIndex + offset) % photoUrls.length];
       if (preloadCacheRef.current.has(url)) continue;
@@ -101,26 +108,14 @@ export default function PhotoPanel() {
 
   useEffect(() => {
     const loadPhotos = () => {
-      fetchAllPhotoUrls().then((urls) => {
-        setPhotoUrls(urls);
-        setPhotoIndex(0);
-      });
+      fetchAllPhotoUrls().then(setPhotoUrls);
     };
     loadPhotos();
     const refreshTimer = setInterval(loadPhotos, PHOTO_LIST_REFRESH_INTERVAL_MS);
     return () => clearInterval(refreshTimer);
   }, []);
 
-  useEffect(() => {
-    const rotateTimer = setInterval(() => {
-      const count = photoUrlsRef.current.length;
-      if (count === 0) return;
-      setPhotoIndex((current) => (current + 1) % count);
-    }, PHOTO_ROTATE_INTERVAL_MS);
-    return () => clearInterval(rotateTimer);
-  }, []);
-
-  const currentUrl = photoUrls[photoIndex];
+  const currentUrl = photoIndex !== null ? photoUrls[photoIndex] : undefined;
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">

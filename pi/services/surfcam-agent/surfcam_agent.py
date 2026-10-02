@@ -11,6 +11,8 @@ localhost-only HTTP API:
     POST /cams/<cam>/show      unpause, bring it fullscreen on top of chrome, and draw the
                                place name + surf conditions overlay (see surf_conditions.py)
     POST /cams/<cam>/stop      kill that cam's mpv
+    GET  /cams/<cam>/conditions  the cam's name, swell, wind and tide as json, for the
+                                 conditions panel on the other screen
 
 see pi/services/surfcam-agent/README.md for setup.
 """
@@ -29,7 +31,7 @@ import urllib.request
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from surf_conditions import Metric, Site, get_metrics
+from surf_conditions import Metric, Site, conditions_to_json, get_conditions, get_metrics
 
 LISTEN_HOST = "127.0.0.1"
 LISTEN_PORT = 8765
@@ -105,6 +107,7 @@ OVERLAY_SOURCE_COLOR = "&HCCCCCC&"
 OVERLAY_BAR_ALPHA = "&H70&"
 
 ROUTE_PATTERN = re.compile(r"^/cams/(?P<cam>[a-z0-9-]+)/(?P<action>prepare|show|stop)$")
+CONDITIONS_ROUTE_PATTERN = re.compile(r"^/cams/(?P<cam>[a-z0-9-]+)/conditions$")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("surfcam-agent")
@@ -419,7 +422,7 @@ ACTIONS = {"prepare": prepare_player, "show": show_player, "stop": stop_player}
 
 
 class AgentHandler(BaseHTTPRequestHandler):
-    """routes POST /cams/<cam>/<action> to the player functions."""
+    """routes POST /cams/<cam>/<action> to the player functions, GET .../conditions to the readings."""
 
     def _send_json(self, status: int, body: dict) -> None:
         """writes a json response with cors headers for the allowed page origin."""
@@ -428,7 +431,7 @@ class AgentHandler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         if origin in ALLOWED_ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
-            self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             # chrome's private-network-access preflight (public site -> localhost) needs this
             self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Content-Type", "application/json")
@@ -453,6 +456,15 @@ class AgentHandler(BaseHTTPRequestHandler):
             self._send_json(502, {"error": str(err)})
             return
         self._send_json(200, {"ok": True})
+
+    def do_GET(self) -> None:
+        """returns a cam's place name and current conditions (see conditions_to_json)."""
+        route = CONDITIONS_ROUTE_PATTERN.match(self.path)
+        if not route or route["cam"] not in CAMS:
+            self._send_json(404, {"error": f"unknown route or cam: {self.path}. known cams: {sorted(CAMS)}"})
+            return
+        site = CAMS[route["cam"]].site
+        self._send_json(200, {"name": site.name, **conditions_to_json(get_conditions(site))})
 
     def log_message(self, format: str, *args) -> None:
         """silences per-request access logs; actions are logged by the player functions."""

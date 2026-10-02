@@ -51,7 +51,6 @@ In-code docstrings must always be accurate and up to date.
 19. Simple when possible, but no simpler. Function if a function works, class only if needed.
 20. When creating a reusable function, consider a shared utility instead of duplicating logic.
 21. Code changes should be small and logically complete.
-22. **Never commit or push to git unless the user explicitly asks.** Make code changes and stop — all git operations are the user's call.
 
 ## JSDoc Standards (website/)
 
