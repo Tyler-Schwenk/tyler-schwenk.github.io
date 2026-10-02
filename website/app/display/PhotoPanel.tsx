@@ -2,13 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "@/lib/api";
-import { useClockSlot } from "./useClockSlot";
+import { wrapIndex } from "./kioskControl";
+import { clockSlotAt, useClockSlot } from "./useClockSlot";
 
 /**
  * Display panel: full-bleed rotation through random photos from every public
  * gallery. The photo changes on wall-clock boundaries, so when both screens
  * show photos, a `staggered` panel changes halfway between the other's changes
- * and the two screens take turns instead of flipping together.
+ * and the two screens take turns instead of flipping together. While held
+ * (shortcut 1) the panel stays on the photo it was showing when the hold
+ * started, stepped on by ] and [.
  */
 
 // how long each photo stays on screen (ms)
@@ -36,9 +39,17 @@ interface ApiGalleryWithPhotos {
   photos: ApiPhoto[];
 }
 
+/** A photo hold: freeze on the photo showing at `frozenAtMs`, moved on `photoStep` photos. */
+export interface PhotoHold {
+  frozenAtMs: number;
+  photoStep: number;
+}
+
 interface PhotoPanelProps {
   /** Change photos half an interval out of step with an unstaggered panel. */
   staggered?: boolean;
+  /** Stop changing and stay on one photo. */
+  hold?: PhotoHold | null;
 }
 
 /**
@@ -85,11 +96,15 @@ async function fetchAllPhotoUrls(): Promise<string[]> {
   }
 }
 
-export default function PhotoPanel({ staggered = false }: PhotoPanelProps) {
+export default function PhotoPanel({ staggered = false, hold = null }: PhotoPanelProps) {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const slot = useClockSlot(PHOTO_ROTATE_INTERVAL_MS, staggered ? PHOTO_STAGGER_OFFSET_MS : 0);
+  const offsetMs = staggered ? PHOTO_STAGGER_OFFSET_MS : 0;
+  const liveSlot = useClockSlot(PHOTO_ROTATE_INTERVAL_MS, offsetMs);
+  const slot = hold
+    ? clockSlotAt(hold.frozenAtMs, PHOTO_ROTATE_INTERVAL_MS, offsetMs) + hold.photoStep
+    : liveSlot;
   // each screen shuffles its own list, so the same clock still gives each screen different photos
-  const photoIndex = slot !== null && photoUrls.length > 0 ? slot % photoUrls.length : null;
+  const photoIndex = slot !== null && photoUrls.length > 0 ? wrapIndex(slot, photoUrls.length) : null;
 
   // holds references to preloaded Image objects so the browser cache stays warm
   // (and the objects aren't garbage-collected) until each photo has been shown

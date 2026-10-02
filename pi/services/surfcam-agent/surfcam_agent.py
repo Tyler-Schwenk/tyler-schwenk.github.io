@@ -15,6 +15,12 @@ behalf of the page over a tiny localhost-only HTTP API:
     GET  /cams/<cam>/conditions  the cam's name, waves, wind and tide (with its graph) as
                                  json, for the conditions panel on the other screen
 
+it also relays the kiosk's keyboard to the pages (see kiosk_control.py):
+
+    POST /control/keys/<key>   a key press, from xbindkeys
+    POST /control/reset        clear the presses (kiosk-run.sh, when the overnight sleep starts)
+    GET  /control/log?after=N  the presses since the last reset, long-polled by the pages
+
 see pi/services/surfcam-agent/README.md for setup.
 """
 
@@ -28,11 +34,13 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional
 
+from kiosk_control import CONTROL_KEYS, ControlLog
 from surf_conditions import (
     SCRIPPS_PIER_WIND,
     Metric,
@@ -145,6 +153,9 @@ OVERLAY_BAR_ALPHA = "&H70&"
 
 ROUTE_PATTERN = re.compile(r"^/cams/(?P<cam>[a-z0-9-]+)/(?P<action>prepare|show|stop)$")
 CONDITIONS_ROUTE_PATTERN = re.compile(r"^/cams/(?P<cam>[a-z0-9-]+)/conditions$")
+CONTROL_KEY_ROUTE_PATTERN = re.compile(r"^/control/keys/(?P<key>[a-z0-9]+)$")
+CONTROL_LOG_PATH = "/control/log"
+CONTROL_RESET_PATH = "/control/reset"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("surfcam-agent")
@@ -164,6 +175,7 @@ _state_lock = threading.Lock()
 # (the stream scrape takes ~1s) both see no player and both start one, and the first mpv
 # is orphaned: its socket gets taken over, so stop can never reach it
 _cam_locks = {cam: threading.Lock() for cam in CAMS}
+control_log = ControlLog()
 
 
 def fetch_stream_url(page_url: str) -> str:
@@ -463,7 +475,7 @@ ACTIONS = {"prepare": prepare_player, "show": show_player, "stop": stop_player}
 
 
 class AgentHandler(BaseHTTPRequestHandler):
-    """routes POST /cams/<cam>/<action> to the player functions, GET .../conditions to the readings."""
+    """routes the cam player, conditions and keyboard-control requests (see the module docstring)."""
 
     def _send_json(self, status: int, body: dict) -> None:
         """writes a json response with cors headers for the allowed page origin."""
@@ -480,15 +492,37 @@ class AgentHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def _send_not_found(self) -> None:
+        """404 naming what does exist, so a typo'd cam id or key is easy to spot."""
+        self._send_json(404, {
+            "error": f"unknown route: {self.path}. known cams: {sorted(CAMS)}, known keys: {sorted(CONTROL_KEYS)}"
+        })
+
     def do_OPTIONS(self) -> None:
         """answers the browser's cors preflight."""
         self._send_json(200, {})
 
     def do_POST(self) -> None:
-        """runs a prepare/show/stop action for a cam."""
-        route = ROUTE_PATTERN.match(self.path)
+        """runs a cam action, records a control key press, or resets the control log."""
+        path = urllib.parse.urlsplit(self.path).path
+        key_route = CONTROL_KEY_ROUTE_PATTERN.match(path)
+        if key_route and key_route["key"] in CONTROL_KEYS:
+            control_log.add(key_route["key"])
+            log.info("key %s", key_route["key"])
+            self._send_json(200, {"ok": True})
+            return
+        if path == CONTROL_RESET_PATH:
+            control_log.reset()
+            log.info("control reset")
+            self._send_json(200, {"ok": True})
+            return
+        self._run_cam_action(path)
+
+    def _run_cam_action(self, path: str) -> None:
+        """runs prepare/show/stop for a cam, from a /cams/<cam>/<action> path."""
+        route = ROUTE_PATTERN.match(path)
         if not route or route["cam"] not in CAMS:
-            self._send_json(404, {"error": f"unknown route or cam: {self.path}. known cams: {sorted(CAMS)}"})
+            self._send_not_found()
             return
         try:
             ACTIONS[route["action"]](route["cam"])
@@ -499,10 +533,18 @@ class AgentHandler(BaseHTTPRequestHandler):
         self._send_json(200, {"ok": True})
 
     def do_GET(self) -> None:
-        """returns a cam's place name and current conditions (see conditions_to_json)."""
-        route = CONDITIONS_ROUTE_PATTERN.match(self.path)
+        """returns a cam's conditions, or long-polls the control log (see kiosk_control.py)."""
+        url = urllib.parse.urlsplit(self.path)
+        if url.path == CONTROL_LOG_PATH:
+            after = urllib.parse.parse_qs(url.query).get("after", ["-1"])[0]
+            if not after.lstrip("-").isdigit():
+                self._send_json(400, {"error": f"after must be an integer version, got {after!r}"})
+                return
+            self._send_json(200, control_log.wait_for_change(int(after)))
+            return
+        route = CONDITIONS_ROUTE_PATTERN.match(url.path)
         if not route or route["cam"] not in CAMS:
-            self._send_json(404, {"error": f"unknown route or cam: {self.path}. known cams: {sorted(CAMS)}"})
+            self._send_not_found()
             return
         spot = CAMS[route["cam"]].spot
         self._send_json(200, {"name": spot.site.name, **conditions_to_json(get_conditions(spot))})

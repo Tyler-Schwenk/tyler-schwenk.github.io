@@ -18,12 +18,21 @@ CHROME_POLICY_DIR="/etc/opt/chrome/policies/managed"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SRC_DIR="$SCRIPT_DIR/../surfcam-agent"
-AGENT_FILES=(surfcam_agent.py surf_conditions.py)
+AGENT_FILES=(surfcam_agent.py surf_conditions.py kiosk_control.py)
+AGENT_CONTROL_URL="http://127.0.0.1:8765/control/keys"
+
+# keyboard control: x keysym -> key name the agent and the display page understand
+# (see pi/services/surfcam-agent/kiosk_control.py). xbindkeys grabs these system-wide, so
+# they work whichever window has focus, mpv included
+CONTROL_KEYS=(
+  "Tab:tab" "Escape:escape" "BackSpace:backspace" "bracketright:next" "bracketleft:prev"
+  "1:1" "2:2" "3:3" "4:4" "5:5" "6:6" "7:7" "8:8" "9:9"
+)
 KIOSK_HOME="/home/$KIOSK_USER"
 
 PACKAGES=(
   xserver-xorg xinit openbox x11-xserver-utils unclutter
-  mpv intel-media-va-driver vainfo fonts-noto-color-emoji scrot
+  mpv intel-media-va-driver vainfo fonts-noto-color-emoji scrot xbindkeys
   python3 curl iw
 )
 
@@ -74,7 +83,7 @@ cat > "$CHROME_POLICY_DIR/surfcam.json" <<EOF
 {"LocalNetworkAccessAllowedForUrls": ["$SITE_ORIGIN"]}
 EOF
 
-echo "== autologin on tty1 -> startx -> openbox -> ~/kiosk-run.sh"
+echo "== autologin on tty1 -> startx -> openbox -> xbindkeys + ~/kiosk-run.sh"
 install -d /etc/systemd/system/getty@tty1.service.d
 cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<EOF
 [Service]
@@ -100,11 +109,19 @@ xset s off
 xset s noblank
 xset -dpms
 unclutter -idle 0.5 -root &
+xbindkeys
 
 ~/kiosk-run.sh &
 EOF
 install_user_file 644 "$autostart" "$KIOSK_HOME/.config/openbox/autostart"
-rm -f "$bash_profile" "$xinitrc" "$autostart"
+
+xbindkeysrc="$(mktemp)"
+for mapping in "${CONTROL_KEYS[@]}"; do
+  # xbindkeysrc entries are a quoted command, then the key on the next line
+  printf '"curl -s -m 2 -X POST %s/%s"\n  %s\n\n' "$AGENT_CONTROL_URL" "${mapping#*:}" "${mapping%%:*}" >> "$xbindkeysrc"
+done
+install_user_file 644 "$xbindkeysrc" "$KIOSK_HOME/.xbindkeysrc"
+rm -f "$bash_profile" "$xinitrc" "$autostart" "$xbindkeysrc"
 
 install_user_file 755 "$SCRIPT_DIR/kiosk-run.sh" "$KIOSK_HOME/kiosk-run.sh"
 for agent_file in "${AGENT_FILES[@]}"; do

@@ -8,6 +8,7 @@ SLEEP_END_HOUR=6     # exclusive, local time
 POLL_INTERVAL_S=30
 RELAUNCH_DELAY_S=5
 DISPLAY_URL="https://tyler-schwenk.com/display"
+AGENT_CONTROL_RESET_URL="http://127.0.0.1:8765/control/reset"
 
 # resolution for the external monitor. a 4k monitor behind the usb-c/hdmi adapter only gets 30 Hz
 # at 3840x2160 (hdmi 1.4 bandwidth), so 1440p at 60 Hz is the sharp-and-smooth choice
@@ -47,11 +48,12 @@ arrange_outputs() {
 
 # one "x y width height role" line per active monitor, from `xrandr --listmonitors` rows
 # like " 0: +*eDP-1 2256/285x1504/190+0+0  eDP-1" (the * marks the primary). role is
-# "primary" for the screen mpv plays on, else "secondary"; a lone screen is always primary
+# "primary" for the screen mpv plays on, "secondary" for the other, and "solo" for a lone
+# screen (which then shows the keyboard menu too)
 monitor_geometries() {
   xrandr --listmonitors | awk '
     NR > 1 { split($3, g, /[\/x+]/); n++; geom[n] = g[5] " " g[6] " " g[1] " " g[3]; star[n] = ($2 ~ /\*/) }
-    END { for (i = 1; i <= n; i++) print geom[i], ((star[i] || n == 1) ? "primary" : "secondary") }'
+    END { for (i = 1; i <= n; i++) print geom[i], (n == 1 ? "solo" : (star[i] ? "primary" : "secondary")) }'
 }
 
 # names of the currently connected outputs, sorted. a change means a monitor was plugged in,
@@ -109,6 +111,8 @@ monitor_on
 
 while true; do
   if in_sleep_window; then
+    # anything left held or on the cam-only rotation goes back to normal for the morning
+    curl -s -m 2 -X POST "$AGENT_CONTROL_RESET_URL" > /dev/null
     monitor_off
     while in_sleep_window; do sleep "$POLL_INTERVAL_S"; done
     monitor_on

@@ -7,12 +7,24 @@
 
 // the agent only listens on the kiosk machine's own loopback, so this only works when
 // the page is running in the kiosk browser
-const SURFCAM_AGENT_URL = "http://127.0.0.1:8765";
+export const SURFCAM_AGENT_URL = "http://127.0.0.1:8765";
 
 const AGENT_UNREACHABLE_MESSAGE = "surfcam agent unreachable -- this panel only works on the kiosk";
 
-/** Cam ids the agent knows about. Keep in sync with CAMS in surfcam_agent.py. */
-export type SurfCamId = "pb" | "la-jolla-shores" | "scripps" | "scripps-underwater" | "moonlight";
+/**
+ * The cams, in rotation order, with the short name the shortcut menu shows.
+ * Ids must match CAMS in surfcam_agent.py.
+ */
+export const SURF_CAMS = [
+  { id: "pb", label: "Pacific Beach" },
+  { id: "la-jolla-shores", label: "La Jolla Shores" },
+  { id: "scripps", label: "Scripps Pier" },
+  { id: "scripps-underwater", label: "Scripps underwater" },
+  { id: "moonlight", label: "Moonlight Beach" },
+] as const;
+
+/** Cam ids the agent knows about. */
+export type SurfCamId = (typeof SURF_CAMS)[number]["id"];
 
 type SurfCamAction = "prepare" | "show" | "stop";
 
