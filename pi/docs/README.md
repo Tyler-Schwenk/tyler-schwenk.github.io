@@ -30,7 +30,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - Beszel system monitoring
 - Cloudflare Tunnel (public API access)
 - External SSD for media storage
-- Display Kiosk (hostname: displaytop) - separate Surface Laptop 3 driving an always-on monitor (displaypi, a Pi 3 B+, is the spare)
+- Display Kiosk (hostname: displaytop) - separate Surface Laptop 3 driving an always-on pair of screens
 
 **What's planned:**
 - Immich photo management
@@ -100,7 +100,7 @@ docs/
 ├── services/
 │   ├── beszel.md                  # Monitoring setup
 │   ├── cloudflare-tunnel.md       # Public access setup
-│   └── display-kiosk.md           # displaytop/displaypi: always-on monitor kiosk setup
+│   └── display-kiosk.md           # displaytop: always-on display kiosk setup
 ├── FORTYLER/
 │   ├── README.md                  # Quick reference index
 │   ├── photo-upload-workflow.md   # Adding new photos

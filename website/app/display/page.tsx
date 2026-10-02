@@ -11,7 +11,7 @@ import { prepareSurfCam, type SurfCamId } from "./surfCams";
  * Always-on kiosk display page. Rotates through a fixed list of panels, each
  * a self-contained view (photos, mallard count, etc). Only the active panel
  * is mounted, so an inactive panel's polling/timers stop automatically.
- * Meant to be opened in a kiosk browser (e.g. Chromium --kiosk) on a
+ * Meant to be opened in a kiosk browser (e.g. Chrome --kiosk) on a
  * dedicated monitor, not browsed normally.
  *
  * A panel with slow startup (a live video stream) can define `prepare`,
@@ -53,7 +53,7 @@ const BPM_DEBUG_MODE = false;
 const PANEL_ROTATE_INTERVAL_MS = 45_000;
 
 // how long before a panel is due on screen its `prepare` hook fires. needs to
-// cover the slowest panel's startup (mpv launch + first buffer on the Pi)
+// cover the slowest panel's startup (mpv launch + first buffer)
 const PANEL_PREPARE_LEAD_MS = 5_000;
 
 const PANELS: DisplayPanel[] = BPM_DEBUG_MODE

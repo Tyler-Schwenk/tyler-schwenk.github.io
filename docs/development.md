@@ -9,11 +9,8 @@ ssh tyler@192.168.1.116
 WiFi (DHCP, address drifts - check `ip -4 -br addr` on the Pi or the router):
 ssh tyler@192.168.1.167
 
-# displaytop ssh (Wi-Fi; set a DHCP reservation in the router)
+# displaytop (display kiosk laptop) ssh over Wi-Fi; set a DHCP reservation in the router
 ssh tyler@192.168.1.192
-
-# displaypi (spare) ssh via ethernet
-ssh tyler@192.168.1.187
 
  
 ## Frontend deploy

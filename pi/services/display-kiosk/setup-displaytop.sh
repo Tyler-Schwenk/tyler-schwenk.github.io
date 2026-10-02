@@ -16,7 +16,8 @@ CHROME_DEB_URL="https://dl.google.com/linux/direct/google-chrome-stable_current_
 CHROME_POLICY_DIR="/etc/opt/chrome/policies/managed"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AGENT_SRC="$SCRIPT_DIR/../surfcam-agent/surfcam_agent.py"
+AGENT_SRC_DIR="$SCRIPT_DIR/../surfcam-agent"
+AGENT_FILES=(surfcam_agent.py surf_conditions.py)
 KIOSK_HOME="/home/$KIOSK_USER"
 
 PACKAGES=(
@@ -29,8 +30,8 @@ if [ "$(id -u)" -ne 0 ]; then
   echo "run as root (sudo). it installs packages and writes system config." >&2
   exit 1
 fi
-if [ ! -f "$AGENT_SRC" ]; then
-  echo "can't find $AGENT_SRC. copy both display-kiosk/ and surfcam-agent/ into the same folder first (see header)." >&2
+if [ ! -f "$AGENT_SRC_DIR/${AGENT_FILES[0]}" ]; then
+  echo "can't find $AGENT_SRC_DIR/${AGENT_FILES[0]}. copy both display-kiosk/ and surfcam-agent/ into the same folder first (see header)." >&2
   exit 1
 fi
 
@@ -97,7 +98,9 @@ install_user_file 644 "$autostart" "$KIOSK_HOME/.config/openbox/autostart"
 rm -f "$bash_profile" "$xinitrc" "$autostart"
 
 install_user_file 755 "$SCRIPT_DIR/kiosk-run.sh" "$KIOSK_HOME/kiosk-run.sh"
-install_user_file 755 "$AGENT_SRC" "$KIOSK_HOME/surfcam-agent/surfcam_agent.py"
+for agent_file in "${AGENT_FILES[@]}"; do
+  install_user_file 755 "$AGENT_SRC_DIR/$agent_file" "$KIOSK_HOME/surfcam-agent/$agent_file"
+done
 
 echo "== laptop: never suspend, ignore the lid (it runs closed, plugged in)"
 install -d /etc/systemd/logind.conf.d

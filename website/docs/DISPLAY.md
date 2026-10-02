@@ -22,7 +22,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/page.tsx` | Rotation controller — cycles through `PANELS` every `PANEL_ROTATE_INTERVAL_MS` |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos |
 | `website/app/display/MallardPanel.tsx` | Current mallard count with a canvas-animated duck background |
-| `website/app/display/SurfCamPanel.tsx` | Live surf cam; asks the surfcam agent on the kiosk machine to play it (see "Surf Cams") |
+| `website/app/display/SurfCamPanel.tsx` | Live surf cam; asks the surfcam agent on displaytop to play it (see "Surf Cams") |
 | `website/app/display/surfCams.ts` | Client for the surfcam agent (`prepareSurfCam`, `showSurfCam`, `stopSurfCam`) and the `SurfCamId` list |
 | `website/app/display/PlaceholderPanel.tsx` | Generic "Coming Soon: {name}" stand-in, reused as new panels get built |
 
@@ -71,18 +71,22 @@ requests aren't subject to browser CORS rules.
 
 Live cams (Pacific Beach, La Jolla Shores, Scripps underwater) are normal rotation entries, but the
 video isn't played by the page. The streams are from HDOnTap, which blocks browser
-playback from other origins, so a small agent on the kiosk machine plays them in mpv fullscreen
-on top of Chromium (`pi/services/surfcam-agent/README.md`).
+playback from other origins, so a small agent on displaytop plays them in mpv fullscreen
+on top of Chrome (`pi/services/surfcam-agent/README.md`).
 
 `SurfCamPanel` calls the agent's `show` on mount and `stop` on unmount; the rotation's
 `prepare` hook calls `prepare` a few seconds earlier, which starts mpv paused and
 minimized so it's already buffered when the panel comes up. The stream therefore runs a
 few seconds behind real time, which is fine for ambient viewing.
 
-On the laptop the kiosk can drive two screens, each running this page; surf cam video
+While a cam shows, the agent draws an overlay on the video (place name, swell, wind,
+tide; readings from somewhere other than the cam are tagged with where they came from).
+That lives entirely in the agent -- see `pi/services/surfcam-agent/README.md`.
+
+The kiosk drives two screens, each running this page; surf cam video
 plays on the external monitor only (see `pi/docs/services/display-kiosk.md`).
 
-The page talks to the agent at `http://127.0.0.1:8765`, which only exists on the kiosk machine.
+The page talks to the agent at `http://127.0.0.1:8765`, which only exists on displaytop.
 Anywhere else the panel just shows "surfcam agent unreachable". Cam ids in
 `SurfCamId` must match `CAMS` in the agent.
 
@@ -119,10 +123,10 @@ if the fixed-offset-plus-PLL approach above doesn't feel tight enough in practic
 
 ## Hardware Constraints
 
-The primary kiosk is a Surface Laptop 3 (displaytop) with plenty of headroom, but the
-spare is a Raspberry Pi 3 B+ with 1 GB of RAM (see `pi/docs/services/display-kiosk.md`),
-which is not a lot for a full browser plus animation, so panels should stay light enough
-to run on it. Any panel that animates many elements should follow the pattern established
+This page runs on a Surface Laptop 3 (displaytop, see `pi/docs/services/display-kiosk.md`)
+with 8 GB of RAM and two screens, each running its own browser. That's plenty, but it's
+an always-on kiosk on a solar battery, so panels should stay cheap. Any panel that
+animates many elements should follow the pattern established
 in `MallardPanel.tsx`: draw on a single `<canvas>` with one `requestAnimationFrame`
 loop rather than many independently CSS-animated DOM nodes, pre-render repeated images
 once to an offscreen canvas instead of redrawing them every frame, and cap how many

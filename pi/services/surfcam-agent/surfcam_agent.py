@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """surfcam agent: plays live surf cams fullscreen on the display kiosk machine for the /display page.
 
-the kiosk page (chromium) can't play these streams itself -- hdontap only allows
+the kiosk page (chrome) can't play these streams itself -- hdontap only allows
 its own embed on other sites and 403s any browser request carrying a foreign
 Origin header. mpv sends no Origin, so it plays them fine. this agent runs on
 the kiosk next to the browser and drives mpv on behalf of the page over a tiny
 localhost-only HTTP API:
 
     POST /cams/<cam>/prepare   start mpv paused + minimized so it buffers in the background
-    POST /cams/<cam>/show      unpause and bring it fullscreen on top of chromium
+    POST /cams/<cam>/show      unpause, bring it fullscreen on top of chrome, and draw the
+                               place name + surf conditions overlay (see surf_conditions.py)
     POST /cams/<cam>/stop      kill that cam's mpv
 
 see pi/services/surfcam-agent/README.md for setup.
@@ -16,7 +17,6 @@ see pi/services/surfcam-agent/README.md for setup.
 
 import json
 import logging
-import platform
 import re
 import socket
 import subprocess
@@ -24,8 +24,10 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
+
+from surf_conditions import Metric, Site, get_metrics
 
 LISTEN_HOST = "127.0.0.1"
 LISTEN_PORT = 8765
@@ -33,24 +35,34 @@ LISTEN_PORT = 8765
 # the only page origins allowed to call this API (browser cors check)
 ALLOWED_ORIGINS = {"https://tyler-schwenk.com"}
 
-# cam id (used by the display page) -> public hdontap page that carries the stream url.
-# keep ids in sync with website/app/display/surfCams.ts
+
+@dataclass(frozen=True)
+class Cam:
+    """a live cam: the hdontap page that carries its stream, and where it is."""
+
+    page_url: str
+    site: Site
+
+
+# cam id (used by the display page) -> cam. keep ids in sync with website/app/display/surfCams.ts.
+# keep cams at 1080p or lower so decode and rendering stay light
 CAMS = {
-    "pb": "https://hdontap.com/stream/186699/pacific-beach-live-surf-webcam/",
-    # must stay 1080p or lower: the pi 3's hardware decoder can't do more (the
-    # 1440p hotel la jolla overlook cam decoded to garbage and overheated the pi)
-    "la-jolla-shores": "https://hdontap.com/stream/532541/la-jolla-shores-live-surf-cam/",
-    "scripps-underwater": "https://hdontap.com/stream/018408/scripps-pier-underwater-live-webcam/",
+    "pb": Cam(
+        "https://hdontap.com/stream/186699/pacific-beach-live-surf-webcam/",
+        Site("Pacific Beach", 32.7936, -117.2570),
+    ),
+    "la-jolla-shores": Cam(
+        "https://hdontap.com/stream/532541/la-jolla-shores-live-surf-cam/",
+        Site("La Jolla Shores", 32.8567, -117.2560),
+    ),
+    "scripps-underwater": Cam(
+        "https://hdontap.com/stream/018408/scripps-pier-underwater-live-webcam/",
+        Site("Scripps Pier (underwater)", 32.8669, -117.2571),
+    ),
 }
 
-# software-decoding 1080p pegs a pi 3 (~200% cpu, dropped frames); its bcm2835
-# hardware decoder (v4l2m2m) needs naming explicitly. on x86 (displaytop) mpv's
-# auto-safe picks vaapi on the intel gpu
-MPV_HWDEC = "v4l2m2m-copy" if platform.machine() == "aarch64" else "auto-safe"
-
-# kiosk-run.sh writes the external monitor's xrandr output name here when there is
-# one, so surf cams play on it instead of wherever mpv opens by default
-SCREEN_NAME_FILE = "/tmp/surfcam-screen"
+# auto-safe picks vaapi on displaytop's intel gpu, so 1080p streams decode in hardware
+MPV_HWDEC = "auto-safe"
 
 PAGE_FETCH_TIMEOUT_S = 15
 PAGE_USER_AGENT = "Mozilla/5.0"
@@ -65,13 +77,30 @@ IPC_READY_TIMEOUT_S = 10.0
 IPC_POLL_INTERVAL_S = 0.1
 IPC_REPLY_TIMEOUT_S = 5
 IPC_REQUEST_ID = 1  # tags our commands so replies can be told apart from mpv's event lines
-IPC_SOCKET_PATH_TEMPLATE ="/tmp/surfcam-{cam}.sock"
+IPC_SOCKET_PATH_TEMPLATE = "/tmp/surfcam-{cam}.sock"
 
 # how long to wait for mpv to exit after terminate() before killing it
 MPV_EXIT_TIMEOUT_S = 3
 
 # paused streams keep demuxing this far ahead, so unpausing starts instantly
 DEMUXER_READAHEAD_S = 10
+
+# overlay layout, in ASS script coordinates (mpv scales them to the actual window).
+# a translucent bar across the top holds the place name (left) and one line per metric (right)
+OVERLAY_ID = 1
+OVERLAY_RES_X = 1920
+OVERLAY_RES_Y = 1080
+OVERLAY_MARGIN_PX = 48
+OVERLAY_NAME_FONT_PX = 72
+OVERLAY_METRIC_FONT_PX = 34
+OVERLAY_SOURCE_FONT_PX = 24
+OVERLAY_METRIC_LINE_PX = 42
+OVERLAY_BAR_MIN_HEIGHT_PX = 120
+OVERLAY_BAR_PADDING_PX = 28
+# ASS colors are BGR hex; alpha is 00 opaque .. FF clear
+OVERLAY_TEXT_COLOR = "&HFFFFFF&"
+OVERLAY_SOURCE_COLOR = "&HCCCCCC&"
+OVERLAY_BAR_ALPHA = "&H70&"
 
 ROUTE_PATTERN = re.compile(r"^/cams/(?P<cam>[a-z0-9-]+)/(?P<action>prepare|show|stop)$")
 
@@ -85,6 +114,9 @@ class StreamUnavailableError(Exception):
 
 _stream_url_cache: dict[str, tuple[str, int]] = {}
 _players: dict[str, subprocess.Popen] = {}
+# mpv removes an overlay the moment the client that drew it disconnects, so each shown cam
+# keeps one ipc connection open for as long as it's playing
+_overlay_connections: dict[str, socket.socket] = {}
 _state_lock = threading.Lock()
 
 
@@ -130,7 +162,7 @@ def get_stream_url(cam: str) -> str:
     cached = _stream_url_cache.get(cam)
     if cached and cached[1] - time.time() > TOKEN_MIN_REMAINING_S:
         return cached[0]
-    url = fetch_stream_url(CAMS[cam])
+    url = fetch_stream_url(CAMS[cam].page_url)
     expiry = TOKEN_EXPIRY_PATTERN.search(url)
     # no parseable expiry -> expire immediately so we re-scrape next time
     expires_at = int(expiry.group(1)) if expiry else 0
@@ -157,8 +189,51 @@ def await_reply(reader) -> None:
             return
 
 
+def connect_ipc(cam: str) -> socket.socket:
+    """opens a connection to a cam's mpv control socket, waiting for mpv to create it.
+
+    args:
+        cam: cam id.
+
+    returns:
+        a connected socket with a reply timeout set. the caller closes it.
+
+    raises:
+        StreamUnavailableError: the socket never became available.
+    """
+    deadline = time.monotonic() + IPC_READY_TIMEOUT_S
+    while True:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            sock.connect(ipc_socket_path(cam))
+        except OSError as err:
+            sock.close()
+            if time.monotonic() > deadline:
+                raise StreamUnavailableError(
+                    f"mpv for '{cam}' never opened its control socket: {err}. "
+                    "check that mpv is installed, and run the agent in a terminal to see its log."
+                ) from err
+            time.sleep(IPC_POLL_INTERVAL_S)
+            continue
+        sock.settimeout(IPC_REPLY_TIMEOUT_S)
+        return sock
+
+
+def run_commands(sock: socket.socket, commands: list[list]) -> None:
+    """sends ipc commands over an open connection, waiting for each reply.
+
+    args:
+        sock: connection from connect_ipc.
+        commands: mpv ipc commands, e.g. [["set_property", "pause", False]].
+    """
+    reader = sock.makefile("rb")
+    for command in commands:
+        sock.sendall(json.dumps({"command": command, "request_id": IPC_REQUEST_ID}).encode() + b"\n")
+        await_reply(reader)
+
+
 def send_mpv_commands(cam: str, commands: list[list]) -> None:
-    """sends json ipc commands to a cam's mpv, waiting for its socket to come up.
+    """sends ipc commands to a cam's mpv over a short-lived connection.
 
     args:
         cam: cam id.
@@ -167,28 +242,85 @@ def send_mpv_commands(cam: str, commands: list[list]) -> None:
     raises:
         StreamUnavailableError: the socket never became available.
     """
-    deadline = time.monotonic() + IPC_READY_TIMEOUT_S
-    while True:
-        try:
-            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-                sock.connect(ipc_socket_path(cam))
-                sock.settimeout(IPC_REPLY_TIMEOUT_S)
-                reader = sock.makefile("rb")
-                for command in commands:
-                    sock.sendall(json.dumps({"command": command, "request_id": IPC_REQUEST_ID}).encode() + b"\n")
-                    await_reply(reader)
-            return
-        except OSError as err:
-            if time.monotonic() > deadline:
-                raise StreamUnavailableError(
-                    f"mpv for '{cam}' never opened its control socket: {err}. "
-                    "check that mpv is installed, and run the agent in a terminal to see its log."
-                ) from err
-            time.sleep(IPC_POLL_INTERVAL_S)
+    with connect_ipc(cam) as sock:
+        run_commands(sock, commands)
+
+
+def build_overlay_ass(site: Site, metrics: list[Metric]) -> str:
+    """builds the ASS events for the overlay: a top bar, the place name, and one line per metric.
+
+    args:
+        site: the cam's location (its name is shown top left).
+        metrics: lines to show top right. a metric with a source gets a small grey
+            '(from <source>)' tag, since it was measured somewhere other than the cam.
+
+    returns:
+        newline-separated ASS event text for mpv's osd-overlay.
+    """
+    bar_height = max(
+        OVERLAY_BAR_MIN_HEIGHT_PX, OVERLAY_BAR_PADDING_PX + OVERLAY_METRIC_LINE_PX * len(metrics)
+    )
+    center_y = bar_height // 2
+    right_x = OVERLAY_RES_X - OVERLAY_MARGIN_PX
+    bar = (
+        rf"{{\an7\pos(0,0)\bord0\shad0\1c&H000000&\1a{OVERLAY_BAR_ALPHA}\p1}}"
+        rf"m 0 0 l {OVERLAY_RES_X} 0 {OVERLAY_RES_X} {bar_height} 0 {bar_height}{{\p0}}"
+    )
+    name = (
+        rf"{{\an4\pos({OVERLAY_MARGIN_PX},{center_y})\fs{OVERLAY_NAME_FONT_PX}\b1\bord3\shad1"
+        rf"\1c{OVERLAY_TEXT_COLOR}\3c&H000000&}}{site.name}"
+    )
+    events = [bar, name]
+    if metrics:
+        lines = []
+        for metric in metrics:
+            line = metric.text
+            if metric.source:
+                line += rf" {{\fs{OVERLAY_SOURCE_FONT_PX}\1c{OVERLAY_SOURCE_COLOR}}}(from {metric.source})"
+            lines.append(line)
+        events.append(
+            rf"{{\an6\pos({right_x},{center_y})\fs{OVERLAY_METRIC_FONT_PX}\bord2\shad1"
+            rf"\1c{OVERLAY_TEXT_COLOR}\3c&H000000&}}" + r"\N".join(lines)
+        )
+    return "\n".join(events)
+
+
+def close_overlay(cam: str) -> None:
+    """drops a cam's overlay connection, which also removes the overlay from mpv."""
+    with _state_lock:
+        sock = _overlay_connections.pop(cam, None)
+    if sock is not None:
+        sock.close()
+
+
+def show_overlay(cam: str) -> None:
+    """draws the place name and conditions on a cam's mpv, and keeps the connection open.
+
+    never raises: a missing overlay shouldn't stop the video from showing.
+
+    args:
+        cam: cam id from CAMS.
+    """
+    site = CAMS[cam].site
+    try:
+        ass = build_overlay_ass(site, get_metrics(site))
+        sock = connect_ipc(cam)
+        # no event lines are needed, and a client that never reads would let them pile up
+        run_commands(sock, [
+            ["disable_event", "all"],
+            ["osd-overlay", OVERLAY_ID, "ass-events", ass, OVERLAY_RES_X, OVERLAY_RES_Y],
+        ])
+    except (StreamUnavailableError, OSError) as err:
+        log.warning("overlay for %s not shown: %s", cam, err)
+        return
+    close_overlay(cam)
+    with _state_lock:
+        _overlay_connections[cam] = sock
 
 
 def stop_player(cam: str) -> None:
     """kills a cam's mpv if it's running. safe to call when nothing's running."""
+    close_overlay(cam)
     with _state_lock:
         process = _players.pop(cam, None)
     if process is None or process.poll() is not None:
@@ -200,24 +332,11 @@ def stop_player(cam: str) -> None:
         process.kill()
 
 
-def screen_args() -> list[str]:
-    """returns mpv flags that put the video on the output named in SCREEN_NAME_FILE.
-
-    returns:
-        flags for that output, or an empty list when no file is set (one-screen setups,
-        where mpv's default is right).
-    """
-    try:
-        name = Path(SCREEN_NAME_FILE).read_text().strip()
-    except OSError:
-        return []
-    return [f"--screen-name={name}", f"--fs-screen-name={name}"] if name else []
-
-
 def prepare_player(cam: str) -> None:
-    """starts mpv for a cam paused and minimized so it buffers without covering chromium.
+    """starts mpv for a cam paused and minimized so it buffers without covering chrome.
 
-    no-op if that cam's mpv is already running.
+    no-op if that cam's mpv is already running. mpv opens on the primary screen, which
+    kiosk-run.sh makes the external monitor.
 
     args:
         cam: cam id from CAMS.
@@ -233,7 +352,6 @@ def prepare_player(cam: str) -> None:
     command = [
         "mpv", "--no-terminal", "--no-osc", "--no-audio",
         "--pause", "--window-minimized=yes", "--fullscreen", "--ontop",
-        *screen_args(),
         f"--hwdec={MPV_HWDEC}",
         f"--demuxer-readahead-secs={DEMUXER_READAHEAD_S}",
         f"--input-ipc-server={ipc_socket_path(cam)}",
@@ -247,6 +365,8 @@ def prepare_player(cam: str) -> None:
         ) from err
     with _state_lock:
         _players[cam] = process
+    # warm the conditions cache now, while the stream buffers, so show doesn't wait on the apis
+    get_metrics(CAMS[cam].site)
     log.info("prepared %s (pid %d)", cam, process.pid)
 
 
@@ -262,6 +382,7 @@ def show_player(cam: str) -> None:
         ["set_property", "fullscreen", True],
         ["set_property", "pause", False],
     ])
+    show_overlay(cam)
     log.info("showing %s", cam)
 
 
@@ -279,7 +400,7 @@ class AgentHandler(BaseHTTPRequestHandler):
         if origin in ALLOWED_ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-            # chromium's private-network-access preflight (public site -> localhost) needs this
+            # chrome's private-network-access preflight (public site -> localhost) needs this
             self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))

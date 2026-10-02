@@ -7,7 +7,7 @@ import { API_BASE } from "@/lib/api";
  * Display panel: current mallard count, with a canvas-animated background
  * of duck emoji -- one per mallard. Drawn on a single canvas (rather than
  * one DOM node per duck) since hundreds of independently CSS-animated
- * elements is too heavy for the Pi this runs on.
+ * elements is too heavy for an always-on kiosk.
  */
 
 // proxied through our own backend (see pi/services/website-backend/app/routers/mallard.py)
@@ -18,7 +18,7 @@ const MALLARD_FETCH_INTERVAL_MS = 60_000;
 const MALLARD_EMOJI = "\u{1F986}"; // duck emoji — closest standard emoji to a mallard
 
 // caps how many ducks actually get drawn -- the real count still shows in the
-// big number text, but the Pi this runs on can't smoothly animate hundreds
+// big number text, but a kiosk shouldn't burn CPU animating hundreds
 // of sprites, so rendering stops scaling up density past this point
 const MAX_RENDERED_DUCKS = 180;
 

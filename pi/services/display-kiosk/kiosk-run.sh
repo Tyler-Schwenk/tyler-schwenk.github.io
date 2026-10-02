@@ -9,16 +9,14 @@ POLL_INTERVAL_S=30
 RELAUNCH_DELAY_S=5
 DISPLAY_URL="https://tyler-schwenk.com/display"
 
-# the surfcam agent reads this to know which output to play video on (see surfcam_agent.py)
-SURFCAM_SCREEN_FILE="/tmp/surfcam-screen"
+# resolution for the external monitor. a 4k monitor behind the usb-c/hdmi adapter only gets 30 Hz
+# at 3840x2160 (hdmi 1.4 bandwidth), so 1440p at 60 Hz is the sharp-and-smooth choice
+EXTERNAL_MODE="2560x1440"
 
-# debian's chromium on the pi, google chrome (deb) on the laptop -- same flags, different names.
 # BROWSER_PROC is the process name pkill matches, BROWSER_DIR the profile folder prefix under ~/.config
-if command -v chromium >/dev/null; then
-  BROWSER=chromium; BROWSER_PROC=chromium; BROWSER_DIR=chromium
-else
-  BROWSER=google-chrome-stable; BROWSER_PROC=chrome; BROWSER_DIR=google-chrome
-fi
+BROWSER=google-chrome-stable
+BROWSER_PROC=chrome
+BROWSER_DIR=google-chrome
 
 # true during the overnight window. 10# avoids octal parsing of "08"/"09"
 in_sleep_window() {
@@ -30,19 +28,20 @@ in_sleep_window() {
 monitor_off() { xset +dpms; xset dpms force off; }
 monitor_on() { xset dpms force on; xset -dpms; xset s off; xset s noblank; }
 
-# on the laptop, lay the external monitor out to the right of the built-in screen (both
-# stay on, each gets its own browser) and record it as where surf cam video plays. no-op
-# without an internal panel (the pi), and with no external monitor the built-in screen
-# just runs alone. re-run on every browser relaunch so a monitor plugged in later gets picked up.
+# lay the external monitor out to the right of the built-in screen (both stay on, each
+# gets its own browser) and make it primary, which is where mpv opens the surf cams.
+# with no external monitor the built-in screen just runs alone. re-run on every browser
+# relaunch so a monitor plugged in later gets picked up.
 arrange_outputs() {
   local internal external
   internal=$(xrandr | awk '/^eDP/ {print $1; exit}')
   external=$(xrandr | awk '/ connected/ && $1 !~ /^eDP/ {print $1; exit}')
-  rm -f "$SURFCAM_SCREEN_FILE"
-  [ -n "$internal" ] || return 0
   [ -n "$external" ] || return 0
-  xrandr --output "$internal" --auto --pos 0x0 --output "$external" --auto --primary --right-of "$internal"
-  echo "$external" > "$SURFCAM_SCREEN_FILE"
+  # fall back to the monitor's preferred mode if it doesn't offer EXTERNAL_MODE
+  xrandr --output "$internal" --auto --pos 0x0 \
+    --output "$external" --mode "$EXTERNAL_MODE" --primary --right-of "$internal" ||
+    xrandr --output "$internal" --auto --pos 0x0 \
+      --output "$external" --auto --primary --right-of "$internal"
 }
 
 # one "x y width height" line per active monitor, from `xrandr --listmonitors` rows like
