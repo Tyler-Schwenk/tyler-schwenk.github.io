@@ -19,7 +19,10 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 
 | File | Purpose |
 |------|---------|
-| `website/app/display/page.tsx` | Rotation controller — `ROTATION` pairs what each screen shows per slot; picks this screen's side from `?screen=` |
+| `website/app/display/page.tsx` | Rotation controller — `ROTATION` pairs what each screen shows per slot, `SHORTCUTS` maps the digit keys; picks this screen's side from `?screen=` |
+| `website/app/display/layout.tsx` | Turns off page scrolling for `/display` (every panel is a fixed full-screen layer; without it the kiosk browser can show scrollbars) |
+| `website/app/display/kioskControl.ts` | Keyboard control: the key-log state machine both pages replay (`replayControl`) and the long-poll hook (`useControlLog`) |
+| `website/app/display/ControlOverlay.tsx` | The shortcut menu and the top-right "held" indicator |
 | `website/app/display/useClockSlot.ts` | Wall-clock slot hook shared by the rotation and the photo slideshow |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos (`staggered` changes half a beat later) |
 | `website/app/display/MallardPanel.tsx` | Current mallard count with a canvas-animated duck background |
@@ -42,8 +45,9 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 
 The kiosk runs one browser per screen and opens this page as `/display?screen=primary`
 on the screen surf cams play on (the external monitor, below) and
-`/display?screen=secondary` on the other (the laptop's own screen, on top). No param
-means primary, so opening `/display` in a normal browser shows the primary side.
+`/display?screen=secondary` on the other (the laptop's own screen, on top). A lone
+screen gets `?screen=solo`, which shows the primary side plus the keyboard overlay; no
+param means solo too, so opening `/display` in a normal browser shows the full thing.
 
 The two screens are coordinated: `ROTATION` is a list of slots, and each slot says what
 both screens show at the same time:
@@ -51,13 +55,14 @@ both screens show at the same time:
 | Slot | Primary (monitor, below) | Secondary (laptop, top) |
 |------|--------------------------|-------------------------|
 | photos | photos | photos, staggered |
-| mallards | mallard count | photos, staggered (carries on) |
+| mallards | photos (carries on) | mallard count |
 | each of the five cams | the live cam | that spot's waves, wind and tide |
 
 The active slot comes from the wall clock, not a timer chain (`useClockSlot.ts`): time
 is cut into `PANEL_ROTATE_INTERVAL_MS` slots counted from the epoch, and slot `n` is
 `ROTATION[n % ROTATION.length]`. Both screens share the laptop's clock, so they switch at
 the same instant and stay paired, and a reloaded page lands straight on the current slot.
+The keyboard can change this (below); with no keys pressed it's exactly this.
 
 Only the primary side of a cam slot talks to the agent's player: mpv plays on the primary
 screen, so exactly one page may send it `show`/`stop`, or the two pages would start and
@@ -66,9 +71,47 @@ kill each other's video. The secondary side only reads conditions.
 **Staggered photos:** each screen shuffles the photo list on its own, so they show
 different photos. Both change every `PHOTO_ROTATE_INTERVAL_MS` on wall-clock boundaries,
 but the secondary (`<PhotoPanel staggered />`) is offset by half an interval, so the
-screens take turns: one changes, then the other, at even spacing. The secondary photo
+screens take turns: one changes, then the other, at even spacing. The primary photo
 panel renders identically in the photos and mallards slots, so React keeps it mounted
 across them and the slideshow carries on without reloading.
+
+### Keyboard Control
+
+The laptop's keyboard drives the display. Every key works from anywhere (no need to open
+the menu first); tab just shows the list on the top screen.
+
+| Key | Does |
+|-----|------|
+| `tab` | open/close the shortcut menu |
+| `1` | hold the photos: both screens stop on the photo they're showing |
+| `2` | hold the mallard counter |
+| `3` | rotate through the surf cams only (from the first) |
+| `4`-`8` | hold one cam (in `SURF_CAMS` order: PB, La Jolla Shores, Scripps, Scripps underwater, Moonlight) |
+| `]` / `[` | next / previous: the next photo while photos are held, the next slot while a slot is held (still held), else skip the rotation ahead (the new item gets a full interval) |
+| `backspace` | back one step: closes the menu if it's open, else ends the hold or cam-only rotation |
+| `esc` | straight back to the standard display |
+
+A hold or the cam-only rotation shows a small indicator in the top right of the top
+screen ("held" / "surf cams only", "backspace to return"). Everything goes back to the
+standard rotation when the overnight sleep starts.
+
+**How it works:** xbindkeys on displaytop grabs those keys system-wide (so they work even
+while mpv has focus) and posts each press to the surfcam agent, which keeps a log of the
+presses since the last reset (`pi/services/surfcam-agent/kiosk_control.py`). Each page
+long-polls `GET /control/log` and replays the whole log through `replayControl` in
+`kioskControl.ts`, a pure state machine, so both screens always agree, and a page that
+reloads (or opens mid-day) replays the log and lands in the same place. The log is
+cleared by `kiosk-run.sh` when the sleep window starts, and by an agent restart.
+
+The rotation's position is an anchor (`anchorMs`, `anchorIndex`): at `anchorMs` it's on
+item `anchorIndex` of its list (all slots, or just the cams) and moves on one per
+interval. With no keys pressed the anchor is (0, 0), i.e. the plain wall clock. `]`/`[`
+re-anchor at the press. A photo hold freezes each `PhotoPanel` on the photo its own clock
+slot gave at the moment `1` was pressed.
+
+To add a shortcut, add an entry to `SHORTCUTS` in `page.tsx` (a free digit key; the
+kiosk grabs 1-9). A new kind of action needs a case in `kioskControl.ts`. New physical
+keys need adding to `CONTROL_KEYS` in both `setup-displaytop.sh` and `kiosk_control.py`.
 
 ### Preparing Panels Ahead of Time
 

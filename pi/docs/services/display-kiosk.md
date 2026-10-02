@@ -34,8 +34,9 @@ Minimal X setup — just enough to run full-screen browsers:
    tty1
 2. `~/.bash_profile` — on tty1 login with no `$DISPLAY`, runs `startx`
 3. `~/.xinitrc` — execs `openbox-session`
-4. `~/.config/openbox/autostart` — disables screen blanking/DPMS, starts `unclutter`,
-   then launches `~/kiosk-run.sh` in the background
+4. `~/.config/openbox/autostart` — disables screen blanking/DPMS, starts `unclutter`
+   and `xbindkeys` (keyboard control, below), then launches `~/kiosk-run.sh` in the
+   background
 5. `~/kiosk-run.sh` (from `pi/services/display-kiosk/kiosk-run.sh`) — starts the surfcam
    agent (restarted if it dies, logging to `/tmp/surfcam-agent.log`), then loops: lay
    out the screens, clear each browser's disk cache, launch one browser per screen in
@@ -62,7 +63,8 @@ run `pkill -x chrome`.
 the USB-C/HDMI adapter only gets 30 Hz at 3840x2160 (HDMI 1.4 bandwidth).
 
 Each browser opens `/display?screen=primary` or `/display?screen=secondary`, from whether
-its monitor is the xrandr primary (a lone screen is always primary). The two pages are
+its monitor is the xrandr primary (a lone screen gets `screen=solo`, which shows the
+primary content plus the keyboard menu). The two pages are
 coordinated: both pick the current slot from the clock, and each slot says what each
 screen shows (a surf cam on the monitor with its waves/wind/tide on the laptop screen,
 photos on both taking turns to change, etc). Only the primary page drives the surf cam
@@ -84,11 +86,24 @@ The laptop stays open and plugged in:
 - Netplan's Wi-Fi config must not also exist in another file with a `match:` rule or
   `netplan apply` fails with "networkd backend does not support wifi with match:"
 
+### Keyboard control
+
+The laptop's own keyboard controls the display: tab opens a shortcut menu on the top
+screen, digits hold a photo, the mallard counter or a cam, `]`/`[` step, backspace/esc go
+back (full key list in `website/docs/DISPLAY.md`). `xbindkeys` grabs those keys
+system-wide from `~/.xbindkeysrc` (written by the setup script from its `CONTROL_KEYS`
+list) and each press runs `curl -X POST http://127.0.0.1:8765/control/keys/<key>` to the
+surfcam agent, which relays it to both pages. Because the keys are grabbed by X, they
+work whichever window has focus, mpv included, but the console (Ctrl+Alt+F2) is
+unaffected. Check it's running with `pgrep -a xbindkeys`, and watch presses arrive with
+`grep "key " /tmp/surfcam-agent.log`.
+
 ### Overnight sleep (battery saver)
 
 From 00:00 to 06:00 local time (Pacific, set by the machine's timezone) the kiosk sleeps
 to save solar battery: `kiosk-run.sh` kills the browsers and forces the monitors off with
-`xset dpms force off`. At 06:00 it turns the monitors back on and relaunches the browsers
+`xset dpms force off`, and resets the keyboard control (`POST /control/reset`), so
+anything left held goes back to the standard rotation by morning. At 06:00 it turns the monitors back on and relaunches the browsers
 (fresh cache, so it also picks up any overnight deploys).
 
 - The script checks the clock itself (polls every 30s) rather than using cron, so a

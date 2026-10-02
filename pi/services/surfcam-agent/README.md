@@ -28,6 +28,14 @@ Stdlib-only Python server on `127.0.0.1:8765`, no dependencies beyond `mpv`.
 | `POST /cams/<cam>/show` | Unpause and bring mpv fullscreen/on top via its JSON IPC socket (`/tmp/surfcam-<cam>.sock`), then draw the info overlay (below). Runs `prepare` first if needed. |
 | `POST /cams/<cam>/stop` | Kill that cam's mpv. |
 | `GET /cams/<cam>/conditions` | The cam's place name, waves, wind and tide (with its graph data) as json (below), for the conditions panel on the laptop screen. |
+| `POST /control/keys/<key>` | Log a keyboard-control key press (from xbindkeys). Keys: `tab`, `escape`, `backspace`, `next`, `prev`, `1`-`9`. |
+| `POST /control/reset` | Clear the key log (from `kiosk-run.sh` when the overnight sleep starts). |
+| `GET /control/log?after=<version>` | The key log since the last reset, `{"session_ms", "version", "events": [{"key", "at_ms"}]}`. Long-polls: waits up to 25 s for the version to differ from `after` (`-1` answers at once). |
+
+**Keyboard control** (`kiosk_control.py`): the agent is also the relay between the
+kiosk's keyboard and the two pages. It only stores the presses; what they mean is worked
+out in the page (`website/app/display/kioskControl.ts`), which replays the whole log, so
+both screens always agree. The log lives in memory, so an agent restart is also a reset.
 
 The rotation controller calls `prepare` `PANEL_PREPARE_LEAD_MS` before a surf cam
 panel is due, the panel calls `show` on mount and `stop` on unmount. Only the primary
@@ -114,6 +122,7 @@ shown on the Pacific Beach cam says it's from Scripps Pier.
 |---|---|
 | `surfcam_agent.py` | Cam list (stream source + spot), mpv control, the HTTP API, and `build_overlay_ass` / `show_overlay` |
 | `surf_conditions.py` | Fetches the readings (`get_conditions`) and formats them as overlay lines (`get_metrics`) or json (`conditions_to_json`); no mpv knowledge |
+| `kiosk_control.py` | The keyboard-control key log (`ControlLog`) and the keys it accepts |
 
 **Failure handling** (`surf_conditions.py`): a flaky API can't take the overlay or panel down.
 - Each reading is fetched on its own thread and fails on its own, so a missing wave
