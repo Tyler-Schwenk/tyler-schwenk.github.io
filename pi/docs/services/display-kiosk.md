@@ -41,8 +41,9 @@ Minimal X setup — just enough to run full-screen browsers:
    agent (restarted if it dies, logging to `/tmp/surfcam-agent.log`), then loops: lay
    out the screens, clear each browser's disk cache, launch one browser per screen in
    `--kiosk` mode on the display page, relaunch after a 5s pause if any exits or
-   crashes. Whenever the browsers are killed it also kills any `mpv`, since a killed
-   page can't tell the agent to stop its cam. Also handles the overnight sleep window
+   crashes. Whenever the browsers are killed it also stops the cams (`POST
+   /cams/stop-all` to the agent, then `pkill -x mpv`), since a killed page can't tell
+   the agent to stop its cam. Also handles the overnight sleep window
    (below)
 
 ### Multiple screens

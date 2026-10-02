@@ -554,22 +554,40 @@ def wait_for_first_frame(cam: str) -> None:
     )
 
 
-def show_player(cam: str, token: Optional[str] = None) -> None:
+def is_shown_for(cam: str, token: Optional[str]) -> bool:
+    """true while the show with this token is still the one the page wants up."""
+    with _state_lock:
+        return _shown_tokens.get(cam, _NOT_SHOWN) == token
+
+
+def show_player(cam: str, token: Optional[str] = None, claim: bool = True) -> None:
     """unpauses a cam's mpv and brings it fullscreen once it has a picture. prepares it first if needed.
+
+    if the cam is stopped while it's starting up, its window is never brought up.
 
     args:
         cam: cam id from CAMS.
         token: identifies the page mount asking, so its later stop can be told apart
             from a stale one (see stop_player).
+        claim: record this token as the one showing the cam. a restart (see
+            restart_if_dropped) passes False, so it can't undo a stop that lands meanwhile.
 
     raises:
         StreamUnavailableError: the stream couldn't be started or never produced a frame.
     """
     prepare_player(cam)
     # claim the cam before waiting, so a stale stop arriving meanwhile is recognised
-    with _state_lock:
-        _shown_tokens[cam] = token
+    if claim:
+        with _state_lock:
+            _shown_tokens[cam] = token
     wait_for_first_frame(cam)
+    if not is_shown_for(cam, token):
+        # stopped while starting up (or a newer show took over, which raises it itself)
+        with _state_lock:
+            stopped = cam not in _shown_tokens
+        if stopped:
+            stop_player(cam)
+        return
     send_mpv_commands(cam, [
         ["set_property", "window-minimized", False],
         ["set_property", "fullscreen", True],
@@ -597,27 +615,28 @@ def restart_if_dropped(cam: str, token: Optional[str], process: subprocess.Popen
         process: the mpv to watch.
     """
     process.wait()
-    time.sleep(SHOWN_RESTART_DELAY_S)
     with _state_lock:
-        still_wanted = _shown_tokens.get(cam, _NOT_SHOWN) == token and _players.get(cam) is process
-        if still_wanted:
+        dropped = _shown_tokens.get(cam, _NOT_SHOWN) == token and _players.get(cam) is process
+        if dropped:
             _players.pop(cam, None)
-    if not still_wanted:
+    if not dropped:
         return
     log.warning("%s dropped while showing (mpv exit code %s); restarting it", cam, process.returncode)
     close_overlay(cam)
-    try:
-        show_player(cam, token)
-    except StreamUnavailableError as err:
-        log.error("restarting %s failed: %s", cam, err)
+    # keep trying for as long as the page still wants this cam up
+    while is_shown_for(cam, token):
+        time.sleep(SHOWN_RESTART_DELAY_S)
+        try:
+            show_player(cam, token, claim=False)
+            return
+        except StreamUnavailableError as err:
+            log.error("restarting %s failed: %s; trying again", cam, err)
 
 
 def stop_all_players() -> None:
     """stops every cam, for kiosk-run.sh when it kills the browsers (nobody's left to send stop)."""
     for cam in CAMS:
         stop_player(cam)
-
-
 
 
 class AgentHandler(BaseHTTPRequestHandler):

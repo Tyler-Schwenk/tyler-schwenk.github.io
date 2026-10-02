@@ -25,8 +25,9 @@ Stdlib-only Python server on `127.0.0.1:8765`, no dependencies beyond `mpv`.
 | Request | Effect |
 |---|---|
 | `POST /cams/<cam>/prepare` | Get the cam's `.m3u8` (scraped from its HDOnTap page, or Surfline's fixed url), start mpv paused + minimized so it buffers in the background. No-op if already running. |
-| `POST /cams/<cam>/show` | Unpause and bring mpv fullscreen/on top via its JSON IPC socket (`/tmp/surfcam-<cam>.sock`), then draw the info overlay (below). Runs `prepare` first if needed. |
-| `POST /cams/<cam>/stop` | Kill that cam's mpv. |
+| `POST /cams/<cam>/show?token=<t>` | Wait for mpv's first frame, then unpause and bring it fullscreen/on top via its JSON IPC socket (`/tmp/surfcam-<cam>.sock`), then draw the info overlay (below). Runs `prepare` first if needed. |
+| `POST /cams/<cam>/stop?token=<t>` | Kill that cam's mpv, unless a newer show of it (different token) has already arrived. |
+| `POST /cams/stop-all` | Kill every cam's mpv (from `kiosk-run.sh` when it kills the browsers). |
 | `GET /cams/<cam>/conditions` | The cam's place name, waves, wind and tide (with its graph data) as json (below), for the conditions panel on the laptop screen. |
 | `POST /control/keys/<key>` | Log a keyboard-control key press (from xbindkeys). Keys: `tab`, `escape`, `backspace`, `next`, `prev`, `1`-`9`. |
 | `POST /control/reset` | Clear the key log (from `kiosk-run.sh` when the overnight sleep starts). |
@@ -46,13 +47,31 @@ Starting and stopping a cam's mpv is serialized by a per-cam lock: without it, t
 requests arriving together (the stream scrape takes about a second) would each start an
 mpv, and the first would be orphaned, since the second takes over its control socket.
 
+What happens when the cam on screen changes (in the rotation, or by the keyboard):
+- **Show waits for a picture.** An mpv window with no frame yet is plain white, so `show`
+  polls mpv's `vo-configured` and only raises the window once it's true (up to 20 s, else
+  it returns an error the panel displays and retries). A cam prepared ahead is ready at
+  once; one jumped to with a key shows "loading surf cam..." for a few seconds instead
+  of a white screen.
+- **Stale stops are ignored.** Each panel mount sends a random token with its show and
+  stop. Going A, B, A quickly sends stop(A) and a new show(A) on separate connections,
+  so they can arrive in either order; a stop whose token isn't the current show's is
+  ignored, so it can't kill the video that's meant to be up.
+- **Unused prepares are cleaned up.** A cam prepared but not shown within 30 s is stopped
+  (a key press can change what's next after the page prepared it).
+- **Drops are restarted.** If a shown cam's mpv exits by itself (the stream dropped, or
+  its url token expired during a long hold), the agent shows it again after 10 s, and
+  keeps trying while the page still wants it. A deliberate stop clears the token first,
+  so it's never undone, and a restart never re-claims a cam that was stopped meanwhile.
+
 mpv runs with `--no-input-default-bindings`, because it takes keyboard focus when it comes
 on top and keys pressed at the kiosk would otherwise quit, pause, or resize it.
 
 **Cleanup:** the agent stops its mpv processes when it exits, including on SIGTERM
-(`pkill`'s default). `kiosk-run.sh` also runs `pkill -x mpv` whenever it kills the
-browsers (a killed page never sends `stop`) and before every agent start (a new agent
-can't see the old one's players).
+(`pkill`'s default). Whenever `kiosk-run.sh` kills the browsers (a killed page never
+sends `stop`) it asks the agent to `stop-all` first (a bare `pkill` would just be
+restarted as a drop), then runs `pkill -x mpv` as a fallback. It also kills any mpv
+before every agent start (a new agent can't see the old one's players).
 
 HDOnTap stream URLs carry an expiring token (~12 hours); one is reused until under an
 hour remains, then re-scraped. Surfline's URLs are fixed (`hls.cdn-surfline.com/oregon/<alias>/playlist.m3u8`).
