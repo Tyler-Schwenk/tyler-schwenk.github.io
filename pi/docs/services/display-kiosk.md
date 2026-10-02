@@ -35,12 +35,38 @@ Minimal X setup — no desktop environment, just enough to run one full-screen b
 2. `~/.bash_profile` — on tty1 login with no `$DISPLAY`, runs `startx`
 3. `~/.xinitrc` — execs `openbox-session`
 4. `~/.config/openbox/autostart` — disables screen blanking/DPMS, starts `unclutter`,
-   then loops: clear Chromium's disk cache, launch `chromium --kiosk` pointed at the
-   display page, relaunch after a 5s pause if it ever exits or crashes
+   then launches `~/kiosk-run.sh` in the background
+5. `~/kiosk-run.sh` — loops: clear Chromium's disk cache, launch `chromium --kiosk`
+   pointed at the display page, relaunch after a 5s pause if it ever exits or crashes.
+   Also handles the overnight sleep window (below)
+
+### Overnight sleep (battery saver)
+
+From 00:00 to 06:00 local time (Pacific, set by the Pi's timezone) the kiosk sleeps to
+save solar battery: `kiosk-run.sh` kills Chromium and forces the monitor off with
+`xset dpms force off`. At 06:00 it turns the monitor back on and relaunches Chromium
+(fresh cache, so it also picks up any overnight deploys).
+
+- The script checks the clock itself (polls every 30s) rather than using cron, so a
+  reboot or crash at 3am stays asleep instead of starting Chromium
+- The window is the `SLEEP_START_HOUR` / `SLEEP_END_HOUR` constants at the top of
+  `~/kiosk-run.sh` (start inclusive, end exclusive)
+- DPMS is normally disabled for the always-on display; it's only enabled for the
+  duration of the sleep window
+- The Pi itself stays powered on (X, openbox, SSH all still work) — only the browser
+  and monitor are off. A backup of the previous autostart is at
+  `~/.config/openbox/autostart.bak`
 
 **Why the cache gets cleared on every launch:** the site is served from GitHub Pages
 with `Cache-Control: max-age=600`. Without clearing it, restarting Chromium to pick up
 a deploy can still serve a stale disk-cached copy for up to 10 minutes.
+
+### Surf cam playback
+
+Surf cam panels are played by `mpv` (fullscreen, on top of Chromium), driven by the
+surfcam agent -- a small Python server started from `~/kiosk-run.sh` alongside the
+browser. Setup, the Chromium local-network-access policy it needs, and troubleshooting
+are in `pi/services/surfcam-agent/README.md`.
 
 ### Forced HDMI mode
 
@@ -61,8 +87,8 @@ page it already loaded. After a deploy:
 ssh tyler@192.168.1.187 "pkill chromium"
 ```
 
-The autostart loop clears the cache and relaunches Chromium within ~5-8 seconds,
-fetching the new deploy fresh.
+The `kiosk-run.sh` loop clears the cache and relaunches Chromium within ~5-8 seconds,
+fetching the new deploy fresh (outside the overnight sleep window).
 
 ## Hardware Constraints
 
@@ -88,8 +114,12 @@ been lost (e.g. after a fresh OS reflash) — re-add it per "Forced HDMI mode" a
 
 **Displayed content looks stale after a push:** Chromium wasn't restarted, or its
 cache wasn't actually cleared. Run the restart command above; if still stale, confirm
-`~/.config/openbox/autostart` still has the `rm -rf` cache-clear line before the
-`chromium` launch.
+`~/kiosk-run.sh` still has the `rm -rf` cache-clear line before the `chromium` launch.
+
+**Screen is black / no Chromium during the day:** check the time and the
+`SLEEP_START_HOUR` / `SLEEP_END_HOUR` constants in `~/kiosk-run.sh`, and that
+`timedatectl` shows the right timezone. A wrong clock means the sleep window lands at
+the wrong time.
 
 **Check what's actually on screen without physically looking:** `scrot` is installed
 for exactly this — SSH in and run:
