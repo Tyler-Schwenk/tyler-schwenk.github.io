@@ -114,6 +114,7 @@ After any file modifications:
 - **Pi deployment**: SSH to fart-pi, pull from this repo, run services from `pi/services/`
 - **Public API**: `https://api.tyler-schwenk.com` via Cloudflare Tunnel pointing to Pi port 8000
 - **Pi access over LAN**: `ssh tyler@192.168.1.116` (Ethernet, primary). Must be on the home network (192.168.1.0/24). Private service ports (8000 API, 8090 Beszel, 2283 Immich) are LAN-only too
+- **Display kiosk**: `displaytop` (Surface Laptop 3, Ubuntu Server) drives the always-on screens showing `tyler-schwenk.com/display`. SSH over Wi-Fi: `ssh tyler@192.168.1.192` (DHCP reservation in the router). Full setup/rebuild runbook: `pi/docs/services/display-kiosk.md`; surf cam agent: `pi/services/surfcam-agent/README.md`
 - **PowerShell**: Quote comma-separated lists when needed
 
 ## When Making Changes

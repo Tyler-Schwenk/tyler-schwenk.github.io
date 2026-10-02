@@ -45,8 +45,7 @@ one line per reading (top right), drawn by mpv's `osd-overlay` (ASS text). The f
 | `surfcam_agent.py` | Cam list (stream page + location), mpv control, and `build_overlay_ass` / `show_overlay` |
 | `surf_conditions.py` | Fetches and formats the readings; no mpv knowledge |
 
-Readings (free, keyless APIs, cached 10 minutes, each fetched independently so one failing
-API just drops its line):
+Readings (free, keyless APIs):
 
 | Line | Source | Location of the reading |
 |---|---|---|
@@ -58,6 +57,17 @@ Directions are where the swell/wind comes *from*. Anything read more than
 `LOCAL_RADIUS_KM` (1 km) from the cam gets a small grey "(from <place>)" tag, so a tide
 shown on the Pacific Beach cam says it's from Scripps Pier. The Scripps underwater cam is
 at the station, so it has no tag. Each cam's name and coordinates are in `CAMS`.
+
+**Failure handling** (`surf_conditions.py`): a flaky API can't take the overlay down.
+- Each reading is fetched on its own thread and fails on its own, so a missing swell
+  reading still shows wind and tide, and a hanging API costs one 5 s timeout, not three
+- Any error at all (network, malformed response, an unexpected field) just drops that
+  line; the overlay and the video still show
+- Results are cached for 10 minutes. If a refresh fails, the last good reading is kept for
+  up to 2 hours (tide predictions, which don't drift, up to 24 hours) before being dropped
+- After a failure an API isn't retried for 60 seconds, so an outage doesn't add a delay
+  to every cam change
+- If everything fails, the bar still shows the place name
 
 The conditions are fetched during `prepare`, so `show` doesn't wait on the APIs. An overlay
 belongs to the IPC client that drew it and vanishes when that connection closes, so the

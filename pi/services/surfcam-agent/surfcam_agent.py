@@ -302,6 +302,7 @@ def show_overlay(cam: str) -> None:
         cam: cam id from CAMS.
     """
     site = CAMS[cam].site
+    sock = None
     try:
         ass = build_overlay_ass(site, get_metrics(site))
         sock = connect_ipc(cam)
@@ -310,8 +311,10 @@ def show_overlay(cam: str) -> None:
             ["disable_event", "all"],
             ["osd-overlay", OVERLAY_ID, "ass-events", ass, OVERLAY_RES_X, OVERLAY_RES_Y],
         ])
-    except (StreamUnavailableError, OSError) as err:
+    except Exception as err:  # noqa: BLE001 -- the video must show even if the overlay can't
         log.warning("overlay for %s not shown: %s", cam, err)
+        if sock is not None:
+            sock.close()
         return
     close_overlay(cam)
     with _state_lock:

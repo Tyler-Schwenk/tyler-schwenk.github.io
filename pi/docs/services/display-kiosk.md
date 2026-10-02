@@ -41,21 +41,6 @@ Minimal X setup — just enough to run full-screen browsers:
    `--kiosk` mode on the display page, relaunch after a 5s pause if any exits or
    crashes. Also handles the overnight sleep window (below)
 
-### Setting up from a fresh Ubuntu Server install
-
-`pi/services/display-kiosk/setup-displaytop.sh` is idempotent and does everything
-described here (timezone, packages, Chrome, policy, autologin, kiosk files, never-suspend,
-network settings). From the repo root on a machine that can SSH in:
-
-```bash
-scp -r pi/services/display-kiosk pi/services/surfcam-agent tyler@192.168.1.192:~/setup/
-ssh tyler@192.168.1.192 "sudo ~/setup/display-kiosk/setup-displaytop.sh"
-```
-
-Then reboot. Chrome's policy directory is `/etc/opt/chrome/policies/managed/`; the setup
-installs `surfcam.json` there so the display page can call the surfcam agent on
-localhost without a permission prompt.
-
 ### Multiple screens
 
 `kiosk-run.sh` runs one kiosk browser per active monitor, each with its own profile dir
@@ -118,6 +103,164 @@ browsers. Video is decoded in hardware (VA-API); all three cams play with zero d
 frames and near-zero CPU. The agent also draws an info overlay (place name, swell, wind,
 tide) on each cam. Setup, the overlay's data sources, and troubleshooting are in
 `pi/services/surfcam-agent/README.md`.
+
+## Setting Up From Scratch
+
+Use this when reflashing the laptop, replacing it, or moving the setup somewhere new. It
+takes about an hour. Everything after step 6 is automated by
+`pi/services/display-kiosk/setup-displaytop.sh` (idempotent, safe to re-run). Steps 1-6
+are manual because they happen before the laptop is reachable over SSH.
+
+### What you need
+
+- The laptop (any x86 laptop with Intel graphics works; this one is a Surface Laptop 3),
+  its charger, and an external monitor on the USB-C/HDMI adapter
+- A USB stick (8 GB or more) for the installer, and the Windows PC to make it
+- Your Wi-Fi name and password (the laptop has no Ethernet port; a USB Ethernet adapter
+  works too and lets you skip the Wi-Fi config in step 5)
+- The router's admin login (see step 7)
+
+### 1. Make the installer stick (on the Windows PC)
+
+Download the latest Ubuntu Server LTS ISO from ubuntu.com/download/server, then write it
+with Rufus (ISO mode) or balenaEtcher. Copying the ISO file onto the stick does not work;
+it has to be written as a bootable image, which erases the stick. To reuse the stick
+afterwards, reformat it (exFAT) in Windows.
+
+### 2. Boot the installer
+
+From a running Linux, `sudo systemctl reboot --firmware-setup` opens the UEFI menu; put
+USB first in the boot order. Leave Secure Boot on (Ubuntu supports it). Choose "Try or
+Install Ubuntu Server".
+
+### 3. Installer choices (keyboard only: arrows, Enter, Space)
+
+- Ubuntu Server (not the "minimized" one)
+- Network: set up Wi-Fi here if offered; it's fine to skip and do step 5 afterwards
+- Storage: use the entire disk with the default layout (this erases the laptop)
+- Server name `displaytop`, username `tyler`, a password you'll remember (needed for the
+  first `sudo`)
+- Install the OpenSSH server (yes). Importing SSH keys from GitHub only works when the
+  network is up; skip if it isn't
+- No featured snaps. When it asks, remove the USB stick and reboot
+
+### 4. First login at the laptop
+
+Log in as `tyler` at the laptop's own keyboard (it shows a text console).
+
+### 5. Wi-Fi (only if the installer didn't get it working)
+
+Write the network file in one go rather than editing it, since YAML indentation is easy
+to break by hand. Type this at the console; `sudo tee` waits for input, finish it with
+Ctrl+D on an empty line:
+
+```
+sudo tee /etc/netplan/50-cloud-init.yaml
+network:
+  version: 2
+  wifis:
+    wlp0s20f3:
+      dhcp4: true
+      access-points:
+        "YourNetworkName":
+          password: "YourPassword"
+```
+
+Use the real interface name from `ip -br a` (a line starting `wlp`), indent with two
+spaces and never tabs, and put both the network name and password in double quotes.
+Then:
+
+```bash
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+sudo netplan apply
+ip -br a          # the wlp line should show UP with a 192.168.x.x address
+```
+
+If `netplan apply` says "networkd backend does not support wifi with match:", another file
+in `/etc/netplan/` (often `00-installer-config.yaml`) also defines the Wi-Fi interface;
+move it out of the way (`sudo mv /etc/netplan/<that file> /root/`). Note the address; it's
+needed in the next steps. (The setup script later stops cloud-init from regenerating this
+file.)
+
+### 6. SSH key and first run (from the Windows PC)
+
+Put your public key on the laptop (asks for the laptop password once):
+
+```powershell
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh tyler@<laptop-ip> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+```
+
+Then, from the repo root, copy the setup files over and run the script (`-t` lets sudo
+ask for the password this one time; the script then makes sudo passwordless):
+
+```bash
+scp -r pi/services/display-kiosk pi/services/surfcam-agent tyler@<laptop-ip>:~/setup/
+ssh -t tyler@<laptop-ip> "sudo ~/setup/display-kiosk/setup-displaytop.sh"
+ssh tyler@<laptop-ip> "sudo reboot"
+```
+
+The script sets the timezone, installs the packages and Google Chrome, writes the Chrome
+policy that lets the display page call the surfcam agent, the autologin/startx/openbox
+boot chain, `~/kiosk-run.sh`, the agent, never-suspend and lid settings, and the network
+settings. It installs Google Chrome from Google's `.deb` because Ubuntu ships Chromium
+only as a snap; Chrome's policy directory is `/etc/opt/chrome/policies/managed/`.
+
+### 7. Router: reserve the laptop's address
+
+A DHCP reservation makes the router always hand the laptop the same address (matched by
+its Wi-Fi MAC), so SSH, scripts and these docs keep working after reboots and outages.
+The router at `192.168.1.254` is an AT&T gateway (login page `/cgi-bin/index.ha`): sign
+in with the Device Access Code printed on the gateway, open Home Network, then IP
+Allocation, find `displaytop` (the MAC is in `cat /sys/class/net/wlp*/address` on the
+laptop), and allocate its current address. Menus differ by model.
+
+### 8. Monitor and UEFI
+
+- Plug the monitor in and power it on **before** the laptop boots, or restart the
+  browsers afterwards with `ssh tyler@<laptop-ip> "pkill -x chrome"`. The laptop only
+  detects the monitor once it's awake (see Troubleshooting)
+- In the UEFI menu (`sudo systemctl reboot --firmware-setup`), look for a power-on-after-
+  AC-loss setting and a battery charge limit, and enable them if offered. Without
+  AC recovery, an outage longer than the battery leaves the laptop off until someone
+  presses the power button
+
+### 9. Check it worked
+
+```bash
+ssh tyler@<laptop-ip> '
+  uptime -p
+  pgrep -af "kiosk-run|surfcam_agent"      # both running
+  DISPLAY=:0 XAUTHORITY=$(ls /tmp/serverauth.* | head -1) xrandr --listmonitors   # both screens
+  curl -s -o /dev/null -w "agent %{http_code}\n" -X OPTIONS -H "Origin: https://tyler-schwenk.com" http://127.0.0.1:8765/cams/pb/show
+  tail -3 /tmp/surfcam-agent.log
+'
+```
+
+Both screens should show the display page, the agent should answer 200, and a surf cam
+panel should show the cam with the info bar across the top within a few rotations.
+
+### Moving to a new place
+
+- **Wi-Fi changes** (new router or home): the laptop can't connect, so you can't SSH in.
+  Use its own keyboard: press Ctrl+Alt+F2 for a login prompt (tty1 is the kiosk), log in as
+  `tyler`, and redo step 5 with the new network. Then redo step 7 on the new router and
+  update the address in `docs/development.md`
+- **Different timezone for the kiosk:** change `TIMEZONE` in `setup-displaytop.sh` and
+  re-run it. This only moves the overnight sleep window. The surf cam overlay always shows
+  times in the cams' own time (Pacific), set by `TIMEZONE` in `surf_conditions.py`
+- **Different cams or tide station:** see `pi/services/surfcam-agent/README.md`
+- **Nothing in the repo is secret:** the Wi-Fi password and SSH key live only on the
+  laptop and your PC, so a reflash needs them re-entered
+
+## Files and What They Do
+
+| Where | What |
+|---|---|
+| `pi/services/display-kiosk/setup-displaytop.sh` | Provisions a fresh Ubuntu install into the kiosk (idempotent) |
+| `pi/services/display-kiosk/kiosk-run.sh` | Becomes `~/kiosk-run.sh`: screens, browsers, agent, overnight sleep |
+| `pi/services/surfcam-agent/` | The surf cam player agent and its info overlay (own README) |
+| `website/app/display/` | The page the browsers show (see `website/docs/DISPLAY.md`) |
+| On the laptop only | `/etc/netplan/50-cloud-init.yaml` (Wi-Fi), `/etc/sudoers.d/tyler-nopasswd`, `~/.ssh/authorized_keys` |
 
 ## Updating the Displayed Page
 

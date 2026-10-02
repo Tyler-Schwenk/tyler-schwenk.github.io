@@ -2,9 +2,10 @@
 # one-shot, idempotent setup that turns a fresh Ubuntu Server install on displaytop
 # (Surface Laptop 3) into the display kiosk. safe to re-run.
 #
-# from the repo root on a machine that can ssh in:
+# from the repo root on a machine that can ssh in (-t lets sudo ask for the password the
+# first time; after this run sudo is passwordless):
 #   scp -r pi/services/display-kiosk pi/services/surfcam-agent tyler@<displaytop>:~/setup/
-#   ssh tyler@<displaytop> "sudo ~/setup/display-kiosk/setup-displaytop.sh"
+#   ssh -t tyler@<displaytop> "sudo ~/setup/display-kiosk/setup-displaytop.sh"
 #
 # see pi/docs/services/display-kiosk.md for what each piece does.
 set -euo pipefail
@@ -43,6 +44,14 @@ install_user_file() {
   sudo -u "$KIOSK_USER" mkdir -p "$(dirname "$dest")"
   install -m "$mode" -o "$KIOSK_USER" -g "$KIOSK_USER" "$src" "$dest"
 }
+
+echo "== passwordless sudo for $KIOSK_USER (so the kiosk can be maintained over ssh)"
+sudoers_file="/etc/sudoers.d/$KIOSK_USER-nopasswd"
+echo "$KIOSK_USER ALL=(ALL) NOPASSWD:ALL" > "$sudoers_file.tmp"
+# visudo validates first: a broken sudoers file would lock sudo out entirely
+visudo -cf "$sudoers_file.tmp" >/dev/null
+install -m 440 "$sudoers_file.tmp" "$sudoers_file"
+rm -f "$sudoers_file.tmp"
 
 echo "== timezone (the overnight sleep window uses local time)"
 timedatectl set-timezone "$TIMEZONE"

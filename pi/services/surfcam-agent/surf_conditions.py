@@ -2,8 +2,15 @@
 
 get_metrics() turns a cam's location into a few short display strings (swell, wind,
 tide). anything that comes from somewhere other than the cam's own spot says where,
-so the overlay never passes off a faraway reading as local. every metric is fetched
-independently, so one failing api just drops that line.
+so the overlay never passes off a faraway reading as local.
+
+built so a flaky api can't take the overlay down:
+  - each metric is fetched on its own thread and fails on its own, so a missing swell
+    reading still leaves wind and tide, and a hanging api only costs one timeout
+  - any error at all (network, bad json, a field we didn't expect) just drops that line
+  - if a refresh fails, the last good reading is reused for a while before being dropped
+  - after a failure the api isn't retried for FAILURE_RETRY_S, so an outage doesn't add a
+    timeout to every cam change
 
 all apis are free and keyless. results are cached for CACHE_TTL_S so a rotation that
 shows the cams every few minutes doesn't hammer them.
@@ -17,6 +24,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Callable, Optional
@@ -27,8 +35,16 @@ WEATHER_API_URL = "https://api.open-meteo.com/v1/forecast"
 TIDE_API_URL = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 
 TIMEZONE = "America/Los_Angeles"
-REQUEST_TIMEOUT_S = 10
+REQUEST_TIMEOUT_S = 5
 CACHE_TTL_S = 600
+
+# when a refresh fails, keep showing the last good reading this long before dropping it.
+# swell/wind drift over hours; tide predictions are fixed so they stay good for a day
+STALE_MAX_AGE_S = 2 * 3600
+TIDE_STALE_MAX_AGE_S = 24 * 3600
+
+# after a fetch fails with nothing usable to fall back on, wait this long before trying again
+FAILURE_RETRY_S = 60
 
 # a reading from a source closer than this to the cam counts as "here" and gets no source tag
 LOCAL_RADIUS_KM = 1.0
@@ -72,26 +88,65 @@ TIDE_STATION_ID = "9410230"
 TIDE_STATION = Site("Scripps Pier", 32.8669, -117.2571)
 
 _cache: dict[str, tuple[float, object]] = {}
+_failures: dict[str, tuple[float, Exception]] = {}
 _cache_lock = threading.Lock()
 
 
-def cached(key: str, fetch: Callable[[], object]) -> object:
-    """returns a cached value for key, calling fetch() when it's missing or older than CACHE_TTL_S.
+def stale_or_raise(entry: Optional[tuple[float, object]], error: Exception, max_stale_s: float, key: str) -> object:
+    """falls back to an old cached value if it's still young enough, else re-raises.
+
+    args:
+        entry: the (stored_at, value) cache entry, if there is one.
+        error: why a fresh value couldn't be had.
+        max_stale_s: how old a cached value may be and still be shown.
+        key: cache key, for the log line.
+
+    returns:
+        the stale value.
+
+    raises:
+        Exception: the original error, when there's no usable stale value.
+    """
+    if entry and time.monotonic() - entry[0] < max_stale_s:
+        log.warning("%s refresh failed (%s); showing the last good reading", key, error)
+        return entry[1]
+    raise error
+
+
+def cached(key: str, fetch: Callable[[], object], max_stale_s: float = STALE_MAX_AGE_S) -> object:
+    """returns a cached value for key, refreshing it when older than CACHE_TTL_S.
+
+    a failed refresh falls back to the previous value if it's under max_stale_s old, and
+    a key that just failed isn't retried for FAILURE_RETRY_S.
 
     args:
         key: cache key.
-        fetch: zero-arg function that produces a fresh value (may raise).
+        fetch: zero-arg function that produces a fresh value (may raise anything).
+        max_stale_s: how old a previous value may be when a refresh fails.
 
     returns:
-        the cached or freshly-fetched value.
+        the cached, freshly-fetched, or stale value.
+
+    raises:
+        Exception: whatever fetch raised, when there's no usable stale value.
     """
+    now = time.monotonic()
     with _cache_lock:
         entry = _cache.get(key)
-    if entry and time.monotonic() - entry[0] < CACHE_TTL_S:
+        failure = _failures.get(key)
+    if entry and now - entry[0] < CACHE_TTL_S:
         return entry[1]
-    value = fetch()
+    if failure and now - failure[0] < FAILURE_RETRY_S:
+        return stale_or_raise(entry, failure[1], max_stale_s, key)
+    try:
+        value = fetch()
+    except Exception as err:  # noqa: BLE001 -- any failure must degrade to "no reading"
+        with _cache_lock:
+            _failures[key] = (now, err)
+        return stale_or_raise(entry, err, max_stale_s, key)
     with _cache_lock:
-        _cache[key] = (time.monotonic(), value)
+        _cache[key] = (now, value)
+        _failures.pop(key, None)
     return value
 
 
@@ -235,7 +290,7 @@ def fetch_tide(site: Site) -> Optional[Metric]:
     returns:
         a tide metric, or None when predictions don't cover now.
     """
-    extremes = cached("tide-extremes", fetch_tide_extremes)
+    extremes = cached("tide-extremes", fetch_tide_extremes, TIDE_STALE_MAX_AGE_S)
     now = datetime.now(ZoneInfo(TIMEZONE)).replace(tzinfo=None)
     text = current_tide_text(extremes, now)
     if text is None:
@@ -246,6 +301,8 @@ def fetch_tide(site: Site) -> Optional[Metric]:
 
 def get_metrics(site: Site) -> list[Metric]:
     """the overlay lines for a cam: swell, wind, tide. any that fail are left out.
+
+    never raises. the readings are fetched in parallel, so the slowest one sets the wait.
 
     args:
         site: the cam's location.
@@ -258,11 +315,16 @@ def get_metrics(site: Site) -> list[Metric]:
         ("wind", lambda: fetch_wind(site)),
         ("tide", lambda: fetch_tide(site)),
     ]
+    with ThreadPoolExecutor(max_workers=len(sources)) as pool:
+        futures = [
+            (name, pool.submit(cached, f"{name}:{site.lat},{site.lon}", fetch))
+            for name, fetch in sources
+        ]
     metrics = []
-    for name, fetch in sources:
+    for name, future in futures:
         try:
-            metric = cached(f"{name}:{site.lat},{site.lon}", fetch)
-        except (OSError, KeyError, ValueError) as err:
+            metric = future.result()
+        except Exception as err:  # noqa: BLE001 -- see cached(): any failure drops just this line
             log.warning("no %s for %s: %s", name, site.name, err)
             continue
         if metric is not None:
