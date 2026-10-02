@@ -25,6 +25,7 @@ import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 LISTEN_HOST = "127.0.0.1"
 LISTEN_PORT = 8765
@@ -46,6 +47,10 @@ CAMS = {
 # hardware decoder (v4l2m2m) needs naming explicitly. on x86 (displaytop) mpv's
 # auto-safe picks vaapi on the intel gpu
 MPV_HWDEC = "v4l2m2m-copy" if platform.machine() == "aarch64" else "auto-safe"
+
+# kiosk-run.sh writes the external monitor's xrandr output name here when there is
+# one, so surf cams play on it instead of wherever mpv opens by default
+SCREEN_NAME_FILE = "/tmp/surfcam-screen"
 
 PAGE_FETCH_TIMEOUT_S = 15
 PAGE_USER_AGENT = "Mozilla/5.0"
@@ -195,6 +200,20 @@ def stop_player(cam: str) -> None:
         process.kill()
 
 
+def screen_args() -> list[str]:
+    """returns mpv flags that put the video on the output named in SCREEN_NAME_FILE.
+
+    returns:
+        flags for that output, or an empty list when no file is set (one-screen setups,
+        where mpv's default is right).
+    """
+    try:
+        name = Path(SCREEN_NAME_FILE).read_text().strip()
+    except OSError:
+        return []
+    return [f"--screen-name={name}", f"--fs-screen-name={name}"] if name else []
+
+
 def prepare_player(cam: str) -> None:
     """starts mpv for a cam paused and minimized so it buffers without covering chromium.
 
@@ -214,6 +233,7 @@ def prepare_player(cam: str) -> None:
     command = [
         "mpv", "--no-terminal", "--no-osc", "--no-audio",
         "--pause", "--window-minimized=yes", "--fullscreen", "--ontop",
+        *screen_args(),
         f"--hwdec={MPV_HWDEC}",
         f"--demuxer-readahead-secs={DEMUXER_READAHEAD_S}",
         f"--input-ipc-server={ipc_socket_path(cam)}",

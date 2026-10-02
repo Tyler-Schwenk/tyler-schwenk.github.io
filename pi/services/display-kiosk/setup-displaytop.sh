@@ -22,7 +22,7 @@ KIOSK_HOME="/home/$KIOSK_USER"
 PACKAGES=(
   xserver-xorg xinit openbox x11-xserver-utils unclutter
   mpv intel-media-va-driver vainfo fonts-noto-color-emoji scrot
-  python3 curl
+  python3 curl iw
 )
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -110,5 +110,27 @@ IdleAction=ignore
 EOF
 systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 
+echo "== network: keep our wifi config, and turn off wifi power saving"
+# without this cloud-init can regenerate /etc/netplan/50-cloud-init.yaml on a later boot
+# and wipe the wifi credentials, leaving the laptop unreachable
+install -d /etc/cloud/cloud.cfg.d
+echo "network: {config: disabled}" > /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+
+# wifi power save adds latency and can drop idle connections; this is a streaming kiosk
+cat > /etc/systemd/system/wifi-powersave-off.service <<'EOF'
+[Unit]
+Description=Turn off Wi-Fi power saving
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for d in /sys/class/net/*/wireless; do iw dev "$(basename "$(dirname "$d")")" set power_save off; done'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable wifi-powersave-off.service >/dev/null
+
 systemctl daemon-reload
+systemctl restart wifi-powersave-off.service
 echo "done. reboot to start the kiosk: sudo reboot"

@@ -1,7 +1,7 @@
 #!/bin/bash
-# runs the kiosk browser and the surfcam agent. started from openbox autostart (so
-# it inherits the x session), installed as ~/kiosk-run.sh. sleeps (no browser,
-# monitor off) overnight to save power. see pi/docs/services/display-kiosk.md.
+# runs the kiosk browsers (one per screen) and the surfcam agent. started from openbox
+# autostart (so it inherits the x session), installed as ~/kiosk-run.sh. sleeps (no
+# browser, monitors off) overnight to save power. see pi/docs/services/display-kiosk.md.
 
 SLEEP_START_HOUR=0   # inclusive, local time
 SLEEP_END_HOUR=6     # exclusive, local time
@@ -9,8 +9,11 @@ POLL_INTERVAL_S=30
 RELAUNCH_DELAY_S=5
 DISPLAY_URL="https://tyler-schwenk.com/display"
 
+# the surfcam agent reads this to know which output to play video on (see surfcam_agent.py)
+SURFCAM_SCREEN_FILE="/tmp/surfcam-screen"
+
 # debian's chromium on the pi, google chrome (deb) on the laptop -- same flags, different names.
-# BROWSER_PROC is the process name pkill matches, BROWSER_DIR the folder name under ~/.cache and ~/.config
+# BROWSER_PROC is the process name pkill matches, BROWSER_DIR the profile folder prefix under ~/.config
 if command -v chromium >/dev/null; then
   BROWSER=chromium; BROWSER_PROC=chromium; BROWSER_DIR=chromium
 else
@@ -27,39 +30,63 @@ in_sleep_window() {
 monitor_off() { xset +dpms; xset dpms force off; }
 monitor_on() { xset dpms force on; xset -dpms; xset s off; xset s noblank; }
 
-# on the laptop, show only on the external monitor when one's plugged in (its own
-# screen would otherwise mirror/extend). no-op on the pi, which has no internal panel.
-use_external_monitor_only() {
+# on the laptop, lay the external monitor out to the right of the built-in screen (both
+# stay on, each gets its own browser) and record it as where surf cam video plays. no-op
+# without an internal panel (the pi), and with no external monitor the built-in screen
+# just runs alone. re-run on every browser relaunch so a monitor plugged in later gets picked up.
+arrange_outputs() {
   local internal external
   internal=$(xrandr | awk '/^eDP/ {print $1; exit}')
   external=$(xrandr | awk '/ connected/ && $1 !~ /^eDP/ {print $1; exit}')
-  [ -n "$internal" ] && [ -n "$external" ] || return 0
-  xrandr --output "$external" --auto --primary --output "$internal" --off
+  rm -f "$SURFCAM_SCREEN_FILE"
+  [ -n "$internal" ] || return 0
+  [ -n "$external" ] || return 0
+  xrandr --output "$internal" --auto --pos 0x0 --output "$external" --auto --primary --right-of "$internal"
+  echo "$external" > "$SURFCAM_SCREEN_FILE"
 }
 
-# starts the browser and waits; kills it if the sleep window begins. returns when the browser is gone.
-run_browser() {
-  # the site is served with max-age=600, so clear the cache or a restart can show a stale deploy
-  rm -rf ~/.cache/$BROWSER_DIR ~/.config/$BROWSER_DIR/Default/Cache ~/.config/$BROWSER_DIR/Default/Code\ Cache
-  $BROWSER --kiosk --noerrdialogs --disable-infobars \
-    --disable-session-crashed-bubble --no-first-run \
-    --check-for-update-interval=31536000 --password-store=basic \
-    "$DISPLAY_URL" &
-  local pid=$!
-  while kill -0 "$pid" 2>/dev/null; do
-    if in_sleep_window; then
-      pkill -x "$BROWSER_PROC"
-      break
-    fi
+# one "x y width height" line per active monitor, from `xrandr --listmonitors` rows like
+# " 0: +*eDP-1 2256/285x1504/190+0+0  eDP-1"
+monitor_geometries() {
+  xrandr --listmonitors | awk 'NR > 1 { split($3, g, /[\/x+]/); print g[5], g[6], g[1], g[3] }'
+}
+
+# true if any of the given pids is no longer running
+any_dead() {
+  local pid
+  for pid in "$@"; do
+    kill -0 "$pid" 2>/dev/null || return 0
+  done
+  return 1
+}
+
+# starts one browser per monitor and waits; kills them all if one dies or the sleep window
+# begins. each needs its own profile dir or chrome would hand the second window to the first.
+run_browsers() {
+  local x y w h dir index=0 pids=()
+  while read -r x y w h; do
+    dir="$HOME/.config/$BROWSER_DIR-screen$index"
+    # the site is served with max-age=600, so clear the cache or a restart can show a stale
+    # deploy. singleton files are stale locks left by an unclean shutdown
+    rm -rf "$dir/Default/Cache" "$dir/Default/Code Cache" "$dir"/Singleton*
+    $BROWSER --kiosk --user-data-dir="$dir" --window-position="$x,$y" --window-size="$w,$h" \
+      --noerrdialogs --disable-infobars --disable-session-crashed-bubble --no-first-run \
+      --check-for-update-interval=31536000 --password-store=basic \
+      "$DISPLAY_URL" &
+    pids+=($!)
+    index=$((index + 1))
+  done < <(monitor_geometries)
+  while ! any_dead "${pids[@]}"; do
+    in_sleep_window && break
     sleep "$POLL_INTERVAL_S"
   done
-  wait "$pid" 2>/dev/null
+  pkill -x "$BROWSER_PROC"
+  wait "${pids[@]}" 2>/dev/null
 }
 
 # surf cam player agent; restarted if it ever dies. see pi/services/surfcam-agent/README.md
-( while true; do python3 ~/surfcam-agent/surfcam_agent.py; sleep $RELAUNCH_DELAY_S; done ) &
+( while true; do python3 ~/surfcam-agent/surfcam_agent.py >> /tmp/surfcam-agent.log 2>&1; sleep $RELAUNCH_DELAY_S; done ) &
 
-use_external_monitor_only
 # make sure the monitor is on at startup, in case a previous run left it blanked
 monitor_on
 
@@ -69,6 +96,7 @@ while true; do
     while in_sleep_window; do sleep "$POLL_INTERVAL_S"; done
     monitor_on
   fi
-  run_browser
+  arrange_outputs
+  run_browsers
   sleep "$RELAUNCH_DELAY_S"
 done

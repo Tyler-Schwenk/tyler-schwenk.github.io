@@ -43,11 +43,26 @@ Minimal X setup — no desktop environment, just enough to run one full-screen b
 4. `~/.config/openbox/autostart` — disables screen blanking/DPMS, starts `unclutter`,
    then launches `~/kiosk-run.sh` in the background
 5. `~/kiosk-run.sh` (from `pi/services/display-kiosk/kiosk-run.sh`) — starts the surfcam
-   agent (restarted if it dies), then loops: clear the browser's disk cache, launch
-   the browser in `--kiosk` mode on the display page, relaunch after a 5s pause if it
-   ever exits or crashes. Also handles the overnight sleep window (below). On the
-   laptop it also turns the built-in screen off whenever an external monitor is
-   connected
+   agent (restarted if it dies, logging to `/tmp/surfcam-agent.log`), then loops: lay
+   out the screens, clear each browser's disk cache, launch one browser per screen in
+   `--kiosk` mode on the display page, relaunch after a 5s pause if any exits or
+   crashes. Also handles the overnight sleep window (below)
+
+### Multiple screens (laptop)
+
+`kiosk-run.sh` runs one kiosk browser per active monitor, each with its own profile dir
+(`~/.config/google-chrome-screen<N>`, since a second window would otherwise be handed to
+the first browser) placed with `--window-position`/`--window-size` from
+`xrandr --listmonitors`. With an external monitor connected, `arrange_outputs` places it
+to the right of the built-in screen, makes it primary, and writes its output name to
+`/tmp/surfcam-screen` so the surfcam agent plays surf cam video on it. With no external
+monitor the built-in screen runs alone. Outputs are re-detected every time the browsers
+relaunch (crash, or the 06:00 wake), so a monitor plugged in later is picked up then;
+to pick it up immediately run `pkill -x chrome`.
+
+Both screens currently load the same `/display` page, so they rotate independently and
+the surf cam video only appears on the external monitor (the other screen shows
+"loading surf cam..." during surf cam panels).
 
 ### Setting up displaytop from a fresh Ubuntu Server install
 
@@ -64,7 +79,15 @@ Then reboot. It installs Google Chrome from Google's `.deb` because Ubuntu ships
 Chromium only as a snap. Chrome's policy directory is `/etc/opt/chrome/policies/managed/`
 (Debian's Chromium uses `/etc/chromium/policies/managed/`).
 
-### Laptop power behavior
+### Laptop network and power behavior
+
+- Wi-Fi power saving is turned off by `wifi-powersave-off.service` (it adds latency and
+  can drop idle connections)
+- `/etc/cloud/cloud.cfg.d/99-disable-network-config.cfg` stops cloud-init regenerating
+  `/etc/netplan/50-cloud-init.yaml`, which holds the Wi-Fi credentials, on later boots
+- Netplan's Wi-Fi config must not also exist in another file with a `match:` rule or
+  `netplan apply` fails with "networkd backend does not support wifi with match:"
+
 
 It runs lid-closed and plugged in:
 - `/etc/systemd/logind.conf.d/kiosk.conf` ignores the lid switch and idle actions, and
@@ -123,6 +146,14 @@ also has the RAM and CPU headroom for planned panels (BPM visualizer, a surf con
 overlay).
 
 ## Troubleshooting
+
+**External monitor not detected on the laptop (`xrandr` shows only `eDP-1`):** the
+Surface Laptop 3's USB-C controller (ACPI id `USBC000`) isn't claimed by any mainline
+Linux driver (`ucsi_acpi` only matches `PNP0CA0`), so DisplayPort over USB-C depends on
+the firmware and Intel graphics negotiating it themselves. Check
+`/sys/class/drm/card1-{DP-1,DP-2,HDMI-A-1,HDMI-A-2}/status`; all `disconnected` means
+nothing is negotiated. Re-seat the adapter, check the monitor's input source, and try
+another adapter or the other port.
 
 **Screen blank after boot, but SSH works fine:** check `xrandr` output for the active
 mode:

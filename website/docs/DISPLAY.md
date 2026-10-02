@@ -79,6 +79,9 @@ on top of Chromium (`pi/services/surfcam-agent/README.md`).
 minimized so it's already buffered when the panel comes up. The stream therefore runs a
 few seconds behind real time, which is fine for ambient viewing.
 
+On the laptop the kiosk can drive two screens, each running this page; surf cam video
+plays on the external monitor only (see `pi/docs/services/display-kiosk.md`).
+
 The page talks to the agent at `http://127.0.0.1:8765`, which only exists on the kiosk machine.
 Anywhere else the panel just shows "surfcam agent unreachable". Cam ids in
 `SurfCamId` must match `CAMS` in the agent.
