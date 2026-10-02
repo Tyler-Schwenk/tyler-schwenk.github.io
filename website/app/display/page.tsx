@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useSyncExternalStore, type ReactElement } from "react";
 import PhotoPanel, { type PhotoHold } from "./PhotoPanel";
 import MallardPanel from "./MallardPanel";
-import BpmDebugPanel from "./BpmDebugPanel";
+import BpmPanel from "./BpmPanel";
 import SurfCamPanel from "./SurfCamPanel";
 import SurfConditionsPanel from "./SurfConditionsPanel";
 import ControlOverlay from "./ControlOverlay";
@@ -41,14 +41,18 @@ import {
  * which fires PANEL_PREPARE_LEAD_MS before the panel is due on screen so it
  * can load in the background and appear already running.
  *
+ * The bpm visualizer isn't in the rotation: it's only shown from its key (b),
+ * since it keeps the mic recording while it's up.
+ *
  * Planned panels not yet implemented (add to ROTATION as each one is built,
  * using PlaceholderPanel to stub it out first if useful): MTS trolley info,
- * Pac-Tyler bike map, BPM visualizer, server status.
+ * Pac-Tyler bike map, server status.
  */
 
-/** What a panel needs to know beyond its own props: the current photo hold, if any. */
+/** What a panel needs to know beyond its own props: the photo hold, and whether the bpm view is calibrating. */
 interface PanelContext {
   photoHold: PhotoHold | null;
+  bpmCalibrating: boolean;
 }
 
 interface DisplayPanel {
@@ -68,12 +72,6 @@ interface RotationSlot {
   camId?: SurfCamId;
 }
 
-// TEMPORARY: while tuning pi/services/bpm-detector, this can be flipped to
-// true to show only the raw BPM debug readout instead of the normal
-// rotation, so it's visible live on the kiosk. Remove BpmDebugPanel once
-// the detector is tuned and the real BPM visualizer panel replaces it.
-const BPM_DEBUG_MODE = false;
-
 // how long each slot stays on screen before rotating to the next (ms)
 const PANEL_ROTATE_INTERVAL_MS = 45_000;
 
@@ -85,13 +83,21 @@ const SCREEN_ROLE_PARAM = "screen";
 
 const PHOTOS_SLOT_ID = "photos";
 const MALLARDS_SLOT_ID = "mallards";
+const BPM_SHORTCUT_KEY = "b";
 
 // the secondary screen's photos change halfway between the primary's, so the two take turns.
 // rendered identically in consecutive slots, React keeps a panel mounted and its photos carry on
 const PRIMARY_PHOTOS: DisplayPanel = { render: ({ photoHold }) => <PhotoPanel hold={photoHold} /> };
 const SECONDARY_PHOTOS: DisplayPanel = { render: ({ photoHold }) => <PhotoPanel staggered hold={photoHold} /> };
 const MALLARDS: DisplayPanel = { render: () => <MallardPanel /> };
-const BPM_DEBUG: DisplayPanel = { render: () => <BpmDebugPanel /> };
+
+// shown only from its key, never in the rotation. both sides render BpmPanel, so it stays
+// mounted (and keeps its stream) when b toggles calibration
+const BPM_SLOT: RotationSlot = {
+  id: "bpm",
+  primary: { render: ({ bpmCalibrating }) => <BpmPanel side="primary" calibrating={bpmCalibrating} /> },
+  secondary: { render: ({ bpmCalibrating }) => <BpmPanel side="secondary" calibrating={bpmCalibrating} /> },
+};
 
 /**
  * Builds a slot for a live surf cam: the video below, its conditions on top.
@@ -112,16 +118,15 @@ function surfCamSlot(camId: SurfCamId): RotationSlot {
   };
 }
 
-const ROTATION: RotationSlot[] = BPM_DEBUG_MODE
-  ? [{ id: "bpm-debug", primary: BPM_DEBUG, secondary: BPM_DEBUG }]
-  : [
-      { id: PHOTOS_SLOT_ID, primary: PRIMARY_PHOTOS, secondary: SECONDARY_PHOTOS },
-      { id: MALLARDS_SLOT_ID, primary: PRIMARY_PHOTOS, secondary: MALLARDS },
-      ...SURF_CAMS.map(({ id }) => surfCamSlot(id)),
-    ];
+const ROTATION: RotationSlot[] = [
+  { id: PHOTOS_SLOT_ID, primary: PRIMARY_PHOTOS, secondary: SECONDARY_PHOTOS },
+  { id: MALLARDS_SLOT_ID, primary: PRIMARY_PHOTOS, secondary: MALLARDS },
+  ...SURF_CAMS.map(({ id }) => surfCamSlot(id)),
+];
 const CAM_ROTATION = ROTATION.filter((slot) => slot.camId);
 
-// digit shortcuts: 1-3 fixed, then one per cam in rotation order (4 = the first cam, ...)
+// digit shortcuts: 1-3 fixed, then one per cam in rotation order (4 = the first cam, ...),
+// then b for the bpm visualizer (b again toggles its calibration view)
 const FIRST_CAM_SHORTCUT_KEY = 4;
 const SHORTCUTS: Shortcut[] = [
   { key: "1", label: "hold this photo", action: { kind: "hold-photo" } },
@@ -132,6 +137,7 @@ const SHORTCUTS: Shortcut[] = [
     label,
     action: { kind: "hold-slot" as const, slotId: `surf-${id}` },
   })),
+  { key: BPM_SHORTCUT_KEY, label: "bpm visualizer (again: calibrate)", action: { kind: "bpm" } },
 ];
 
 const CONTROL_CONFIG: ControlConfig = {
@@ -170,6 +176,7 @@ const readNothingOnServer = () => null;
  */
 function pickSlots(state: ControlState, clockSlot: number): { current: RotationSlot; next: RotationSlot | null } {
   const mode = state.mode;
+  if (mode.kind === "bpm") return { current: BPM_SLOT, next: null };
   if (mode.kind === "hold-photo") return { current: ROTATION[0], next: null };
   if (mode.kind === "hold-slot") {
     return { current: ROTATION.find((slot) => slot.id === mode.slotId) ?? ROTATION[0], next: null };
@@ -203,9 +210,10 @@ export default function DisplayPage() {
 
   if (!role || !slots) return <div className="fixed inset-0 bg-black" />;
   const photoHold = state.mode.kind === "hold-photo" ? state.mode : null;
+  const bpmCalibrating = state.mode.kind === "bpm" && state.mode.calibrating;
   return (
     <>
-      {slots.current[side].render({ photoHold })}
+      {slots.current[side].render({ photoHold, bpmCalibrating })}
       {role !== "primary" && <ControlOverlay state={state} shortcuts={SHORTCUTS} />}
     </>
   );

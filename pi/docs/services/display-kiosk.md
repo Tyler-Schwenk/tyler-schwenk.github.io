@@ -1,7 +1,8 @@
 # Display Kiosk (displaytop)
 
 An always-on pair of screens, powered off the home solar battery setup, that show a
-rotating set of panels (photos, mallard count, live surf cams, and more planned). Driven
+rotating set of panels (photos, mallard count, live surf cams, and more planned), plus a
+BPM visualizer driven by a mic in the room. Driven
 by a dedicated laptop running kiosk browsers pointed at
 `https://tyler-schwenk.com/display` — a page on the main website (see
 `website/docs/DISPLAY.md`), not a separate app.
@@ -13,6 +14,10 @@ by a dedicated laptop running kiosk browsers pointed at
 - **Screens**: its built-in 2256x1504 panel plus an external monitor on the USB-C port
   through a USB-C to HDMI adapter. Physically the open laptop sits on top with the
   monitor underneath it, and the laptop's own keyboard stays reachable
+- **Mic**: a USB mic (TI PCM2902, "USB PnP Sound Device") plugged into the USB-C
+  adapter's hub alongside the HDMI output, for the BPM visualizer
+  (`pi/services/bpm-agent/README.md`). The bpm agent finds it by name, so the ALSA card
+  number doesn't matter
 - **Network**: Wi-Fi (Intel AX201), `192.168.1.192`. Set a DHCP reservation in the
   router so the address doesn't drift. The laptop has no Ethernet port
 - **OS**: Ubuntu Server 26.04 LTS (no desktop environment)
@@ -27,7 +32,8 @@ Minimal X setup — just enough to run full-screen browsers:
 - `xserver-xorg`, `xinit`, `openbox` (window manager), `x11-xserver-utils`, `unclutter`
   (hides the mouse cursor), Google Chrome (from Google's `.deb`, since Ubuntu ships
   Chromium only as a snap), `mpv` (surf cams), `intel-media-va-driver` and `vainfo`
-  (hardware video decode), `fonts-noto-color-emoji`, `scrot` (screenshots), `iw`
+  (hardware video decode), `fonts-noto-color-emoji`, `scrot` (screenshots), `iw`,
+  `alsa-utils` and `python3-numpy` (the bpm agent)
 
 **Boot flow** (nothing needs doing after a power loss, it all starts by itself):
 1. `/etc/systemd/system/getty@tty1.service.d/autologin.conf` — autologin as `tyler` on
@@ -38,7 +44,8 @@ Minimal X setup — just enough to run full-screen browsers:
    and `xbindkeys` (keyboard control, below), then launches `~/kiosk-run.sh` in the
    background
 5. `~/kiosk-run.sh` (from `pi/services/display-kiosk/kiosk-run.sh`) — starts the surfcam
-   agent (restarted if it dies, logging to `/tmp/surfcam-agent.log`), then loops: lay
+   agent and the bpm agent (each restarted if it dies, logging to
+   `/tmp/surfcam-agent.log` and `/tmp/bpm-agent.log`), then loops: lay
    out the screens, clear each browser's disk cache, launch one browser per screen in
    `--kiosk` mode on the display page, relaunch after a 5s pause if any exits or
    crashes. Whenever the browsers are killed it also stops the cams (`POST
@@ -97,7 +104,17 @@ list) and each press runs `curl -X POST http://127.0.0.1:8765/control/keys/<key>
 surfcam agent, which relays it to both pages. Because the keys are grabbed by X, they
 work whichever window has focus, mpv included, but the console (Ctrl+Alt+F2) is
 unaffected. Check it's running with `pgrep -a xbindkeys`, and watch presses arrive with
-`grep "key " /tmp/surfcam-agent.log`.
+`grep "key " /tmp/surfcam-agent.log`. `b` opens the BPM visualizer the same way. `-` and
+`=` (BPM calibration) go to the bpm agent instead (`POST http://127.0.0.1:8766/offset/...`),
+which only acts on them while the BPM view is up.
+
+### BPM visualizer
+
+The bpm agent (`pi/services/bpm-agent/README.md`) is a small Python server started from
+`~/kiosk-run.sh`. It records the mic with `arecord` only while the BPM view is on screen
+(the page holds its event stream open), so outside that the mic is idle. Its calibration
+offset is saved in `~/bpm-agent/calibration.json`, which re-running the setup script
+leaves alone.
 
 ### Overnight sleep (battery saver)
 
@@ -141,17 +158,18 @@ Set by `setup-displaytop.sh`, so a rebuild gets them automatically:
 - **Unattended security updates**, including Google Chrome's own repo
   (`/etc/apt/apt.conf.d/52kiosk-unattended`). When an update needs a reboot it happens at
   03:00, inside the overnight sleep window, and the kiosk stays asleep until 06:00
-- **No firewall on purpose.** The only listening ports are SSH (key-only) and the surfcam
-  agent on `127.0.0.1`, and the router doesn't forward anything to the laptop. A LAN-only
+- **No firewall on purpose.** The only listening ports are SSH (key-only) and the two
+  agents on `127.0.0.1` (surfcam 8765, bpm 8766), and the router doesn't forward anything to the laptop. A LAN-only
   firewall rule would lock you out of SSH after a move to a different subnet
 - **Unused services masked**: ModemManager, multipathd, packagekit. The journal is capped
   at 200 MB
-- **Logs**: `journalctl` for the system, `/tmp/surfcam-agent.log` for the agent (cleared on
-  reboot)
+- **Logs**: `journalctl` for the system, `/tmp/surfcam-agent.log` and `/tmp/bpm-agent.log`
+  for the agents (cleared on reboot)
 - **Updating the kiosk's own code**: copy the files over and re-run the script (the same
   two commands as in the runbook); it's idempotent. Agent changes take effect when the
-  agent restarts (`pkill -f "[s]urfcam_agent.py"`; the loop in `kiosk-run.sh` brings it
-  back). `kiosk-run.sh` changes need a reboot, since the running copy keeps going until
+  agent restarts (`pkill -f "[s]urfcam_agent.py"` or `pkill -f "[b]pm_agent.py"`; the
+  loops in `kiosk-run.sh` bring them back). Key changes (`~/.xbindkeysrc`) need
+  `pkill xbindkeys; DISPLAY=:0 xbindkeys` or a reboot. `kiosk-run.sh` changes need a reboot, since the running copy keeps going until
   X restarts
 
 ## Setting Up From Scratch
@@ -244,7 +262,7 @@ Then, from the repo root, copy the setup files over and run the script (`-t` let
 ask for the password this one time; the script then makes sudo passwordless):
 
 ```bash
-scp -r pi/services/display-kiosk pi/services/surfcam-agent tyler@<laptop-ip>:~/setup/
+scp -r pi/services/display-kiosk pi/services/surfcam-agent pi/services/bpm-agent tyler@<laptop-ip>:~/setup/
 ssh -t tyler@<laptop-ip> "sudo ~/setup/display-kiosk/setup-displaytop.sh"
 ssh tyler@<laptop-ip> "sudo reboot"
 ```
@@ -252,7 +270,7 @@ ssh tyler@<laptop-ip> "sudo reboot"
 Once your key is installed the script turns off SSH password logins (see Security and
 Maintenance). The script sets the timezone, installs the packages and Google Chrome, writes the Chrome
 policy that lets the display page call the surfcam agent, the autologin/startx/openbox
-boot chain, `~/kiosk-run.sh`, the agent, never-suspend and lid settings, and the network
+boot chain, `~/kiosk-run.sh`, both agents, never-suspend and lid settings, and the network
 settings. It installs Google Chrome from Google's `.deb` because Ubuntu ships Chromium
 only as a snap; Chrome's policy directory is `/etc/opt/chrome/policies/managed/`.
 
@@ -280,7 +298,9 @@ laptop), and allocate its current address. Menus differ by model.
 ```bash
 ssh tyler@<laptop-ip> '
   uptime -p
-  pgrep -af "kiosk-run|surfcam_agent"      # both running
+  pgrep -af "kiosk-run|surfcam_agent|bpm_agent"   # all three running
+  curl -s 127.0.0.1:8766/status            # bpm agent up (listening only while the bpm view is)
+  arecord -l | grep USB                    # the mic
   DISPLAY=:0 XAUTHORITY=$(ls /tmp/serverauth.* | head -1) xrandr --listmonitors   # both screens
   curl -s -o /dev/null -w "agent %{http_code}\n" -X OPTIONS -H "Origin: https://tyler-schwenk.com" http://127.0.0.1:8765/cams/pb/show
   tail -3 /tmp/surfcam-agent.log
@@ -308,8 +328,9 @@ panel should show the cam with the info bar across the top within a few rotation
 | Where | What |
 |---|---|
 | `pi/services/display-kiosk/setup-displaytop.sh` | Provisions a fresh Ubuntu install into the kiosk (idempotent) |
-| `pi/services/display-kiosk/kiosk-run.sh` | Becomes `~/kiosk-run.sh`: screens, browsers, agent, overnight sleep |
+| `pi/services/display-kiosk/kiosk-run.sh` | Becomes `~/kiosk-run.sh`: screens, browsers, agents, overnight sleep |
 | `pi/services/surfcam-agent/` | The surf cam player agent and its info overlay (own README) |
+| `pi/services/bpm-agent/` | Mic beat tracker for the BPM visualizer (own README) |
 | `website/app/display/` | The page the browsers show (see `website/docs/DISPLAY.md`) |
 | On the laptop only | `/etc/netplan/50-cloud-init.yaml` (Wi-Fi), `/etc/sudoers.d/tyler-nopasswd`, `~/.ssh/authorized_keys` |
 

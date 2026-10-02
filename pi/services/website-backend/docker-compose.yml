@@ -21,7 +21,6 @@ services:
       - ${MEDIA_ROOT:-/mnt/ssd}/videos:/app/videos
       - ${MEDIA_ROOT:-/mnt/ssd}/recipe-photos:/app/recipe_photos
       - /home/tyler/pac-tyler-data:/app/pac-tyler:ro
-      - /home/tyler/tyler-schwenk.github.io/pi/services/bpm-detector/state:/app/bpm_state:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

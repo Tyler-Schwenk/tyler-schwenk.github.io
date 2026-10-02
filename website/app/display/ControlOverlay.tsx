@@ -27,6 +27,7 @@ const NAVIGATION_KEYS = [
 function indicatorLabel(mode: DisplayMode): string | null {
   if (mode.kind === "hold-photo" || mode.kind === "hold-slot") return "held";
   if (mode.kind === "cam-rotation") return "surf cams only";
+  if (mode.kind === "bpm") return mode.calibrating ? "bpm calibration" : "bpm";
   return null;
 }
 

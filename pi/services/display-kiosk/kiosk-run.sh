@@ -1,5 +1,5 @@
 #!/bin/bash
-# runs the kiosk browsers (one per screen) and the surfcam agent. started from openbox
+# runs the kiosk browsers (one per screen), the surfcam agent and the bpm agent. started from openbox
 # autostart (so it inherits the x session), installed as ~/kiosk-run.sh. sleeps (no
 # browser, monitors off) overnight to save power. see pi/docs/services/display-kiosk.md.
 
@@ -109,6 +109,11 @@ run_browsers() {
 # surf cam player agent; restarted if it ever dies. any mpv left over from a previous agent
 # is killed first, since the new one can't see or stop it. see pi/services/surfcam-agent/README.md
 ( while true; do pkill -x mpv; python3 ~/surfcam-agent/surfcam_agent.py >> /tmp/surfcam-agent.log 2>&1; sleep $RELAUNCH_DELAY_S; done ) &
+
+# bpm agent (records the mic only while the bpm view is up); restarted if it ever dies. a
+# leftover arecord would hold the mic and stop the new agent recording, so it goes first.
+# see pi/services/bpm-agent/README.md
+( while true; do pkill -x arecord; python3 ~/bpm-agent/bpm_agent.py >> /tmp/bpm-agent.log 2>&1; sleep $RELAUNCH_DELAY_S; done ) &
 
 # make sure the monitor is on at startup, in case a previous run left it blanked
 monitor_on

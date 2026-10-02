@@ -4,7 +4,7 @@
 #
 # from the repo root on a machine that can ssh in (-t lets sudo ask for the password the
 # first time; after this run sudo is passwordless):
-#   scp -r pi/services/display-kiosk pi/services/surfcam-agent tyler@<displaytop>:~/setup/
+#   scp -r pi/services/display-kiosk pi/services/surfcam-agent pi/services/bpm-agent tyler@<displaytop>:~/setup/
 #   ssh -t tyler@<displaytop> "sudo ~/setup/display-kiosk/setup-displaytop.sh"
 #
 # see pi/docs/services/display-kiosk.md for what each piece does.
@@ -20,20 +20,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SRC_DIR="$SCRIPT_DIR/../surfcam-agent"
 AGENT_FILES=(surfcam_agent.py surf_conditions.py kiosk_control.py)
 AGENT_CONTROL_URL="http://127.0.0.1:8765/control/keys"
+BPM_AGENT_SRC_DIR="$SCRIPT_DIR/../bpm-agent"
+BPM_AGENT_FILES=(bpm_agent.py beat_tracker.py)
+BPM_OFFSET_URL="http://127.0.0.1:8766/offset"
 
 # keyboard control: x keysym -> key name the agent and the display page understand
 # (see pi/services/surfcam-agent/kiosk_control.py). xbindkeys grabs these system-wide, so
 # they work whichever window has focus, mpv included
 CONTROL_KEYS=(
   "Tab:tab" "Escape:escape" "BackSpace:backspace" "bracketright:next" "bracketleft:prev"
-  "1:1" "2:2" "3:3" "4:4" "5:5" "6:6" "7:7" "8:8" "9:9"
+  "1:1" "2:2" "3:3" "4:4" "5:5" "6:6" "7:7" "8:8" "9:9" "b:b"
 )
+# bpm calibration: x keysym -> direction posted to the bpm agent, which moves the beat
+# flash earlier/later on screen (see pi/services/bpm-agent/bpm_agent.py)
+BPM_OFFSET_KEYS=("minus:earlier" "equal:later")
 KIOSK_HOME="/home/$KIOSK_USER"
 
 PACKAGES=(
   xserver-xorg xinit openbox x11-xserver-utils unclutter
   mpv intel-media-va-driver vainfo fonts-noto-color-emoji scrot xbindkeys
-  python3 curl iw
+  python3 python3-numpy alsa-utils curl iw
 )
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -41,7 +47,11 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 if [ ! -f "$AGENT_SRC_DIR/${AGENT_FILES[0]}" ]; then
-  echo "can't find $AGENT_SRC_DIR/${AGENT_FILES[0]}. copy both display-kiosk/ and surfcam-agent/ into the same folder first (see header)." >&2
+  echo "can't find $AGENT_SRC_DIR/${AGENT_FILES[0]}. copy display-kiosk/, surfcam-agent/ and bpm-agent/ into the same folder first (see header)." >&2
+  exit 1
+fi
+if [ ! -f "$BPM_AGENT_SRC_DIR/${BPM_AGENT_FILES[0]}" ]; then
+  echo "can't find $BPM_AGENT_SRC_DIR/${BPM_AGENT_FILES[0]}. copy display-kiosk/, surfcam-agent/ and bpm-agent/ into the same folder first (see header)." >&2
   exit 1
 fi
 
@@ -61,6 +71,9 @@ echo "$KIOSK_USER ALL=(ALL) NOPASSWD:ALL" > "$sudoers_file.tmp"
 visudo -cf "$sudoers_file.tmp" >/dev/null
 install -m 440 "$sudoers_file.tmp" "$sudoers_file"
 rm -f "$sudoers_file.tmp"
+
+echo "== audio group for $KIOSK_USER (the bpm agent records the usb mic)"
+usermod -aG audio "$KIOSK_USER"
 
 echo "== timezone (the overnight sleep window uses local time)"
 timedatectl set-timezone "$TIMEZONE"
@@ -120,12 +133,19 @@ for mapping in "${CONTROL_KEYS[@]}"; do
   # xbindkeysrc entries are a quoted command, then the key on the next line
   printf '"curl -s -m 2 -X POST %s/%s"\n  %s\n\n' "$AGENT_CONTROL_URL" "${mapping#*:}" "${mapping%%:*}" >> "$xbindkeysrc"
 done
+for mapping in "${BPM_OFFSET_KEYS[@]}"; do
+  printf '"curl -s -m 2 -X POST %s/%s"\n  %s\n\n' "$BPM_OFFSET_URL" "${mapping#*:}" "${mapping%%:*}" >> "$xbindkeysrc"
+done
 install_user_file 644 "$xbindkeysrc" "$KIOSK_HOME/.xbindkeysrc"
 rm -f "$bash_profile" "$xinitrc" "$autostart" "$xbindkeysrc"
 
 install_user_file 755 "$SCRIPT_DIR/kiosk-run.sh" "$KIOSK_HOME/kiosk-run.sh"
 for agent_file in "${AGENT_FILES[@]}"; do
   install_user_file 755 "$AGENT_SRC_DIR/$agent_file" "$KIOSK_HOME/surfcam-agent/$agent_file"
+done
+# only the code is copied: the agent's calibration.json beside it survives a re-run
+for agent_file in "${BPM_AGENT_FILES[@]}"; do
+  install_user_file 755 "$BPM_AGENT_SRC_DIR/$agent_file" "$KIOSK_HOME/bpm-agent/$agent_file"
 done
 
 echo "== laptop: never suspend, ignore the lid (it runs open and plugged in; closing it changes nothing)"

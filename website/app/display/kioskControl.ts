@@ -16,8 +16,10 @@ import { SURFCAM_AGENT_URL } from "./surfCams";
  *
  * Keys: tab toggles the shortcut menu, escape goes straight back to the
  * standard display, backspace goes back one step (closes the menu, else ends
- * a hold or the cam-only rotation), ] and [ step to the next/previous item,
- * and the digits run the shortcuts (from anywhere, menu open or not).
+ * a hold or the cam-only rotation), ] and [ step to the next/previous item
+ * and hold it there, and the shortcut keys (the digits, and b for the bpm
+ * visualizer) run the shortcuts from anywhere, menu open or not. b again while
+ * the bpm visualizer is up toggles its calibration view.
  */
 
 /** A key press as the agent logs it. `at_ms` is epoch ms on the kiosk's clock. */
@@ -37,7 +39,8 @@ export interface ControlLog {
 export type ShortcutAction =
   | { kind: "hold-photo" }
   | { kind: "hold-slot"; slotId: string }
-  | { kind: "cam-rotation" };
+  | { kind: "cam-rotation" }
+  | { kind: "bpm" };
 
 /** One entry of the shortcut menu. */
 export interface Shortcut {
@@ -54,6 +57,8 @@ export type DisplayMode =
   | { kind: "cam-rotation" }
   /** Staying on one slot. */
   | { kind: "hold-slot"; slotId: string }
+  /** The bpm visualizer (never part of a rotation), or its calibration view. */
+  | { kind: "bpm"; calibrating: boolean }
   /**
    * Staying on the photos slot with each screen's photo frozen as it was at
    * `frozenAtMs`, moved on `photoStep` photos by ] and [.
@@ -66,8 +71,8 @@ export interface ControlState {
   /**
    * The rotation counts slots from here: at `anchorMs` it's on item
    * `anchorIndex` of its list, then moves on one per interval. The standard
-   * anchor (0, 0) is plain wall-clock slots; ] and [ re-anchor at the press so
-   * the new item gets a full interval.
+   * anchor (0, 0) is plain wall-clock slots; starting the cam-only rotation
+   * anchors it at the press so it begins with the first cam.
    */
   anchorMs: number;
   anchorIndex: number;
@@ -115,9 +120,10 @@ export function rotationIndexAt(state: ControlState, intervalMs: number, atMs: n
 }
 
 /**
- * Moves one step forward or back from the current item: the next photo while
- * a photo is held, the next slot while a slot is held (still held), else the
- * next item of the rotation, which then gets a full interval.
+ * Moves one step forward or back from the current item and holds there: the
+ * next photo while a photo is held, otherwise the next slot of all of them
+ * (from the held slot, or from wherever the rotation was). Backspace resumes
+ * the rotation.
  * @param state - Current state.
  * @param delta - +1 for ], -1 for [.
  * @param atMs - When the key was pressed.
@@ -129,21 +135,37 @@ function step(state: ControlState, delta: number, atMs: number, config: ControlC
   if (mode.kind === "hold-photo") {
     return { ...state, mode: { ...mode, photoStep: mode.photoStep + delta } };
   }
-  if (mode.kind === "hold-slot") {
-    const index = config.slotIds.indexOf(mode.slotId);
-    const slotId = config.slotIds[wrapIndex(index + delta, config.slotIds.length)];
-    return { ...state, mode: { kind: "hold-slot", slotId } };
-  }
-  return { ...state, anchorMs: atMs, anchorIndex: rotationIndexAt(state, config.intervalMs, atMs) + delta };
+  const currentSlotId = mode.kind === "hold-slot" ? mode.slotId : rotationSlotIdAt(state, config, atMs);
+  const index = config.slotIds.indexOf(currentSlotId);
+  const slotId = config.slotIds[wrapIndex(index + delta, config.slotIds.length)];
+  return { ...state, mode: { kind: "hold-slot", slotId } };
 }
 
 /**
- * The state a shortcut puts the screens in.
+ * Which slot a rotation (the standard one or the cam-only one) is on at a moment.
+ * @param state - Control state in a rotation mode.
+ * @param config - Rotation config.
+ * @param atMs - The moment, epoch ms.
+ * @returns The slot id.
+ */
+function rotationSlotIdAt(state: ControlState, config: ControlConfig, atMs: number): string {
+  const ids = state.mode.kind === "cam-rotation" ? config.camSlotIds : config.slotIds;
+  return ids[wrapIndex(rotationIndexAt(state, config.intervalMs, atMs), ids.length)];
+}
+
+/**
+ * The state a shortcut puts the screens in. The bpm shortcut pressed while the
+ * bpm visualizer is already up toggles its calibration view instead.
  * @param action - The shortcut's action.
  * @param atMs - When the key was pressed.
+ * @param mode - What the screens are doing before the press.
  * @returns The new state, menu closed.
  */
-function startShortcut(action: ShortcutAction, atMs: number): ControlState {
+function startShortcut(action: ShortcutAction, atMs: number, mode: DisplayMode): ControlState {
+  if (action.kind === "bpm") {
+    const calibrating = mode.kind === "bpm" && !mode.calibrating;
+    return { ...INITIAL_CONTROL_STATE, mode: { kind: "bpm", calibrating } };
+  }
   if (action.kind === "hold-photo") {
     return { ...INITIAL_CONTROL_STATE, mode: { kind: "hold-photo", frozenAtMs: atMs, photoStep: 0 } };
   }
@@ -169,7 +191,7 @@ export function applyControlEvent(state: ControlState, event: ControlEvent, conf
     return { ...step(state, key === "next" ? 1 : -1, atMs, config), menuOpen: false };
   }
   const shortcut = config.shortcuts.find((candidate) => candidate.key === key);
-  return shortcut ? startShortcut(shortcut.action, atMs) : state;
+  return shortcut ? startShortcut(shortcut.action, atMs, state.mode) : state;
 }
 
 /**

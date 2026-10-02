@@ -14,8 +14,9 @@ import threading
 import time
 
 # key names the pages understand. xbindkeys maps the physical keys onto these
-# (see setup-displaytop.sh): tab, esc, backspace, ] and [, and the digit row
-CONTROL_KEYS = {"tab", "escape", "backspace", "next", "prev", *map(str, range(1, 10))}
+# (see setup-displaytop.sh): tab, esc, backspace, ] and [, the digit row, and b (the
+# bpm visualizer)
+CONTROL_KEYS = {"tab", "escape", "backspace", "next", "prev", "b", *map(str, range(1, 10))}
 
 # a day of button mashing is nowhere near this; it only stops a stuck key growing the log forever
 MAX_EVENTS = 1000
