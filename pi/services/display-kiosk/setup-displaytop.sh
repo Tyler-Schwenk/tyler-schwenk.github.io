@@ -143,6 +143,42 @@ WantedBy=multi-user.target
 EOF
 systemctl enable wifi-powersave-off.service >/dev/null
 
+echo "== unattended updates (security patches, including Chrome, with a 03:00 reboot)"
+# an always-on browser on the internet needs patching without anyone around. 03:00 is
+# inside the overnight sleep window, and kiosk-run.sh stays asleep after the reboot until
+# 06:00. WithUsers is required because the autologin session counts as a logged-in user
+cat > /etc/apt/apt.conf.d/52kiosk-unattended <<'EOF'
+Unattended-Upgrade::Origins-Pattern:: "origin=Google LLC,archive=stable";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-WithUsers "true";
+Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+EOF
+
+echo "== ssh: keys only (skipped if no key is installed, so we can't lock ourselves out)"
+authorized_keys="$KIOSK_HOME/.ssh/authorized_keys"
+if [ -s "$authorized_keys" ]; then
+  # 10- sorts before cloud-init's 50- file, and sshd takes the first value it sees
+  cat > /etc/ssh/sshd_config.d/10-kiosk.conf <<'EOF'
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+EOF
+  sshd -t
+  systemctl reload ssh
+else
+  echo "no $authorized_keys yet, leaving password ssh login on. add your key (see the runbook) and re-run." >&2
+fi
+
+echo "== disable services a kiosk doesn't use, and cap the journal"
+# modem manager and multipath have no hardware here, packagekit is a desktop updater
+systemctl mask --now ModemManager.service multipathd.service multipathd.socket packagekit.service
+install -d /etc/systemd/journald.conf.d
+cat > /etc/systemd/journald.conf.d/kiosk.conf <<'EOF'
+[Journal]
+SystemMaxUse=200M
+EOF
+systemctl restart systemd-journald
+
 systemctl daemon-reload
 systemctl restart wifi-powersave-off.service
 echo "done. reboot to start the kiosk: sudo reboot"

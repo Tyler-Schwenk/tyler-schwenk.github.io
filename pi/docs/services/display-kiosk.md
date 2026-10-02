@@ -49,9 +49,11 @@ the first browser) placed with `--window-position`/`--window-size` from
 `xrandr --listmonitors`. With an external monitor connected, `arrange_outputs` places it
 to the right of the built-in screen at `EXTERNAL_MODE` (2560x1440), and makes it primary
 (mpv opens on the primary screen, so the surf cams play there). With no external monitor
-the built-in screen runs alone. Outputs are re-detected every time the browsers relaunch
-(crash, or the 06:00 wake), so a monitor plugged in later is picked up then; to pick it
-up immediately run `pkill -x chrome`.
+the built-in screen runs alone. The script also polls the connected outputs every 30
+seconds while the browsers run, and when they change (a monitor plugged in, unplugged, or
+powered on or off) it relaunches the browsers and lays the screens out again. That covers
+a power outage where the laptop boots before the monitor wakes. To force it immediately
+run `pkill -x chrome`.
 
 `EXTERNAL_MODE` is 1440p rather than the monitor's native 4K because a 4K monitor behind
 the USB-C/HDMI adapter only gets 30 Hz at 3840x2160 (HDMI 1.4 bandwidth).
@@ -103,6 +105,29 @@ browsers. Video is decoded in hardware (VA-API); all three cams play with zero d
 frames and near-zero CPU. The agent also draws an info overlay (place name, swell, wind,
 tide) on each cam. Setup, the overlay's data sources, and troubleshooting are in
 `pi/services/surfcam-agent/README.md`.
+
+## Security and Maintenance
+
+Set by `setup-displaytop.sh`, so a rebuild gets them automatically:
+
+- **SSH is key-only** (`/etc/ssh/sshd_config.d/10-kiosk.conf`). The script skips this if no
+  key is installed yet, so it can't lock you out. If your key is ever lost, log in at the
+  laptop's own keyboard (Ctrl+Alt+F2 for a console) with the account password and re-add a
+  key to `~/.ssh/authorized_keys`
+- **Unattended security updates**, including Google Chrome's own repo
+  (`/etc/apt/apt.conf.d/52kiosk-unattended`). When an update needs a reboot it happens at
+  03:00, inside the overnight sleep window, and the kiosk stays asleep until 06:00
+- **No firewall on purpose.** The only listening ports are SSH (key-only) and the surfcam
+  agent on `127.0.0.1`, and the router doesn't forward anything to the laptop. A LAN-only
+  firewall rule would lock you out of SSH after a move to a different subnet
+- **Unused services masked**: ModemManager, multipathd, packagekit. The journal is capped
+  at 200 MB
+- **Logs**: `journalctl` for the system, `/tmp/surfcam-agent.log` for the agent (cleared on
+  reboot)
+- **Updating the kiosk's own code**: copy the files over and re-run the script (the same
+  two commands as in the runbook); it's idempotent. The overlay and kiosk script changes
+  take effect after the agent or browsers restart (`pkill -f "[s]urfcam_agent.py"` and
+  `pkill -x chrome`, or a reboot)
 
 ## Setting Up From Scratch
 
@@ -199,7 +224,8 @@ ssh -t tyler@<laptop-ip> "sudo ~/setup/display-kiosk/setup-displaytop.sh"
 ssh tyler@<laptop-ip> "sudo reboot"
 ```
 
-The script sets the timezone, installs the packages and Google Chrome, writes the Chrome
+Once your key is installed the script turns off SSH password logins (see Security and
+Maintenance). The script sets the timezone, installs the packages and Google Chrome, writes the Chrome
 policy that lets the display page call the surfcam agent, the autologin/startx/openbox
 boot chain, `~/kiosk-run.sh`, the agent, never-suspend and lid settings, and the network
 settings. It installs Google Chrome from Google's `.deb` because Ubuntu ships Chromium
@@ -216,9 +242,9 @@ laptop), and allocate its current address. Menus differ by model.
 
 ### 8. Monitor and UEFI
 
-- Plug the monitor in and power it on **before** the laptop boots, or restart the
-  browsers afterwards with `ssh tyler@<laptop-ip> "pkill -x chrome"`. The laptop only
-  detects the monitor once it's awake (see Troubleshooting)
+- The laptop only detects the monitor while it's awake (see Troubleshooting). The kiosk
+  re-checks every 30 seconds, so the order you power things on in doesn't matter: if the
+  external screen stays blank, check its power and input source first
 - In the UEFI menu (`sudo systemctl reboot --firmware-setup`), look for a power-on-after-
   AC-loss setting and a battery charge limit, and enable them if offered. Without
   AC recovery, an outage longer than the battery leaves the laptop off until someone
@@ -276,8 +302,10 @@ seconds, fetching the new deploy fresh (outside the overnight sleep window).
 
 ## Troubleshooting
 
-**External monitor not detected (`xrandr` shows only `eDP-1`):** first check the monitor
-is powered on and set to the adapter's input. The Surface Laptop 3's USB-C controller
+**External monitor blank or not detected (`xrandr` shows only `eDP-1`, or `DP-2`
+disconnected):** the kiosk re-checks every 30 seconds and recovers by itself once the
+monitor is back, so first check the monitor is powered on and set to the adapter's input,
+and that the USB-C cable is seated. The Surface Laptop 3's USB-C controller
 (ACPI id `USBC000`) isn't claimed by any mainline Linux driver, so DisplayPort over USB-C
 depends on the firmware and Intel graphics negotiating it themselves, and it only shows
 up once the monitor is awake. Check

@@ -50,6 +50,13 @@ monitor_geometries() {
   xrandr --listmonitors | awk 'NR > 1 { split($3, g, /[\/x+]/); print g[5], g[6], g[1], g[3] }'
 }
 
+# names of the currently connected outputs, sorted. a change means a monitor was plugged in,
+# unplugged, or powered on/off, and the screens need laying out again
+connected_outputs() {
+  xrandr | awk '/ connected/ {print $1}' | sort | tr '
+' ' '
+}
+
 # true if any of the given pids is no longer running
 any_dead() {
   local pid
@@ -59,10 +66,12 @@ any_dead() {
   return 1
 }
 
-# starts one browser per monitor and waits; kills them all if one dies or the sleep window
-# begins. each needs its own profile dir or chrome would hand the second window to the first.
+# starts one browser per monitor and waits; kills them all if one dies, the monitors change
+# (so the caller can re-arrange them), or the sleep window begins. each needs its own
+# profile dir or chrome would hand the second window to the first.
 run_browsers() {
-  local x y w h dir index=0 pids=()
+  local x y w h dir index=0 pids=() outputs
+  outputs=$(connected_outputs)
   while read -r x y w h; do
     dir="$HOME/.config/$BROWSER_DIR-screen$index"
     # the site is served with max-age=600, so clear the cache or a restart can show a stale
@@ -77,6 +86,7 @@ run_browsers() {
   done < <(monitor_geometries)
   while ! any_dead "${pids[@]}"; do
     in_sleep_window && break
+    [ "$(connected_outputs)" = "$outputs" ] || break
     sleep "$POLL_INTERVAL_S"
   done
   pkill -x "$BROWSER_PROC"
