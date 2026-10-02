@@ -45,7 +45,7 @@ function surfCamPanel(camId: SurfCamId): DisplayPanel {
 
 // TEMPORARY: while tuning pi/services/bpm-detector, this can be flipped to
 // true to show only the raw BPM debug readout instead of the normal
-// rotation, so it's visible live on displaypi. Remove BpmDebugPanel once
+// rotation, so it's visible live on the kiosk. Remove BpmDebugPanel once
 // the detector is tuned and the real BPM visualizer panel replaces it.
 const BPM_DEBUG_MODE = false;
 
@@ -62,7 +62,7 @@ const PANELS: DisplayPanel[] = BPM_DEBUG_MODE
       { id: "photos", render: () => <PhotoPanel /> },
       { id: "mallards", render: () => <MallardPanel /> },
       surfCamPanel("pb"),
-      surfCamPanel("scripps"),
+      surfCamPanel("la-jolla-shores"),
       surfCamPanel("scripps-underwater"),
     ];
 

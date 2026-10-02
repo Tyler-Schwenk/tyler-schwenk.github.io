@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""surfcam agent: plays live surf cams fullscreen on displaypi for the /display kiosk page.
+"""surfcam agent: plays live surf cams fullscreen on the display kiosk machine for the /display page.
 
 the kiosk page (chromium) can't play these streams itself -- hdontap only allows
 its own embed on other sites and 403s any browser request carrying a foreign
 Origin header. mpv sends no Origin, so it plays them fine. this agent runs on
-displaypi next to chromium and drives mpv on behalf of the page over a tiny
+the kiosk next to the browser and drives mpv on behalf of the page over a tiny
 localhost-only HTTP API:
 
     POST /cams/<cam>/prepare   start mpv paused + minimized so it buffers in the background
@@ -16,6 +16,7 @@ see pi/services/surfcam-agent/README.md for setup.
 
 import json
 import logging
+import platform
 import re
 import socket
 import subprocess
@@ -35,10 +36,16 @@ ALLOWED_ORIGINS = {"https://tyler-schwenk.com"}
 # keep ids in sync with website/app/display/surfCams.ts
 CAMS = {
     "pb": "https://hdontap.com/stream/186699/pacific-beach-live-surf-webcam/",
-    # hotel la jolla overlook -- the scripps pier is in frame
-    "scripps": "https://hdontap.com/stream/449923/la-jolla-shores-overlook-live-webcam/",
+    # must stay 1080p or lower: the pi 3's hardware decoder can't do more (the
+    # 1440p hotel la jolla overlook cam decoded to garbage and overheated the pi)
+    "la-jolla-shores": "https://hdontap.com/stream/532541/la-jolla-shores-live-surf-cam/",
     "scripps-underwater": "https://hdontap.com/stream/018408/scripps-pier-underwater-live-webcam/",
 }
+
+# software-decoding 1080p pegs a pi 3 (~200% cpu, dropped frames); its bcm2835
+# hardware decoder (v4l2m2m) needs naming explicitly. on x86 (displaytop) mpv's
+# auto-safe picks vaapi on the intel gpu
+MPV_HWDEC = "v4l2m2m-copy" if platform.machine() == "aarch64" else "auto-safe"
 
 PAGE_FETCH_TIMEOUT_S = 15
 PAGE_USER_AGENT = "Mozilla/5.0"
@@ -94,7 +101,7 @@ def fetch_stream_url(page_url: str) -> str:
         html = urllib.request.urlopen(request, timeout=PAGE_FETCH_TIMEOUT_S).read().decode()
     except (urllib.error.URLError, TimeoutError) as err:
         raise StreamUnavailableError(
-            f"could not load {page_url}: {err}. check displaypi's internet connection."
+            f"could not load {page_url}: {err}. check the kiosk machine's internet connection."
         ) from err
     match = STREAM_SRC_PATTERN.search(html)
     if not match:
@@ -207,9 +214,7 @@ def prepare_player(cam: str) -> None:
     command = [
         "mpv", "--no-terminal", "--no-osc", "--no-audio",
         "--pause", "--window-minimized=yes", "--fullscreen", "--ontop",
-        # software-decoding 1080p pegs the pi 3 (~200% cpu, dropped frames); the
-        # bcm2835 hardware decoder handles it at ~20% cpu
-        "--hwdec=v4l2m2m-copy",
+        f"--hwdec={MPV_HWDEC}",
         f"--demuxer-readahead-secs={DEMUXER_READAHEAD_S}",
         f"--input-ipc-server={ipc_socket_path(cam)}",
         url,
@@ -218,7 +223,7 @@ def prepare_player(cam: str) -> None:
         process = subprocess.Popen(command)
     except FileNotFoundError as err:
         raise StreamUnavailableError(
-            "mpv isn't installed on displaypi. run: sudo apt install mpv"
+            "mpv isn't installed on the kiosk machine. run: sudo apt install mpv"
         ) from err
     with _state_lock:
         _players[cam] = process

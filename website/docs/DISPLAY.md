@@ -22,7 +22,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/page.tsx` | Rotation controller — cycles through `PANELS` every `PANEL_ROTATE_INTERVAL_MS` |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos |
 | `website/app/display/MallardPanel.tsx` | Current mallard count with a canvas-animated duck background |
-| `website/app/display/SurfCamPanel.tsx` | Live surf cam; asks the surfcam agent on displaypi to play it (see "Surf Cams") |
+| `website/app/display/SurfCamPanel.tsx` | Live surf cam; asks the surfcam agent on the kiosk machine to play it (see "Surf Cams") |
 | `website/app/display/surfCams.ts` | Client for the surfcam agent (`prepareSurfCam`, `showSurfCam`, `stopSurfCam`) and the `SurfCamId` list |
 | `website/app/display/PlaceholderPanel.tsx` | Generic "Coming Soon: {name}" stand-in, reused as new panels get built |
 
@@ -69,9 +69,9 @@ requests aren't subject to browser CORS rules.
 
 ## Surf Cams
 
-Live cams (Pacific Beach, Scripps/La Jolla Shores, Scripps underwater) are normal rotation entries, but the
+Live cams (Pacific Beach, La Jolla Shores, Scripps underwater) are normal rotation entries, but the
 video isn't played by the page. The streams are from HDOnTap, which blocks browser
-playback from other origins, so a small agent on displaypi plays them in mpv fullscreen
+playback from other origins, so a small agent on the kiosk machine plays them in mpv fullscreen
 on top of Chromium (`pi/services/surfcam-agent/README.md`).
 
 `SurfCamPanel` calls the agent's `show` on mount and `stop` on unmount; the rotation's
@@ -79,7 +79,7 @@ on top of Chromium (`pi/services/surfcam-agent/README.md`).
 minimized so it's already buffered when the panel comes up. The stream therefore runs a
 few seconds behind real time, which is fine for ambient viewing.
 
-The page talks to the agent at `http://127.0.0.1:8765`, which only exists on displaypi.
+The page talks to the agent at `http://127.0.0.1:8765`, which only exists on the kiosk machine.
 Anywhere else the panel just shows "surfcam agent unreachable". Cam ids in
 `SurfCamId` must match `CAMS` in the agent.
 
@@ -116,9 +116,10 @@ if the fixed-offset-plus-PLL approach above doesn't feel tight enough in practic
 
 ## Hardware Constraints
 
-This page runs on a Raspberry Pi 3 B+ with 1 GB of RAM (see
-`pi/docs/services/display-kiosk.md`), which is not a lot for a full browser plus
-animation. Any panel that animates many elements should follow the pattern established
+The primary kiosk is a Surface Laptop 3 (displaytop) with plenty of headroom, but the
+spare is a Raspberry Pi 3 B+ with 1 GB of RAM (see `pi/docs/services/display-kiosk.md`),
+which is not a lot for a full browser plus animation, so panels should stay light enough
+to run on it. Any panel that animates many elements should follow the pattern established
 in `MallardPanel.tsx`: draw on a single `<canvas>` with one `requestAnimationFrame`
 loop rather than many independently CSS-animated DOM nodes, pre-render repeated images
 once to an offscreen canvas instead of redrawing them every frame, and cap how many

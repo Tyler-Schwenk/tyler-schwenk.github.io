@@ -1,15 +1,15 @@
 /**
- * Client for the surfcam agent running on displaypi (see
+ * Client for the surfcam agent running on the kiosk machine (see
  * pi/services/surfcam-agent/README.md). The agent plays the actual video in
  * mpv on top of the kiosk browser -- these calls just tell it what to do.
  */
 
-// the agent only listens on displaypi's own loopback, so this only works when
+// the agent only listens on the kiosk machine's own loopback, so this only works when
 // the page is running in the kiosk browser
 const SURFCAM_AGENT_URL = "http://127.0.0.1:8765";
 
 /** Cam ids the agent knows about. Keep in sync with CAMS in surfcam_agent.py. */
-export type SurfCamId = "pb" | "scripps" | "scripps-underwater";
+export type SurfCamId = "pb" | "la-jolla-shores" | "scripps-underwater";
 
 type SurfCamAction = "prepare" | "show" | "stop";
 
@@ -26,7 +26,7 @@ async function sendSurfCamAction(camId: SurfCamId, action: SurfCamAction): Promi
     const body = await res.json().catch(() => ({}));
     return body.error ?? `surfcam agent returned ${res.status}`;
   } catch {
-    return "surfcam agent unreachable -- this panel only works on displaypi";
+    return "surfcam agent unreachable -- this panel only works on the kiosk";
   }
 }
 
