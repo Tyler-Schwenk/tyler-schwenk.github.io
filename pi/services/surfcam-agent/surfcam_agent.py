@@ -12,6 +12,7 @@ behalf of the page over a tiny localhost-only HTTP API:
     POST /cams/<cam>/show      unpause, bring it fullscreen on top of chrome, and draw the
                                place name + surf conditions overlay (see surf_conditions.py)
     POST /cams/<cam>/stop      kill that cam's mpv
+    POST /cams/stop-all        kill every cam's mpv (kiosk-run.sh, when it kills the browsers)
     GET  /cams/<cam>/conditions  the cam's name, waves, wind and tide (with its graph) as
                                  json, for the conditions panel on the other screen
 
@@ -131,6 +132,18 @@ IPC_SOCKET_PATH_TEMPLATE = "/tmp/surfcam-{cam}.sock"
 # how long to wait for mpv to exit after terminate() before killing it
 MPV_EXIT_TIMEOUT_S = 3
 
+# a prepared cam that isn't shown within this long is stopped: a key press can change
+# what's due next after the page has already prepared it, and nothing else would stop it
+PREPARED_UNSHOWN_TIMEOUT_S = 30
+
+# show waits this long for mpv's first frame before giving up (see wait_for_first_frame)
+FIRST_FRAME_TIMEOUT_S = 20
+FIRST_FRAME_POLL_INTERVAL_S = 0.25
+
+# a shown cam whose mpv exits by itself (the stream dropped, or its token expired on a long
+# hold) is restarted after this pause, for as long as the page still wants it shown
+SHOWN_RESTART_DELAY_S = 10
+
 # paused streams keep demuxing this far ahead, so unpausing starts instantly
 DEMUXER_READAHEAD_S = 10
 
@@ -156,6 +169,7 @@ CONDITIONS_ROUTE_PATTERN = re.compile(r"^/cams/(?P<cam>[a-z0-9-]+)/conditions$")
 CONTROL_KEY_ROUTE_PATTERN = re.compile(r"^/control/keys/(?P<key>[a-z0-9]+)$")
 CONTROL_LOG_PATH = "/control/log"
 CONTROL_RESET_PATH = "/control/reset"
+STOP_ALL_PATH = "/cams/stop-all"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("surfcam-agent")
@@ -175,6 +189,10 @@ _state_lock = threading.Lock()
 # (the stream scrape takes ~1s) both see no player and both start one, and the first mpv
 # is orphaned: its socket gets taken over, so stop can never reach it
 _cam_locks = {cam: threading.Lock() for cam in CAMS}
+# cam -> token of the page mount that last asked to show it (see stop_player)
+_shown_tokens: dict[str, Optional[str]] = {}
+# stands in for "no entry" when a token itself may be None
+_NOT_SHOWN = object()
 control_log = ControlLog()
 
 
@@ -235,7 +253,7 @@ def ipc_socket_path(cam: str) -> str:
     return IPC_SOCKET_PATH_TEMPLATE.format(cam=cam)
 
 
-def await_reply(reader) -> None:
+def await_reply(reader) -> dict:
     """blocks until mpv answers our ipc command, skipping its unsolicited event lines.
 
     mpv drops commands still queued when the client disconnects, so we have to
@@ -243,10 +261,15 @@ def await_reply(reader) -> None:
 
     args:
         reader: file-like object over the ipc socket.
+
+    returns:
+        mpv's reply, like {"data": ..., "error": "success", "request_id": 1}.
     """
     for line in reader:
-        if json.loads(line).get("request_id") == IPC_REQUEST_ID:
-            return
+        reply = json.loads(line)
+        if reply.get("request_id") == IPC_REQUEST_ID:
+            return reply
+    return {}
 
 
 def connect_ipc(cam: str) -> socket.socket:
@@ -290,6 +313,25 @@ def run_commands(sock: socket.socket, commands: list[list]) -> None:
     for command in commands:
         sock.sendall(json.dumps({"command": command, "request_id": IPC_REQUEST_ID}).encode() + b"\n")
         await_reply(reader)
+
+
+def get_mpv_property(cam: str, name: str) -> object:
+    """reads one property from a cam's mpv.
+
+    args:
+        cam: cam id.
+        name: mpv property name, like "vo-configured".
+
+    returns:
+        the value, or None if mpv says it's unavailable.
+
+    raises:
+        StreamUnavailableError: the control socket never became available.
+    """
+    with connect_ipc(cam) as sock:
+        request = {"command": ["get_property", name], "request_id": IPC_REQUEST_ID}
+        sock.sendall(json.dumps(request).encode() + b"\n")
+        return await_reply(sock.makefile("rb")).get("data")
 
 
 def send_mpv_commands(cam: str, commands: list[list]) -> None:
@@ -390,21 +432,51 @@ def terminate_process(process: subprocess.Popen) -> None:
         process.kill()
 
 
-def stop_player(cam: str) -> None:
-    """kills a cam's mpv if it's running. safe to call when nothing's running."""
+def stop_player(cam: str, token: Optional[str] = None) -> None:
+    """kills a cam's mpv if it's running. safe to call when nothing's running.
+
+    a stop carrying the token of an older show is ignored: the page's stop for a cam it's
+    leaving can reach the agent after its show for the same cam again (they travel on
+    separate connections), and must not kill the video that's meant to be up.
+
+    args:
+        cam: cam id from CAMS.
+        token: the token the page's show used, or None to stop unconditionally.
+    """
+    with _state_lock:
+        shown_token = _shown_tokens.get(cam)
+    if token is not None and shown_token is not None and token != shown_token:
+        log.info("ignoring a stale stop for %s", cam)
+        return
     close_overlay(cam)
     with _cam_locks[cam]:
         with _state_lock:
             process = _players.pop(cam, None)
+            _shown_tokens.pop(cam, None)
         if process is not None and process.poll() is None:
             terminate_process(process)
+
+
+def stop_if_never_shown(cam: str, process: subprocess.Popen) -> None:
+    """stops a prepared mpv that was never shown (see PREPARED_UNSHOWN_TIMEOUT_S).
+
+    args:
+        cam: cam id from CAMS.
+        process: the mpv that was prepared; a newer one for the same cam is left alone.
+    """
+    with _state_lock:
+        abandoned = _players.get(cam) is process and cam not in _shown_tokens
+    if abandoned:
+        log.info("stopping %s: prepared but never shown", cam)
+        stop_player(cam)
 
 
 def prepare_player(cam: str) -> None:
     """starts mpv for a cam paused and minimized so it buffers without covering chrome.
 
     no-op if that cam's mpv is already running. mpv opens on the primary screen, which
-    kiosk-run.sh makes the external monitor.
+    kiosk-run.sh makes the external monitor. if the cam isn't shown within
+    PREPARED_UNSHOWN_TIMEOUT_S it's stopped again.
 
     args:
         cam: cam id from CAMS.
@@ -452,16 +524,52 @@ def start_player(cam: str) -> None:
         ) from err
     with _state_lock:
         _players[cam] = process
+    cleanup = threading.Timer(PREPARED_UNSHOWN_TIMEOUT_S, stop_if_never_shown, args=(cam, process))
+    cleanup.daemon = True
+    cleanup.start()
     log.info("prepared %s (pid %d)", cam, process.pid)
 
 
-def show_player(cam: str) -> None:
-    """unpauses a cam's mpv and brings it fullscreen. prepares it first if needed.
+def wait_for_first_frame(cam: str) -> None:
+    """waits until a cam's mpv has decoded its first frame.
+
+    until then its window is an empty white rectangle, so it mustn't be brought up yet.
+    a cam prepared ahead of time is ready at once; one jumped to with a key takes a few
+    seconds, during which the page's "loading surf cam..." stays on screen.
 
     args:
         cam: cam id from CAMS.
+
+    raises:
+        StreamUnavailableError: no frame within FIRST_FRAME_TIMEOUT_S.
+    """
+    deadline = time.monotonic() + FIRST_FRAME_TIMEOUT_S
+    while time.monotonic() < deadline:
+        if get_mpv_property(cam, "vo-configured"):
+            return
+        time.sleep(FIRST_FRAME_POLL_INTERVAL_S)
+    raise StreamUnavailableError(
+        f"no video from {cam} after {FIRST_FRAME_TIMEOUT_S} s. the stream may be down; "
+        "check it with mpv by hand (see the agent README)."
+    )
+
+
+def show_player(cam: str, token: Optional[str] = None) -> None:
+    """unpauses a cam's mpv and brings it fullscreen once it has a picture. prepares it first if needed.
+
+    args:
+        cam: cam id from CAMS.
+        token: identifies the page mount asking, so its later stop can be told apart
+            from a stale one (see stop_player).
+
+    raises:
+        StreamUnavailableError: the stream couldn't be started or never produced a frame.
     """
     prepare_player(cam)
+    # claim the cam before waiting, so a stale stop arriving meanwhile is recognised
+    with _state_lock:
+        _shown_tokens[cam] = token
+    wait_for_first_frame(cam)
     send_mpv_commands(cam, [
         ["set_property", "window-minimized", False],
         ["set_property", "fullscreen", True],
@@ -469,9 +577,47 @@ def show_player(cam: str) -> None:
     ])
     show_overlay(cam)
     log.info("showing %s", cam)
+    with _state_lock:
+        process = _players.get(cam)
+    if process is not None:
+        threading.Thread(target=restart_if_dropped, args=(cam, token, process), daemon=True).start()
 
 
-ACTIONS = {"prepare": prepare_player, "show": show_player, "stop": stop_player}
+def restart_if_dropped(cam: str, token: Optional[str], process: subprocess.Popen) -> None:
+    """waits for a shown cam's mpv to exit, and shows the cam again if it wasn't stopped on purpose.
+
+    a held cam can stay up for hours, long enough for the stream to drop or its url
+    token to expire; without this the screen would be left on "loading surf cam...".
+    a stop (from the page, stop_all_players, or a newer show) clears or replaces the
+    token first, which is how a deliberate stop is told apart from a drop.
+
+    args:
+        cam: cam id from CAMS.
+        token: the show this watcher belongs to.
+        process: the mpv to watch.
+    """
+    process.wait()
+    time.sleep(SHOWN_RESTART_DELAY_S)
+    with _state_lock:
+        still_wanted = _shown_tokens.get(cam, _NOT_SHOWN) == token and _players.get(cam) is process
+        if still_wanted:
+            _players.pop(cam, None)
+    if not still_wanted:
+        return
+    log.warning("%s dropped while showing (mpv exit code %s); restarting it", cam, process.returncode)
+    close_overlay(cam)
+    try:
+        show_player(cam, token)
+    except StreamUnavailableError as err:
+        log.error("restarting %s failed: %s", cam, err)
+
+
+def stop_all_players() -> None:
+    """stops every cam, for kiosk-run.sh when it kills the browsers (nobody's left to send stop)."""
+    for cam in CAMS:
+        stop_player(cam)
+
+
 
 
 class AgentHandler(BaseHTTPRequestHandler):
@@ -511,21 +657,37 @@ class AgentHandler(BaseHTTPRequestHandler):
             log.info("key %s", key_route["key"])
             self._send_json(200, {"ok": True})
             return
+        if path == STOP_ALL_PATH:
+            stop_all_players()
+            log.info("stopped all cams")
+            self._send_json(200, {"ok": True})
+            return
         if path == CONTROL_RESET_PATH:
             control_log.reset()
             log.info("control reset")
             self._send_json(200, {"ok": True})
             return
-        self._run_cam_action(path)
+        token = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("token", [None])[0]
+        self._run_cam_action(path, token)
 
-    def _run_cam_action(self, path: str) -> None:
-        """runs prepare/show/stop for a cam, from a /cams/<cam>/<action> path."""
+    def _run_cam_action(self, path: str, token: Optional[str]) -> None:
+        """runs prepare/show/stop for a cam, from a /cams/<cam>/<action> path.
+
+        args:
+            path: request path.
+            token: the ?token= the page's show/stop carry (see stop_player), if any.
+        """
         route = ROUTE_PATTERN.match(path)
         if not route or route["cam"] not in CAMS:
             self._send_not_found()
             return
+        actions = {
+            "prepare": prepare_player,
+            "show": lambda cam: show_player(cam, token),
+            "stop": lambda cam: stop_player(cam, token),
+        }
         try:
-            ACTIONS[route["action"]](route["cam"])
+            actions[route["action"]](route["cam"])
         except StreamUnavailableError as err:
             log.error("%s %s failed: %s", route["action"], route["cam"], err)
             self._send_json(502, {"error": str(err)})
@@ -566,8 +728,7 @@ def main() -> None:
     try:
         server.serve_forever()
     finally:
-        for cam in list(_players):
-            stop_player(cam)
+        stop_all_players()
 
 
 if __name__ == "__main__":

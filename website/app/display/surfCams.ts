@@ -119,10 +119,13 @@ async function callAgent<T>(path: string, method: "GET" | "POST"): Promise<Agent
  * Sends one player action to the agent.
  * @param camId - Which cam to act on.
  * @param action - prepare (buffer hidden), show (bring fullscreen), or stop.
+ * @param token - For show/stop: identifies the panel mount, so the agent can ignore a
+ *   stop that arrives after a newer show of the same cam.
  * @returns null on success, or a human-readable error message.
  */
-async function sendSurfCamAction(camId: SurfCamId, action: SurfCamAction): Promise<string | null> {
-  const result = await callAgent<unknown>(`/cams/${camId}/${action}`, "POST");
+async function sendSurfCamAction(camId: SurfCamId, action: SurfCamAction, token?: string): Promise<string | null> {
+  const query = token ? `?token=${encodeURIComponent(token)}` : "";
+  const result = await callAgent<unknown>(`/cams/${camId}/${action}${query}`, "POST");
   return result.error ?? null;
 }
 
@@ -137,20 +140,24 @@ export async function prepareSurfCam(camId: SurfCamId): Promise<void> {
 }
 
 /**
- * Brings a cam fullscreen (preparing it first if it wasn't already).
+ * Brings a cam fullscreen once it has a picture (preparing it first if it
+ * wasn't already, which takes a few seconds).
  * @param camId - Cam to show.
+ * @param token - Unique per panel mount; pass the same one to stopSurfCam.
  * @returns null on success, or an error message to display.
  */
-export function showSurfCam(camId: SurfCamId): Promise<string | null> {
-  return sendSurfCamAction(camId, "show");
+export function showSurfCam(camId: SurfCamId, token: string): Promise<string | null> {
+  return sendSurfCamAction(camId, "show", token);
 }
 
 /**
- * Stops a cam's player and frees its memory.
+ * Stops a cam's player and frees its memory, unless a newer showSurfCam for the
+ * same cam has already reached the agent.
  * @param camId - Cam to stop.
+ * @param token - The token its showSurfCam used.
  */
-export async function stopSurfCam(camId: SurfCamId): Promise<void> {
-  await sendSurfCamAction(camId, "stop");
+export async function stopSurfCam(camId: SurfCamId, token: string): Promise<void> {
+  await sendSurfCamAction(camId, "stop", token);
 }
 
 /**

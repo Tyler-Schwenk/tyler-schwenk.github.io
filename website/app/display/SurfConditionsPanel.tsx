@@ -18,6 +18,8 @@ import {
  * compass dial with north up and an arrow pointing the way the waves/wind are
  * heading, next to where they come from as a compass name and degrees. The
  * tide gets a chart of the past and predicted curve across the bottom.
+ * Refreshes every CONDITIONS_REFRESH_INTERVAL_MS while it stays up. Render it
+ * keyed by camId, so switching cams never shows the last cam's readings.
  * @param props.camId - Cam whose spot to show.
  */
 
@@ -41,6 +43,9 @@ const ARROW_POINTS = "0,-60 20,-22 7,-22 7,52 -7,52 -7,-22 -20,-22";
 
 // directions are "comes from", so the arrow points the opposite way: where it's going
 const HEADING_FROM_SOURCE_DEG = 180;
+
+// a held cam can stay up for hours, so the readings and the tide's "now" refresh this often (ms)
+const CONDITIONS_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 const CARDINAL_LABELS = [
   { label: "N", deg: 0 },
@@ -204,10 +209,21 @@ export default function SurfConditionsPanel({ camId }: { camId: SurfCamId }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSurfConditions(camId).then((result) => {
-      setConditions(result.data ?? null);
-      setError(result.error ?? null);
-    });
+    let unmounted = false;
+    const load = () => {
+      fetchSurfConditions(camId).then((result) => {
+        if (unmounted) return;
+        // a failed refresh keeps the last readings up; the error only shows before the first load
+        if (result.data) setConditions(result.data);
+        setError(result.error ?? null);
+      });
+    };
+    load();
+    const refreshTimer = setInterval(load, CONDITIONS_REFRESH_INTERVAL_MS);
+    return () => {
+      unmounted = true;
+      clearInterval(refreshTimer);
+    };
   }, [camId]);
 
   if (!conditions) {

@@ -9,15 +9,36 @@ import { showSurfCam, stopSurfCam, type SurfCamId } from "./surfCams";
  * surfCams.ts). This component just asks the agent to show the cam on mount
  * and stop it on unmount, and renders a plain status screen underneath that
  * is only ever visible while the stream is starting or if something's wrong.
+ * If showing fails it keeps retrying while mounted, since a held cam can stay
+ * up for hours. Each mount sends its show and stop with its own token, so a
+ * stop from a mount that's gone can't take down a newer one showing the same
+ * cam. Render it keyed by camId, so switching cams starts a fresh mount (and a
+ * fresh status).
  * @param props.camId - Which cam to show.
  */
+
+// after a failed show, try again this long later (ms)
+const SHOW_RETRY_DELAY_MS = 15_000;
+
 export default function SurfCamPanel({ camId }: { camId: SurfCamId }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    showSurfCam(camId).then(setError);
+    const token = crypto.randomUUID();
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let unmounted = false;
+    const show = () => {
+      showSurfCam(camId, token).then((showError) => {
+        if (unmounted) return;
+        setError(showError);
+        if (showError) retryTimer = setTimeout(show, SHOW_RETRY_DELAY_MS);
+      });
+    };
+    show();
     return () => {
-      stopSurfCam(camId);
+      unmounted = true;
+      clearTimeout(retryTimer);
+      stopSurfCam(camId, token);
     };
   }, [camId]);
 

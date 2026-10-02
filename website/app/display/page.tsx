@@ -104,10 +104,11 @@ function surfCamSlot(camId: SurfCamId): RotationSlot {
     id: `surf-${camId}`,
     camId,
     primary: {
-      render: () => <SurfCamPanel camId={camId} />,
+      // keyed so each cam gets its own mount: no status or conditions carried over from the last cam
+      render: () => <SurfCamPanel key={camId} camId={camId} />,
       prepare: () => prepareSurfCam(camId),
     },
-    secondary: { render: () => <SurfConditionsPanel camId={camId} /> },
+    secondary: { render: () => <SurfConditionsPanel key={camId} camId={camId} /> },
   };
 }
 

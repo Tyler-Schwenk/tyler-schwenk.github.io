@@ -9,6 +9,7 @@ POLL_INTERVAL_S=30
 RELAUNCH_DELAY_S=5
 DISPLAY_URL="https://tyler-schwenk.com/display"
 AGENT_CONTROL_RESET_URL="http://127.0.0.1:8765/control/reset"
+AGENT_STOP_ALL_URL="http://127.0.0.1:8765/cams/stop-all"
 
 # resolution for the external monitor. a 4k monitor behind the usb-c/hdmi adapter only gets 30 Hz
 # at 3840x2160 (hdmi 1.4 bandwidth), so 1440p at 60 Hz is the sharp-and-smooth choice
@@ -97,7 +98,10 @@ run_browsers() {
   done
   pkill -x "$BROWSER_PROC"
   # a killed page never gets to send the agent `stop`, so a cam that was showing would keep
-  # streaming on top of the next page (or all night through the sleep window)
+  # streaming on top of the next page (or all night through the sleep window). ask the
+  # agent first: it restarts a shown cam whose mpv dies, so a bare pkill would be undone.
+  # the pkill after catches anything the agent couldn't (it's restarting, or it hung)
+  curl -s -m 10 -X POST "$AGENT_STOP_ALL_URL" > /dev/null
   pkill -x mpv
   wait "${pids[@]}" 2>/dev/null
 }
