@@ -1,26 +1,28 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import TideGraph from "./TideGraph";
 import {
   fetchSurfConditions,
   type SurfCamId,
   type SurfConditions,
-  type SwellReading,
   type TideReading,
+  type WavesReading,
   type WindReading,
 } from "./surfCams";
 
 /**
- * Display panel: the swell, wind and tide at a surf cam's spot, shown on the
+ * Display panel: the waves, wind and tide at a surf cam's spot, shown on the
  * other screen while the cam itself plays. Readings come from the surfcam
- * agent (the same ones as the video overlay). Swell and wind each get a
- * compass dial with north up and an arrow pointing the way the swell/wind is
- * heading, next to where it comes from as a compass name and degrees.
+ * agent (the same ones as the video overlay). Waves and wind each get a
+ * compass dial with north up and an arrow pointing the way the waves/wind are
+ * heading, next to where they come from as a compass name and degrees. The
+ * tide gets a chart of the past and predicted curve across the bottom.
  * @param props.camId - Cam whose spot to show.
  */
 
 // compass dial geometry, in svg units with the dial centred on 0,0
-const DIAL_SIZE_PX = 320;
+const DIAL_SIZE_PX = 260;
 const DIAL_VIEWBOX_HALF = 100;
 const DIAL_RING_RADIUS = 92;
 const DIAL_LABEL_RADIUS = 74;
@@ -66,11 +68,7 @@ function compassPoint(radius: number, deg: number): [number, number] {
 function CompassDial({ arrowDeg }: { arrowDeg: number }) {
   const ticks = Array.from({ length: DIAL_TICK_COUNT }, (_, i) => (360 / DIAL_TICK_COUNT) * i);
   return (
-    <svg
-      width={DIAL_SIZE_PX}
-      height={DIAL_SIZE_PX}
-      viewBox={DIAL_VIEWBOX}
-    >
+    <svg width={DIAL_SIZE_PX} height={DIAL_SIZE_PX} viewBox={DIAL_VIEWBOX}>
       <circle r={DIAL_RING_RADIUS} fill="none" stroke={DIAL_LINE_COLOR} strokeWidth={2} />
       {ticks.map((deg) => {
         const [x1, y1] = compassPoint(DIAL_TICK_INNER_RADIUS, deg);
@@ -100,20 +98,27 @@ function CompassDial({ arrowDeg }: { arrowDeg: number }) {
 }
 
 /**
- * One column of the panel: a title, a dial (or blank space the same size so
- * the columns line up), and the reading's lines.
- * @param props.title - Column heading.
- * @param props.dial - Dial to show above the numbers, if any.
+ * Small grey line saying where a reading comes from.
+ * @param props.children - The note text.
+ */
+function SourceNote({ children }: { children: ReactNode }) {
+  return <div className="text-2xl text-gray-500">{children}</div>;
+}
+
+/**
+ * One reading with a dial: a title, the dial beside the reading's lines.
+ * @param props.title - Heading.
+ * @param props.dial - Dial to show, if the reading exists.
  * @param props.children - The reading's lines, or a "no reading" note.
  */
-function ReadingColumn({ title, dial, children }: { title: string; dial?: ReactNode; children: ReactNode }) {
+function DialReading({ title, dial, children }: { title: string; dial?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className="text-3xl text-gray-400 uppercase tracking-widest mb-6">{title}</div>
-      <div className="flex items-center justify-center" style={{ height: DIAL_SIZE_PX }}>
+    <div className="flex flex-col items-center">
+      <div className="text-3xl text-gray-400 uppercase tracking-widest mb-4">{title}</div>
+      <div className="flex items-center gap-10">
         {dial}
+        <div className="flex flex-col gap-2">{children}</div>
       </div>
-      <div className="mt-8 flex flex-col items-center gap-3">{children}</div>
     </div>
   );
 }
@@ -126,36 +131,31 @@ function NoReading() {
 }
 
 /**
- * Swell column: height, period, and where it's from.
- * @param props.swell - The reading, or null when unavailable.
+ * Waves: height, period, where they're from, and when the nowcast is for.
+ * @param props.waves - The reading, or null when unavailable.
  */
-function SwellColumn({ swell }: { swell: SwellReading | null }) {
-  if (!swell) return <ReadingColumn title="Swell"><NoReading /></ReadingColumn>;
+function WavesReadingView({ waves }: { waves: WavesReading | null }) {
+  if (!waves) return <DialReading title="Waves"><NoReading /></DialReading>;
   return (
-    <ReadingColumn
-      title="Swell"
-      dial={<CompassDial arrowDeg={swell.direction_deg + HEADING_FROM_SOURCE_DEG} />}
-    >
-      <div className="text-8xl font-bold text-white">{swell.height_ft.toFixed(1)} ft</div>
-      <div className="text-4xl text-gray-300">{swell.period_s.toFixed(0)} s period</div>
+    <DialReading title="Waves" dial={<CompassDial arrowDeg={waves.direction_deg + HEADING_FROM_SOURCE_DEG} />}>
+      <div className="text-8xl font-bold text-white">{waves.height_ft.toFixed(1)} ft</div>
+      <div className="text-4xl text-gray-300">{waves.period_s.toFixed(0)} s period</div>
       <div className="text-4xl text-gray-300">
-        from {swell.direction_compass} {Math.round(swell.direction_deg)}&deg;
+        from {waves.direction_compass} {Math.round(waves.direction_deg)}&deg;
       </div>
-    </ReadingColumn>
+      <SourceNote>CDIP nearshore nowcast, {waves.as_of}</SourceNote>
+    </DialReading>
   );
 }
 
 /**
- * Wind column: speed, gusts, and where it's from.
+ * Wind: speed, gusts, where it's from, and whether it's measured or modelled.
  * @param props.wind - The reading, or null when unavailable.
  */
-function WindColumn({ wind }: { wind: WindReading | null }) {
-  if (!wind) return <ReadingColumn title="Wind"><NoReading /></ReadingColumn>;
+function WindReadingView({ wind }: { wind: WindReading | null }) {
+  if (!wind) return <DialReading title="Wind"><NoReading /></DialReading>;
   return (
-    <ReadingColumn
-      title="Wind"
-      dial={<CompassDial arrowDeg={wind.direction_deg + HEADING_FROM_SOURCE_DEG} />}
-    >
+    <DialReading title="Wind" dial={<CompassDial arrowDeg={wind.direction_deg + HEADING_FROM_SOURCE_DEG} />}>
       <div className="text-8xl font-bold text-white">{wind.speed_mph.toFixed(0)} mph</div>
       <div className="text-4xl text-gray-300">
         {wind.gusts_mph !== null ? `gusts ${wind.gusts_mph.toFixed(0)} mph` : "no gust data"}
@@ -163,35 +163,39 @@ function WindColumn({ wind }: { wind: WindReading | null }) {
       <div className="text-4xl text-gray-300">
         from {wind.direction_compass} {Math.round(wind.direction_deg)}&deg;
       </div>
-    </ReadingColumn>
+      <SourceNote>{wind.note}</SourceNote>
+    </DialReading>
   );
 }
 
 /**
- * Tide column: height, rising/falling (as an up/down arrow), and the next turn.
+ * Tide: the height now and next turn on the left, the chart filling the rest.
  * @param props.tide - The reading, or null when unavailable.
  */
-function TideColumn({ tide }: { tide: TideReading | null }) {
-  if (!tide) return <ReadingColumn title="Tide"><NoReading /></ReadingColumn>;
-  // reuse the arrow shape: straight up while rising, straight down while falling
-  const arrow = (
-    <svg
-      width={DIAL_SIZE_PX}
-      height={DIAL_SIZE_PX}
-      viewBox={DIAL_VIEWBOX}
-    >
-      <polygon points={ARROW_POINTS} fill={DIAL_HIGHLIGHT_COLOR} transform={`rotate(${tide.rising ? 0 : 180})`} />
-    </svg>
-  );
+function TideView({ tide }: { tide: TideReading | null }) {
   return (
-    <ReadingColumn title="Tide" dial={arrow}>
-      <div className="text-8xl font-bold text-white">{tide.height_ft.toFixed(1)} ft</div>
-      <div className="text-4xl text-gray-300">{tide.rising ? "rising" : "falling"}</div>
-      <div className="text-4xl text-gray-300">
-        {tide.next_turn_kind} at {tide.next_turn_at}
-      </div>
-      {tide.source && <div className="text-2xl text-gray-500">from {tide.source}</div>}
-    </ReadingColumn>
+    <div className="flex flex-col w-full">
+      <div className="text-3xl text-gray-400 uppercase tracking-widest mb-2">Tide</div>
+      {!tide ? (
+        <NoReading />
+      ) : (
+        <div className="flex items-center gap-8 w-full">
+          <div className="flex flex-col gap-2 shrink-0 w-[420px]">
+            <div className="text-8xl font-bold text-white">{tide.height_ft.toFixed(1)} ft</div>
+            <div className="text-4xl text-gray-300">
+              {tide.rising ? "rising" : "falling"}, {tide.next_turn_kind} at {tide.next_turn_at}
+            </div>
+            <SourceNote>
+              {tide.measured ? "measured" : "predicted"}
+              {tide.source ? ` at ${tide.source}` : ""}
+            </SourceNote>
+          </div>
+          <div className="flex-1 min-w-0">
+            <TideGraph tide={tide} />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -215,13 +219,13 @@ export default function SurfConditionsPanel({ camId }: { camId: SurfCamId }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center font-mono px-12">
-      <div className="text-7xl font-bold text-white mb-20">{conditions.name}</div>
-      <div className="grid grid-cols-3 gap-16 w-full max-w-[2000px]">
-        <SwellColumn swell={conditions.swell} />
-        <WindColumn wind={conditions.wind} />
-        <TideColumn tide={conditions.tide} />
+    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center gap-12 font-mono px-16">
+      <div className="text-7xl font-bold text-white">{conditions.name}</div>
+      <div className="grid grid-cols-2 gap-16 w-full">
+        <WavesReadingView waves={conditions.waves} />
+        <WindReadingView wind={conditions.wind} />
       </div>
+      <TideView tide={conditions.tide} />
     </div>
   );
 }

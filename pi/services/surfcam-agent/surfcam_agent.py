@@ -3,16 +3,17 @@
 
 the kiosk page (chrome) can't play these streams itself -- hdontap only allows
 its own embed on other sites and 403s any browser request carrying a foreign
-Origin header. mpv sends no Origin, so it plays them fine. this agent runs on
-the kiosk next to the browser and drives mpv on behalf of the page over a tiny
-localhost-only HTTP API:
+Origin header, and surfline's cdn only serves requests that come from its own
+embed player. mpv sends no Origin and can send the referrer surfline expects, so
+it plays both. this agent runs on the kiosk next to the browser and drives mpv on
+behalf of the page over a tiny localhost-only HTTP API:
 
     POST /cams/<cam>/prepare   start mpv paused + minimized so it buffers in the background
     POST /cams/<cam>/show      unpause, bring it fullscreen on top of chrome, and draw the
                                place name + surf conditions overlay (see surf_conditions.py)
     POST /cams/<cam>/stop      kill that cam's mpv
-    GET  /cams/<cam>/conditions  the cam's name, swell, wind and tide as json, for the
-                                 conditions panel on the other screen
+    GET  /cams/<cam>/conditions  the cam's name, waves, wind and tide (with its graph) as
+                                 json, for the conditions panel on the other screen
 
 see pi/services/surfcam-agent/README.md for setup.
 """
@@ -30,8 +31,17 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Optional
 
-from surf_conditions import Metric, Site, conditions_to_json, get_conditions, get_metrics
+from surf_conditions import (
+    SCRIPPS_PIER_WIND,
+    Metric,
+    Site,
+    SurfSpot,
+    conditions_to_json,
+    get_conditions,
+    get_metrics,
+)
 
 LISTEN_HOST = "127.0.0.1"
 LISTEN_PORT = 8765
@@ -39,29 +49,56 @@ LISTEN_PORT = 8765
 # the only page origins allowed to call this API (browser cors check)
 ALLOWED_ORIGINS = {"https://tyler-schwenk.com"}
 
+# surfline's stream cdn 403s any request without its embed player as the referrer
+SURFLINE_REFERRER = "https://embed.cdn-surfline.com/"
+SURFLINE_STREAM_URL_TEMPLATE = "https://hls.cdn-surfline.com/oregon/{alias}/playlist.m3u8"
+
 
 @dataclass(frozen=True)
 class Cam:
-    """a live cam: the hdontap page that carries its stream, and where it is."""
+    """a live cam and the surf spot it looks at.
 
-    page_url: str
-    site: Site
+    hdontap cams set page_url: their stream url carries an expiring token, so it's scraped
+    from the public cam page when needed. surfline cams set stream_url directly (it's
+    fixed) plus the referrer their cdn insists on. only use surfline cams marked free
+    (isPremium false) -- premium ones are for paying subscribers.
+    """
+
+    spot: SurfSpot
+    page_url: Optional[str] = None
+    stream_url: Optional[str] = None
+    referrer: Optional[str] = None
+
+
+def surfline_cam(alias: str, spot: SurfSpot) -> Cam:
+    """builds a cam for one of surfline's free streams, from its alias (like 'wc-scripps')."""
+    return Cam(spot, stream_url=SURFLINE_STREAM_URL_TEMPLATE.format(alias=alias), referrer=SURFLINE_REFERRER)
 
 
 # cam id (used by the display page) -> cam. keep ids in sync with website/app/display/surfCams.ts.
+# each spot's mop point is the cdip nowcast point nearest the beach the cam looks at.
 # keep cams at 1080p or lower so decode and rendering stay light
 CAMS = {
     "pb": Cam(
-        "https://hdontap.com/stream/186699/pacific-beach-live-surf-webcam/",
-        Site("Pacific Beach", 32.7936, -117.2570),
+        SurfSpot(Site("Pacific Beach", 32.7936, -117.2570), "D0402"),
+        page_url="https://hdontap.com/stream/186699/pacific-beach-live-surf-webcam/",
     ),
     "la-jolla-shores": Cam(
-        "https://hdontap.com/stream/532541/la-jolla-shores-live-surf-cam/",
-        Site("La Jolla Shores", 32.8567, -117.2560),
+        SurfSpot(Site("La Jolla Shores", 32.8567, -117.2560), "D0499", SCRIPPS_PIER_WIND),
+        page_url="https://hdontap.com/stream/532541/la-jolla-shores-live-surf-cam/",
+    ),
+    "scripps": surfline_cam(
+        "wc-scripps",
+        SurfSpot(Site("Scripps Pier", 32.8658, -117.2561), "D0514", SCRIPPS_PIER_WIND),
     ),
     "scripps-underwater": Cam(
-        "https://hdontap.com/stream/018408/scripps-pier-underwater-live-webcam/",
-        Site("Scripps Pier (underwater)", 32.8669, -117.2571),
+        SurfSpot(Site("Scripps Pier (underwater)", 32.8669, -117.2571), "D0514", SCRIPPS_PIER_WIND),
+        page_url="https://hdontap.com/stream/018408/scripps-pier-underwater-live-webcam/",
+    ),
+    # the nearest free cam to swami's (both of surfline's swami's cams are premium)
+    "moonlight": surfline_cam(
+        "wc-moonlight",
+        SurfSpot(Site("Moonlight Beach, Encinitas", 33.0469, -117.2997), "D0723"),
     ),
 }
 
@@ -160,7 +197,7 @@ def fetch_stream_url(page_url: str) -> str:
 
 
 def get_stream_url(cam: str) -> str:
-    """returns a stream url for the cam, reusing a cached one while its token is fresh.
+    """returns a stream url for the cam: its fixed one, or a scraped one reused while its token is fresh.
 
     args:
         cam: cam id from CAMS.
@@ -168,6 +205,8 @@ def get_stream_url(cam: str) -> str:
     returns:
         the .m3u8 url.
     """
+    if CAMS[cam].stream_url:
+        return CAMS[cam].stream_url
     cached = _stream_url_cache.get(cam)
     if cached and cached[1] - time.time() > TOKEN_MIN_REMAINING_S:
         return cached[0]
@@ -310,10 +349,10 @@ def show_overlay(cam: str) -> None:
     args:
         cam: cam id from CAMS.
     """
-    site = CAMS[cam].site
+    spot = CAMS[cam].spot
     sock = None
     try:
-        ass = build_overlay_ass(site, get_metrics(site))
+        ass = build_overlay_ass(spot.site, get_metrics(spot))
         sock = connect_ipc(cam)
         # no event lines are needed, and a client that never reads would let them pile up
         run_commands(sock, [
@@ -364,7 +403,7 @@ def prepare_player(cam: str) -> None:
     with _cam_locks[cam]:
         start_player(cam)
     # warm the conditions cache now, while the stream buffers, so show doesn't wait on the apis
-    get_metrics(CAMS[cam].site)
+    get_metrics(CAMS[cam].spot)
 
 
 def start_player(cam: str) -> None:
@@ -389,8 +428,10 @@ def start_player(cam: str) -> None:
         f"--hwdec={MPV_HWDEC}",
         f"--demuxer-readahead-secs={DEMUXER_READAHEAD_S}",
         f"--input-ipc-server={ipc_socket_path(cam)}",
-        url,
     ]
+    if CAMS[cam].referrer:
+        command.append(f"--referrer={CAMS[cam].referrer}")
+    command.append(url)
     try:
         process = subprocess.Popen(command)
     except FileNotFoundError as err:
@@ -463,8 +504,8 @@ class AgentHandler(BaseHTTPRequestHandler):
         if not route or route["cam"] not in CAMS:
             self._send_json(404, {"error": f"unknown route or cam: {self.path}. known cams: {sorted(CAMS)}"})
             return
-        site = CAMS[route["cam"]].site
-        self._send_json(200, {"name": site.name, **conditions_to_json(get_conditions(site))})
+        spot = CAMS[route["cam"]].spot
+        self._send_json(200, {"name": spot.site.name, **conditions_to_json(get_conditions(spot))})
 
     def log_message(self, format: str, *args) -> None:
         """silences per-request access logs; actions are logged by the player functions."""

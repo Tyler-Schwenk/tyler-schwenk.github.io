@@ -62,10 +62,11 @@ run `pkill -x chrome`.
 the USB-C/HDMI adapter only gets 30 Hz at 3840x2160 (HDMI 1.4 bandwidth).
 
 Each browser opens `/display?screen=primary` or `/display?screen=secondary`, from whether
-its monitor is the xrandr primary (a lone screen is always primary). The page keeps a
-separate panel list per role: surf cams are only on the primary list, so exactly one page
-drives the surf cam agent. Both pages pick the current panel from the clock, so they
-switch at the same moment (see `website/docs/DISPLAY.md`).
+its monitor is the xrandr primary (a lone screen is always primary). The two pages are
+coordinated: both pick the current slot from the clock, and each slot says what each
+screen shows (a surf cam on the monitor with its waves/wind/tide on the laptop screen,
+photos on both taking turns to change, etc). Only the primary page drives the surf cam
+player. See `website/docs/DISPLAY.md`.
 
 ### Power and network behavior
 
@@ -107,9 +108,10 @@ up a deploy can still serve a stale disk-cached copy for up to 10 minutes.
 
 Surf cam panels are played by `mpv` (fullscreen, on top of the browser), driven by the
 surfcam agent -- a small Python server started from `~/kiosk-run.sh` alongside the
-browsers. Video is decoded in hardware (VA-API); all three cams play with zero dropped
-frames and near-zero CPU. The agent also draws an info overlay (place name, swell, wind,
-tide) on each cam. Setup, the overlay's data sources, and troubleshooting are in
+browsers. Video is decoded in hardware (VA-API); the 1080p HDOnTap cams play with zero dropped
+frames and near-zero CPU. The agent also draws an info overlay (place name, waves, wind,
+tide) on each cam, and serves the same readings to the conditions panel on the laptop
+screen. Setup, the overlay's data sources, and troubleshooting are in
 `pi/services/surfcam-agent/README.md`.
 
 ## Security and Maintenance

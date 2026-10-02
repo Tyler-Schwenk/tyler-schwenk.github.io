@@ -94,7 +94,9 @@ const ROTATION: RotationSlot[] = BPM_DEBUG_MODE
       { primary: MALLARDS, secondary: SECONDARY_PHOTOS },
       surfCamSlot("pb"),
       surfCamSlot("la-jolla-shores"),
+      surfCamSlot("scripps"),
       surfCamSlot("scripps-underwater"),
+      surfCamSlot("moonlight"),
     ];
 
 /**

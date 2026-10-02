@@ -12,16 +12,22 @@ const SURFCAM_AGENT_URL = "http://127.0.0.1:8765";
 const AGENT_UNREACHABLE_MESSAGE = "surfcam agent unreachable -- this panel only works on the kiosk";
 
 /** Cam ids the agent knows about. Keep in sync with CAMS in surfcam_agent.py. */
-export type SurfCamId = "pb" | "la-jolla-shores" | "scripps-underwater";
+export type SurfCamId = "pb" | "la-jolla-shores" | "scripps" | "scripps-underwater" | "moonlight";
 
 type SurfCamAction = "prepare" | "show" | "stop";
 
-/** Swell at the cam. Direction is where it comes from, degrees clockwise from north. */
-export interface SwellReading {
+/**
+ * Waves at the cam's beach, from CDIP's nearshore nowcast (total significant
+ * height, peak period and direction). Direction is where they come from,
+ * degrees clockwise from north.
+ */
+export interface WavesReading {
   height_ft: number;
   period_s: number;
   direction_deg: number;
   direction_compass: string;
+  /** When the nowcast is for, formatted like "1:00 PM". */
+  as_of: string;
 }
 
 /** Wind at the cam. Direction is where it comes from, degrees clockwise from north. */
@@ -30,22 +36,49 @@ export interface WindReading {
   gusts_mph: number | null;
   direction_deg: number;
   direction_compass: string;
+  /** Where it's from, like "measured at Scripps Pier" or "forecast model". */
+  note: string;
 }
 
-/** Tide right now. `source` names the station when it isn't at the cam. */
+/** A predicted high or low inside the graph window. */
+export interface TideTurn {
+  at_ms: number;
+  /** Formatted like "1:25 PM". */
+  at: string;
+  height_ft: number;
+  kind: "high" | "low";
+}
+
+/** [epoch ms, height in ft] */
+export type TidePoint = [number, number];
+
+/**
+ * Tide now plus the curve around it. `source` names the station when it isn't
+ * at the cam. Times are epoch ms; `next_turn_at` is pre-formatted local time.
+ */
 export interface TideReading {
   height_ft: number;
+  /** True when height_ft is the gauge's measurement, false when it's the prediction. */
+  measured: boolean;
   rising: boolean;
   next_turn_kind: "high" | "low";
-  /** Already formatted in the cams' local time, like "1:25 PM". */
   next_turn_at: string;
   source: string | null;
+  /** When the agent worked this out; where the graph's "now" marker goes. */
+  now_ms: number;
+  window_start_ms: number;
+  window_end_ms: number;
+  /** Predicted heights across the whole window, every 6 minutes. */
+  predicted: TidePoint[];
+  /** Measured heights over the past part of the window; may be empty. */
+  observed: TidePoint[];
+  turns: TideTurn[];
 }
 
 /** A cam's conditions, as served by GET /cams/<cam>/conditions. Missing readings are null. */
 export interface SurfConditions {
   name: string;
-  swell: SwellReading | null;
+  waves: WavesReading | null;
   wind: WindReading | null;
   tide: TideReading | null;
 }
@@ -109,7 +142,7 @@ export async function stopSurfCam(camId: SurfCamId): Promise<void> {
 }
 
 /**
- * Fetches a cam's current swell, wind and tide from the agent (cached there,
+ * Fetches a cam's current waves, wind and tide from the agent (cached there,
  * so this is cheap).
  * @param camId - Cam whose spot to read.
  * @returns The conditions, or an error message to display.
