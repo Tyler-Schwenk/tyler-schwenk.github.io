@@ -61,7 +61,7 @@ The **offset** covers the fixed delay between a beat in the room and its pulse o
 (audio buffering, the FFT window, the onset peak's lag, screen latency). It's added to
 every beat time the agent sends. Set it once for a given mic and speaker placement:
 
-1. Press `b` for the BPM view, then `b` again for calibration.
+1. Press `b` for bpm mode, then `2` to hold the calibration view.
 2. Play a click track (any metronome at, say, 120 BPM) through the speakers.
 3. Press `-` / `=` to move the beat flash earlier/later in 10 ms steps until it lands on
    the click. Each press is saved to `calibration.json` straight away.
@@ -96,7 +96,8 @@ page), including Chrome's private network access preflight.
 `config`, once per connection:
 
 ```json
-{"band_edges_hz": [40.0, 43.6, "...65 edges..."], "onset_min_hz": 40.0, "onset_max_hz": 200.0,
+{"band_edges_hz": [40.0, 43.6, "...65 edges..."], "band_floor_db": -90.0, "band_ceil_db": -10.0,
+ "onset_min_hz": 40.0, "onset_max_hz": 200.0,
  "frame_rate_hz": 86.13, "silence_db": -55.0, "curve_min_bpm": 60, "curve_step_bpm": 1}
 ```
 
@@ -105,6 +106,8 @@ page), including Chrome's private network access preflight.
 ```json
 {"t_ms": 1790983472509.9, "bands": [0, 12, "...64 levels 0-255, low to high..."], "onset": 1.234, "level_db": -23.4}
 ```
+
+A band level maps linearly onto dB: 0 is `band_floor_db`, 255 is `band_ceil_db`.
 
 `tempo`, every 0.25 s (the latest one is also sent straight away to a new page):
 

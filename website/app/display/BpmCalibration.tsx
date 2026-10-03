@@ -1,11 +1,20 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { beatPulse, FRAME_HISTORY_LENGTH, type BpmConfig, type BpmFrame, type BpmStream, type BpmTempo } from "./bpmAgent";
+import {
+  beatPulse,
+  detectedBeatTimes,
+  FRAME_HISTORY_LENGTH,
+  historyTimeAxis,
+  type BpmConfig,
+  type BpmFrame,
+  type BpmStream,
+  type BpmTempo,
+} from "./bpmAgent";
 import { useCanvasLoop } from "./useCanvasLoop";
 
 /**
- * The bpm calibration view: everything the agent hears, so it's clear why it
+ * The calibration bpm view: everything the agent hears, so it's clear why it
  * picks the tempo it does.
  * - spectrogram waterfall (newest on the right, low notes at the bottom) with
  *   the kick/bass band the beat tracker listens to marked
@@ -53,7 +62,6 @@ const BAND_LINE_DASH_PX = [12, 10];
 const METER_MIN_DB = -90;
 const METER_MAX_DB = 0;
 const CURVE_AXIS_STEP_BPM = 20;
-const MS_PER_S = 1000;
 
 // spectrogram colours, quiet to loud: black through purple and orange to pale yellow
 const COLOR_MAP_STOPS: [number, number, number][] = [
@@ -236,22 +244,16 @@ function drawOnsets(ctx: CanvasRenderingContext2D, rect: Rect, frames: BpmFrame[
   ctx.strokeStyle = FRAME_COLOR;
   ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
   if (frames.length === 0) return;
-  const columnWidth = rect.w / FRAME_HISTORY_LENGTH;
   const endMs = frames[frames.length - 1].t_ms;
-  const xForTime = (tMs: number) => rect.x + rect.w - ((endMs - tMs) / MS_PER_S) * config.frame_rate_hz * columnWidth;
+  const { startMs, xForTime } = historyTimeAxis(endMs, config, rect.x, rect.w);
 
-  if (tempo?.beat_ms != null && tempo.period_ms != null) {
-    const detectedBeatMs = tempo.beat_ms - tempo.offset_ms;
-    const startMs = endMs - (FRAME_HISTORY_LENGTH / config.frame_rate_hz) * MS_PER_S;
-    const firstBeat = Math.ceil((startMs - detectedBeatMs) / tempo.period_ms);
-    ctx.strokeStyle = BEAT_TICK_COLOR;
-    ctx.lineWidth = BEAT_TICK_WIDTH_PX;
-    for (let t = detectedBeatMs + firstBeat * tempo.period_ms; t <= endMs; t += tempo.period_ms) {
-      ctx.beginPath();
-      ctx.moveTo(xForTime(t), rect.y);
-      ctx.lineTo(xForTime(t), rect.y + rect.h);
-      ctx.stroke();
-    }
+  ctx.strokeStyle = BEAT_TICK_COLOR;
+  ctx.lineWidth = BEAT_TICK_WIDTH_PX;
+  for (const t of detectedBeatTimes(tempo, startMs, endMs)) {
+    ctx.beginPath();
+    ctx.moveTo(xForTime(t), rect.y);
+    ctx.lineTo(xForTime(t), rect.y + rect.h);
+    ctx.stroke();
   }
 
   const peak = Math.max(...frames.map((frame) => frame.onset)) || 1;
@@ -430,7 +432,7 @@ export default function BpmCalibration({ stream }: { stream: BpmStream }) {
         </div>
       </div>
       <div className="absolute bottom-4 right-12 text-2xl text-gray-500">
-        - / = move the flash earlier / later &middot; b back to the visualizer
+        - / = move the flash earlier / later
       </div>
     </div>
   );

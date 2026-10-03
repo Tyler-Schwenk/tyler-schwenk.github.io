@@ -37,6 +37,8 @@ import numpy as np
 from beat_tracker import (
     BAND_EDGES_HZ,
     BPM_GRID_STEP,
+    DISPLAY_CEIL_DB,
+    DISPLAY_FLOOR_DB,
     FRAME_RATE_HZ,
     HOP_SAMPLES,
     MIN_BPM,
@@ -146,9 +148,11 @@ def encode_event(name: str, data: dict) -> bytes:
 
 
 def config_event() -> bytes:
-    """the fixed facts the page needs to draw the stream: band layout, rates, thresholds."""
+    """the fixed facts the page needs to draw the stream: band layout and scale, rates, thresholds."""
     return encode_event("config", {
         "band_edges_hz": [round(float(edge), 1) for edge in BAND_EDGES_HZ],
+        "band_floor_db": DISPLAY_FLOOR_DB,
+        "band_ceil_db": DISPLAY_CEIL_DB,
         "onset_min_hz": ONSET_MIN_HZ,
         "onset_max_hz": ONSET_MAX_HZ,
         "frame_rate_hz": FRAME_RATE_HZ,
@@ -463,7 +467,7 @@ class AgentHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": f"unknown route: {self.path}. try /offset/earlier or /offset/later"})
             return
         if not listener.running:
-            self._send_json(409, {"error": "not listening -- open the bpm view (b) before nudging the offset"})
+            self._send_json(409, {"error": "not listening -- press b for bpm mode before nudging the offset"})
             return
         step_ms = -OFFSET_STEP_MS if route["direction"] == "earlier" else OFFSET_STEP_MS
         offset_ms = listener.nudge_offset(step_ms)

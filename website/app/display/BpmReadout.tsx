@@ -4,10 +4,11 @@ import { useEffect, useRef } from "react";
 import { beatPulse, type BpmStream } from "./bpmAgent";
 
 /**
- * The bpm number for the other screen while the visualizer (or calibration)
- * is up: the tempo in big type over a ring that pulses on each beat. While
- * calibrating it also lists the keys.
+ * The bpm number for the other screen while a bpm view is up: the tempo in
+ * big type over a ring that pulses on each beat, and which view is showing.
+ * While calibrating it also lists the calibration keys.
  * @param props.stream - The bpm agent stream (from BpmPanel).
+ * @param props.viewLabel - Name of the view on the other screen.
  * @param props.calibrating - Show the calibration keys.
  */
 
@@ -17,7 +18,15 @@ const RING_BEAT_SCALE = 1.08;
 const RING_REST_OPACITY = 0.15;
 const RING_BEAT_OPACITY = 1;
 
-export default function BpmReadout({ stream, calibrating }: { stream: BpmStream; calibrating: boolean }) {
+export default function BpmReadout({
+  stream,
+  viewLabel,
+  calibrating,
+}: {
+  stream: BpmStream;
+  viewLabel: string;
+  calibrating: boolean;
+}) {
   const { tempo, tempoRef } = stream;
   const ringRef = useRef<HTMLDivElement>(null);
 
@@ -50,12 +59,10 @@ export default function BpmReadout({ stream, calibrating }: { stream: BpmStream;
           </div>
         </div>
       </div>
+      <div className="mt-12 text-3xl text-gray-500 uppercase tracking-widest">{viewLabel}</div>
       {calibrating && (
-        <div className="mt-12 text-3xl text-gray-400 text-center leading-relaxed">
-          <div>
-            play a click track, then - / = until the flash lands on the click
-          </div>
-          <div>b back to the visualizer &middot; backspace to leave</div>
+        <div className="mt-6 text-3xl text-gray-400 text-center">
+          play a click track, then - / = until the flash lands on the click
         </div>
       )}
     </div>

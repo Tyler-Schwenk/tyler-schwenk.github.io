@@ -343,8 +343,13 @@ page they already loaded. After a deploy:
 ssh tyler@192.168.1.192 "pkill -x chrome"
 ```
 
-The `kiosk-run.sh` loop clears the caches and relaunches the browsers within ~5-8
-seconds, fetching the new deploy fresh (outside the overnight sleep window).
+The `kiosk-run.sh` loop notices on its next 30 s poll, clears the browser caches and
+relaunches the browsers (outside the overnight sleep window), so allow up to ~35 seconds.
+
+Wait 10 minutes after the deploy finishes before doing this. GitHub Pages' CDN caches the
+page for `max-age=600` too, and clearing the browsers' own cache doesn't help while the
+CDN is still serving the old copy. Restart too early and the kiosk comes back on the old
+page.
 
 ## Troubleshooting
 

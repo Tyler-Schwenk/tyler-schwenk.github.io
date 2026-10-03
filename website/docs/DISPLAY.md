@@ -30,11 +30,14 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/SurfConditionsPanel.tsx` | Waves, wind (compass dials) and tide for a cam's spot, shown on the top screen while the cam plays below |
 | `website/app/display/TideGraph.tsx` | The tide chart on the conditions panel: predicted curve, measured line, now marker, highs/lows |
 | `website/app/display/surfCams.ts` | Client for the surfcam agent (`prepareSurfCam`, `showSurfCam`, `stopSurfCam`, `fetchSurfConditions`) and the `SurfCamId` list |
-| `website/app/display/BpmPanel.tsx` | BPM visualizer slot (key only, never rotated): holds the bpm agent's stream open and picks the view for this screen |
-| `website/app/display/BpmVisualizer.tsx` | The visual: mirrored spectrum bars that rise and fall with the music and pulse on the beat |
-| `website/app/display/BpmCalibration.tsx` | Calibration view: spectrogram, onset curve with detected beats, level meter, tempo scores, beat flash |
-| `website/app/display/BpmReadout.tsx` | The tempo in big type over a beat-pulsing ring, for the other screen |
-| `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`useBpmStream`, `beatPhase`, `beatPulse`) |
+| `website/app/display/BpmPanel.tsx` | Bpm mode's slot (key only, never rotated): `BPM_VIEWS`, holds the bpm agent's stream open, picks what this screen shows |
+| `website/app/display/BpmVisualizer.tsx` | View 1, spectrum bars: mirrored bars that rise and fall with the music and pulse on the beat |
+| `website/app/display/BpmCalibration.tsx` | View 2, calibration: spectrogram, onset curve with detected beats, level meter, tempo scores, beat flash |
+| `website/app/display/BpmHalo.tsx` | View 3, halo: turning ring of spectrum spokes round a bass-driven core, light trails, sparks on each beat |
+| `website/app/display/BpmDjView.tsx` | View 4, dj meters: low/mid/high meters in dB, beat counter, three-band scrolling waveform with beat grid |
+| `website/app/display/BpmReadout.tsx` | The tempo over a beat-pulsing ring and the current view's name, for the other screen |
+| `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`useBpmStream`) plus helpers the views share (beat phase/pulse/counting, band ranges, beat grid, time axis) |
+| `website/app/display/spectrumLevels.ts` | Rise-and-fall spectrum levels with peak caps and auto gain, shared by the bars and halo views |
 | `website/app/display/useCanvasLoop.ts` | Full-window canvas + `requestAnimationFrame` loop hook, used by the bpm views |
 | `website/app/display/PlaceholderPanel.tsx` | Generic "Coming Soon: {name}" stand-in, reused as new panels get built |
 
@@ -64,9 +67,9 @@ both screens show at the same time:
 | mallards | photos (carries on) | mallard count |
 | each of the five cams | the live cam | that spot's waves, wind and tide |
 
-The BPM visualizer is a slot too, but it's not in `ROTATION`: it only comes up from its
-key (`b`, below), since it keeps the mic recording while it's on screen. It shows the
-visualizer (or the calibration view) on the primary screen and the tempo on the other.
+Bpm mode is a slot too, but it's not in `ROTATION`: it only comes up from its key (`b`,
+below), since it keeps the mic recording while it's on screen. It has its own views (see
+"BPM Visualizer") on the primary screen and the tempo on the other.
 
 The active slot comes from the wall clock, not a timer chain (`useClockSlot.ts`): time
 is cut into `PANEL_ROTATE_INTERVAL_MS` slots counted from the epoch, and slot `n` is
@@ -97,14 +100,13 @@ the menu first); tab just shows the list on the top screen.
 | `2` | hold the mallard counter |
 | `3` | rotate through the surf cams only (from the first) |
 | `4`-`8` | hold one cam (in `SURF_CAMS` order: PB, La Jolla Shores, Scripps, Scripps underwater, Moonlight) |
-| `b` | the BPM visualizer; `b` again toggles its calibration view |
-| `-` / `=` | in the BPM view: move the beat earlier / later on screen by 10 ms (calibration, see "BPM Visualizer") |
+| `b` | bpm mode, cycling through its views (keys inside it below) |
 | `]` / `[` | next / previous, and hold there: the next photo while photos are held, otherwise the next slot (photos, mallards, each cam) from wherever it was; backspace resumes the rotation |
 | `backspace` | back one step: closes the menu if it's open, else ends the hold or cam-only rotation |
 | `esc` | straight back to the standard display |
 
-A hold (including one from `]`/`[`), the cam-only rotation or the BPM view shows a small indicator in the top right of the top
-screen ("held" / "surf cams only" / "bpm", "backspace to return"). Everything goes back to the
+A hold (including one from `]`/`[`), the cam-only rotation or bpm mode shows a small indicator in the top right of the top
+screen ("held" / "surf cams only" / "bpm" / "bpm, held", "backspace to return"). Everything goes back to the
 standard rotation when the overnight sleep starts.
 
 **How it works:** xbindkeys on displaytop grabs those keys system-wide (so they work even
@@ -118,12 +120,24 @@ cleared by `kiosk-run.sh` when the sleep window starts, and by an agent restart.
 The rotation's position is an anchor (`anchorMs`, `anchorIndex`): at `anchorMs` it's on
 item `anchorIndex` of its list (all slots, or just the cams) and moves on one per
 interval. With no keys pressed the anchor is (0, 0), i.e. the plain wall clock; starting the
-cam-only rotation anchors it at the press so it begins on the first cam. A photo hold freezes each `PhotoPanel` on the photo its own clock
+cam-only rotation anchors it at the press so it begins on the first cam. Bpm mode's cycling
+uses the same anchor to count its views, anchored at the press that started it. A photo hold freezes each `PhotoPanel` on the photo its own clock
 slot gave at the moment `1` was pressed.
 
-`-` and `=` are the exception: xbindkeys posts them straight to the bpm agent
-(`POST /offset/earlier|later` on port 8766), since the offset is the agent's setting, not
-display state. The agent ignores them unless the BPM view is up.
+Inside bpm mode the keys work on its views instead (the tab menu lists them):
+
+| Key | Does |
+|-----|------|
+| `1`-`4` | hold that view (in `BPM_VIEWS` order: spectrum bars, calibration, halo, dj meters); other digits do nothing |
+| `]` / `[` | next / previous view, and hold there |
+| `b` | back to cycling, from the view that's up |
+| `-` / `=` | move the beat earlier / later on screen by 10 ms (calibration, see "BPM Visualizer") |
+| `backspace` | from a held view back to cycling; from cycling out of bpm mode |
+| `esc` | straight back to the standard display |
+
+`-` and `=` are the exception to the key log: xbindkeys posts them straight to the bpm
+agent (`POST /offset/earlier|later` on port 8766), since the offset is the agent's
+setting, not display state. The agent ignores them unless bpm mode is up.
 
 To add a shortcut, add an entry to `SHORTCUTS` in `page.tsx` (a free key; the kiosk grabs
 1-9 and b). A new kind of action needs a case in `kioskControl.ts`. New physical
@@ -205,21 +219,27 @@ agent's event stream (`GET http://127.0.0.1:8766/stream`) open while mounted, an
 agent starts recording when the first page connects and stops a few seconds after the
 last one leaves.
 
-Both screens render `BpmPanel`, so both hold the stream:
+Both screens render `BpmPanel`, so both hold the stream. The primary screen shows the
+current view, the secondary `BpmReadout` (the tempo over a ring that pulses on the beat,
+and the view's name). The views, in `BPM_VIEWS` order:
 
-| | Primary (monitor, below) | Secondary (laptop, top) |
-|---|---|---|
-| `b` | `BpmVisualizer` | `BpmReadout` |
-| `b` again | `BpmCalibration` | `BpmReadout` with the calibration keys |
+| # | View | What it shows |
+|---|------|---------------|
+| 1 | spectrum bars (`BpmVisualizer`) | 64 bands as bars mirrored out from the centre (bass in the middle), jumping up with the music and falling back under gravity with slower peak caps. On each beat the bars kick taller and brighter, a glow flashes behind them, and the colours step round |
+| 2 | calibration (`BpmCalibration`) | What the agent hears (below); the readout adds the calibration keys |
+| 3 | halo (`BpmHalo`) | A slowly turning ring of spectrum spokes round a glowing core that swells with the bass, drawn with light trails. Each beat throws a burst of sparks outward, kicks the spin and steps the colours |
+| 4 | dj meters (`BpmDjView`) | The room split like a mixer's three-band EQ (low < 250 Hz, mid to 2.5 kHz, high above): a meter per band in dB with peak hold, the tempo with a four-beat counter and phase bar, and a scrolling three-band waveform (blue lows, orange mids, white highs, like CDJ waveforms) under the detected beat grid |
 
-`BpmPanel` is the same component in both views, so toggling calibration doesn't drop the
-stream or make the tracker start over.
+Bpm mode starts cycling through them every `PANEL_ROTATE_INTERVAL_MS`, or holds one (keys
+under "Keyboard Control"). `BpmPanel` is the same component whichever view is up, so
+changing views doesn't drop the stream or make the tracker start over. The bars and halo
+use auto gain (the loudest recent band is full height), so they work whatever the volume;
+the dj meters don't, so they read like a level meter. The four-beat counter just counts
+beats: it doesn't know where the bar's downbeat is.
 
-**The visual** (`BpmVisualizer`): 64 spectrum bands drawn as bars mirrored out from the
-centre (bass in the middle). Bars jump straight up to the music and fall back under
-gravity, with slower-falling peak caps. Heights use auto gain (the loudest recent band
-is full height), so it works whatever the volume. On each beat the bars kick taller and
-brighter, a glow flashes behind them, and the colours step round the wheel.
+To add a view, build it as a component taking `{ stream }` that draws through
+`useCanvasLoop`, and add it to `BPM_VIEWS` in `BpmPanel.tsx` (digits 1-9 can pick up to
+nine views).
 
 **Beat sync:** the agent runs on the same machine, so its beat times are on the page's
 clock. Each `tempo` event gives a beat time (`beat_ms`, calibration offset already
@@ -228,7 +248,7 @@ is, and `beatPulse` turns that into a 0-1 pulse that jumps to 1 on the beat and 
 Every view draws from that, so they all pulse together. The agent smooths the beat
 clock itself, so the page never sees it jump.
 
-**Calibration** (`b` twice): play a click track, then `-`/`=` until the flash lands on
+**Calibration** (`b`, then `2`): play a click track, then `-`/`=` until the flash lands on
 the click. The view also shows the spectrogram with the beat band marked, the onset
 curve with the detected beats, the level against the silence threshold, and every
 tempo's score. Details in the agent README.

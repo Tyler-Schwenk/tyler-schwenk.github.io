@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useSyncExternalStore, type ReactElement } from "react";
 import PhotoPanel, { type PhotoHold } from "./PhotoPanel";
 import MallardPanel from "./MallardPanel";
-import BpmPanel from "./BpmPanel";
+import BpmPanel, { BPM_VIEWS } from "./BpmPanel";
 import SurfCamPanel from "./SurfCamPanel";
 import SurfConditionsPanel from "./SurfConditionsPanel";
 import ControlOverlay from "./ControlOverlay";
@@ -41,18 +41,19 @@ import {
  * which fires PANEL_PREPARE_LEAD_MS before the panel is due on screen so it
  * can load in the background and appear already running.
  *
- * The bpm visualizer isn't in the rotation: it's only shown from its key (b),
- * since it keeps the mic recording while it's up.
+ * Bpm mode isn't in the rotation: it's only shown from its key (b), since it
+ * keeps the mic recording while it's up. It cycles through its own views
+ * (BPM_VIEWS) on the same clock as the rotation, or holds one.
  *
  * Planned panels not yet implemented (add to ROTATION as each one is built,
  * using PlaceholderPanel to stub it out first if useful): MTS trolley info,
  * Pac-Tyler bike map, server status.
  */
 
-/** What a panel needs to know beyond its own props: the photo hold, and whether the bpm view is calibrating. */
+/** What a panel needs to know beyond its own props: the photo hold, and which bpm view is up. */
 interface PanelContext {
   photoHold: PhotoHold | null;
-  bpmCalibrating: boolean;
+  bpmView: number;
 }
 
 interface DisplayPanel {
@@ -91,13 +92,14 @@ const PRIMARY_PHOTOS: DisplayPanel = { render: ({ photoHold }) => <PhotoPanel ho
 const SECONDARY_PHOTOS: DisplayPanel = { render: ({ photoHold }) => <PhotoPanel staggered hold={photoHold} /> };
 const MALLARDS: DisplayPanel = { render: () => <MallardPanel /> };
 
-// shown only from its key, never in the rotation. both sides render BpmPanel, so it stays
-// mounted (and keeps its stream) when b toggles calibration
+// shown only from its key, never in the rotation. both sides render BpmPanel whichever view
+// is up, so it stays mounted (and keeps its stream) as the views change
 const BPM_SLOT: RotationSlot = {
   id: "bpm",
-  primary: { render: ({ bpmCalibrating }) => <BpmPanel side="primary" calibrating={bpmCalibrating} /> },
-  secondary: { render: ({ bpmCalibrating }) => <BpmPanel side="secondary" calibrating={bpmCalibrating} /> },
+  primary: { render: ({ bpmView }) => <BpmPanel side="primary" viewIndex={bpmView} /> },
+  secondary: { render: ({ bpmView }) => <BpmPanel side="secondary" viewIndex={bpmView} /> },
 };
+const BPM_VIEW_LABELS = BPM_VIEWS.map((view) => view.label);
 
 /**
  * Builds a slot for a live surf cam: the video below, its conditions on top.
@@ -126,7 +128,7 @@ const ROTATION: RotationSlot[] = [
 const CAM_ROTATION = ROTATION.filter((slot) => slot.camId);
 
 // digit shortcuts: 1-3 fixed, then one per cam in rotation order (4 = the first cam, ...),
-// then b for the bpm visualizer (b again toggles its calibration view)
+// then b for bpm mode (where the digits pick bpm views instead, see kioskControl.ts)
 const FIRST_CAM_SHORTCUT_KEY = 4;
 const SHORTCUTS: Shortcut[] = [
   { key: "1", label: "hold this photo", action: { kind: "hold-photo" } },
@@ -137,7 +139,7 @@ const SHORTCUTS: Shortcut[] = [
     label,
     action: { kind: "hold-slot" as const, slotId: `surf-${id}` },
   })),
-  { key: BPM_SHORTCUT_KEY, label: "bpm visualizer (again: calibrate)", action: { kind: "bpm" } },
+  { key: BPM_SHORTCUT_KEY, label: "bpm visualizer", action: { kind: "bpm" } },
 ];
 
 const CONTROL_CONFIG: ControlConfig = {
@@ -145,6 +147,7 @@ const CONTROL_CONFIG: ControlConfig = {
   slotIds: ROTATION.map((slot) => slot.id),
   camSlotIds: CAM_ROTATION.map((slot) => slot.id),
   shortcuts: SHORTCUTS,
+  bpmViewCount: BPM_VIEWS.length,
 };
 
 /**
@@ -169,7 +172,32 @@ function subscribeNever(): () => void {
 const readNothingOnServer = () => null;
 
 /**
- * The slot showing now, and the one due next (null when nothing's due: a hold).
+ * Which item of the current rotation list (slots, cams or bpm views) is up, counted from the anchor.
+ * @param state - Control state.
+ * @param clockSlot - Rotation slots since the anchor's grid started (from useClockSlot).
+ * @returns The item number; wrap it with the list length.
+ */
+function anchoredIndex(state: ControlState, clockSlot: number): number {
+  // the clock slot counts intervals on the anchor's grid, so measure from the anchor's own slot
+  const gridOffsetMs = state.anchorMs % PANEL_ROTATE_INTERVAL_MS;
+  const anchorSlot = clockSlotAt(state.anchorMs, PANEL_ROTATE_INTERVAL_MS, gridOffsetMs);
+  return state.anchorIndex + (clockSlot - anchorSlot);
+}
+
+/**
+ * Which bpm view is up (only meaningful in bpm mode).
+ * @param state - Control state.
+ * @param clockSlot - From useClockSlot.
+ * @returns Index into BPM_VIEWS.
+ */
+function pickBpmView(state: ControlState, clockSlot: number): number {
+  const mode = state.mode;
+  if (mode.kind === "bpm" && mode.heldView !== null) return mode.heldView;
+  return wrapIndex(anchoredIndex(state, clockSlot), BPM_VIEWS.length);
+}
+
+/**
+ * The slot showing now, and the one due next (null when nothing's due: a hold, or bpm mode).
  * @param state - Control state.
  * @param clockSlot - Rotation slots since the anchor's grid started (from useClockSlot).
  * @returns Current slot and next slot.
@@ -182,10 +210,7 @@ function pickSlots(state: ControlState, clockSlot: number): { current: RotationS
     return { current: ROTATION.find((slot) => slot.id === mode.slotId) ?? ROTATION[0], next: null };
   }
   const list = mode.kind === "cam-rotation" ? CAM_ROTATION : ROTATION;
-  // the clock slot counts intervals on the anchor's grid, so measure from the anchor's own slot
-  const gridOffsetMs = state.anchorMs % PANEL_ROTATE_INTERVAL_MS;
-  const anchorSlot = clockSlotAt(state.anchorMs, PANEL_ROTATE_INTERVAL_MS, gridOffsetMs);
-  const index = state.anchorIndex + (clockSlot - anchorSlot);
+  const index = anchoredIndex(state, clockSlot);
   return { current: list[wrapIndex(index, list.length)], next: list[wrapIndex(index + 1, list.length)] };
 }
 
@@ -208,13 +233,13 @@ export default function DisplayPage() {
     return () => clearTimeout(prepareTimer);
   }, [nextPanel, gridOffsetMs]);
 
-  if (!role || !slots) return <div className="fixed inset-0 bg-black" />;
+  if (!role || !slots || clockSlot === null) return <div className="fixed inset-0 bg-black" />;
   const photoHold = state.mode.kind === "hold-photo" ? state.mode : null;
-  const bpmCalibrating = state.mode.kind === "bpm" && state.mode.calibrating;
+  const bpmView = pickBpmView(state, clockSlot);
   return (
     <>
-      {slots.current[side].render({ photoHold, bpmCalibrating })}
-      {role !== "primary" && <ControlOverlay state={state} shortcuts={SHORTCUTS} />}
+      {slots.current[side].render({ photoHold, bpmView })}
+      {role !== "primary" && <ControlOverlay state={state} shortcuts={SHORTCUTS} bpmViewLabels={BPM_VIEW_LABELS} />}
     </>
   );
 }

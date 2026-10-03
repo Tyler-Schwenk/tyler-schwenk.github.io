@@ -23,10 +23,22 @@ export const FRAME_HISTORY_LENGTH = 600;
 // left by the next beat
 const BEAT_PULSE_DECAY = 5;
 
+// a beat phase drop bigger than this between two animation frames means a new beat started
+const BEAT_WRAP_THRESHOLD = 0.5;
+// with no beat, colours that step per beat drift this fast instead
+const IDLE_HUE_DRIFT_DEG_PER_S = 8;
+const FULL_CIRCLE_DEG = 360;
+const MS_PER_S = 1000;
+// band levels in frames run 0..this
+const BAND_LEVEL_MAX = 255;
+
 /** Fixed facts about the stream, sent once per connection. */
 export interface BpmConfig {
-  /** DISPLAY band count + 1 edges, low to high, Hz. */
+  /** Band count + 1 edges, low to high, Hz. */
   band_edges_hz: number[];
+  /** A band level of 0 is this many dB, 255 is band_ceil_db, linear between. */
+  band_floor_db: number;
+  band_ceil_db: number;
   /** The band the onset curve listens to. */
   onset_min_hz: number;
   onset_max_hz: number;
@@ -143,4 +155,98 @@ export function beatPhase(tempo: BpmTempo | null, nowMs: number): number | null 
 export function beatPulse(tempo: BpmTempo | null, nowMs: number): number {
   const phase = beatPhase(tempo, nowMs);
   return phase === null ? 0 : Math.exp(-BEAT_PULSE_DECAY * phase);
+}
+
+/** Counts beats as an animation runs, by watching the beat phase wrap round. */
+export interface BeatCounter {
+  /** Beats seen since the counter started. */
+  count: number;
+  /** Phase on the previous animation frame, null with no beat. */
+  lastPhase: number | null;
+}
+
+/**
+ * Advances a beat counter by one animation frame.
+ * @param counter - Counter, updated in place.
+ * @param phase - This frame's beat phase (from beatPhase), or null with no beat.
+ * @returns True if a new beat started since the last frame.
+ */
+export function countBeat(counter: BeatCounter, phase: number | null): boolean {
+  const isNewBeat = phase !== null && counter.lastPhase !== null && phase < counter.lastPhase - BEAT_WRAP_THRESHOLD;
+  if (isNewBeat) counter.count++;
+  counter.lastPhase = phase;
+  return isNewBeat;
+}
+
+/**
+ * Moves a hue on: a step round the wheel on each new beat, or a slow drift with no beat.
+ * @param hueDeg - Current hue.
+ * @param isNewBeat - A beat started this frame (from countBeat).
+ * @param hasBeat - There's a beat at all.
+ * @param stepDeg - How far a beat moves it.
+ * @param dtS - Seconds since the last frame.
+ * @returns The new hue, 0-360.
+ */
+export function nextBeatHue(hueDeg: number, isNewBeat: boolean, hasBeat: boolean, stepDeg: number, dtS: number): number {
+  const moved = hasBeat ? hueDeg + (isNewBeat ? stepDeg : 0) : hueDeg + IDLE_HUE_DRIFT_DEG_PER_S * dtS;
+  return moved % FULL_CIRCLE_DEG;
+}
+
+/**
+ * The mean level of a frame's bands whose centres fall in a frequency range.
+ * @param frame - The frame.
+ * @param config - Stream config, for the band edges.
+ * @param minHz - Bottom of the range.
+ * @param maxHz - Top of the range.
+ * @returns 0-1 (0 if no band falls in the range).
+ */
+export function bandRangeLevel(frame: BpmFrame, config: BpmConfig, minHz: number, maxHz: number): number {
+  const edges = config.band_edges_hz;
+  let total = 0;
+  let count = 0;
+  frame.bands.forEach((level, band) => {
+    const centreHz = Math.sqrt(edges[band] * edges[band + 1]);
+    if (centreHz < minHz || centreHz >= maxHz) return;
+    total += level;
+    count++;
+  });
+  return count === 0 ? 0 : total / count / BAND_LEVEL_MAX;
+}
+
+/**
+ * The beats the tracker detected (before the calibration offset, so they line
+ * up with the audio frames rather than the screen) inside a time window.
+ * @param tempo - Latest tempo, or null.
+ * @param startMs - Window start, epoch ms.
+ * @param endMs - Window end, epoch ms.
+ * @returns Beat times, oldest first (none with no beat).
+ */
+export function detectedBeatTimes(tempo: BpmTempo | null, startMs: number, endMs: number): number[] {
+  if (!tempo || tempo.beat_ms === null || tempo.period_ms === null) return [];
+  const detectedBeatMs = tempo.beat_ms - tempo.offset_ms;
+  const times: number[] = [];
+  const first = Math.ceil((startMs - detectedBeatMs) / tempo.period_ms);
+  for (let t = detectedBeatMs + first * tempo.period_ms; t <= endMs; t += tempo.period_ms) times.push(t);
+  return times;
+}
+
+/**
+ * A time axis for drawing frame history: FRAME_HISTORY_LENGTH frames across a
+ * width, with the newest frame at the right edge.
+ * @param endMs - The newest frame's time.
+ * @param config - Stream config, for the frame rate.
+ * @param left - Left edge, px.
+ * @param width - Width, px.
+ * @returns The window's start time, and a function from a time to its x.
+ */
+export function historyTimeAxis(
+  endMs: number,
+  config: BpmConfig,
+  left: number,
+  width: number
+): { startMs: number; xForTime: (tMs: number) => number } {
+  const columnWidth = width / FRAME_HISTORY_LENGTH;
+  const startMs = endMs - (FRAME_HISTORY_LENGTH / config.frame_rate_hz) * MS_PER_S;
+  const xForTime = (tMs: number) => left + width - ((endMs - tMs) / MS_PER_S) * config.frame_rate_hz * columnWidth;
+  return { startMs, xForTime };
 }
