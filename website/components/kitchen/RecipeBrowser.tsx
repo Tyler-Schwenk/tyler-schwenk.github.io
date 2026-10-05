@@ -9,8 +9,8 @@ import RecipeCard from "./RecipeCard";
 import AddRecipeModal from "./AddRecipeModal";
 import RecipeDetailModal from "./RecipeDetailModal";
 import AdminLoginModal from "./AdminLoginModal";
-import { useAdminAuth } from "./useAdminAuth";
-import { API_BASE, Recipe, TagWithCount } from "./types";
+import { useAdminAuth } from "@/lib/useAdminAuth";
+import { ADMIN_TOKEN_STORAGE_KEY, API_BASE, Recipe, TagWithCount } from "./types";
 
 // wait this long after the last keystroke before re-querying the backend
 const SEARCH_DEBOUNCE_MS = 300;
@@ -40,7 +40,7 @@ async function fetchRecipes(search: string, selectedTags: string[]): Promise<Rec
  * @returns {JSX.Element} The recipe browser section.
  */
 export default function RecipeBrowser() {
-  const { token, isAdmin, login, logout } = useAdminAuth();
+  const { token, isAdmin, login, logout } = useAdminAuth(ADMIN_TOKEN_STORAGE_KEY);
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [allTags, setAllTags] = useState<TagWithCount[]>([]);

@@ -27,7 +27,7 @@ System architecture for fart-pi multi-service home server.
      - **Photo Galleries**: 13 albums (250+ photos), display_order sorting, admin panel management
      - **Video Hosting**: Upload, streaming, thumbnail generation with ffmpeg
      - **Public Square**: Anonymous forum — posts, comments, upvote/downvote, no login required (see `pi/docs/api/website-backend-api.md`)
-     - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI, plus Public Square moderation (hard delete posts/comments)
+     - **Admin Panel**: `https://tyler-schwenk.com/admin` — gallery/photo/video management UI, Public Square moderation (hard delete posts/comments), and the display kiosk remote
      - JWT authentication (bcrypt password hashing, 30-day token expiry) — single admin account, not used by Public Square
    - Photo Storage: /mnt/ssd/public-gallery
    - Video Storage: /mnt/ssd/videos
@@ -98,7 +98,7 @@ architecture.
   - **Video Hosting**: Upload, streaming, automatic thumbnail generation (operational)
   - **Public Square**: Anonymous forum — posts, comments, upvote/downvote (operational)
   - **The Kitchen (Recipes)**: Public, rate-limited recipe submission (name/description/tags/photos, all optional) with search/tag-filter/random browsing; admin-only edit/delete (see `pi/docs/api/website-backend-api.md`)
-  - **Admin Panel**: `https://tyler-schwenk.com/admin/` — gallery/photo/video management UI, plus Public Square moderation
+  - **Admin Panel**: `https://tyler-schwenk.com/admin` — gallery/photo/video management UI, Public Square moderation, and the display kiosk remote (relayed through `/display-control`, in memory, no database)
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:
   - Private: http://192.168.1.116:8000 (home LAN) or http://localhost:8000 (on Pi)
@@ -226,7 +226,7 @@ Containers mount these as `/app/photos`, `/app/videos`, and `/app/recipe_photos`
 
 ### Gallery Management
 
-All gallery photos and videos are managed via the admin panel at `https://tyler-schwenk.com/admin/`. No SSH or scripts needed for day-to-day updates.
+All gallery photos and videos are managed via the admin panel at `https://tyler-schwenk.com/admin` (see `website/docs/ADMIN.md`). No SSH or scripts needed for day-to-day updates.
 
 **Admin panel features:**
 - Reorder galleries by `display_order` (higher = shown first, auto-increments by 10 on create)
@@ -235,6 +235,7 @@ All gallery photos and videos are managed via the admin panel at `https://tyler-
 - Upload new photos to existing or new galleries
 - Upload videos
 - View event RSVPs (grouped by event, with headcount and per-response delete)
+- Remote control the display kiosk (displaytop)
 
 ### Internal Storage (SD Card)
 **Purpose**: System and service configurations

@@ -30,4 +30,4 @@ Round Table uses the neobrutalism design system documented in [docs/themes/neobr
 Vote-highlight state (`yourVote`) is only tracked in React state on the current page load — a refresh resets it to neutral, even though the backend still correctly blocks a duplicate vote from the same IP. Persisting "have I voted on this" client-side (cookie/localStorage) would fix the UI but isn't implemented yet.
 
 ## Moderation
-There's no in-app moderation UI on the public pages. Deleting a post or comment is done from the admin panel (`website/public/admin/index.html`, "Public Square" tab) using the existing admin JWT login — it's a hard delete (post, its comments, and all votes), not a soft-delete/hide.
+There's no in-app moderation UI on the public pages. Deleting a post or comment is done from the admin page (`/admin`, "Public Square" tab, see `ADMIN.md`) using the existing admin JWT login — it's a hard delete (post, its comments, and all votes), not a soft-delete/hide.

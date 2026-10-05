@@ -1,7 +1,8 @@
 """keyboard control for the display kiosk: a log of the key presses since the last reset.
 
 xbindkeys on the kiosk grabs the control keys system-wide (so they work whichever window
-has focus, mpv included) and posts each press to the agent, which appends it here. the
+has focus, mpv included) and posts each press to the agent, which appends it here. presses
+from the admin page's remote arrive the same way via remote_control.py. the
 display pages long-poll the log and replay it through the same state machine
 (website/app/display/kioskControl.ts), so both screens always agree on what's showing,
 and a page that reloads just replays the log and lands in the same place.
@@ -44,14 +45,18 @@ class ControlLog:
         self._session_ms = now_ms()
         self._events: list[dict] = []
 
-    def add(self, key: str) -> None:
-        """appends a key press and wakes any waiting pages.
+    def add(self, keys: list[str]) -> None:
+        """appends key presses as one change and wakes any waiting pages.
+
+        several keys go in together so the pages never see the state in between (a
+        remote press of escape then 1 shouldn't flash the standard rotation first).
 
         args:
-            key: one of CONTROL_KEYS (the caller checks).
+            keys: each one of CONTROL_KEYS (the caller checks), in order.
         """
         with self._changed:
-            self._events.append({"key": key, "at_ms": now_ms()})
+            pressed_ms = now_ms()
+            self._events.extend({"key": key, "at_ms": pressed_ms} for key in keys)
             # dropping the oldest presses only matters past MAX_EVENTS in one day
             del self._events[:-MAX_EVENTS]
             self._version += 1

@@ -104,6 +104,8 @@ IP_HASH_SALT=<another-generated-secret>
 CORS_ORIGINS=https://yourusername.github.io
 ```
 
+Optional: `KIOSK_TOKEN` turns on the display kiosk remote (`/display-control`, see `pi/docs/services/display-kiosk.md`, "Remote control"); the same secret goes in `~/surfcam-agent/kiosk-token` on displaytop. Leave it unset and those endpoints answer 503.
+
 Optional: `MEDIA_ROOT` sets the host directory that holds photos, videos, and recipe photos (default `/mnt/ssd`). `DB_DIR` sets the host directory for the sqlite database (default `/mnt/ssd/db`).
 
 ### Step 2: Storage Directories

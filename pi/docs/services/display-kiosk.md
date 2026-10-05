@@ -108,6 +108,31 @@ unaffected. Check it's running with `pgrep -a xbindkeys`, and watch presses arri
 `=` (BPM calibration) go to the bpm agent instead (`POST http://127.0.0.1:8766/offset/...`),
 which only acts on them while the BPM view is up.
 
+### Remote control
+
+The admin page (`tyler-schwenk.com/admin`, Display tab; `website/docs/ADMIN.md`) is a
+remote for the same keys, usable from a phone anywhere. Presses go to the website backend
+on fart-pi, and the surfcam agent here long-polls the backend for them and adds them to the
+key log as if typed on the keyboard; it also sends the log back so the page can show what's
+on screen. Only outbound requests from the laptop, so nothing new listens here. Details in
+`pi/services/surfcam-agent/README.md` ("Remote control").
+
+It needs one shared secret, set up once (not in the repo; re-running the setup script
+leaves it alone):
+
+```bash
+# on the Windows PC (or anywhere): make a secret
+openssl rand -hex 32
+# on fart-pi: add it to the backend's .env and restart the backend
+#   KIOSK_TOKEN=<secret>   in pi/services/website-backend/.env
+ssh tyler@192.168.1.116 "cd ~/tyler-schwenk.github.io/pi/services/website-backend && docker compose up -d"
+# on displaytop: store the same secret beside the agent, then restart the agent
+ssh tyler@192.168.1.192 'umask 077; echo <secret> > ~/surfcam-agent/kiosk-token; pkill -f "[s]urfcam_agent.py"'
+```
+
+Check it with `grep remote- /tmp/surfcam-agent.log` ("remote control on" at startup) and
+the admin page, which should say "Online". To change the secret, do both halves again.
+
 ### BPM visualizer
 
 The bpm agent (`pi/services/bpm-agent/README.md`) is a small Python server started from
@@ -329,10 +354,10 @@ panel should show the cam with the info bar across the top within a few rotation
 |---|---|
 | `pi/services/display-kiosk/setup-displaytop.sh` | Provisions a fresh Ubuntu install into the kiosk (idempotent) |
 | `pi/services/display-kiosk/kiosk-run.sh` | Becomes `~/kiosk-run.sh`: screens, browsers, agents, overnight sleep |
-| `pi/services/surfcam-agent/` | The surf cam player agent and its info overlay (own README) |
+| `pi/services/surfcam-agent/` | The surf cam player agent, its info overlay, keyboard control and the remote control relay (own README) |
 | `pi/services/bpm-agent/` | Mic beat tracker for the BPM visualizer (own README) |
 | `website/app/display/` | The page the browsers show (see `website/docs/DISPLAY.md`) |
-| On the laptop only | `/etc/netplan/50-cloud-init.yaml` (Wi-Fi), `/etc/sudoers.d/tyler-nopasswd`, `~/.ssh/authorized_keys` |
+| On the laptop only | `/etc/netplan/50-cloud-init.yaml` (Wi-Fi), `/etc/sudoers.d/tyler-nopasswd`, `~/.ssh/authorized_keys`, `~/surfcam-agent/kiosk-token` (remote control secret) |
 
 ## Updating the Displayed Page
 

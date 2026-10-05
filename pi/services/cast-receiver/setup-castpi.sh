@@ -30,17 +30,22 @@ QUIET_CMDLINE_ARGS=(vt.global_cursor_default=0 logo.nologo consoleblank=0)
 CMDLINE_FILE="/boot/firmware/cmdline.txt"
 # logs live in ram only (the sd card is read-only anyway), capped so they can't eat it
 JOURNAL_RUNTIME_MAX_USE="30M"
-UXPLAY_RESTART_DELAY_S=5
+# short, so a crash mid-cast costs a phone only a second or two before it can reconnect
+UXPLAY_RESTART_DELAY_S=1
+SPLASH_RESTART_DELAY_S=5
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HDMI_HELPER_SRC="$SCRIPT_DIR/castpi-hdmi.sh"
 HDMI_HELPER="/usr/local/bin/castpi-hdmi.sh"
 HDMI_UDEV_RULE="/etc/udev/rules.d/90-castpi-hdmi.rules"
+SPLASH_SRC="$SCRIPT_DIR/castpi_splash.py"
+SPLASH="/usr/local/bin/castpi_splash.py"
 
 PACKAGES=(
   uxplay avahi-daemon avahi-utils alsa-utils overlayroot
   gstreamer1.0-libav gstreamer1.0-plugins-base gstreamer1.0-plugins-good
   gstreamer1.0-plugins-bad gstreamer1.0-alsa gstreamer1.0-tools
+  python3-pil fonts-dejavu-core
 )
 # left over from when this pi was the display kiosk (displaypi)
 OLD_KIOSK_PACKAGES=(chromium mpv openbox unclutter xinit xserver-xorg-core labwc)
@@ -55,10 +60,12 @@ if ! id "$CAST_USER" >/dev/null 2>&1; then
   echo "user $CAST_USER doesn't exist. create it in raspberry pi imager's settings when flashing, then re-run." >&2
   exit 1
 fi
-if [ ! -f "$HDMI_HELPER_SRC" ]; then
-  echo "can't find $HDMI_HELPER_SRC. copy the whole cast-receiver folder over, not just this script (see header)." >&2
-  exit 1
-fi
+for helper_src in "$HDMI_HELPER_SRC" "$SPLASH_SRC"; do
+  if [ ! -f "$helper_src" ]; then
+    echo "can't find $helper_src. copy the whole cast-receiver folder over, not just this script (see header)." >&2
+    exit 1
+  fi
+done
 # raspi-config reports 0 when the read-only overlay is active
 if [ "$(raspi-config nonint get_overlay_now)" -eq 0 ]; then
   echo "the sd card is read-only right now, so nothing this script writes would survive a reboot." >&2
@@ -146,10 +153,16 @@ EOF
 udevadm control --reload
 
 echo "== uxplay airplay receiver service"
-# -v4l2 uses the pi's hardware h264 decoder (software decoding can't keep up on a pi 3).
-# kmssink draws to hdmi with no x or wayland. -nohold lets whoever casts next take over
-# instead of being refused while someone else is still connected. it waits for a screen
-# first since kmssink can't open the display without one
+# video: v4l2h264dec is the pi's hardware decoder (software can't keep up on a pi 3), and
+# kmssink draws its output straight to hdmi with no x or wayland, scaling in hardware.
+#   -bt709        iphones tag their stream as full-range color, which the pi's decoder
+#                 rejects (not-negotiated). this relabels it as plain bt709
+#   -vc identity  no converter. uxplay's -v4l2 default puts v4l2convert (the pi's isp)
+#                 between decoder and screen, and it fails whenever the phone rotates
+#                 and the video size changes mid-stream
+# -nohold lets whoever casts next take over instead of being refused while someone else
+# is still connected. it waits for a screen first since kmssink can't open the display
+# without one
 cat > /etc/systemd/system/uxplay.service <<EOF
 [Unit]
 Description=UxPlay AirPlay mirroring receiver ($AIRPLAY_NAME)
@@ -162,15 +175,33 @@ User=$CAST_USER
 SupplementaryGroups=video render audio
 ExecStartPre=$HDMI_HELPER wait
 TimeoutStartSec=infinity
-ExecStart=/usr/bin/uxplay -n "$AIRPLAY_NAME" -nh -v4l2 -vs kmssink -as "alsasink device=$HDMI_AUDIO_DEVICE" -nohold
+ExecStart=/usr/bin/uxplay -n "$AIRPLAY_NAME" -nh -vd v4l2h264dec -vc identity -bt709 -vs kmssink -as "alsasink device=$HDMI_AUDIO_DEVICE" -nohold
 Restart=always
 RestartSec=$UXPLAY_RESTART_DELAY_S
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+echo "== idle splash screen (status on the tv while nothing's casting)"
+install -m 755 "$SPLASH_SRC" "$SPLASH"
+cat > /etc/systemd/system/castpi-splash.service <<EOF
+[Unit]
+Description=castpi idle splash screen
+After=uxplay.service
+
+[Service]
+User=$CAST_USER
+SupplementaryGroups=video
+ExecStart=/usr/bin/python3 $SPLASH
+Restart=always
+RestartSec=$SPLASH_RESTART_DELAY_S
+
+[Install]
+WantedBy=multi-user.target
+EOF
 systemctl daemon-reload
-systemctl enable avahi-daemon.service uxplay.service >/dev/null
+systemctl enable avahi-daemon.service uxplay.service castpi-splash.service >/dev/null
 
 echo "== ssh: keys only (skipped if no key is installed, so we can't lock ourselves out)"
 authorized_keys="$CAST_HOME/.ssh/authorized_keys"

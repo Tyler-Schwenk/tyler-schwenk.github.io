@@ -9,12 +9,12 @@ Web interface for managing galleries, photos, and videos.
 - **Upload tab**: upload photos to existing or new gallery, upload videos with metadata
 - **RSVPs tab**: view event RSVPs grouped by event, with each event's response count, rough headcount (responders + friends), and a delete button per response
 - Drag-and-drop file upload with progress tracking
-- Mobile-friendly dark theme
+- Phone-first dark theme: tabs along the bottom on a phone, in the header on a laptop
 - Works from any browser (phone, tablet, laptop)
 
 ## Access
 
-The admin panel lives at `https://tyler-schwenk.com/admin/` (served from `website/public/admin/index.html`).
+The admin panel lives at `https://tyler-schwenk.com/admin` (the Next.js page in `website/app/admin`; see `website/docs/ADMIN.md`). It also has the display kiosk remote and Public Square moderation.
 
 No setup needed — it's deployed as part of the website. Login with your API credentials. Token stays active for 30 days (stored in localStorage).
 
@@ -22,7 +22,7 @@ No setup needed — it's deployed as part of the website. Login with your API cr
 
 ### Upload Photos After a Trip
 
-1. Open `https://tyler-schwenk.com/admin/` on your phone or laptop
+1. Open `https://tyler-schwenk.com/admin` on your phone or laptop
 2. Login if prompted
 3. Go to the **Upload** tab
 4. Select **"New Gallery"**, fill in name, slug, and description

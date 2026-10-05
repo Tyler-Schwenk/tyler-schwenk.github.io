@@ -1,6 +1,6 @@
 "use client";
 
-import type { ControlState, DisplayMode, Shortcut } from "./kioskControl";
+import { isShortcutActive, type ControlState, type DisplayMode, type Shortcut } from "./kioskControl";
 
 /**
  * Keyboard-control overlay, drawn over whatever panel is showing: the
@@ -53,18 +53,6 @@ function indicatorLabel(mode: DisplayMode): string | null {
 }
 
 /**
- * Whether a shortcut is what's active right now, to highlight it in the menu.
- * @param shortcut - Menu entry.
- * @param mode - Current display mode.
- * @returns True if the shortcut's action is the current mode.
- */
-function isActive(shortcut: Shortcut, mode: DisplayMode): boolean {
-  const action = shortcut.action;
-  if (action.kind === "hold-slot") return mode.kind === "hold-slot" && mode.slotId === action.slotId;
-  return action.kind === mode.kind;
-}
-
-/**
  * One row of the menu: the key in a box, then what it does.
  * @param props.keyName - Key label.
  * @param props.label - What it does.
@@ -104,7 +92,7 @@ function menuFor(
   const entries = shortcuts.map((shortcut) => ({
     keyName: shortcut.key,
     label: shortcut.label,
-    active: isActive(shortcut, mode),
+    active: isShortcutActive(shortcut, mode),
   }));
   return { title: "Shortcuts", entries, navigation: NAVIGATION_KEYS };
 }

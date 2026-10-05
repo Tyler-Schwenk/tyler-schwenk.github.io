@@ -19,9 +19,10 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 
 | File | Purpose |
 |------|---------|
-| `website/app/display/page.tsx` | Rotation controller — `ROTATION` pairs what each screen shows per slot, `SHORTCUTS` maps the shortcut keys; picks this screen's side from `?screen=` |
+| `website/app/display/page.tsx` | Rotation controller — pairs each slot with what each screen shows (`ROTATION`); picks this screen's side from `?screen=` |
+| `website/app/display/displayConfig.ts` | What the display shows, with no panels in it: `ROTATION_SLOTS`, `BPM_VIEW_INFO`, `SHORTCUTS`, `CONTROL_CONFIG`, `PANEL_ROTATE_INTERVAL_MS`, and `describeDisplay` (the state in words). Shared with the admin page's remote |
 | `website/app/display/layout.tsx` | Turns off page scrolling for `/display` (every panel is a fixed full-screen layer; without it the kiosk browser can show scrollbars) |
-| `website/app/display/kioskControl.ts` | Keyboard control: the key-log state machine both pages replay (`replayControl`) and the long-poll hook (`useControlLog`) |
+| `website/app/display/kioskControl.ts` | Keyboard control: the key-log state machine both pages (and the admin remote) replay (`replayControl`) and the long-poll hook (`useControlLog`) |
 | `website/app/display/ControlOverlay.tsx` | The shortcut menu and the top-right "held" indicator |
 | `website/app/display/useClockSlot.ts` | Wall-clock slot hook shared by the rotation and the photo slideshow |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos (`staggered` changes half a beat later) |
@@ -30,7 +31,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/SurfConditionsPanel.tsx` | Waves, wind (compass dials) and tide for a cam's spot, shown on the top screen while the cam plays below |
 | `website/app/display/TideGraph.tsx` | The tide chart on the conditions panel: predicted curve, measured line, now marker, highs/lows |
 | `website/app/display/surfCams.ts` | Client for the surfcam agent (`prepareSurfCam`, `showSurfCam`, `stopSurfCam`, `fetchSurfConditions`) and the `SurfCamId` list |
-| `website/app/display/BpmPanel.tsx` | Bpm mode's slot (key only, never rotated): `BPM_VIEWS`, holds the bpm agent's stream open, picks what this screen shows |
+| `website/app/display/BpmPanel.tsx` | Bpm mode's slot (key only, never rotated): `BPM_VIEWS` (each view's info paired with its component), holds the bpm agent's stream open, picks what this screen shows |
 | `website/app/display/BpmVisualizer.tsx` | View 1, spectrum bars: mirrored bars that rise and fall with the music and pulse on the beat |
 | `website/app/display/BpmCalibration.tsx` | View 2, calibration: spectrogram, onset curve with detected beats, level meter, tempo scores, beat flash |
 | `website/app/display/BpmHalo.tsx` | View 3, halo: turning ring of spectrum spokes round a bass-driven core, light trails, sparks on each beat |
@@ -48,8 +49,9 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 1. Build the panel as its own component in `website/app/display/`, following
    `MallardPanel.tsx` as a template: fetch its own data, manage its own polling, render
    `fixed inset-0` full-bleed.
-2. Add a slot to `ROTATION` in `page.tsx` saying what each screen shows during it (or
-   put it on one side of an existing slot).
+2. Add a slot to `ROTATION_SLOTS` in `displayConfig.ts` (id and the name the remote shows),
+   and its panels to `FIXED_SLOT_PANELS` in `page.tsx`, saying what each screen shows during
+   it (or put it on one side of an existing slot).
 3. If it's slow to start, give its panel entry a `prepare` hook (see below).
 
 ### Screens and Rotation
@@ -60,7 +62,7 @@ on the screen surf cams play on (the external monitor, below) and
 screen gets `?screen=solo`, which shows the primary side plus the keyboard overlay; no
 param means solo too, so opening `/display` in a normal browser shows the full thing.
 
-The two screens are coordinated: `ROTATION` is a list of slots, and each slot says what
+The two screens are coordinated: `ROTATION_SLOTS` is a list of slots, and each slot says what
 both screens show at the same time:
 
 | Slot | Primary (monitor, below) | Secondary (laptop, top) |
@@ -69,13 +71,13 @@ both screens show at the same time:
 | mallards | photos (carries on) | mallard count |
 | each of the five cams | the live cam | that spot's waves, wind and tide |
 
-Bpm mode is a slot too, but it's not in `ROTATION`: it only comes up from its key (`b`,
+Bpm mode is a slot too, but it's not in `ROTATION_SLOTS`: it only comes up from its key (`b`,
 below), since it keeps the mic recording while it's on screen. It has its own views (see
 "BPM Visualizer") on the primary screen and the tempo on the other.
 
 The active slot comes from the wall clock, not a timer chain (`useClockSlot.ts`): time
 is cut into `PANEL_ROTATE_INTERVAL_MS` slots counted from the epoch, and slot `n` is
-`ROTATION[n % ROTATION.length]`. Both screens share the laptop's clock, so they switch at
+`ROTATION_SLOTS[n % ROTATION_SLOTS.length]`. Both screens share the laptop's clock, so they switch at
 the same instant and stay paired, and a reloaded page lands straight on the current slot.
 The keyboard can change this (below); with no keys pressed it's exactly this.
 
@@ -141,9 +143,19 @@ Inside bpm mode the keys work on its views instead (the tab menu lists them):
 agent (`POST /offset/earlier|later` on port 8766), since the offset is the agent's
 setting, not display state. The agent ignores them unless bpm mode is up.
 
-To add a shortcut, add an entry to `SHORTCUTS` in `page.tsx` (a free key; the kiosk grabs
-1-9 and b). A new kind of action needs a case in `kioskControl.ts`. New physical
-keys need adding to `CONTROL_KEYS` in both `setup-displaytop.sh` and `kiosk_control.py`.
+To add a shortcut, add an entry to `SHORTCUTS` in `displayConfig.ts` (a free key; the kiosk grabs
+1-9 and b). It shows up on the admin remote by itself. A new kind of action needs a case in `kioskControl.ts`. New physical
+keys need adding to `CONTROL_KEYS` in both `setup-displaytop.sh` and `kiosk_control.py`, and to
+`DisplayKey` in the website backend's `schemas.py` for the remote to send them.
+
+### Remote Control (admin page)
+
+The admin page's Display tab (`website/docs/ADMIN.md`) presses the same keys from a phone
+or laptop anywhere. Its presses go through the website backend to the surfcam agent,
+which adds them to the same key log, so to the pages they're no different from the
+keyboard: both screens replay them, the overlay shows "held" and so on. The agent also
+sends the log back up, and the remote replays it through `replayControl` to show what's on
+screen. See `pi/services/surfcam-agent/README.md` ("Remote control").
 
 ### Preparing Panels Ahead of Time
 
@@ -241,14 +253,15 @@ the dj meters don't, so they read like a level meter. The four-beat counter just
 beats: it doesn't know where the bar's downbeat is.
 
 To add a view, build it as a component taking `{ stream }` that draws through
-`useCanvasLoop`, and add it to `BPM_VIEWS` in `BpmPanel.tsx` (digits 1-9 can pick up to
+`useCanvasLoop`, add its info to `BPM_VIEW_INFO` in `displayConfig.ts` and its component
+to `BPM_VIEW_COMPONENTS` in `BpmPanel.tsx` (digits 1-9 can pick up to
 nine views). A view that needs the raw audio sets `needsWaveform` (see MilkDrop).
 
 **MilkDrop** (`BpmMilkdrop`): the Winamp visualizer's presets, run in WebGL 2 by
 [butterchurn](https://github.com/jberg/butterchurn) with every preset from all four
 `butterchurn-presets` packs: base, Extra, Extra2 and MD1, ~395 once the few that appear in
 more than one pack are merged (both MIT, stable 2.x). MilkDrop presets react to the raw waveform,
-not to bands, so this view's `BPM_VIEWS` entry sets `needsWaveform`, and `BpmPanel` opens the
+not to bands, so this view's `BPM_VIEW_INFO` entry sets `needsWaveform`, and `BpmPanel` opens the
 primary screen's stream with `?waveform=1`: the agent then also sends the latest 1024
 samples with every hop. Butterchurn's `render({ audioLevels })` takes those directly, so
 it's created without an AudioContext and the page never touches the mic (the agent stays

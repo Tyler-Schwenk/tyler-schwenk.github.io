@@ -2,7 +2,8 @@
 
 The TV in the opium den. A Raspberry Pi 3B+ behind it acts as an AirPlay receiver: on
 an iPhone, open Control Center, tap **Screen Mirroring**, and pick **Opium Den TV**. The
-phone's screen and audio play on the TV over HDMI. When nobody's casting, the TV shows black.
+phone's screen and audio play on the TV over HDMI. When nobody's casting, the TV shows a
+status splash screen.
 
 This handles iPhones (and Macs) only. Android's casting (Google Cast) is proprietary
 and has no open-source receiver.
@@ -16,13 +17,14 @@ cable is plugged in or swapped, in any order.
 - **Device**: Raspberry Pi 3 Model B+ (1 GB RAM), hostname `castpi`. This is the same
   board that used to be the display kiosk, before that moved to displaytop
 - **Output**: HDMI to the TV, video and audio
-- **Network**: Wi-Fi on the home network (5 GHz), `192.168.1.114`, wlan MAC
-  `B8:27:EB:71:26:18`. Reserve the address in the router (step 4 below) so it doesn't
-  drift. Ethernet works too and gets a different address (`192.168.1.187` when last
-  plugged in)
+- **Network**: Wi-Fi on the home network (5 GHz), `192.168.1.114` (reserved in the
+  router against the Wi-Fi MAC `b8:27:eb:71:26:18`, step 4 below). Ethernet has its own
+  MAC (`b8:27:eb:24:73:4d`) and gets a different address, so a reservation for one
+  doesn't cover the other. The splash screen always shows the current address
 - **OS**: Raspberry Pi OS Lite (Debian 13 trixie, 64-bit), no desktop
 - **Access**: user `tyler`, SSH key auth only (same key as fart-pi),
-  `ssh tyler@192.168.1.114` or `ssh tyler@castpi.local`. Passwordless sudo. Home LAN only
+  `ssh tyler@castpi.local` (works whatever the address) or `ssh tyler@192.168.1.114`.
+  Passwordless sudo. Home LAN only
 
 ## How It Works
 
@@ -32,23 +34,54 @@ cable is plugged in or swapped, in any order.
 - **Discovery**: avahi advertises the receiver over mDNS as `_airplay._tcp` and
   `_raop._tcp`. This is how iPhones find it, so the phone has to be on the same network
   (`192.168.1.0/24`). Guest Wi-Fi networks usually block mDNS
-- **Video**: the iPhone streams H.264. `-v4l2` decodes it on the Pi's hardware decoder,
-  since the Pi 3's CPU can't keep up in software. `-vs kmssink` draws it straight to
-  HDMI through DRM/KMS with no X or Wayland. UxPlay asks the phone for 1920x1080 at up to 30 fps
+- **Video**: the iPhone streams H.264, decoded on the Pi's hardware decoder
+  (`-vd v4l2h264dec`), since the Pi 3's CPU can't keep up in software. `-vs kmssink`
+  draws the decoder's output straight to HDMI through DRM/KMS on an overlay plane,
+  scaled in hardware, with no X or Wayland. UxPlay asks the phone for 1920x1080 at up
+  to 30 fps. Two flags matter on a Pi 3:
+  - **`-bt709`**: iPhones tag the stream as full-range color (`colorimetry=1:3:7:1`),
+    which the Pi's decoder rejects with `not-negotiated`. The video pipeline dies and
+    the phone disconnects right after connecting. This flag relabels the stream as plain bt709
+  - **`-vc identity`** (no converter): UxPlay's `-v4l2` shortcut puts `v4l2convert`
+    (the Pi's ISP, `/dev/video12`) between decoder and screen. It fails with
+    `S_FMT failed` whenever the video size changes mid-stream, which happens every time
+    the phone rotates. The decoder's output goes to kmssink directly instead
+- **Crash recovery**: `Restart=always` with `RestartSec=1`, so if UxPlay dies mid-cast,
+  it's back in about a second and the phone can reconnect
 - **Audio**: AAC from the phone, decoded by `gstreamer1.0-libav` and played on
   `hdmi:CARD=vc4hdmi,DEV=0`. Use the `hdmi:` alias, not `hw:`, because it adds the
   IEC958 conversion the vc4 HDMI driver needs
 - **Takeover**: `-nohold` means a new phone that connects bumps whoever is casting,
   rather than getting refused
-- **Blank when idle**: tty1 has no getty (masked) and no kernel console, and the cursor
-  and boot logos are off (`/boot/firmware/cmdline.txt`). Nothing draws on the TV until
-  someone casts
+- **Clean console**: tty1 has no getty (masked) and no kernel console, and the cursor
+  and boot logos are off (`/boot/firmware/cmdline.txt`), so nothing but the splash and
+  casts ever draws on the TV
 
 Current service command (written by the setup script):
 
 ```
-uxplay -n "Opium Den TV" -nh -v4l2 -vs kmssink -as "alsasink device=hdmi:CARD=vc4hdmi,DEV=0" -nohold
+uxplay -n "Opium Den TV" -nh -vd v4l2h264dec -vc identity -bt709 -vs kmssink -as "alsasink device=hdmi:CARD=vc4hdmi,DEV=0" -nohold
 ```
+
+### Idle splash screen
+
+`castpi-splash.service` runs `/usr/local/bin/castpi_splash.py` (source:
+`pi/services/cast-receiver/castpi_splash.py`). It draws a status screen straight into
+the Linux framebuffer (`/dev/fb0`, RGB565 at 1920x1080), using Pillow and DejaVu fonts. kmssink
+draws video on an overlay plane above the framebuffer, so the splash sits underneath
+casts. Every 2 seconds it checks status, and redraws only when something on screen changed.
+It shows:
+
+- **Status**: "Ready to cast" (green) when UxPlay is running, "Waiting for the TV" or
+  "Receiver starting (state)" (yellow) otherwise
+- How to connect from an iPhone
+- Wi-Fi network and signal, hostname, and IP addresses
+- **Receiver restarts since boot**: systemd's `NRestarts` for `uxplay.service`. If this
+  climbs, UxPlay is crashing (it resets on reboot)
+- The date and time
+
+While a phone is mirroring (UxPlay has an established TCP connection), the splash
+blanks to black so it doesn't show beside portrait video.
 
 ### HDMI detection
 
@@ -130,7 +163,7 @@ ssh tyler@<pi-ip> "rm -rf ~/cast-receiver && sudo reboot"
 The script sets up passwordless sudo, sets the hostname (and tells cloud-init to keep
 it), removes the old kiosk, and installs UxPlay and the GStreamer plugins. It also quiets
 the console, sets up HDMI detection, turns off Wi-Fi power saving, and makes Wi-Fi retry
-forever. Then it writes and enables `uxplay.service`, switches SSH to keys only once a
+forever. Then it writes and enables `uxplay.service` and `castpi-splash.service`, switches SSH to keys only once a
 key is installed, moves the journal to RAM, and turns on the read-only SD card (from the
 next boot).
 
@@ -145,8 +178,9 @@ so SSH and these docs keep working.
    It lists every device on the network
 3. It asks for the **Device Access Code**, printed on the sticker on the side or bottom
    of the gateway (not the Wi-Fi password)
-4. Find the Pi in the list: `castpi`, or MAC `b8:27:eb:71:26:18` (it may still show as
-   `displaypi` until its lease renews). Click **Allocate**
+4. Find the Pi's **Wi-Fi** entry: MAC `b8:27:eb:71:26:18`, shown as `castpi` (or
+   `displaypi` until its lease renews). Not `b8:27:eb:24:73:4d`, which is the Ethernet
+   port. The Pi can appear twice if it has ever been on both. Click **Allocate**
 5. In the dropdown, pick **Private fixed: 192.168.1.114** (or any free address, then
    update this doc and `CLAUDE.md`), and click **Save**
 6. Unplug and replug the Pi so it picks up the reserved address
@@ -155,15 +189,16 @@ so SSH and these docs keep working.
 
 ```bash
 ssh tyler@castpi.local '
-  systemctl is-active uxplay                          # active (activating = no screen on hdmi)
+  systemctl is-active uxplay castpi-splash            # active active (activating = no screen on hdmi)
   avahi-browse -rpt _airplay._tcp | grep "Opium"      # advertised on wlan0
   findmnt -no FSTYPE /                                # overlay (read-only card is on)
   journalctl -u uxplay -n 20 --no-pager
 '
 ```
 
-Then mirror from an iPhone. The TV should show the phone's screen within a couple of
-seconds and play its audio.
+The TV should show the splash with "Ready to cast". Then mirror from an iPhone. The TV
+should show the phone's screen within a couple of seconds and play its audio, and it
+should keep going when the phone rotates.
 
 ## Making Changes
 
@@ -199,9 +234,24 @@ Things you might change:
   doesn't see a screen: check the HDMI cable and that the TV is on, and look at
   `cat /sys/class/drm/card0-HDMI-A-1/status`. After a power cut, give it about 30 seconds
   (longer if the router is still booting)
-- **Phone connects but the TV stays black**: check the TV input. `journalctl -u uxplay -f`
-  while connecting shows GStreamer errors. If the decoder fails, try adding `-bt709`
-  (UxPlay's fix for some Pi V4L2 setups) to `ExecStart`
+- **Look at the splash first**: it shows whether the receiver is ready, the Pi's
+  address, the Wi-Fi signal, and a restart counter that climbs if UxPlay keeps crashing
+- **Phone connects, then disconnects right away / audio but no video**: the video
+  pipeline is failing. UxPlay's normal log doesn't show GStreamer errors, so run it by
+  hand with them on (the service has to be stopped, since only one can hold the display):
+
+  ```bash
+  sudo systemctl stop uxplay
+  GST_DEBUG=2 uxplay -n "Opium Den TV" -nh -vd v4l2h264dec -vc identity -bt709 -vs kmssink \
+    -as "alsasink device=hdmi:CARD=vc4hdmi,DEV=0" -nohold 2>&1 | grep -E "ERROR|error:"
+  # cast from a phone, then Ctrl+C and: sudo systemctl start uxplay
+  ```
+
+  `not-negotiated` means the decoder rejected the stream's format (that's what `-bt709`
+  fixes). `S_FMT failed` from `v4l2convert` means a converter got into the pipeline
+  (that's what `-vc identity` avoids). Add `-d` for UxPlay's own connection log.
+  Harmless noise: "Dropping frame due to QoS", "Failed to probe pixel aspect ratio",
+  kmsbufferpool size warnings, and an alsalib "DEV must be an integer" line
 - **TV swapped but the picture is wrong or missing**: the hotplug handler restarts UxPlay
   when a screen connects, but not mid-cast. Stop mirroring and start again, or run
   `sudo systemctl restart uxplay`
@@ -215,6 +265,8 @@ Things you might change:
   signal. It should be on 5 GHz with a strong signal. Ethernet fixes it if a cable can reach
 - **Someone's stuck connected**: casting from another phone takes over (`-nohold`), or run
   `sudo systemctl restart uxplay`
+- **Splash missing (TV black while idle)**: `systemctl status castpi-splash` and
+  `journalctl -u castpi-splash -n 20`. It logs why it couldn't draw and retries
 - **Random reboots or slowness**: `vcgencmd get_throttled` shows power and heat
   problems since boot. `0x50000` or `0x50005` means undervoltage, so use the official
   2.5 A supply. `0x80000` means it got warm enough to throttle a little, which is harmless

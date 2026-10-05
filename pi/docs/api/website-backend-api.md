@@ -11,6 +11,7 @@ Backend API for tyler-schwenk.com providing:
 - **Pac-Tyler**: GeoJSON activity tracks and analytics dataset from Strava
 - **Recipes (The Kitchen)**: Anonymous, rate-limited recipe submission with tags and photos; admin-only edit/delete
 - **Mallard Count**: Server-side proxy for the external mallard counter API (sidesteps that API's missing CORS headers)
+- **Display Control**: In-memory relay between the admin page's remote and the display kiosk's surfcam agent
 
 **Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, and recipe features.
 
@@ -68,7 +69,7 @@ No authentication required. Data is written by the `pac-tyler-updater` systemd s
 
 ## Authentication
 
-Used only to protect admin-only write endpoints (gallery/video/RSVP management, Public Square moderation) — there's a single admin account (Tyler), not general user registration. Public Square posting/commenting/voting is anonymous and needs no token at all; see the Public Square section below.
+Used only to protect admin-only endpoints (gallery/video/RSVP management, Public Square moderation, display kiosk remote control) — there's a single admin account (Tyler), not general user registration. Public Square posting/commenting/voting is anonymous and needs no token at all; see the Public Square section below.
 
 All authenticated endpoints require a JWT bearer token in the `Authorization` header.
 
@@ -875,6 +876,84 @@ No authentication required. Proxies the external mallard counter API (`api.trade
 ```
 
 **Response:** `502 Bad Gateway` if the external API is unreachable.
+
+## Display Control
+
+Remote control of the display kiosk (displaytop) from the admin page. The kiosk's surfcam agent only listens on its own loopback, so both sides meet here: the admin page queues key presses and the agent long-polls for them; the agent pushes its key log and the admin page long-polls that. Everything is held in memory (it's a relay, not a record), which relies on uvicorn running a single worker. A backend restart drops queued presses and forgets the log until the agent's next push (within 25 s). See `pi/services/surfcam-agent/README.md` ("Remote control") and `website/docs/ADMIN.md`.
+
+Two kinds of auth:
+- **Admin** endpoints take the usual JWT bearer token
+- **Kiosk** endpoints (`/display-control/kiosk/...`) take the shared secret in an `X-Kiosk-Token` header, which must equal `KIOSK_TOKEN` in the backend's `.env`. With `KIOSK_TOKEN` unset they answer `503`; a wrong token gets `401`
+
+Key names: `tab`, `escape`, `backspace`, `next`, `prev`, `b`, `1`-`9` (the kiosk's key log, see `website/docs/DISPLAY.md`), plus `beat-earlier` / `beat-later` (bpm calibration, forwarded by the agent to the bpm agent).
+
+Long-polls wait up to 25 s and then answer anyway, so callers just loop.
+
+### Press Keys
+
+Admin only. Queues one press for the kiosk; its keys are applied in order as one change.
+
+**Endpoint:** `POST /display-control/keys`
+
+**Request Body:** 1-4 keys
+```json
+{ "keys": ["escape", "5"] }
+```
+
+**Response:** `200 OK`
+```json
+{ "id": 12 }
+```
+
+A queued press is dropped if the agent hasn't collected it within 30 s, so a kiosk that's offline doesn't jump screens later. Unknown keys get `422`.
+
+### Get Kiosk State
+
+Admin only. Long-polls the kiosk's key log.
+
+**Endpoint:** `GET /display-control/state?after=<revision>`
+
+`after` is the revision already seen (`-1` answers at once). Waits until the revision differs (not just is newer, so a page holding one from before a backend restart gets the new state straight away).
+
+**Response:** `200 OK`
+```json
+{
+  "revision": 7,
+  "online": true,
+  "kiosk_seen_ms": 1791221724921,
+  "now_ms": 1791221738642,
+  "log": {
+    "session_ms": 1791221699791,
+    "version": 3,
+    "events": [{ "key": "escape", "at_ms": 1791221702000 }, { "key": "5", "at_ms": 1791221702000 }]
+  }
+}
+```
+
+`online` is whether the agent has checked in (polled or pushed) in the last 60 s. `now_ms` is the backend's clock, for working out where the rotation is (the kiosk's log uses the kiosk's clock; both are NTP-synced). `log` is `null` until the agent's first push.
+
+### Get Queued Presses (kiosk)
+
+Kiosk only. Long-polled by the surfcam agent.
+
+**Endpoint:** `GET /display-control/kiosk/commands?after=<cursor>`
+
+`after=-1` (agent startup) answers at once with the current cursor and no commands, so presses from before the agent was listening aren't replayed. A cursor above the newest id means the backend restarted, and the agent gets everything queued since.
+
+**Response:** `200 OK`
+```json
+{ "cursor": 12, "commands": [{ "id": 12, "keys": ["escape", "5"] }] }
+```
+
+### Push Key Log (kiosk)
+
+Kiosk only. The surfcam agent sends its whole key log whenever it changes, and every 25 s as a heartbeat.
+
+**Endpoint:** `PUT /display-control/kiosk/log`
+
+**Request Body:** `{ "session_ms", "version", "events": [{ "key", "at_ms" }] }` (at most 1000 events)
+
+**Response:** `204 No Content`
 
 ## System Endpoints
 

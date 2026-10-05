@@ -91,7 +91,7 @@ The existing video needs to be replaced since the timing has changed. Slugs must
 unique, so the old `garden-timelapse` video has to be deleted before re-uploading —
 do both from the admin page's Upload tab:
 
-1. Go to `https://tyler-schwenk.com/admin/` → **Upload** tab → select **Video**
+1. Go to `https://tyler-schwenk.com/admin` → **Upload** tab → select **Video**
 2. Under "Existing Videos", find `garden-timelapse` and click the delete (trash) button
 3. Fill in the video fields (title: `Garden Timelapse`, slug: `garden-timelapse`) and
    upload the new `garden-timelapse.mp4`
@@ -151,7 +151,7 @@ the admin panel and it shows up on the next page load.
 
 The gallery only needs to be created once:
 
-1. Go to `https://tyler-schwenk.com/admin/` → **Galleries** tab → **+ New Gallery**
+1. Go to `https://tyler-schwenk.com/admin` → **Galleries** tab → **+ New Gallery**
 2. Name: `Garden Photos`, Slug: `garden-photos` (must match `GARDEN_GALLERY_SLUG` in
    `website/app/garden/page.tsx` exactly)
 

@@ -18,7 +18,7 @@ CHROME_POLICY_DIR="/etc/opt/chrome/policies/managed"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SRC_DIR="$SCRIPT_DIR/../surfcam-agent"
-AGENT_FILES=(surfcam_agent.py surf_conditions.py kiosk_control.py)
+AGENT_FILES=(surfcam_agent.py surf_conditions.py kiosk_control.py remote_control.py)
 AGENT_CONTROL_URL="http://127.0.0.1:8765/control/keys"
 BPM_AGENT_SRC_DIR="$SCRIPT_DIR/../bpm-agent"
 BPM_AGENT_FILES=(bpm_agent.py beat_tracker.py)
@@ -35,6 +35,9 @@ CONTROL_KEYS=(
 # flash earlier/later on screen (see pi/services/bpm-agent/bpm_agent.py)
 BPM_OFFSET_KEYS=("minus:earlier" "equal:later")
 KIOSK_HOME="/home/$KIOSK_USER"
+# remote control from the admin page: the backend's KIOSK_TOKEN, put here by hand (never in
+# the repo). this script only checks it's there
+KIOSK_TOKEN_FILE="$KIOSK_HOME/surfcam-agent/kiosk-token"
 
 PACKAGES=(
   xserver-xorg xinit openbox x11-xserver-utils unclutter
@@ -140,9 +143,13 @@ install_user_file 644 "$xbindkeysrc" "$KIOSK_HOME/.xbindkeysrc"
 rm -f "$bash_profile" "$xinitrc" "$autostart" "$xbindkeysrc"
 
 install_user_file 755 "$SCRIPT_DIR/kiosk-run.sh" "$KIOSK_HOME/kiosk-run.sh"
+# only the code is copied: the kiosk-token beside it survives a re-run
 for agent_file in "${AGENT_FILES[@]}"; do
   install_user_file 755 "$AGENT_SRC_DIR/$agent_file" "$KIOSK_HOME/surfcam-agent/$agent_file"
 done
+if [ ! -s "$KIOSK_TOKEN_FILE" ]; then
+  echo "no $KIOSK_TOKEN_FILE yet, so the admin page's remote control is off. see the runbook (Remote control) to add it." >&2
+fi
 # only the code is copied: the agent's calibration.json beside it survives a re-run
 for agent_file in "${BPM_AGENT_FILES[@]}"; do
   install_user_file 755 "$BPM_AGENT_SRC_DIR/$agent_file" "$KIOSK_HOME/bpm-agent/$agent_file"

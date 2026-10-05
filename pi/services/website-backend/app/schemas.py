@@ -400,3 +400,70 @@ class RecipeUpdate(BaseModel):
         """Reuses normalize_recipe_link so edits get the same https:// prepend as creation."""
         return normalize_recipe_link(v)
 
+
+
+# Display Kiosk Remote Control Schemas
+#
+# Key names must match CONTROL_KEYS in pi/services/surfcam-agent/kiosk_control.py
+# (what the display page's state machine understands), plus the two bpm
+# calibration nudges the agent forwards to the bpm agent instead of its log.
+DisplayKey = Literal[
+    "tab", "escape", "backspace", "next", "prev", "b",
+    "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "beat-earlier", "beat-later",
+]
+
+# one remote button sends at most a couple of keys (e.g. escape then a shortcut)
+MAX_KEYS_PER_PRESS = 4
+
+# a day of button mashing is nowhere near this (the agent caps its own log at 1000)
+MAX_KIOSK_LOG_EVENTS = 1000
+
+
+class DisplayKeysRequest(BaseModel):
+    """One remote press: keys the kiosk applies in order, as one change."""
+    keys: list[DisplayKey] = Field(..., min_length=1, max_length=MAX_KEYS_PER_PRESS)
+
+
+class DisplayKeysQueued(BaseModel):
+    """Acknowledges a queued press."""
+    id: int
+
+
+class DisplayControlEvent(BaseModel):
+    """One key press in the kiosk's log. `at_ms` is epoch ms on the kiosk's clock."""
+    key: str
+    at_ms: int
+
+
+class DisplayControlLog(BaseModel):
+    """The kiosk's key log since its last reset, as the surfcam agent keeps it."""
+    session_ms: int
+    version: int
+    events: list[DisplayControlEvent] = Field(..., max_length=MAX_KIOSK_LOG_EVENTS)
+
+
+class DisplayControlState(BaseModel):
+    """
+    What the admin page shows: the kiosk's latest log and whether it's online.
+
+    `now_ms` is the backend's clock, so the page can correct for its own
+    clock being off when working out where the rotation is.
+    """
+    revision: int
+    online: bool
+    kiosk_seen_ms: Optional[int] = None
+    now_ms: int
+    log: Optional[DisplayControlLog] = None
+
+
+class DisplayCommand(BaseModel):
+    """A queued remote press for the agent to add to its log."""
+    id: int
+    keys: list[str]
+
+
+class DisplayCommandBatch(BaseModel):
+    """The agent's long-poll answer: commands to run, and the cursor to send next."""
+    cursor: int
+    commands: list[DisplayCommand]

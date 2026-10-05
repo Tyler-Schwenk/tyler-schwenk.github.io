@@ -7,17 +7,19 @@ import BpmPanel, { BPM_VIEWS } from "./BpmPanel";
 import SurfCamPanel from "./SurfCamPanel";
 import SurfConditionsPanel from "./SurfConditionsPanel";
 import ControlOverlay from "./ControlOverlay";
-import { SURF_CAMS, prepareSurfCam, type SurfCamId } from "./surfCams";
+import { prepareSurfCam, type SurfCamId } from "./surfCams";
 import { clockSlotAt, msUntilNextClockSlot, useClockSlot } from "./useClockSlot";
+import { replayControl, useControlLog, wrapIndex, type ControlState, type PresetControl } from "./kioskControl";
 import {
-  replayControl,
-  useControlLog,
-  wrapIndex,
-  type ControlConfig,
-  type ControlState,
-  type PresetControl,
-  type Shortcut,
-} from "./kioskControl";
+  CONTROL_CONFIG,
+  MALLARDS_SLOT_ID,
+  PANEL_ROTATE_INTERVAL_MS,
+  PHOTOS_SLOT_ID,
+  ROTATION_SLOTS,
+  SHORTCUTS,
+  surfCamSlotId,
+  type RotationSlotInfo,
+} from "./displayConfig";
 
 /**
  * Always-on kiosk display page. Rotates through a fixed list of slots, each
@@ -31,6 +33,9 @@ import {
  * primary is the external monitor (below), where mpv plays the surf cams;
  * secondary is the laptop's own screen (on top); solo is a lone screen, which
  * shows the primary side plus the keyboard overlay. No param means solo.
+ *
+ * The slots, shortcuts and bpm views themselves are listed in displayConfig.ts
+ * (shared with the admin page's remote); this file pairs them with panels.
  *
  * The active slot comes from the wall clock (see useClockSlot), not a timer
  * chain, so both screens switch at exactly the same moment and stay paired.
@@ -75,18 +80,11 @@ interface RotationSlot {
   camId?: SurfCamId;
 }
 
-// how long each slot stays on screen before rotating to the next (ms)
-const PANEL_ROTATE_INTERVAL_MS = 45_000;
-
 // how long before a panel is due on screen its `prepare` hook fires. needs to
 // cover the slowest panel's startup (mpv launch + first buffer)
 const PANEL_PREPARE_LEAD_MS = 5_000;
 
 const SCREEN_ROLE_PARAM = "screen";
-
-const PHOTOS_SLOT_ID = "photos";
-const MALLARDS_SLOT_ID = "mallards";
-const BPM_SHORTCUT_KEY = "b";
 
 // the secondary screen's photos change halfway between the primary's, so the two take turns.
 // rendered identically in consecutive slots, React keeps a panel mounted and its photos carry on
@@ -115,7 +113,7 @@ const BPM_VIEW_LABELS = BPM_VIEWS.map((view) => view.label);
  */
 function surfCamSlot(camId: SurfCamId): RotationSlot {
   return {
-    id: `surf-${camId}`,
+    id: surfCamSlotId(camId),
     camId,
     primary: {
       // keyed so each cam gets its own mount: no status or conditions carried over from the last cam
@@ -126,36 +124,24 @@ function surfCamSlot(camId: SurfCamId): RotationSlot {
   };
 }
 
-const ROTATION: RotationSlot[] = [
-  { id: PHOTOS_SLOT_ID, primary: PRIMARY_PHOTOS, secondary: SECONDARY_PHOTOS },
-  { id: MALLARDS_SLOT_ID, primary: PRIMARY_PHOTOS, secondary: MALLARDS },
-  ...SURF_CAMS.map(({ id }) => surfCamSlot(id)),
-];
-const CAM_ROTATION = ROTATION.filter((slot) => slot.camId);
-
-// digit shortcuts: 1-3 fixed, then one per cam in rotation order (4 = the first cam, ...),
-// then b for bpm mode (where the digits pick bpm views instead, see kioskControl.ts)
-const FIRST_CAM_SHORTCUT_KEY = 4;
-const SHORTCUTS: Shortcut[] = [
-  { key: "1", label: "hold this photo", action: { kind: "hold-photo" } },
-  { key: "2", label: "mallard counter", action: { kind: "hold-slot", slotId: MALLARDS_SLOT_ID } },
-  { key: "3", label: "surf cam rotation", action: { kind: "cam-rotation" } },
-  ...SURF_CAMS.map(({ id, label }, i) => ({
-    key: String(FIRST_CAM_SHORTCUT_KEY + i),
-    label,
-    action: { kind: "hold-slot" as const, slotId: `surf-${id}` },
-  })),
-  { key: BPM_SHORTCUT_KEY, label: "bpm visualizer", action: { kind: "bpm" } },
-];
-
-const CONTROL_CONFIG: ControlConfig = {
-  intervalMs: PANEL_ROTATE_INTERVAL_MS,
-  slotIds: ROTATION.map((slot) => slot.id),
-  camSlotIds: CAM_ROTATION.map((slot) => slot.id),
-  shortcuts: SHORTCUTS,
-  bpmViewCount: BPM_VIEWS.length,
-  bpmPresetViews: BPM_VIEWS.flatMap((view, i) => (view.hasPresets ? [i] : [])),
+// what each screen shows during the slots that aren't cams
+const FIXED_SLOT_PANELS: Record<string, Pick<RotationSlot, "primary" | "secondary">> = {
+  [PHOTOS_SLOT_ID]: { primary: PRIMARY_PHOTOS, secondary: SECONDARY_PHOTOS },
+  [MALLARDS_SLOT_ID]: { primary: PRIMARY_PHOTOS, secondary: MALLARDS },
 };
+
+/**
+ * Pairs a slot from displayConfig.ts with what each screen shows during it.
+ * @param slot - The slot.
+ * @returns The slot with its panels.
+ */
+function buildSlot(slot: RotationSlotInfo): RotationSlot {
+  if (slot.camId) return surfCamSlot(slot.camId);
+  return { id: slot.id, ...FIXED_SLOT_PANELS[slot.id] };
+}
+
+const ROTATION: RotationSlot[] = ROTATION_SLOTS.map(buildSlot);
+const CAM_ROTATION = ROTATION.filter((slot) => slot.camId);
 
 const NO_PRESET_STEPS: PresetControl = { step: 0, held: false };
 

@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     # e.g. `openssl rand -hex 32`.
     IP_HASH_SALT: str
 
+    # Display kiosk remote control -- shared secret the surfcam agent on
+    # displaytop sends (X-Kiosk-Token) to pick up remote presses and push its
+    # key log. Empty turns those endpoints off. Generate with
+    # `openssl rand -hex 32`; the same value goes in ~/surfcam-agent/kiosk-token
+    # on displaytop (see pi/docs/services/display-kiosk.md).
+    KIOSK_TOKEN: str = ""
+
     # CORS
     CORS_ORIGINS: str = ""
     

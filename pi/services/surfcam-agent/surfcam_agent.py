@@ -22,6 +22,9 @@ it also relays the kiosk's keyboard to the pages (see kiosk_control.py):
     POST /control/reset        clear the presses (kiosk-run.sh, when the overnight sleep starts)
     GET  /control/log?after=N  the presses since the last reset, long-polled by the pages
 
+and, when ~/surfcam-agent/kiosk-token is set up, it picks up presses from the admin
+page's remote through the website backend (see remote_control.py).
+
 see pi/services/surfcam-agent/README.md for setup.
 """
 
@@ -42,6 +45,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional
 
 from kiosk_control import CONTROL_KEYS, ControlLog
+from remote_control import start_remote_control
 from surf_conditions import (
     SCRIPPS_PIER_WIND,
     Metric,
@@ -672,7 +676,7 @@ class AgentHandler(BaseHTTPRequestHandler):
         path = urllib.parse.urlsplit(self.path).path
         key_route = CONTROL_KEY_ROUTE_PATTERN.match(path)
         if key_route and key_route["key"] in CONTROL_KEYS:
-            control_log.add(key_route["key"])
+            control_log.add([key_route["key"]])
             log.info("key %s", key_route["key"])
             self._send_json(200, {"ok": True})
             return
@@ -744,6 +748,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, exit_on_sigterm)
     server = ThreadingHTTPServer((LISTEN_HOST, LISTEN_PORT), AgentHandler)
     log.info("listening on %s:%d", LISTEN_HOST, LISTEN_PORT)
+    start_remote_control(control_log)
     try:
         server.serve_forever()
     finally:

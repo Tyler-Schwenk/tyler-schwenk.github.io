@@ -2,7 +2,8 @@
 Website Backend API - Main application entry point.
 
 Backend API providing forum (Public Square), photo gallery, and recipe box
-(The Kitchen) services.
+(The Kitchen) services, plus the relay that lets the admin page remote
+control the display kiosk.
 """
 
 from fastapi import FastAPI
@@ -16,7 +17,7 @@ from app.config import settings
 from app.database import init_db
 from app.rate_limit import limiter
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard
+from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control
 
 
 @asynccontextmanager
@@ -94,3 +95,4 @@ app.include_router(rsvp.router)
 app.include_router(public_square.router)
 app.include_router(recipes.router)
 app.include_router(mallard.router)
+app.include_router(display_control.router)

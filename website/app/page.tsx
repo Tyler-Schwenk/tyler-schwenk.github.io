@@ -93,6 +93,16 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Admin link -- the admin page has its own login */}
+        <div className="mt-3 text-center">
+          <Link
+            href="/admin"
+            className="pixel-font text-[10px] text-gray-500 hover:text-[#F8D030] transition-colors"
+          >
+            ADMIN
+          </Link>
+        </div>
       </div>
     </div>
   );

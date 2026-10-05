@@ -44,7 +44,7 @@ Galleries whose slug is in this set render under **People**; all others render u
 
 ### Gallery Sort Order
 
-Galleries are sorted by `display_order` descending (higher value = shown first). New galleries created via the upload API automatically get `max(display_order) + 10`, so they appear at the front. Reorder galleries via the admin panel at `https://tyler-schwenk.com/admin/`.
+Galleries are sorted by `display_order` descending (higher value = shown first). New galleries created via the upload API automatically get `max(display_order) + 10`, so they appear at the front. Reorder galleries via the admin panel at `https://tyler-schwenk.com/admin`.
 
 Videos have no manual order. They're sorted by upload date (`created_at`), newest first, in `fetchAllVideos`.
 
@@ -111,7 +111,7 @@ Gallery cover image = thumbnail of the first photo in the gallery.
 
 ### Trip Gallery (no code change needed)
 
-1. Upload photos via `https://tyler-schwenk.com/admin/`
+1. Upload photos via `https://tyler-schwenk.com/admin`
 2. Create a new gallery with a name, slug, and description
 3. Push to `main` — the gallery auto-appears under Trips
 
@@ -144,8 +144,7 @@ app/gallery/
 components/
 └── GalleryModal.tsx                   # modal viewer for trips, people, and videos
 
-public/admin/
-└── index.html                         # admin panel (login, reorder, edit, upload)
+app/admin/                             # admin page (see ADMIN.md)
 ```
 
 ## Static Site Generation
@@ -160,9 +159,9 @@ All API calls happen during `next build` on GitHub Actions. The Pi must be reach
 
 ## Admin Panel
 
-Manage galleries, photos, and videos at `https://tyler-schwenk.com/admin/`.
+Manage galleries, photos, and videos at `https://tyler-schwenk.com/admin`.
 
 - **Galleries tab**: reorder with up/down arrows, edit name/description/slug/visibility, expand to see photos, delete individual photos or entire galleries, drop zone to add photos to any gallery
 - **Upload tab**: upload photos to existing or new gallery, upload videos
 
-Login persists for 30 days via JWT stored in localStorage.
+Login persists for 30 days via JWT stored in localStorage. Full details in `ADMIN.md`.

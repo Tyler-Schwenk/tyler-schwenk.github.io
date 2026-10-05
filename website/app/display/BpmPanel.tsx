@@ -8,6 +8,7 @@ import BpmMilkdrop from "./BpmMilkdrop";
 import BpmReadout from "./BpmReadout";
 import BpmVisualizer from "./BpmVisualizer";
 import { useBpmStream, type BpmStream } from "./bpmAgent";
+import { BPM_VIEW_INFO, type BpmViewInfo } from "./displayConfig";
 import type { PresetControl } from "./kioskControl";
 
 /** What every bpm view gets. Views without presets just ignore `presets`. */
@@ -16,30 +17,28 @@ export interface BpmViewProps {
   presets: PresetControl;
 }
 
-/** One of the bpm mode's views on the primary screen. */
-export interface BpmView {
-  /** Name in the menu and on the readout. */
-  label: string;
+/** One of the bpm mode's views on the primary screen: its info plus the component that draws it. */
+export interface BpmView extends BpmViewInfo {
   component: ComponentType<BpmViewProps>;
-  /** Show the calibration keys on the readout while it's up. */
-  calibration?: boolean;
-  /** Needs the raw waveform in the stream (see useBpmStream). */
-  needsWaveform?: boolean;
-  /** Has presets that ] and [ step through while it's up (see kioskControl.ts). */
-  hasPresets?: boolean;
 }
 
+// every view id in BPM_VIEW_INFO needs a component here (the Record type makes sure of it)
+const BPM_VIEW_COMPONENTS: Record<BpmViewInfo["id"], ComponentType<BpmViewProps>> = {
+  bars: BpmVisualizer,
+  calibration: BpmCalibration,
+  halo: BpmHalo,
+  dj: BpmDjView,
+  milkdrop: BpmMilkdrop,
+};
+
 /**
- * The bpm mode's views, in cycling order. While in bpm mode digit n holds
- * view n (1 = the first). Add a view by adding it here.
+ * The bpm mode's views, in cycling order (BPM_VIEW_INFO in displayConfig.ts,
+ * which is where to add one). While in bpm mode digit n holds view n (1 = the first).
  */
-export const BPM_VIEWS: BpmView[] = [
-  { label: "spectrum bars", component: BpmVisualizer },
-  { label: "calibration", component: BpmCalibration, calibration: true },
-  { label: "halo", component: BpmHalo },
-  { label: "dj meters", component: BpmDjView },
-  { label: "milkdrop", component: BpmMilkdrop, needsWaveform: true, hasPresets: true },
-];
+export const BPM_VIEWS: BpmView[] = BPM_VIEW_INFO.map((info) => ({
+  ...info,
+  component: BPM_VIEW_COMPONENTS[info.id],
+}));
 
 /**
  * Display panel for bpm mode, shown only from its key (never in the main

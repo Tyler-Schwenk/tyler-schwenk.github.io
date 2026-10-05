@@ -180,7 +180,7 @@ function step(state: ControlState, delta: number, atMs: number, config: ControlC
  * @param atMs - The moment, epoch ms.
  * @returns The slot id.
  */
-function rotationSlotIdAt(state: ControlState, config: ControlConfig, atMs: number): string {
+export function rotationSlotIdAt(state: ControlState, config: ControlConfig, atMs: number): string {
   const ids = state.mode.kind === "cam-rotation" ? config.camSlotIds : config.slotIds;
   return ids[wrapIndex(rotationIndexAt(state, config.intervalMs, atMs), ids.length)];
 }
@@ -284,6 +284,19 @@ function startShortcut(action: ShortcutAction, atMs: number, state: ControlState
     return { ...INITIAL_CONTROL_STATE, mode: { kind: "hold-slot", slotId: action.slotId } };
   }
   return { ...INITIAL_CONTROL_STATE, mode: { kind: "cam-rotation" }, anchorMs: atMs, anchorIndex: 0 };
+}
+
+/**
+ * Whether a shortcut is what's active right now, to highlight it (the kiosk's
+ * menu, the admin page's remote).
+ * @param shortcut - The shortcut.
+ * @param mode - Current display mode.
+ * @returns True if the shortcut's action is the current mode.
+ */
+export function isShortcutActive(shortcut: Shortcut, mode: DisplayMode): boolean {
+  const action = shortcut.action;
+  if (action.kind === "hold-slot") return mode.kind === "hold-slot" && mode.slotId === action.slotId;
+  return action.kind === mode.kind;
 }
 
 /**

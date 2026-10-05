@@ -38,6 +38,25 @@ kiosk's keyboard and the two pages. It only stores the presses; what they mean i
 out in the page (`website/app/display/kioskControl.ts`), which replays the whole log, so
 both screens always agree. The log lives in memory, so an agent restart is also a reset.
 
+**Remote control** (`remote_control.py`): the admin page's Display tab
+(`website/docs/ADMIN.md`) presses keys from anywhere. It can't reach this agent (loopback
+only), so the website backend relays (`pi/services/website-backend/app/display_control.py`),
+and the agent makes two outbound connections to `https://api.tyler-schwenk.com/display-control`,
+each on its own thread:
+
+- **pull**: long-polls `GET /kiosk/commands?after=<cursor>` for remote presses and adds
+  each one's keys to the key log as one change (`ControlLog.add`), so a remote "escape then 4"
+  never shows the standard rotation in between. `beat-earlier` / `beat-later` go to the bpm
+  agent's `POST /offset/earlier|later` instead, like the `-` and `=` keys. On startup it
+  sends `after=-1`, which skips presses queued before it was listening
+- **push**: `PUT /kiosk/log` with the whole key log every time it changes, and every 25 s
+  anyway as a heartbeat (that's what makes the admin page show the kiosk as online)
+
+Both send the shared secret from `~/surfcam-agent/kiosk-token` as `X-Kiosk-Token`; it must
+match `KIOSK_TOKEN` in the backend's `.env`. With no token file, remote control is off
+(logged at startup) and everything else works as before. A failed request is retried
+every 5 s; only the first failure and the recovery are logged.
+
 The rotation controller calls `prepare` `PANEL_PREPARE_LEAD_MS` before a surf cam
 panel is due, the panel calls `show` on mount and `stop` on unmount. Only the primary
 screen's page (`/display?screen=primary`) has surf cam panels, so only it drives the
@@ -142,6 +161,7 @@ shown on the Pacific Beach cam says it's from Scripps Pier.
 | `surfcam_agent.py` | Cam list (stream source + spot), mpv control, the HTTP API, and `build_overlay_ass` / `show_overlay` |
 | `surf_conditions.py` | Fetches the readings (`get_conditions`) and formats them as overlay lines (`get_metrics`) or json (`conditions_to_json`); no mpv knowledge |
 | `kiosk_control.py` | The keyboard-control key log (`ControlLog`) and the keys it accepts |
+| `remote_control.py` | Relays the admin page's remote through the website backend: pulls presses into the key log, pushes the log back up |
 
 **Failure handling** (`surf_conditions.py`): a flaky API can't take the overlay or panel down.
 - Each reading is fetched on its own thread and fails on its own, so a missing wave
@@ -190,8 +210,9 @@ To add a cam:
    `D0001` at the border to `D1210`; each dataset's `metaLatitude`/`metaLongitude` are in
    `https://thredds.cdip.ucsd.edu/thredds/dodsC/cdip/model/MOP_alongshore/<id>_nowcast.nc.ascii?metaLatitude,metaLongitude`),
    and `SCRIPPS_PIER_WIND` if it's within about a km of the pier.
-3. Add the id to `SurfCamId` and a `surfCamSlot("<id>")` to `ROTATION` in
-   `website/app/display/page.tsx`.
+3. Add the id and its name to `SURF_CAMS` in `website/app/display/surfCams.ts`. That's
+   all the page needs: the rotation, its shortcut key and the admin remote's button all
+   come from that list.
 
 ## Setup
 
@@ -233,5 +254,9 @@ site calls `127.0.0.1`, which would pop a dialog on the kiosk:
   agent log for `no <waves|wind|tide> for ...` or `measured wind ... unavailable`
   warnings (an API down, a stale station, or the kiosk offline). A bar with only the
   name means every reading failed.
+- **Admin page says the kiosk is offline:** `grep remote- /tmp/surfcam-agent.log`. "no
+  kiosk token" means `~/surfcam-agent/kiosk-token` is missing; a 401 means it doesn't match
+  the backend's `KIOSK_TOKEN`; a 503 means the backend has no `KIOSK_TOKEN` set; a
+  connection error means displaytop can't reach `api.tyler-schwenk.com`.
 - **Don't `pkill -f surfcam_agent` over SSH:** the pattern matches the ssh shell's own
   command line and kills it. Use `pkill -f "[s]urfcam_agent.py"`.

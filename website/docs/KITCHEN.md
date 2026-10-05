@@ -6,7 +6,7 @@
 
 All recipe data and photos are served from the Pi backend at `https://api.tyler-schwenk.com`. Unlike the gallery (which fetches at build time), the recipe browser fetches client-side at runtime, so new recipes show up immediately without a frontend redeploy.
 
-Anyone can submit a recipe (rate-limited per IP, no login). Editing or deleting a recipe requires logging in as admin via the "Admin" link in the Recipe Box title bar — same JWT account used by the gallery admin panel (`public/admin/index.html`). Editing also covers retroactive photo management: admins can add more photos to an existing recipe, remove individual photos, and choose which photo is the cover/thumbnail.
+Anyone can submit a recipe (rate-limited per IP, no login). Editing or deleting a recipe requires logging in as admin via the "Admin" link in the Recipe Box title bar — same JWT account used by the admin page (`website/app/admin`, see `ADMIN.md`). Editing also covers retroactive photo management: admins can add more photos to an existing recipe, remove individual photos, and choose which photo is the cover/thumbnail.
 
 ---
 
@@ -51,7 +51,7 @@ RecipeBrowser (client component)
 | File | Purpose |
 |---|---|
 | `types.ts` | `Recipe`/`Tag`/`RecipePhoto` types, `API_BASE`, `recipePhotoUrl()` |
-| `useAdminAuth.ts` | Reads/writes the admin JWT in localStorage (`kitchen-admin-token`); exposes `isAdmin`, `login`, `logout` |
+| `website/lib/useAdminAuth.ts` | Reads/writes the admin JWT in localStorage (shared with the admin page; The Kitchen passes `kitchen-admin-token`); exposes `isAdmin`, `login`, `logout` |
 | `KitchenWindow.tsx` | Title-bar + body window chrome, the default content container |
 | `KitchenButton.tsx` | Button variants (primary/secondary/tertiary/ghost/danger) |
 | `KitchenFormControls.tsx` | `KitchenInput`, `KitchenTextarea`, `KitchenLabel` |
@@ -91,7 +91,7 @@ Photos are decoded/normalized/thumbnailed the same way gallery photos are (see [
 
 ## Admin Login
 
-Click "Admin" in the Recipe Box title bar, log in with the same email/password as the gallery admin panel. The JWT is stored in localStorage under `kitchen-admin-token` (separate key from the gallery admin panel's `adminToken` — logging into one doesn't log you into the other). Once logged in, recipe detail modals show Edit/Delete buttons; "Admin" changes to "Log Out".
+Click "Admin" in the Recipe Box title bar, log in with the same email/password as the admin page. The JWT is stored in localStorage under `kitchen-admin-token` (separate key from the gallery admin panel's `adminToken` — logging into one doesn't log you into the other). Once logged in, recipe detail modals show Edit/Delete buttons; "Admin" changes to "Log Out".
 
 Tokens expire after 30 days (`JWT_EXPIRATION_MINUTES` on the backend). On page load, `useAdminAuth` reads the stored token's `exp` claim and discards it if it's expired, so "Admin" shows again. If the backend rejects a token mid-session (401 from any admin endpoint), `RecipeDetailModal` logs out and shows a "log in again" message.
 
