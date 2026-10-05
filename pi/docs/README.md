@@ -18,6 +18,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Beszel**](services/beszel.md) - System monitoring and health tracking
 - [**Cloudflare Tunnel**](services/cloudflare-tunnel.md) - Public API access
 - [**Display Kiosk**](services/display-kiosk.md) - Always-on monitor (displaytop) showing the `/display` rotation
+- [**Cast Receiver**](services/cast-receiver.md) - AirPlay screen mirroring for the opium den TV (castpi, Pi 3B+)
 
 ### For Tyler
 - [**Tyler's Quick Reference**](FORTYLER/README.md) - Practical guides and workflows
@@ -31,6 +32,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - Cloudflare Tunnel (public API access)
 - External SSD for media storage
 - Display Kiosk (hostname: displaytop) - separate Surface Laptop 3 driving an always-on pair of screens
+- Cast Receiver (hostname: castpi) - separate Pi 3B+ behind the opium den TV, an AirPlay receiver for iPhones
 
 **What's planned:**
 - Immich photo management

@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",
+    "butterchurn": "^2.6.7",
+    "butterchurn-presets": "^2.4.7",
     "leaflet": "^1.9.4",
     "next": "^16.1.6",
     "react": "19.2.1",

@@ -85,25 +85,50 @@ export interface BpmStream {
   tempoRef: RefObject<BpmTempo | null>;
   /** Oldest first, at most FRAME_HISTORY_LENGTH. Mutated in place as frames arrive. */
   framesRef: RefObject<BpmFrame[]>;
+  /**
+   * The latest WAVEFORM_LENGTH raw samples as bytes centred on 128 (like web
+   * audio's getByteTimeDomainData), only when the stream was opened with
+   * `waveform`; null until the first arrives.
+   */
+  waveformRef: RefObject<Uint8Array | null>;
   /** Why there's no stream, or null while it's fine. */
   error: string | null;
+}
+
+/** Samples per waveform event (the agent's WAVEFORM_SAMPLES). */
+export const WAVEFORM_LENGTH = 1024;
+
+/**
+ * Decodes a waveform event's base64 bytes into a reused buffer.
+ * @param base64 - The event's `bytes`.
+ * @param target - Buffer to fill, or null to make one.
+ * @returns The filled buffer.
+ */
+function decodeWaveform(base64: string, target: Uint8Array | null): Uint8Array {
+  const raw = atob(base64);
+  const buffer = target && target.length === raw.length ? target : new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) buffer[i] = raw.charCodeAt(i);
+  return buffer;
 }
 
 /**
  * Keeps an event stream open to the bpm agent while mounted, which is what
  * keeps the mic recording. Frames go into a ref (they arrive far faster than
- * React should re-render); config and tempo are state too.
+ * React should re-render); config and tempo are state too. Changing
+ * `waveform` reopens the stream (the agent keeps listening across that).
+ * @param options.waveform - Also stream the raw waveform (into waveformRef).
  * @returns The stream's latest data.
  */
-export function useBpmStream(): BpmStream {
+export function useBpmStream({ waveform = false }: { waveform?: boolean } = {}): BpmStream {
   const [config, setConfig] = useState<BpmConfig | null>(null);
   const [tempo, setTempo] = useState<BpmTempo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tempoRef = useRef<BpmTempo | null>(null);
   const framesRef = useRef<BpmFrame[]>([]);
+  const waveformRef = useRef<Uint8Array | null>(null);
 
   useEffect(() => {
-    const source = new EventSource(`${BPM_AGENT_URL}/stream`);
+    const source = new EventSource(`${BPM_AGENT_URL}/stream${waveform ? "?waveform=1" : ""}`);
     const frames = framesRef.current;
     source.addEventListener("config", (event) => {
       setConfig(JSON.parse(event.data));
@@ -112,6 +137,9 @@ export function useBpmStream(): BpmStream {
     source.addEventListener("frame", (event) => {
       frames.push(JSON.parse(event.data));
       if (frames.length > FRAME_HISTORY_LENGTH) frames.splice(0, frames.length - FRAME_HISTORY_LENGTH);
+    });
+    source.addEventListener("waveform", (event) => {
+      waveformRef.current = decodeWaveform(JSON.parse(event.data).bytes, waveformRef.current);
     });
     source.addEventListener("tempo", (event) => {
       const latest: BpmTempo = JSON.parse(event.data);
@@ -129,9 +157,9 @@ export function useBpmStream(): BpmStream {
       source.close();
       frames.length = 0;
     };
-  }, []);
+  }, [waveform]);
 
-  return { config, tempo, tempoRef, framesRef, error };
+  return { config, tempo, tempoRef, framesRef, waveformRef, error };
 }
 
 /**

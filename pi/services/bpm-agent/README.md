@@ -86,7 +86,7 @@ page), including Chrome's private network access preflight.
 
 | Route | Does |
 |---|---|
-| `GET /stream` | Server-sent events (below). Opening it starts the mic |
+| `GET /stream` | Server-sent events (below). Opening it starts the mic. `?waveform=1` adds `waveform` events |
 | `POST /offset/earlier` | Offset -10 ms (the `-` key). 409 unless listening |
 | `POST /offset/later` | Offset +10 ms (the `=` key). 409 unless listening |
 | `GET /status` | `{"listening": bool, "pages": int, "offset_ms": int}` |
@@ -118,6 +118,16 @@ A band level maps linearly onto dB: 0 is `band_floor_db`, 255 is `band_ceil_db`.
 
 `beat_ms` is a beat as the screen should show it (offset applied). Beats fall every
 `period_ms` before and after it. `bpm`, `beat_ms` and `period_ms` are null with no beat.
+
+`waveform`, every hop, only on a stream opened with `?waveform=1` (the milkdrop view):
+
+```json
+{"t_ms": 1790983472509.9, "bytes": "gICAf4B/..."}
+```
+
+`bytes` is the latest 1024 samples, base64, as unsigned bytes centred on 128 (the same
+form as the web audio API's `getByteTimeDomainData`, which is what butterchurn reads).
+They're only built while some page wants them.
 
 `error`, when the mic can't be used: `{"message": "no usb mic found ..."}`. The agent
 then closes the stream, and the page's `EventSource` reconnects every 3 s, which retries.

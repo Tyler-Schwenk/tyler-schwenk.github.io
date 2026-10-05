@@ -67,7 +67,9 @@ const PEAK_HOLD_S = 1.2;
 const PEAK_FALL_PER_S = 0.5;
 const METER_TICK_STEP_DB = 10;
 
-// the waveform is scaled to the loudest moment in view, then pushed toward the extremes
+// the waveform is scaled to the loudest moment in view (but never as if quieter than
+// WAVE_MIN_SCALE, so a quiet room's hum stays small), then pushed toward the extremes
+const WAVE_MIN_SCALE = 0.6;
 const WAVE_CONTRAST_EXPONENT = 2;
 const BEATS_PER_BAR = 4;
 // the lit beat box's opacity between beats; it flashes to full on the beat
@@ -226,7 +228,7 @@ function drawWaveform(
   const { startMs, xForTime } = historyTimeAxis(frames[frames.length - 1].t_ms, config, rect.x, rect.w);
   const columnWidth = Math.max(1, rect.w / frames.length);
   const levels = frames.map((frame) => rangeLevels(state, frame, config));
-  const loudest = Math.max(...levels.flat()) || 1;
+  const loudest = Math.max(WAVE_MIN_SCALE, ...levels.flat());
   const centreY = rect.y + rect.h / 2;
 
   EQ_RANGES.forEach((range, r) => {

@@ -15,6 +15,7 @@ import {
   wrapIndex,
   type ControlConfig,
   type ControlState,
+  type PresetControl,
   type Shortcut,
 } from "./kioskControl";
 
@@ -50,10 +51,11 @@ import {
  * Pac-Tyler bike map, server status.
  */
 
-/** What a panel needs to know beyond its own props: the photo hold, and which bpm view is up. */
+/** What a panel needs to know beyond its own props: the photo hold, and bpm mode's view and preset stepping. */
 interface PanelContext {
   photoHold: PhotoHold | null;
   bpmView: number;
+  bpmPresets: PresetControl;
 }
 
 interface DisplayPanel {
@@ -96,8 +98,12 @@ const MALLARDS: DisplayPanel = { render: () => <MallardPanel /> };
 // is up, so it stays mounted (and keeps its stream) as the views change
 const BPM_SLOT: RotationSlot = {
   id: "bpm",
-  primary: { render: ({ bpmView }) => <BpmPanel side="primary" viewIndex={bpmView} /> },
-  secondary: { render: ({ bpmView }) => <BpmPanel side="secondary" viewIndex={bpmView} /> },
+  primary: {
+    render: ({ bpmView, bpmPresets }) => <BpmPanel side="primary" viewIndex={bpmView} presets={bpmPresets} />,
+  },
+  secondary: {
+    render: ({ bpmView, bpmPresets }) => <BpmPanel side="secondary" viewIndex={bpmView} presets={bpmPresets} />,
+  },
 };
 const BPM_VIEW_LABELS = BPM_VIEWS.map((view) => view.label);
 
@@ -148,7 +154,10 @@ const CONTROL_CONFIG: ControlConfig = {
   camSlotIds: CAM_ROTATION.map((slot) => slot.id),
   shortcuts: SHORTCUTS,
   bpmViewCount: BPM_VIEWS.length,
+  bpmPresetViews: BPM_VIEWS.flatMap((view, i) => (view.hasPresets ? [i] : [])),
 };
+
+const NO_PRESET_STEPS: PresetControl = { step: 0, held: false };
 
 /**
  * Reads this screen's role from the `?screen=` query param.
@@ -236,9 +245,10 @@ export default function DisplayPage() {
   if (!role || !slots || clockSlot === null) return <div className="fixed inset-0 bg-black" />;
   const photoHold = state.mode.kind === "hold-photo" ? state.mode : null;
   const bpmView = pickBpmView(state, clockSlot);
+  const bpmPresets = state.mode.kind === "bpm" ? state.mode.preset : NO_PRESET_STEPS;
   return (
     <>
-      {slots.current[side].render({ photoHold, bpmView })}
+      {slots.current[side].render({ photoHold, bpmView, bpmPresets })}
       {role !== "primary" && <ControlOverlay state={state} shortcuts={SHORTCUTS} bpmViewLabels={BPM_VIEW_LABELS} />}
     </>
   );

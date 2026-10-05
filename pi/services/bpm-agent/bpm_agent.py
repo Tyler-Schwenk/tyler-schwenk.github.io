@@ -9,7 +9,9 @@ last one closes. localhost-only HTTP API:
 
     GET  /stream          server-sent events while the bpm view is up (see the README for
                           the event shapes): `config` once, then a `frame` per hop
-                          (spectrum bands, onset, level) and a `tempo` a few times a second
+                          (spectrum bands, onset, level) and a `tempo` a few times a second.
+                          with ?waveform=1, also a `waveform` per hop: the raw recent
+                          samples, for the milkdrop view
     POST /offset/earlier  move the beat earlier on screen by OFFSET_STEP_MS (the - key)
     POST /offset/later    move it later (the = key). both only work while listening
     GET  /status          whether it's listening, how many pages are connected, the offset
@@ -20,6 +22,7 @@ pulse on screen, and is saved in calibration.json next to this file.
 see pi/services/bpm-agent/README.md for setup.
 """
 
+import base64
 import json
 import logging
 import queue
@@ -30,6 +33,7 @@ import sys
 import threading
 import time
 import urllib.parse
+from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -58,6 +62,7 @@ LISTEN_PORT = 8766
 ALLOWED_ORIGINS = {"https://tyler-schwenk.com"}
 
 STREAM_PATH = "/stream"
+WAVEFORM_QUERY_PARAM = "waveform"
 STATUS_PATH = "/status"
 OFFSET_ROUTE_PATTERN = re.compile(r"^/offset/(?P<direction>earlier|later)$")
 
@@ -85,7 +90,14 @@ OFFSET_STEP_MS = 10
 MAX_OFFSET_MS = 1000
 CALIBRATION_FILE = Path(__file__).parent / "calibration.json"
 
-# a page that stops reading for this many messages (~3 s of frames) gets them dropped
+# the waveform event carries this many of the latest samples: what butterchurn (milkdrop)
+# reads from a web audio analyser each frame (its fftSize), at our 44.1 kHz rate
+WAVEFORM_SAMPLES = 1024
+# int16 -> unsigned byte centred on 128, like the web audio api's getByteTimeDomainData
+WAVEFORM_BYTE_SCALE = 256
+WAVEFORM_BYTE_CENTRE = 128
+
+# a page that stops reading for this many messages (~1.5-3 s of frames) gets them dropped
 CLIENT_QUEUE_SIZE = 256
 SSE_KEEPALIVE_S = 15
 # how long a disconnected page's EventSource waits before reconnecting
@@ -189,46 +201,78 @@ def tempo_event(estimate: TempoEstimate, offset_ms: int) -> bytes:
     })
 
 
+def waveform_event(time_s: float, samples: np.ndarray) -> bytes:
+    """the latest samples as a `waveform` event: unsigned bytes centred on 128, base64.
+
+    args:
+        time_s: when the newest sample was captured, epoch seconds.
+        samples: the latest WAVEFORM_SAMPLES int16 samples, oldest first.
+    """
+    as_bytes = (samples.astype(np.int32) // WAVEFORM_BYTE_SCALE + WAVEFORM_BYTE_CENTRE).astype(np.uint8)
+    return encode_event("waveform", {
+        "t_ms": round(time_s * MS_PER_S, 1),
+        "bytes": base64.b64encode(as_bytes.tobytes()).decode(),
+    })
+
+
 class Broadcaster:
     """fans encoded events out to every connected page, each through its own queue.
 
     a None in a queue tells that page's handler to close the stream (its EventSource then
     reconnects). the latest tempo event is kept and handed to each new page straight away.
+    waveform events only go to pages that asked for them.
     """
 
     def __init__(self) -> None:
         """starts with no pages."""
         self._lock = threading.Lock()
-        self._queues: set[queue.Queue] = set()
+        # page queue -> whether it wants waveform events
+        self._queues: dict[queue.Queue, bool] = {}
         self._latest_tempo: bytes | None = None
 
-    def add(self) -> queue.Queue:
-        """registers a page and returns its queue, primed with the config and latest tempo."""
+    def add(self, wants_waveform: bool) -> queue.Queue:
+        """registers a page and returns its queue, primed with the config and latest tempo.
+
+        args:
+            wants_waveform: also send it waveform events.
+        """
         client_queue: queue.Queue = queue.Queue(maxsize=CLIENT_QUEUE_SIZE)
         client_queue.put_nowait(config_event())
         with self._lock:
             if self._latest_tempo is not None:
                 client_queue.put_nowait(self._latest_tempo)
-            self._queues.add(client_queue)
+            self._queues[client_queue] = wants_waveform
         return client_queue
 
     def remove(self, client_queue: queue.Queue) -> int:
         """unregisters a page and returns how many are left."""
         with self._lock:
-            self._queues.discard(client_queue)
+            self._queues.pop(client_queue, None)
             return len(self._queues)
+
+    def wants_waveform(self) -> bool:
+        """whether any page wants waveform events (so they're only built when needed)."""
+        with self._lock:
+            return any(self._queues.values())
 
     def count(self) -> int:
         """how many pages are connected."""
         with self._lock:
             return len(self._queues)
 
-    def publish(self, event: bytes, is_tempo: bool = False) -> None:
-        """sends an event to every page, dropping it for any page that's fallen behind."""
+    def publish(self, event: bytes, is_tempo: bool = False, waveform_only: bool = False) -> None:
+        """sends an event to every page, dropping it for any page that's fallen behind.
+
+        args:
+            event: the encoded event.
+            is_tempo: remember it as the latest tempo, for pages that join later.
+            waveform_only: only send it to pages that asked for waveform events.
+        """
         with self._lock:
             if is_tempo:
                 self._latest_tempo = event
-            for client_queue in self._queues:
+            targets = [q for q, wants_waveform in self._queues.items() if wants_waveform or not waveform_only]
+            for client_queue in targets:
                 self._put(client_queue, event)
 
     def close_all(self) -> None:
@@ -245,6 +289,18 @@ class Broadcaster:
             client_queue.put_nowait(item)
         except queue.Full:
             pass
+
+
+@dataclass
+class CaptureState:
+    """what the capture thread carries from one hop to the next."""
+
+    tracker: BeatTracker = field(default_factory=BeatTracker)
+    samples_read: int = 0
+    # wall-clock time of sample 0 (see Listener._ease_anchor), None before the first hop
+    anchor_s: float | None = None
+    next_tempo_s: float = 0.0
+    waveform: np.ndarray = field(default_factory=lambda: np.zeros(WAVEFORM_SAMPLES, dtype=np.int16))
 
 
 class Listener:
@@ -331,23 +387,13 @@ class Listener:
         every page gets an `error` event and its stream is closed; the pages reconnect,
         which starts a fresh attempt.
         """
-        tracker = BeatTracker()
+        state = CaptureState()
         hop_bytes = HOP_SAMPLES * BYTES_PER_SAMPLE
-        samples_read = 0
-        anchor_s: float | None = None
-        next_tempo_s = 0.0
         try:
-            while True:
+            raw = process.stdout.read(hop_bytes)
+            while len(raw) == hop_bytes:
+                self._process_hop(state, np.frombuffer(raw, dtype=np.int16))
                 raw = process.stdout.read(hop_bytes)
-                if len(raw) < hop_bytes:
-                    break
-                samples_read += HOP_SAMPLES
-                anchor_s = self._ease_anchor(anchor_s, samples_read)
-                frame = tracker.process(np.frombuffer(raw, dtype=np.int16), anchor_s + samples_read / SAMPLE_RATE_HZ)
-                self._broadcaster.publish(frame_event(frame))
-                if frame.time_s >= next_tempo_s:
-                    next_tempo_s = frame.time_s + TEMPO_UPDATE_INTERVAL_S
-                    self._broadcaster.publish(tempo_event(tracker.estimate(), self.offset_ms), is_tempo=True)
         except Exception:  # noqa: BLE001 -- a bug here must still reach the pages, not die silently
             log.exception("capture failed")
         if self._stopping.is_set():
@@ -356,6 +402,25 @@ class Listener:
         log.error(message)
         self._broadcaster.publish(encode_event("error", {"message": message}))
         self._broadcaster.close_all()
+
+    def _process_hop(self, state: CaptureState, hop: np.ndarray) -> None:
+        """analyses one hop and publishes its frame, its waveform (if wanted) and, every
+        TEMPO_UPDATE_INTERVAL_S, a tempo estimate.
+
+        args:
+            state: the capture's running state, updated in place.
+            hop: HOP_SAMPLES int16 samples.
+        """
+        state.samples_read += hop.size
+        state.anchor_s = self._ease_anchor(state.anchor_s, state.samples_read)
+        frame = state.tracker.process(hop, state.anchor_s + state.samples_read / SAMPLE_RATE_HZ)
+        self._broadcaster.publish(frame_event(frame))
+        state.waveform = np.concatenate([state.waveform[hop.size:], hop])
+        if self._broadcaster.wants_waveform():
+            self._broadcaster.publish(waveform_event(frame.time_s, state.waveform), waveform_only=True)
+        if frame.time_s >= state.next_tempo_s:
+            state.next_tempo_s = frame.time_s + TEMPO_UPDATE_INTERVAL_S
+            self._broadcaster.publish(tempo_event(state.tracker.estimate(), self.offset_ms), is_tempo=True)
 
     @staticmethod
     def _ease_anchor(anchor_s: float | None, samples_read: int) -> float:
@@ -447,11 +512,12 @@ class AgentHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         """serves the event stream or the status."""
-        path = urllib.parse.urlsplit(self.path).path
-        if path == STREAM_PATH:
-            self._stream()
+        url = urllib.parse.urlsplit(self.path)
+        if url.path == STREAM_PATH:
+            wants_waveform = urllib.parse.parse_qs(url.query).get(WAVEFORM_QUERY_PARAM) == ["1"]
+            self._stream(wants_waveform)
             return
-        if path == STATUS_PATH:
+        if url.path == STATUS_PATH:
             self._send_json(200, {
                 "listening": listener.running,
                 "pages": broadcaster.count(),
@@ -474,8 +540,12 @@ class AgentHandler(BaseHTTPRequestHandler):
         log.info("offset now %d ms", offset_ms)
         self._send_json(200, {"offset_ms": offset_ms})
 
-    def _stream(self) -> None:
-        """streams events to one page until it disconnects or the capture ends."""
+    def _stream(self, wants_waveform: bool) -> None:
+        """streams events to one page until it disconnects or the capture ends.
+
+        args:
+            wants_waveform: also send it waveform events (?waveform=1).
+        """
         self.send_response(200)
         self._send_cors_headers()
         self.send_header("Content-Type", "text/event-stream")
@@ -483,7 +553,7 @@ class AgentHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(f"retry: {SSE_RETRY_MS}\n\n".encode())
 
-        client_queue = broadcaster.add()
+        client_queue = broadcaster.add(wants_waveform)
         try:
             capture.page_joined()
         except MicUnavailableError as err:

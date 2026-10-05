@@ -35,6 +35,8 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/BpmCalibration.tsx` | View 2, calibration: spectrogram, onset curve with detected beats, level meter, tempo scores, beat flash |
 | `website/app/display/BpmHalo.tsx` | View 3, halo: turning ring of spectrum spokes round a bass-driven core, light trails, sparks on each beat |
 | `website/app/display/BpmDjView.tsx` | View 4, dj meters: low/mid/high meters in dB, beat counter, three-band scrolling waveform with beat grid |
+| `website/app/display/BpmMilkdrop.tsx` | View 5, milkdrop: all ~395 MilkDrop presets via butterchurn (WebGL), fed the agent's raw waveform, a new preset every 32 beats or by hand with ] / [ |
+| `website/app/display/butterchurn.d.ts` | Minimal types for the `butterchurn` and `butterchurn-presets` packages |
 | `website/app/display/BpmReadout.tsx` | The tempo over a beat-pulsing ring and the current view's name, for the other screen |
 | `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`useBpmStream`) plus helpers the views share (beat phase/pulse/counting, band ranges, beat grid, time axis) |
 | `website/app/display/spectrumLevels.ts` | Rise-and-fall spectrum levels with peak caps and auto gain, shared by the bars and halo views |
@@ -128,11 +130,11 @@ Inside bpm mode the keys work on its views instead (the tab menu lists them):
 
 | Key | Does |
 |-----|------|
-| `1`-`4` | hold that view (in `BPM_VIEWS` order: spectrum bars, calibration, halo, dj meters); other digits do nothing |
-| `]` / `[` | next / previous view, and hold there |
+| `1`-`5` | hold that view (in `BPM_VIEWS` order: spectrum bars, calibration, halo, dj meters, milkdrop); other digits do nothing |
+| `]` / `[` | next / previous view, and hold there. On milkdrop: next / previous preset instead, holding the view and the preset |
 | `b` | back to cycling, from the view that's up |
 | `-` / `=` | move the beat earlier / later on screen by 10 ms (calibration, see "BPM Visualizer") |
-| `backspace` | from a held view back to cycling; from cycling out of bpm mode |
+| `backspace` | from a held preset back to presets moving on by themselves; from a held view back to cycling; from cycling out of bpm mode |
 | `esc` | straight back to the standard display |
 
 `-` and `=` are the exception to the key log: xbindkeys posts them straight to the bpm
@@ -229,6 +231,7 @@ and the view's name). The views, in `BPM_VIEWS` order:
 | 2 | calibration (`BpmCalibration`) | What the agent hears (below); the readout adds the calibration keys |
 | 3 | halo (`BpmHalo`) | A slowly turning ring of spectrum spokes round a glowing core that swells with the bass, drawn with light trails. Each beat throws a burst of sparks outward, kicks the spin and steps the colours |
 | 4 | dj meters (`BpmDjView`) | The room split like a mixer's three-band EQ (low < 250 Hz, mid to 2.5 kHz, high above): a meter per band in dB with peak hold, the tempo with a four-beat counter and phase bar, and a scrolling three-band waveform (blue lows, orange mids, white highs, like CDJ waveforms) under the detected beat grid |
+| 5 | milkdrop (`BpmMilkdrop`) | MilkDrop presets (below) |
 
 Bpm mode starts cycling through them every `PANEL_ROTATE_INTERVAL_MS`, or holds one (keys
 under "Keyboard Control"). `BpmPanel` is the same component whichever view is up, so
@@ -239,7 +242,34 @@ beats: it doesn't know where the bar's downbeat is.
 
 To add a view, build it as a component taking `{ stream }` that draws through
 `useCanvasLoop`, and add it to `BPM_VIEWS` in `BpmPanel.tsx` (digits 1-9 can pick up to
-nine views).
+nine views). A view that needs the raw audio sets `needsWaveform` (see MilkDrop).
+
+**MilkDrop** (`BpmMilkdrop`): the Winamp visualizer's presets, run in WebGL 2 by
+[butterchurn](https://github.com/jberg/butterchurn) with every preset from all four
+`butterchurn-presets` packs: base, Extra, Extra2 and MD1, ~395 once the few that appear in
+more than one pack are merged (both MIT, stable 2.x). MilkDrop presets react to the raw waveform,
+not to bands, so this view's `BPM_VIEWS` entry sets `needsWaveform`, and `BpmPanel` opens the
+primary screen's stream with `?waveform=1`: the agent then also sends the latest 1024
+samples with every hop. Butterchurn's `render({ audioLevels })` takes those directly, so
+it's created without an AudioContext and the page never touches the mic (the agent stays
+its only user). Switching to or from this view reopens the primary page's stream, which
+the agent's grace period covers.
+
+- A room mic is far quieter than the line-level audio MilkDrop expects, so the waveform
+  gets an auto gain first (loudest recent sample scaled to ~80% of full scale, at most
+  24x), or most presets' wave shapes would be flat lines
+- Presets play in a shuffled order and blend into the next over 2.7 s, on a beat, every
+  32 beats (or every 30 s with no beat). Each new preset's place in the order and name show
+  in the corner for a few seconds
+- `]` / `[` step through that order by hand (a quicker 1 s blend) and hold the preset, which
+  then stays put with "held" in the corner until backspace. The key log only records how
+  many steps (`PresetControl.step`), and the view moves by however much that changes, so the
+  order itself is per page load and not shared (only the primary screen runs milkdrop)
+- It draws at 1280 px wide (the height follows the screen's shape) and the browser scales
+  that up, so the GPU isn't rendering 2560x1440 MilkDrop shaders all evening
+- butterchurn and the four packs are their own chunks (~450 KB gzipped together), only
+  fetched when the view opens. Parsed, the presets take ~10 MB of memory; only the one or
+  two on screen are compiled into shaders
 
 **Beat sync:** the agent runs on the same machine, so its beat times are on the page's
 clock. Each `tempo` event gives a beat time (`beat_ms`, calibration offset already

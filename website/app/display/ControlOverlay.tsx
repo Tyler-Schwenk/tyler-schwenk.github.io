@@ -30,8 +30,8 @@ const NAVIGATION_KEYS: MenuEntry[] = [
 
 // bpm mode's keys, listed beside its views
 const BPM_NAVIGATION_KEYS: MenuEntry[] = [
-  { keyName: "]", label: "next view" },
-  { keyName: "[", label: "previous view" },
+  { keyName: "]", label: "next view (milkdrop: preset)" },
+  { keyName: "[", label: "previous view (milkdrop: preset)" },
   { keyName: "b", label: "cycle the views" },
   { keyName: "- / =", label: "beat earlier / later" },
   { keyName: "backspace", label: "back" },
@@ -47,6 +47,7 @@ const BPM_NAVIGATION_KEYS: MenuEntry[] = [
 function indicatorLabel(mode: DisplayMode): string | null {
   if (mode.kind === "hold-photo" || mode.kind === "hold-slot") return "held";
   if (mode.kind === "cam-rotation") return "surf cams only";
+  if (mode.kind === "bpm" && mode.preset.held) return "bpm, preset held";
   if (mode.kind === "bpm") return mode.heldView === null ? "bpm" : "bpm, held";
   return null;
 }

@@ -23,7 +23,9 @@ import { SURFCAM_AGENT_URL } from "./surfCams";
  * Bpm mode has its own little rotation: it cycles through the bpm views, and
  * inside it the digits hold a view (1 = the first), ] and [ step views and
  * hold, backspace goes from a held view back to cycling and from cycling out
- * of bpm mode, and b resumes cycling from the view that's up.
+ * of bpm mode, and b resumes cycling from the view that's up. On a view with
+ * presets (milkdrop), ] and [ step its presets instead and hold the view and
+ * preset, and backspace first lets the presets move on by themselves again.
  */
 
 /** A key press as the agent logs it. `at_ms` is epoch ms on the kiosk's clock. */
@@ -63,14 +65,27 @@ export type DisplayMode =
   | { kind: "hold-slot"; slotId: string }
   /**
    * Bpm mode (never part of the main rotation): staying on view `heldView`,
-   * or cycling through the views from the anchor when it's null.
+   * or cycling through the views from the anchor when it's null. `preset`
+   * is what ] and [ have done on a view with presets.
    */
-  | { kind: "bpm"; heldView: number | null }
+  | { kind: "bpm"; heldView: number | null; preset: PresetControl }
   /**
    * Staying on the photos slot with each screen's photo frozen as it was at
    * `frozenAtMs`, moved on `photoStep` photos by ] and [.
    */
   | { kind: "hold-photo"; frozenAtMs: number; photoStep: number };
+
+/**
+ * Preset stepping on a bpm view with presets. `step` counts ] (+1) and [ (-1)
+ * presses since bpm mode started, so a view moves by however much it changes;
+ * `held` stops the view moving on to new presets by itself.
+ */
+export interface PresetControl {
+  step: number;
+  held: boolean;
+}
+
+const INITIAL_PRESET_CONTROL: PresetControl = { step: 0, held: false };
 
 export interface ControlState {
   menuOpen: boolean;
@@ -96,6 +111,8 @@ export interface ControlConfig {
   shortcuts: Shortcut[];
   /** How many bpm views there are. */
   bpmViewCount: number;
+  /** The bpm views whose presets ] and [ step (indexes). */
+  bpmPresetViews: number[];
 }
 
 export const INITIAL_CONTROL_STATE: ControlState = {
@@ -134,9 +151,10 @@ export function rotationIndexAt(state: ControlState, intervalMs: number, atMs: n
 
 /**
  * Moves one step forward or back from the current item and holds there: the
- * next photo while a photo is held, the next view in bpm mode, otherwise the
- * next slot of all of them (from the held slot, or from wherever the rotation
- * was). Backspace resumes the rotation.
+ * next photo while a photo is held, the next preset on a bpm view with
+ * presets, the next view elsewhere in bpm mode, otherwise the next slot of all
+ * of them (from the held slot, or from wherever the rotation was). Backspace
+ * resumes the rotation.
  * @param state - Current state.
  * @param delta - +1 for ], -1 for [.
  * @param atMs - When the key was pressed.
@@ -148,10 +166,7 @@ function step(state: ControlState, delta: number, atMs: number, config: ControlC
   if (mode.kind === "hold-photo") {
     return { ...state, mode: { ...mode, photoStep: mode.photoStep + delta } };
   }
-  if (mode.kind === "bpm") {
-    const heldView = wrapIndex(bpmViewAt(state, config, atMs) + delta, config.bpmViewCount);
-    return { ...state, mode: { kind: "bpm", heldView } };
-  }
+  if (mode.kind === "bpm") return stepBpm(state, mode.preset, delta, atMs, config);
   const currentSlotId = mode.kind === "hold-slot" ? mode.slotId : rotationSlotIdAt(state, config, atMs);
   const index = config.slotIds.indexOf(currentSlotId);
   const slotId = config.slotIds[wrapIndex(index + delta, config.slotIds.length)];
@@ -184,18 +199,41 @@ export function bpmViewAt(state: ControlState, config: ControlConfig, atMs: numb
 }
 
 /**
- * Bpm mode cycling through its views, starting from one view at a moment.
- * @param fromView - The view to start on.
- * @param atMs - When cycling starts (it gets a full interval).
- * @returns The new state, menu closed.
+ * ] or [ in bpm mode: the next/previous preset on a view with presets
+ * (holding that view and preset), else the next/previous view (held).
+ * @param state - State before the press (in bpm mode).
+ * @param preset - Its preset stepping.
+ * @param delta - +1 for ], -1 for [.
+ * @param atMs - When the key was pressed.
+ * @param config - Rotation config.
+ * @returns State after it.
  */
-function cycleBpmViews(fromView: number, atMs: number): ControlState {
-  return { ...INITIAL_CONTROL_STATE, mode: { kind: "bpm", heldView: null }, anchorMs: atMs, anchorIndex: fromView };
+function stepBpm(state: ControlState, preset: PresetControl, delta: number, atMs: number, config: ControlConfig): ControlState {
+  const view = bpmViewAt(state, config, atMs);
+  if (config.bpmPresetViews.includes(view)) {
+    return { ...state, mode: { kind: "bpm", heldView: view, preset: { step: preset.step + delta, held: true } } };
+  }
+  const heldView = wrapIndex(view + delta, config.bpmViewCount);
+  return { ...state, mode: { kind: "bpm", heldView, preset } };
 }
 
 /**
- * One step back: closes the menu, else goes from a held bpm view back to
- * cycling, else back to the standard display.
+ * Bpm mode cycling through its views, starting from one view at a moment.
+ * Presets move on by themselves again; the preset step count carries over, so
+ * a view with presets doesn't jump.
+ * @param fromView - The view to start on.
+ * @param atMs - When cycling starts (it gets a full interval).
+ * @param presetStep - The preset step count so far (0 entering bpm mode).
+ * @returns The new state, menu closed.
+ */
+function cycleBpmViews(fromView: number, atMs: number, presetStep: number): ControlState {
+  const preset = { step: presetStep, held: false };
+  return { ...INITIAL_CONTROL_STATE, mode: { kind: "bpm", heldView: null, preset }, anchorMs: atMs, anchorIndex: fromView };
+}
+
+/**
+ * One step back: closes the menu, else lets a held preset move on again, else
+ * goes from a held bpm view back to cycling, else back to the standard display.
  * @param state - State before the press.
  * @param atMs - When the key was pressed.
  * @returns State after it.
@@ -203,12 +241,15 @@ function cycleBpmViews(fromView: number, atMs: number): ControlState {
 function goBack(state: ControlState, atMs: number): ControlState {
   if (state.menuOpen) return { ...state, menuOpen: false };
   const mode = state.mode;
-  if (mode.kind === "bpm" && mode.heldView !== null) return cycleBpmViews(mode.heldView, atMs);
+  if (mode.kind !== "bpm") return INITIAL_CONTROL_STATE;
+  if (mode.preset.held) return { ...state, mode: { ...mode, preset: { ...mode.preset, held: false } } };
+  if (mode.heldView !== null) return cycleBpmViews(mode.heldView, atMs, mode.preset.step);
   return INITIAL_CONTROL_STATE;
 }
 
 /**
- * A digit pressed in bpm mode: holds that view, if there is one.
+ * A digit pressed in bpm mode: holds that view, if there is one. A held
+ * preset stays held only if the new view has presets.
  * @param state - State before the press (in bpm mode).
  * @param key - The digit.
  * @param config - Rotation config.
@@ -216,8 +257,10 @@ function goBack(state: ControlState, atMs: number): ControlState {
  */
 function holdBpmView(state: ControlState, key: string, config: ControlConfig): ControlState {
   const view = Number(key) - 1;
-  if (view >= config.bpmViewCount) return state;
-  return { ...state, menuOpen: false, mode: { kind: "bpm", heldView: view } };
+  if (view >= config.bpmViewCount || state.mode.kind !== "bpm") return state;
+  const presetHeld = state.mode.preset.held && config.bpmPresetViews.includes(view);
+  const preset = { ...state.mode.preset, held: presetHeld };
+  return { ...state, menuOpen: false, mode: { kind: "bpm", heldView: view, preset } };
 }
 
 /**
@@ -231,8 +274,8 @@ function holdBpmView(state: ControlState, key: string, config: ControlConfig): C
  */
 function startShortcut(action: ShortcutAction, atMs: number, state: ControlState, config: ControlConfig): ControlState {
   if (action.kind === "bpm") {
-    const fromView = state.mode.kind === "bpm" ? bpmViewAt(state, config, atMs) : 0;
-    return cycleBpmViews(fromView, atMs);
+    if (state.mode.kind !== "bpm") return cycleBpmViews(0, atMs, INITIAL_PRESET_CONTROL.step);
+    return cycleBpmViews(bpmViewAt(state, config, atMs), atMs, state.mode.preset.step);
   }
   if (action.kind === "hold-photo") {
     return { ...INITIAL_CONTROL_STATE, mode: { kind: "hold-photo", frozenAtMs: atMs, photoStep: 0 } };
