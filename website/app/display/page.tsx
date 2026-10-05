@@ -9,7 +9,14 @@ import SurfConditionsPanel from "./SurfConditionsPanel";
 import ControlOverlay from "./ControlOverlay";
 import { prepareSurfCam, type SurfCamId } from "./surfCams";
 import { clockSlotAt, msUntilNextClockSlot, useClockSlot } from "./useClockSlot";
-import { replayControl, useControlLog, wrapIndex, type ControlState, type PresetControl } from "./kioskControl";
+import {
+  INITIAL_PRESET_CONTROL,
+  replayControl,
+  useControlLog,
+  wrapIndex,
+  type ControlState,
+  type PresetControl,
+} from "./kioskControl";
 import {
   CONTROL_CONFIG,
   MALLARDS_SLOT_ID,
@@ -143,8 +150,6 @@ function buildSlot(slot: RotationSlotInfo): RotationSlot {
 const ROTATION: RotationSlot[] = ROTATION_SLOTS.map(buildSlot);
 const CAM_ROTATION = ROTATION.filter((slot) => slot.camId);
 
-const NO_PRESET_STEPS: PresetControl = { step: 0, held: false };
-
 /**
  * Reads this screen's role from the `?screen=` query param.
  * @returns The role, solo when missing or unrecognised.
@@ -231,7 +236,7 @@ export default function DisplayPage() {
   if (!role || !slots || clockSlot === null) return <div className="fixed inset-0 bg-black" />;
   const photoHold = state.mode.kind === "hold-photo" ? state.mode : null;
   const bpmView = pickBpmView(state, clockSlot);
-  const bpmPresets = state.mode.kind === "bpm" ? state.mode.preset : NO_PRESET_STEPS;
+  const bpmPresets = state.mode.kind === "bpm" ? state.mode.preset : INITIAL_PRESET_CONTROL;
   return (
     <>
       {slots.current[side].render({ photoHold, bpmView, bpmPresets })}

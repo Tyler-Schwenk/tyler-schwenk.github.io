@@ -885,7 +885,7 @@ Two kinds of auth:
 - **Admin** endpoints take the usual JWT bearer token
 - **Kiosk** endpoints (`/display-control/kiosk/...`) take the shared secret in an `X-Kiosk-Token` header, which must equal `KIOSK_TOKEN` in the backend's `.env`. With `KIOSK_TOKEN` unset they answer `503`; a wrong token gets `401`
 
-Key names: `tab`, `escape`, `backspace`, `next`, `prev`, `b`, `1`-`9` (the kiosk's key log, see `website/docs/DISPLAY.md`), plus `beat-earlier` / `beat-later` (bpm calibration, forwarded by the agent to the bpm agent).
+Key names: `tab`, `escape`, `backspace`, `next`, `prev`, `b`, `1`-`9` and `preset-<n>` (jump to milkdrop preset n, up to 4 digits) (the kiosk's key log, see `website/docs/DISPLAY.md`), plus `beat-earlier` / `beat-later` (bpm calibration, forwarded by the agent to the bpm agent).
 
 Long-polls wait up to 25 s and then answer anyway, so callers just loop.
 
@@ -925,12 +925,13 @@ Admin only. Long-polls the kiosk's key log.
   "log": {
     "session_ms": 1791221699791,
     "version": 3,
-    "events": [{ "key": "escape", "at_ms": 1791221702000 }, { "key": "5", "at_ms": 1791221702000 }]
+    "events": [{ "key": "escape", "at_ms": 1791221702000 }, { "key": "5", "at_ms": 1791221702000 }],
+    "preset": null
   }
 }
 ```
 
-`online` is whether the agent has checked in (polled or pushed) in the last 60 s. `now_ms` is the backend's clock, for working out where the rotation is (the kiosk's log uses the kiosk's clock; both are NTP-synced). `log` is `null` until the agent's first push.
+`online` is whether the agent has checked in (polled or pushed) in the last 60 s. `now_ms` is the backend's clock, for working out where the rotation is (the kiosk's log uses the kiosk's clock; both are NTP-synced). `log` is `null` until the agent's first push. `log.preset` is the milkdrop preset playing on the kiosk, or `null` when milkdrop isn't on screen.
 
 ### Get Queued Presses (kiosk)
 
@@ -951,7 +952,7 @@ Kiosk only. The surfcam agent sends its whole key log whenever it changes, and e
 
 **Endpoint:** `PUT /display-control/kiosk/log`
 
-**Request Body:** `{ "session_ms", "version", "events": [{ "key", "at_ms" }] }` (at most 1000 events)
+**Request Body:** `{ "session_ms", "version", "events": [{ "key", "at_ms" }], "preset" }` (at most 1000 events; `preset` is the milkdrop preset playing, or null, at most 200 characters)
 
 **Response:** `204 No Content`
 

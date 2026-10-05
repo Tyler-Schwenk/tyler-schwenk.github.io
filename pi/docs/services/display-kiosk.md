@@ -130,7 +130,7 @@ ssh tyler@192.168.1.116 "cd ~/tyler-schwenk.github.io/pi/services/website-backen
 ssh tyler@192.168.1.192 'umask 077; echo <secret> > ~/surfcam-agent/kiosk-token; pkill -f "[s]urfcam_agent.py"'
 ```
 
-Check it with `grep remote- /tmp/surfcam-agent.log` ("remote control on" at startup) and
+Check it with `grep -i remote /tmp/surfcam-agent.log` ("remote control on" at startup) and
 the admin page, which should say "Online". To change the secret, do both halves again.
 
 ### BPM visualizer

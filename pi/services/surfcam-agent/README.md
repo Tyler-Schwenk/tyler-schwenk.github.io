@@ -31,6 +31,7 @@ Stdlib-only Python server on `127.0.0.1:8765`, no dependencies beyond `mpv`.
 | `GET /cams/<cam>/conditions` | The cam's place name, waves, wind and tide (with its graph data) as json (below), for the conditions panel on the laptop screen. |
 | `POST /control/keys/<key>` | Log a keyboard-control key press (from xbindkeys). Keys: `tab`, `escape`, `backspace`, `next`, `prev`, `1`-`9`. |
 | `POST /control/reset` | Clear the key log (from `kiosk-run.sh` when the overnight sleep starts). |
+| `POST /control/status` | `{"preset": name or null}` from the page: the milkdrop preset playing, passed on to the admin remote (not part of the key log). |
 | `GET /control/log?after=<version>` | The key log since the last reset, `{"session_ms", "version", "events": [{"key", "at_ms"}]}`. Long-polls: waits up to 25 s for the version to differ from `after` (`-1` answers at once). |
 
 **Keyboard control** (`kiosk_control.py`): the agent is also the relay between the
@@ -47,10 +48,11 @@ each on its own thread:
 - **pull**: long-polls `GET /kiosk/commands?after=<cursor>` for remote presses and adds
   each one's keys to the key log as one change (`ControlLog.add`), so a remote "escape then 4"
   never shows the standard rotation in between. `beat-earlier` / `beat-later` go to the bpm
-  agent's `POST /offset/earlier|later` instead, like the `-` and `=` keys. On startup it
+  agent's `POST /offset/earlier|later` instead, like the `-` and `=` keys. Besides the
+  keyboard's keys it accepts `preset-<n>` (jump to a milkdrop preset; `is_control_key`). On startup it
   sends `after=-1`, which skips presses queued before it was listening
-- **push**: `PUT /kiosk/log` with the whole key log every time it changes, and every 25 s
-  anyway as a heartbeat (that's what makes the admin page show the kiosk as online)
+- **push**: `PUT /kiosk/log` with the whole key log and the playing preset every time
+  either changes (`ControlLog.wait_for_push`), and every 25 s anyway as a heartbeat (that's what makes the admin page show the kiosk as online)
 
 Both send the shared secret from `~/surfcam-agent/kiosk-token` as `X-Kiosk-Token`; it must
 match `KIOSK_TOKEN` in the backend's `.env`. With no token file, remote control is off
@@ -254,9 +256,11 @@ site calls `127.0.0.1`, which would pop a dialog on the kiosk:
   agent log for `no <waves|wind|tide> for ...` or `measured wind ... unavailable`
   warnings (an API down, a stale station, or the kiosk offline). A bar with only the
   name means every reading failed.
-- **Admin page says the kiosk is offline:** `grep remote- /tmp/surfcam-agent.log`. "no
+- **Admin page says the kiosk is offline:** `grep -i remote /tmp/surfcam-agent.log`. "no
   kiosk token" means `~/surfcam-agent/kiosk-token` is missing; a 401 means it doesn't match
-  the backend's `KIOSK_TOKEN`; a 503 means the backend has no `KIOSK_TOKEN` set; a
-  connection error means displaytop can't reach `api.tyler-schwenk.com`.
+  the backend's `KIOSK_TOKEN`; a 503 means the backend has no `KIOSK_TOKEN` set; a 403 with
+  "error code: 1010" is Cloudflare's bot check rejecting the user agent (`USER_AGENT` in
+  `remote_control.py` is there to get past it); a connection error means displaytop can't
+  reach `api.tyler-schwenk.com`.
 - **Don't `pkill -f surfcam_agent` over SSH:** the pattern matches the ssh shell's own
   command line and kills it. Use `pkill -f "[s]urfcam_agent.py"`.

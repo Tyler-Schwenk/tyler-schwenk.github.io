@@ -8,8 +8,9 @@ nothing on the laptop has to be reachable from outside:
 - pull: long-polls the backend for remote presses and adds them to the key log, exactly
   as if they'd been typed on the kiosk (the bpm calibration nudges go to the bpm agent
   instead, like the - and = keys do)
-- push: sends the whole key log up whenever it changes (and every long-poll timeout as a
-  heartbeat), so the admin page can show what's on screen and whether the kiosk is up
+- push: sends the whole key log up whenever it changes, along with the milkdrop preset the
+  page says is playing (and every long-poll timeout as a heartbeat), so the admin page can
+  show what's on screen and whether the kiosk is up
 
 both need the shared secret in ~/surfcam-agent/kiosk-token (the backend's KIOSK_TOKEN).
 without it remote control stays off and the keyboard works as before.
@@ -24,11 +25,14 @@ import urllib.request
 from pathlib import Path
 from typing import Callable, Optional
 
-from kiosk_control import CONTROL_KEYS, LONG_POLL_TIMEOUT_S, ControlLog
+from kiosk_control import LONG_POLL_TIMEOUT_S, ControlLog, is_control_key
 
 REMOTE_API_URL = "https://api.tyler-schwenk.com/display-control"
 TOKEN_PATH = Path(__file__).resolve().parent / "kiosk-token"
 TOKEN_HEADER = "X-Kiosk-Token"
+# cloudflare (in front of the api) blocks python's default "Python-urllib" user agent with
+# a 403 "error code: 1010", so the agent names itself
+USER_AGENT = "displaytop-surfcam-agent/1.0"
 
 # the bpm calibration nudges: remote key -> direction for the bpm agent (same as - and =)
 BPM_OFFSET_URL = "http://127.0.0.1:8766/offset"
@@ -75,6 +79,7 @@ def api_request(method: str, path: str, token: str, body: Optional[dict] = None)
     data = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(f"{REMOTE_API_URL}{path}", data=data, method=method)
     request.add_header(TOKEN_HEADER, token)
+    request.add_header("User-Agent", USER_AGENT)
     if data is not None:
         request.add_header("Content-Type", "application/json")
     try:
@@ -108,8 +113,8 @@ def run_command(control_log: ControlLog, keys: list[str]) -> None:
         control_log: the agent's key log.
         keys: the press's keys, in order.
     """
-    log_keys = [key for key in keys if key in CONTROL_KEYS]
-    unknown = [key for key in keys if key not in CONTROL_KEYS and key not in BPM_OFFSET_KEYS]
+    log_keys = [key for key in keys if is_control_key(key)]
+    unknown = [key for key in keys if not is_control_key(key) and key not in BPM_OFFSET_KEYS]
     if unknown:
         log.warning("remote press with keys this agent doesn't know: %s (site and agent out of sync?)", unknown)
     if log_keys:
@@ -160,15 +165,16 @@ def pull_commands(control_log: ControlLog, token: str) -> None:
 
 
 def push_log(control_log: ControlLog, token: str) -> None:
-    """sends the key log to the backend on every change (and every long-poll timeout), forever."""
+    """sends the key log and playing preset on every change (and every long-poll timeout), forever."""
     version = -1
 
     def attempt() -> None:
         nonlocal version
         # after a failed push the version is unchanged, so this answers at once and retries it
-        snapshot = control_log.wait_for_change(version)
+        snapshot = control_log.wait_for_push(version)
+        pushed_version = snapshot.pop("push_version")
         api_request("PUT", "/kiosk/log", token, snapshot)
-        version = snapshot["version"]
+        version = pushed_version
 
     keep_trying("pushing the key log", attempt)
 

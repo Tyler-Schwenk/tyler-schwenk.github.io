@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { ButterchurnVisualizer } from "butterchurn";
 import { beatPhase, countBeat, WAVEFORM_LENGTH, type BeatCounter, type BpmTempo } from "./bpmAgent";
 import type { BpmViewProps } from "./BpmPanel";
-import { wrapIndex, type PresetControl } from "./kioskControl";
+import { reportPlayingPreset, wrapIndex, type PresetControl } from "./kioskControl";
+import { loadPresetLibrary, sortedPresetNames, unwrapExport, type PresetLibrary } from "./milkdropPresets";
 
 /**
  * The milkdrop bpm view: MilkDrop presets (the Winamp visualizer) running in
@@ -15,8 +16,11 @@ import { wrapIndex, type PresetControl } from "./kioskControl";
  * shuffled order. They blend from one to the next every BEATS_PER_PRESET
  * beats, on a beat, or every NO_BEAT_PRESET_INTERVAL_MS with no beat. ] and [
  * step through the order by hand and hold the preset (presets.step/held, from
- * the key log); backspace lets it move on again. Each new preset's name and
- * place in the order shows briefly in the corner, or stays up while held.
+ * the key log); backspace lets it move on again. The admin page's remote can
+ * also jump straight to one (presets.jump, an index into sortedPresetNames).
+ * Each new preset's name and place in the order shows briefly in the corner,
+ * or stays up while held, and is reported to the surfcam agent so the remote
+ * can show what's playing.
  *
  * A room mic is far quieter than the line-level audio MilkDrop was made for,
  * so the waveform gets an auto gain first (otherwise its wave shapes are flat
@@ -58,7 +62,7 @@ interface PresetInfo {
 /** The two libraries, loaded on demand. */
 interface MilkdropLibs {
   createVisualizer: (canvas: HTMLCanvasElement, width: number, height: number) => ButterchurnVisualizer;
-  presets: Record<string, object>;
+  presets: PresetLibrary;
 }
 
 /** The waveform's auto gain state. */
@@ -73,32 +77,17 @@ interface WaveformGain {
 interface PresetCycle {
   /** Every preset name, in this run's shuffled order. */
   order: string[];
+  /** Every preset name sorted, which is what presets.jump indexes. */
+  sorted: string[];
   index: number;
   beats: BeatCounter;
   lastChangeBeat: number;
   lastChangeMs: number;
   /** The keyboard's preset step count last acted on. */
   appliedStep: number;
+  /** The remote's jump count last acted on. */
+  appliedJumps: number;
 }
-
-/**
- * Picks a library's export whichever way the bundler wrapped it (the
- * packages are UMD builds, so it may sit on `default` once or twice).
- * @param mod - What import() gave.
- * @param member - A member the real export has.
- * @returns The export.
- */
-function unwrapExport<T>(mod: unknown, member: string): T {
-  let candidate = mod as Record<string, unknown> | undefined;
-  while (candidate && !(member in candidate) && "default" in candidate) {
-    candidate = candidate.default as Record<string, unknown>;
-  }
-  if (!candidate || !(member in candidate)) throw new Error(`couldn't find ${member} in the loaded module`);
-  return candidate as T;
-}
-
-/** Something with butterchurn-presets' getPresets, as each pack module exports. */
-type PresetPack = typeof import("butterchurn-presets").default;
 
 /**
  * Loads butterchurn and every preset pack, merged into one set (a few presets
@@ -106,20 +95,13 @@ type PresetPack = typeof import("butterchurn-presets").default;
  * @returns The libraries.
  */
 async function loadMilkdrop(): Promise<MilkdropLibs> {
-  const [butterchurnModule, ...packModules] = await Promise.all([
-    import("butterchurn"),
-    import("butterchurn-presets"),
-    import("butterchurn-presets/lib/butterchurnPresetsExtra.min.js"),
-    import("butterchurn-presets/lib/butterchurnPresetsExtra2.min.js"),
-    import("butterchurn-presets/lib/butterchurnPresetsMD1.min.js"),
-  ]);
+  const [butterchurnModule, presets] = await Promise.all([import("butterchurn"), loadPresetLibrary()]);
   const butterchurn = unwrapExport<typeof import("butterchurn").default>(butterchurnModule, "createVisualizer");
-  const packs = packModules.map((mod) => unwrapExport<PresetPack>(mod, "getPresets").getPresets());
   return {
     // no AudioContext: every render passes the agent's waveform instead
     createVisualizer: (canvas, width, height) =>
       butterchurn.createVisualizer(null, canvas, { width, height, pixelRatio: 1, textureRatio: 1 }),
-    presets: Object.assign({}, ...packs),
+    presets,
   };
 }
 
@@ -143,6 +125,18 @@ function shuffled(names: string[]): string[] {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
+}
+
+/**
+ * Where a jumped-to preset sits in this run's order.
+ * @param cycle - Preset-changing state.
+ * @param jump - Index into the sorted names.
+ * @returns Its index in cycle.order, or null if there's no such preset.
+ */
+function jumpIndex(cycle: PresetCycle, jump: number | null): number | null {
+  if (jump === null) return null;
+  const index = cycle.order.indexOf(cycle.sorted[jump]);
+  return index < 0 ? null : index;
 }
 
 /**
@@ -200,14 +194,17 @@ function runMilkdrop(
   canvas.width = RENDER_WIDTH_PX;
   canvas.height = renderHeight();
   const visualizer = libs.createVisualizer(canvas, canvas.width, canvas.height);
+  const sorted = sortedPresetNames(libs.presets);
   const cycle: PresetCycle = {
-    order: shuffled(Object.keys(libs.presets)),
+    order: shuffled(sorted),
+    sorted,
     index: 0,
     beats: { count: 0, lastPhase: null },
     lastChangeBeat: 0,
     lastChangeMs: 0,
-    // presses from before this view opened aren't replayed onto it
+    // presses from before this view opened aren't replayed onto it (a jump is: it opens on it)
     appliedStep: presetsRef.current.step,
+    appliedJumps: presetsRef.current.jumps,
   };
   const gain: WaveformGain = { peak: 0, output: new Uint8Array(WAVEFORM_LENGTH) };
 
@@ -219,12 +216,17 @@ function runMilkdrop(
     cycle.lastChangeMs = nowMs;
     onPreset({ name, number: cycle.index + 1, total: cycle.order.length });
   };
-  showPreset(0, Date.now(), 0);
+  showPreset(jumpIndex(cycle, presetsRef.current.jump) ?? 0, Date.now(), 0);
 
-  /** Moves to the next preset if a key asked for one, or it's time and the preset isn't held. */
+  /** Moves to another preset if a key asked for one, or it's time and the preset isn't held. */
   const changePresetIfDue = (isNewBeat: boolean, hasBeat: boolean, nowMs: number) => {
-    const { step, held } = presetsRef.current;
-    if (step !== cycle.appliedStep) {
+    const { step, held, jump, jumps } = presetsRef.current;
+    if (jumps !== cycle.appliedJumps) {
+      const target = jumpIndex(cycle, jump);
+      if (target !== null) showPreset(target, nowMs, MANUAL_PRESET_BLEND_S);
+      cycle.appliedJumps = jumps;
+      cycle.appliedStep = step;
+    } else if (step !== cycle.appliedStep) {
       showPreset(cycle.index + step - cycle.appliedStep, nowMs, MANUAL_PRESET_BLEND_S);
       cycle.appliedStep = step;
     } else if (!held && presetIsDue(cycle, isNewBeat, hasBeat, nowMs)) {
@@ -281,6 +283,7 @@ export default function BpmMilkdrop({ stream, presets }: BpmViewProps) {
         stop = runMilkdrop(libs, canvasRef.current, waveformRef, tempoRef, presetsRef, (info) => {
           setPreset(info);
           setShowPresetName(true);
+          reportPlayingPreset(info.name);
         });
       })
       .catch((err: unknown) => {
@@ -290,6 +293,7 @@ export default function BpmMilkdrop({ stream, presets }: BpmViewProps) {
     return () => {
       cancelled = true;
       stop?.();
+      reportPlayingPreset(null);
     };
   }, [waveformRef, tempoRef]);
 

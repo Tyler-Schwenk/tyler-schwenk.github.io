@@ -26,6 +26,10 @@ import { SURFCAM_AGENT_URL } from "./surfCams";
  * of bpm mode, and b resumes cycling from the view that's up. On a view with
  * presets (milkdrop), ] and [ step its presets instead and hold the view and
  * preset, and backspace first lets the presets move on by themselves again.
+ *
+ * `preset-<n>` (only sent by the admin page's remote, there's no physical key)
+ * jumps to preset n of the sorted preset list (milkdropPresets.ts) and holds
+ * it, entering bpm mode on that view if it isn't up already.
  */
 
 /** A key press as the agent logs it. `at_ms` is epoch ms on the kiosk's clock. */
@@ -78,14 +82,19 @@ export type DisplayMode =
 /**
  * Preset stepping on a bpm view with presets. `step` counts ] (+1) and [ (-1)
  * presses since bpm mode started, so a view moves by however much it changes;
- * `held` stops the view moving on to new presets by itself.
+ * `held` stops the view moving on to new presets by itself. `jump` is the
+ * last preset jumped to (an index into the sorted preset list), and `jumps`
+ * counts jumps, so jumping to the same preset twice still registers.
  */
 export interface PresetControl {
   step: number;
   held: boolean;
+  jump: number | null;
+  jumps: number;
 }
 
-const INITIAL_PRESET_CONTROL: PresetControl = { step: 0, held: false };
+/** Preset control before any preset key. */
+export const INITIAL_PRESET_CONTROL: PresetControl = { step: 0, held: false, jump: null, jumps: 0 };
 
 export interface ControlState {
   menuOpen: boolean;
@@ -127,6 +136,19 @@ const CONTROL_RETRY_DELAY_MS = 5_000;
 
 // in bpm mode the digit keys pick a view
 const BPM_VIEW_KEY_PATTERN = /^[1-9]$/;
+
+// the remote's jump to a preset: preset-<index into the sorted preset list>
+const PRESET_KEY_PREFIX = "preset-";
+const PRESET_KEY_PATTERN = /^preset-(\d{1,4})$/;
+
+/**
+ * The key that jumps to a preset.
+ * @param index - Index into the sorted preset list (milkdropPresets.ts).
+ * @returns Like "preset-42".
+ */
+export function presetKey(index: number): string {
+  return `${PRESET_KEY_PREFIX}${index}`;
+}
 
 /**
  * Remainder that's never negative, for wrapping list indexes.
@@ -211,7 +233,7 @@ export function bpmViewAt(state: ControlState, config: ControlConfig, atMs: numb
 function stepBpm(state: ControlState, preset: PresetControl, delta: number, atMs: number, config: ControlConfig): ControlState {
   const view = bpmViewAt(state, config, atMs);
   if (config.bpmPresetViews.includes(view)) {
-    return { ...state, mode: { kind: "bpm", heldView: view, preset: { step: preset.step + delta, held: true } } };
+    return { ...state, mode: { kind: "bpm", heldView: view, preset: { ...preset, step: preset.step + delta, held: true } } };
   }
   const heldView = wrapIndex(view + delta, config.bpmViewCount);
   return { ...state, mode: { kind: "bpm", heldView, preset } };
@@ -219,15 +241,15 @@ function stepBpm(state: ControlState, preset: PresetControl, delta: number, atMs
 
 /**
  * Bpm mode cycling through its views, starting from one view at a moment.
- * Presets move on by themselves again; the preset step count carries over, so
- * a view with presets doesn't jump.
+ * Presets move on by themselves again; the preset steps and jumps carry over,
+ * so a view with presets doesn't jump.
  * @param fromView - The view to start on.
  * @param atMs - When cycling starts (it gets a full interval).
- * @param presetStep - The preset step count so far (0 entering bpm mode).
+ * @param presets - Preset control so far (INITIAL_PRESET_CONTROL entering bpm mode).
  * @returns The new state, menu closed.
  */
-function cycleBpmViews(fromView: number, atMs: number, presetStep: number): ControlState {
-  const preset = { step: presetStep, held: false };
+function cycleBpmViews(fromView: number, atMs: number, presets: PresetControl): ControlState {
+  const preset = { ...presets, held: false };
   return { ...INITIAL_CONTROL_STATE, mode: { kind: "bpm", heldView: null, preset }, anchorMs: atMs, anchorIndex: fromView };
 }
 
@@ -243,7 +265,7 @@ function goBack(state: ControlState, atMs: number): ControlState {
   const mode = state.mode;
   if (mode.kind !== "bpm") return INITIAL_CONTROL_STATE;
   if (mode.preset.held) return { ...state, mode: { ...mode, preset: { ...mode.preset, held: false } } };
-  if (mode.heldView !== null) return cycleBpmViews(mode.heldView, atMs, mode.preset.step);
+  if (mode.heldView !== null) return cycleBpmViews(mode.heldView, atMs, mode.preset);
   return INITIAL_CONTROL_STATE;
 }
 
@@ -274,8 +296,8 @@ function holdBpmView(state: ControlState, key: string, config: ControlConfig): C
  */
 function startShortcut(action: ShortcutAction, atMs: number, state: ControlState, config: ControlConfig): ControlState {
   if (action.kind === "bpm") {
-    if (state.mode.kind !== "bpm") return cycleBpmViews(0, atMs, INITIAL_PRESET_CONTROL.step);
-    return cycleBpmViews(bpmViewAt(state, config, atMs), atMs, state.mode.preset.step);
+    if (state.mode.kind !== "bpm") return cycleBpmViews(0, atMs, INITIAL_PRESET_CONTROL);
+    return cycleBpmViews(bpmViewAt(state, config, atMs), atMs, state.mode.preset);
   }
   if (action.kind === "hold-photo") {
     return { ...INITIAL_CONTROL_STATE, mode: { kind: "hold-photo", frozenAtMs: atMs, photoStep: 0 } };
@@ -284,6 +306,25 @@ function startShortcut(action: ShortcutAction, atMs: number, state: ControlState
     return { ...INITIAL_CONTROL_STATE, mode: { kind: "hold-slot", slotId: action.slotId } };
   }
   return { ...INITIAL_CONTROL_STATE, mode: { kind: "cam-rotation" }, anchorMs: atMs, anchorIndex: 0 };
+}
+
+/**
+ * Jumps to a preset and holds it, on the (first) view with presets, entering
+ * bpm mode there if it isn't up.
+ * @param state - State before the press.
+ * @param preset - Index into the sorted preset list.
+ * @param atMs - When the key was pressed.
+ * @param config - Rotation config.
+ * @returns State after it (unchanged if no view has presets).
+ */
+function jumpToPreset(state: ControlState, preset: number, atMs: number, config: ControlConfig): ControlState {
+  const view = config.bpmPresetViews[0];
+  if (view === undefined) return state;
+  const inBpm = state.mode.kind === "bpm";
+  const current = state.mode.kind === "bpm" ? state.mode.preset : INITIAL_PRESET_CONTROL;
+  const presets = { ...current, held: true, jump: preset, jumps: current.jumps + 1 };
+  const base = inBpm ? state : { ...INITIAL_CONTROL_STATE, anchorMs: atMs };
+  return { ...base, menuOpen: false, mode: { kind: "bpm", heldView: view, preset: presets } };
 }
 
 /**
@@ -314,6 +355,8 @@ export function applyControlEvent(state: ControlState, event: ControlEvent, conf
   if (key === "next" || key === "prev") {
     return { ...step(state, key === "next" ? 1 : -1, atMs, config), menuOpen: false };
   }
+  const presetJump = PRESET_KEY_PATTERN.exec(key);
+  if (presetJump) return jumpToPreset(state, Number(presetJump[1]), atMs, config);
   if (state.mode.kind === "bpm" && BPM_VIEW_KEY_PATTERN.test(key)) return holdBpmView(state, key, config);
   const shortcut = config.shortcuts.find((candidate) => candidate.key === key);
   return shortcut ? startShortcut(shortcut.action, atMs, state, config) : state;
@@ -328,6 +371,22 @@ export function applyControlEvent(state: ControlState, event: ControlEvent, conf
 export function replayControl(log: ControlLog | null, config: ControlConfig): ControlState {
   if (!log) return INITIAL_CONTROL_STATE;
   return log.events.reduce((state, event) => applyControlEvent(state, event, config), INITIAL_CONTROL_STATE);
+}
+
+/**
+ * Tells the surfcam agent which milkdrop preset is playing, so the admin
+ * page's remote can show it (the agent passes it up with the key log).
+ * @param name - The preset's name, or null when milkdrop closes.
+ */
+export function reportPlayingPreset(name: string | null): void {
+  fetch(`${SURFCAM_AGENT_URL}/control/status`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preset: name }),
+  }).catch(() => {
+    // away from the kiosk there's no agent, and on the kiosk a missed report only means
+    // the remote shows the previous name until the next preset; nothing to recover
+  });
 }
 
 /**

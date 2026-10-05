@@ -159,3 +159,31 @@ export function describeDisplay(state: ControlState, atMs: number): DisplayDescr
     nextChangeInMs: msUntilNextItem(state, atMs),
   };
 }
+
+/**
+ * What ] and [ step through right now, for the remote's button labels.
+ * @param state - Control state.
+ * @param atMs - The moment, epoch ms on the kiosk's clock.
+ * @returns "photo", "preset", "view" or "screen".
+ */
+export function stepTarget(state: ControlState, atMs: number): string {
+  const mode = state.mode;
+  if (mode.kind === "hold-photo") return "photo";
+  if (mode.kind !== "bpm") return "screen";
+  const view = bpmViewAt(state, CONTROL_CONFIG, atMs);
+  return CONTROL_CONFIG.bpmPresetViews.includes(view) ? "preset" : "view";
+}
+
+/**
+ * What backspace would do right now, for the remote's button label.
+ * @param state - Control state.
+ * @returns Like "Resume rotation", or null when it would do nothing (the standard rotation).
+ */
+export function backAction(state: ControlState): string | null {
+  const mode = state.mode;
+  if (state.menuOpen) return "Close the on-screen menu";
+  if (mode.kind === "rotation") return null;
+  if (mode.kind !== "bpm") return "Resume rotation";
+  if (mode.preset.held) return "Let presets move on";
+  return mode.heldView === null ? "Leave BPM" : "Cycle views again";
+}

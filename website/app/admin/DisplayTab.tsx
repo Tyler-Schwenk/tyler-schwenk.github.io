@@ -2,10 +2,11 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { isShortcutActive, type ControlState } from "@/app/display/kioskControl";
-import { BPM_VIEW_INFO, SHORTCUTS, describeDisplay } from "@/app/display/displayConfig";
+import { BPM_VIEW_INFO, SHORTCUTS, backAction, describeDisplay, stepTarget } from "@/app/display/displayConfig";
 import { errorMessage } from "./adminApi";
 import { formatElapsed } from "./format";
-import { Button, Card, FlashMessage, Muted, useFlash } from "./ui";
+import PresetBrowser from "./PresetBrowser";
+import { Badge, Button, Card, FlashMessage, Muted, useFlash } from "./ui";
 import { useDisplayControl, type DisplayControl } from "./useDisplayControl";
 
 /**
@@ -13,7 +14,10 @@ import { useDisplayControl, type DisplayControl } from "./useDisplayControl";
  * buttons that press the kiosk's keys for you (see website/docs/ADMIN.md and
  * website/docs/DISPLAY.md for what each key does). Buttons that jump
  * somewhere send escape first, so they mean the same thing whatever mode the
- * screens are in (a digit means something else in bpm mode).
+ * screens are in (a digit means something else in bpm mode). The step and
+ * back buttons are labelled with what they'd do right now (next photo, next
+ * preset, resume rotation...), since the same key does different things in
+ * different modes.
  */
 
 // how often the "now showing" line and countdown refresh
@@ -186,6 +190,89 @@ function BpmControls({
 }
 
 /**
+ * Previous / next (step one and hold there), back (undo one step) and the
+ * standard rotation, each labelled for what it does in the current mode.
+ * @param props.state - Control state, or null before the kiosk's first report.
+ * @param props.nowMs - Current time on the backend's clock.
+ * @param props.disabled - Grey the buttons out.
+ * @param props.press - Sends keys.
+ */
+function StepControls({
+  state,
+  nowMs,
+  disabled,
+  press,
+}: {
+  state: ControlState | null;
+  nowMs: number;
+  disabled: boolean;
+  press: (keys: string[]) => void;
+}) {
+  const target = state ? stepTarget(state, nowMs) : "screen";
+  const back = state ? backAction(state) : null;
+  return (
+    <Section title="Move">
+      <div className="grid grid-cols-2 gap-2">
+        <Button className="min-h-14" disabled={disabled} onClick={() => press([KEY.prev])}>
+          Previous {target}
+        </Button>
+        <Button className="min-h-14" disabled={disabled} onClick={() => press([KEY.next])}>
+          Next {target}
+        </Button>
+      </div>
+      {back && <RemoteButton label={back} hint="backspace" disabled={disabled} onPress={() => press([KEY.back])} />}
+      <RemoteButton
+        label="standard rotation"
+        hint="esc"
+        active={state?.mode.kind === "rotation"}
+        disabled={disabled}
+        onPress={() => press([KEY.escape])}
+      />
+      <p className="text-xs text-slate-500">
+        Previous / next move one {target} and hold it there. {back ? `"${back}" undoes the last hold.` : ""}
+      </p>
+    </Section>
+  );
+}
+
+/**
+ * Milkdrop's presets: what's playing, and a searchable list to jump to any of them.
+ * @param props.state - Control state, or null before the kiosk's first report.
+ * @param props.playing - The preset playing, if milkdrop is on screen.
+ * @param props.disabled - Grey the buttons out.
+ * @param props.press - Sends keys.
+ */
+function PresetControls({
+  state,
+  playing,
+  disabled,
+  press,
+}: {
+  state: ControlState | null;
+  playing: string | null;
+  disabled: boolean;
+  press: (keys: string[]) => void;
+}) {
+  const held = state?.mode.kind === "bpm" && state.mode.preset.held;
+  return (
+    <Section title="Milkdrop presets">
+      {playing ? (
+        <Card className="p-3">
+          <div className="text-xs text-slate-500">Playing</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 break-words text-sm font-semibold text-white">
+            {playing}
+            {held && <Badge tone="orange">held</Badge>}
+          </div>
+        </Card>
+      ) : (
+        <p className="text-xs text-slate-500">Milkdrop isn&apos;t on screen. Picking a preset switches to it (BPM mode, mic on).</p>
+      )}
+      <PresetBrowser playing={playing} disabled={disabled} press={press} />
+    </Section>
+  );
+}
+
+/**
  * The display tab: kiosk status and the remote.
  */
 export default function DisplayTab() {
@@ -212,6 +299,9 @@ export default function DisplayTab() {
   const state = control.state;
   const disabled = sending || !control.online;
   const mode = state?.mode;
+  // in bpm mode the presets matter most, so they move up under the step buttons
+  const inBpm = mode?.kind === "bpm";
+  const presets = <PresetControls state={state} playing={control.playingPreset} disabled={disabled} press={press} />;
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -226,28 +316,10 @@ export default function DisplayTab() {
         </p>
       )}
 
-      <Section title="Step">
-        <div className="grid grid-cols-3 gap-2">
-          <Button size="md" className="min-h-14" disabled={disabled} onClick={() => press([KEY.prev])}>
-            Prev
-          </Button>
-          <Button size="md" className="min-h-14" disabled={disabled} onClick={() => press([KEY.back])}>
-            Back
-          </Button>
-          <Button size="md" className="min-h-14" disabled={disabled} onClick={() => press([KEY.next])}>
-            Next
-          </Button>
-        </div>
-        <RemoteButton
-          label="standard rotation"
-          hint="esc"
-          active={mode?.kind === "rotation"}
-          disabled={disabled}
-          onPress={() => press([KEY.escape])}
-        />
-      </Section>
+      <StepControls state={state} nowMs={nowMs} disabled={disabled} press={press} />
+      {inBpm && presets}
 
-      {state && mode?.kind === "bpm" && <BpmControls state={state} disabled={disabled} press={press} />}
+      {state && inBpm && <BpmControls state={state} disabled={disabled} press={press} />}
 
       <Section title="Show">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -263,6 +335,8 @@ export default function DisplayTab() {
           ))}
         </div>
       </Section>
+
+      {!inBpm && presets}
     </div>
   );
 }

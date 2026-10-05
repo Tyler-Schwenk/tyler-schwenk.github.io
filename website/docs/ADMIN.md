@@ -48,7 +48,8 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/types.ts` | Shapes of the backend responses the page reads |
 | `website/app/admin/LoginScreen.tsx` | The login form |
 | `website/app/admin/DisplayTab.tsx` | The kiosk remote (below) |
-| `website/app/admin/useDisplayControl.ts` | Long-polls the kiosk's state and replays it; `sendKeys` |
+| `website/app/admin/useDisplayControl.ts` | Long-polls the kiosk's state and replays it; `sendKeys`, `playingPreset` |
+| `website/app/admin/PresetBrowser.tsx` | Searchable list of every milkdrop preset, to jump to one |
 | `website/app/admin/GalleriesTab.tsx`, `GalleryCard.tsx` | Gallery list, reorder, new-gallery form; one gallery's card (edit form, photos panel) |
 | `website/app/admin/GalleryForms.tsx` | `GalleryFields` (name/slug/description, shared by create, edit and upload) and `UploadOutcome` |
 | `website/app/admin/galleryApi.ts` | `createGallery`, `uploadPhotos` (one file at a time, carrying on past failures), `ALL_GALLERIES_PATH` |
@@ -97,11 +98,22 @@ The remote's buttons:
 
 | Button | Keys sent |
 |--------|-----------|
-| Prev / Back / Next | `prev` / `backspace` / `next` |
+| Previous / Next *thing* | `prev` / `next`: step one and hold there. Labelled with what they step right now: screen (slot), photo (while a photo's held), view (bpm mode) or preset (on milkdrop), from `stepTarget` |
+| Back action | `backspace`: undo one step. Labelled with what it'd do (`backAction`): "Resume rotation", "Let presets move on", "Cycle views again", "Leave BPM", "Close the on-screen menu"; hidden on the standard rotation, where it does nothing |
 | Standard rotation | `escape` |
 | Each shortcut in "Show" (from `SHORTCUTS`) | `escape` then its key, so it means the same in every mode (in bpm mode the digits pick bpm views instead) |
 | BPM views (only shown in bpm mode) | the view's digit; "cycle views" sends `b` |
 | Beat earlier / later | `beat-earlier` / `beat-later`, which the agent forwards to the bpm agent like the `-` and `=` keys |
+| A preset in "Milkdrop presets" | `preset-<n>`: jump to that preset and hold it, switching to BPM mode on milkdrop if needed. "Random" picks one at random |
+
+**Milkdrop presets:** the section shows the preset playing (the kiosk page reports it to
+its agent, which passes it up with the key log as `preset`) and a searchable list of
+every preset (`PresetBrowser.tsx`). The list comes from loading the same preset packs the
+kiosk uses, sorted the same way (`website/app/display/milkdropPresets.ts`), so a preset's
+place in it is its `n`. The packs are ~450 KB gzipped, so they're only fetched when you tap
+"Browse all presets". If the kiosk is running an older deploy with a different preset set,
+the numbers can point at the wrong preset until its browsers reload. In BPM mode the
+section moves up under the step buttons.
 
 The button for what's on screen now is outlined orange (`isShortcutActive`, the same
 check the kiosk's own menu uses).

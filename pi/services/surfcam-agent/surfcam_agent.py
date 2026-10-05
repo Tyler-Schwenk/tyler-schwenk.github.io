@@ -21,6 +21,8 @@ it also relays the kiosk's keyboard to the pages (see kiosk_control.py):
     POST /control/keys/<key>   a key press, from xbindkeys
     POST /control/reset        clear the presses (kiosk-run.sh, when the overnight sleep starts)
     GET  /control/log?after=N  the presses since the last reset, long-polled by the pages
+    POST /control/status       {"preset": name or null}: the milkdrop preset playing, from
+                               the page, passed on to the admin page's remote
 
 and, when ~/surfcam-agent/kiosk-token is set up, it picks up presses from the admin
 page's remote through the website backend (see remote_control.py).
@@ -173,6 +175,9 @@ CONDITIONS_ROUTE_PATTERN = re.compile(r"^/cams/(?P<cam>[a-z0-9-]+)/conditions$")
 CONTROL_KEY_ROUTE_PATTERN = re.compile(r"^/control/keys/(?P<key>[a-z0-9]+)$")
 CONTROL_LOG_PATH = "/control/log"
 CONTROL_RESET_PATH = "/control/reset"
+CONTROL_STATUS_PATH = "/control/status"
+# a status report is a preset name in a tiny json object; anything bigger isn't one
+MAX_STATUS_BODY_BYTES = 1024
 STOP_ALL_PATH = "/cams/stop-all"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -654,6 +659,8 @@ class AgentHandler(BaseHTTPRequestHandler):
         if origin in ALLOWED_ORIGINS:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            # the status report sends json, which needs Content-Type allowed
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
             # chrome's private-network-access preflight (public site -> localhost) needs this
             self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Content-Type", "application/json")
@@ -685,6 +692,9 @@ class AgentHandler(BaseHTTPRequestHandler):
             log.info("stopped all cams")
             self._send_json(200, {"ok": True})
             return
+        if path == CONTROL_STATUS_PATH:
+            self._record_status()
+            return
         if path == CONTROL_RESET_PATH:
             control_log.reset()
             log.info("control reset")
@@ -692,6 +702,20 @@ class AgentHandler(BaseHTTPRequestHandler):
             return
         token = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("token", [None])[0]
         self._run_cam_action(path, token)
+
+    def _record_status(self) -> None:
+        """stores the page's report of the milkdrop preset playing (see ControlLog.set_preset)."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length > MAX_STATUS_BODY_BYTES:
+            self._send_json(413, {"error": f"status body is {length} bytes; at most {MAX_STATUS_BODY_BYTES}"})
+            return
+        try:
+            preset = json.loads(self.rfile.read(length) or b"{}").get("preset")
+        except (json.JSONDecodeError, AttributeError) as err:
+            self._send_json(400, {"error": f'status must be json like {{"preset": "name"}}: {err}'})
+            return
+        control_log.set_preset(preset if isinstance(preset, str) else None)
+        self._send_json(200, {"ok": True})
 
     def _run_cam_action(self, path: str, token: Optional[str]) -> None:
         """runs prepare/show/stop for a cam, from a /cams/<cam>/<action> path.

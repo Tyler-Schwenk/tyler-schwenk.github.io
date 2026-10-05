@@ -37,6 +37,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/BpmHalo.tsx` | View 3, halo: turning ring of spectrum spokes round a bass-driven core, light trails, sparks on each beat |
 | `website/app/display/BpmDjView.tsx` | View 4, dj meters: low/mid/high meters in dB, beat counter, three-band scrolling waveform with beat grid |
 | `website/app/display/BpmMilkdrop.tsx` | View 5, milkdrop: all ~395 MilkDrop presets via butterchurn (WebGL), fed the agent's raw waveform, a new preset every 32 beats or by hand with ] / [ |
+| `website/app/display/milkdropPresets.ts` | Loads and merges the four preset packs (`loadPresetLibrary`) and gives the fixed sorted order (`sortedPresetNames`) that `preset-<n>` keys index; shared with the admin remote's preset browser |
 | `website/app/display/butterchurn.d.ts` | Minimal types for the `butterchurn` and `butterchurn-presets` packages |
 | `website/app/display/BpmReadout.tsx` | The tempo over a beat-pulsing ring and the current view's name, for the other screen |
 | `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`useBpmStream`) plus helpers the views share (beat phase/pulse/counting, band ranges, beat grid, time axis) |
@@ -151,7 +152,10 @@ keys need adding to `CONTROL_KEYS` in both `setup-displaytop.sh` and `kiosk_cont
 ### Remote Control (admin page)
 
 The admin page's Display tab (`website/docs/ADMIN.md`) presses the same keys from a phone
-or laptop anywhere. Its presses go through the website backend to the surfcam agent,
+or laptop anywhere, plus one key with no physical counterpart: `preset-<n>` jumps to
+milkdrop preset n (an index into `sortedPresetNames`) and holds it, entering bpm mode on
+the milkdrop view first if needed (`PresetControl.jump`, with `jumps` counting jumps so a
+repeat still registers). Backspace lets presets move on again, as after `]`. Its presses go through the website backend to the surfcam agent,
 which adds them to the same key log, so to the pages they're no different from the
 keyboard: both screens replay them, the overlay shows "held" and so on. The agent also
 sends the log back up, and the remote replays it through `replayControl` to show what's on
@@ -275,7 +279,11 @@ the agent's grace period covers.
   32 beats (or every 30 s with no beat). Each new preset's place in the order and name show
   in the corner for a few seconds
 - `]` / `[` step through that order by hand (a quicker 1 s blend) and hold the preset, which
-  then stays put with "held" in the corner until backspace. The key log only records how
+  then stays put with "held" in the corner until backspace. The admin remote can also jump
+  straight to any preset by name (see "Remote Control"); the view finds it in its own
+  shuffled order and carries on from there
+- Each new preset is reported to the surfcam agent (`reportPlayingPreset`, `POST
+  /control/status`), and `null` when the view closes, so the remote can show what's playing The key log only records how
   many steps (`PresetControl.step`), and the view moves by however much that changes, so the
   order itself is per page load and not shared (only the primary screen runs milkdrop)
 - It draws at 1280 px wide (the height follows the screen's shape) and the browser scales

@@ -7,7 +7,7 @@ galleries, and photos with comprehensive validation rules.
 
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Annotated, Optional, Literal
 import re
 
 
@@ -404,20 +404,21 @@ class RecipeUpdate(BaseModel):
 
 # Display Kiosk Remote Control Schemas
 #
-# Key names must match CONTROL_KEYS in pi/services/surfcam-agent/kiosk_control.py
-# (what the display page's state machine understands), plus the two bpm
-# calibration nudges the agent forwards to the bpm agent instead of its log.
-DisplayKey = Literal[
-    "tab", "escape", "backspace", "next", "prev", "b",
-    "1", "2", "3", "4", "5", "6", "7", "8", "9",
-    "beat-earlier", "beat-later",
-]
+# Key names must match what pi/services/surfcam-agent/kiosk_control.py accepts
+# (CONTROL_KEYS, plus preset-<n> jumps to a milkdrop preset), which is what the
+# display page's state machine understands, plus the two bpm calibration nudges
+# the agent forwards to the bpm agent instead of its log.
+DISPLAY_KEY_PATTERN = r"^(tab|escape|backspace|next|prev|b|[1-9]|beat-earlier|beat-later|preset-\d{1,4})$"
+DisplayKey = Annotated[str, Field(pattern=DISPLAY_KEY_PATTERN)]
 
 # one remote button sends at most a couple of keys (e.g. escape then a shortcut)
 MAX_KEYS_PER_PRESS = 4
 
 # a day of button mashing is nowhere near this (the agent caps its own log at 1000)
 MAX_KIOSK_LOG_EVENTS = 1000
+
+# the agent cuts preset names to this too
+MAX_PRESET_NAME_LENGTH = 200
 
 
 class DisplayKeysRequest(BaseModel):
@@ -437,10 +438,15 @@ class DisplayControlEvent(BaseModel):
 
 
 class DisplayControlLog(BaseModel):
-    """The kiosk's key log since its last reset, as the surfcam agent keeps it."""
+    """
+    The kiosk's key log since its last reset, as the surfcam agent keeps it,
+    plus the milkdrop preset the display page says is playing (null when it's
+    not on screen).
+    """
     session_ms: int
     version: int
     events: list[DisplayControlEvent] = Field(..., max_length=MAX_KIOSK_LOG_EVENTS)
+    preset: Optional[str] = Field(None, max_length=MAX_PRESET_NAME_LENGTH)
 
 
 class DisplayControlState(BaseModel):

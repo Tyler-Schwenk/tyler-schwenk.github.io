@@ -11,13 +11,16 @@ interface KioskStateResponse {
   online: boolean;
   kiosk_seen_ms: number | null;
   now_ms: number;
-  log: ControlLog | null;
+  /** The kiosk's key log, plus the milkdrop preset its page says is playing. */
+  log: (ControlLog & { preset: string | null }) | null;
 }
 
 /** The kiosk as the remote sees it, plus a way to press its keys. */
 export interface DisplayControl {
   /** What the screens are doing, replayed from the kiosk's key log; null until the kiosk has sent one. */
   state: ControlState | null;
+  /** The milkdrop preset playing on the kiosk, or null when milkdrop isn't on screen. */
+  playingPreset: string | null;
   /** Whether the kiosk's agent has checked in recently. */
   online: boolean;
   /** When the agent last checked in, on the backend's clock. */
@@ -144,6 +147,7 @@ export function useDisplayControl(): DisplayControl {
 
   return {
     state,
+    playingPreset: log?.preset ?? null,
     online: response?.online ?? false,
     kioskSeenMs: response?.kiosk_seen_ms ?? null,
     clockOffsetMs,
