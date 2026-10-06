@@ -27,6 +27,13 @@ it also relays the kiosk's keyboard to the pages (see kiosk_control.py):
 and, when ~/surfcam-agent/kiosk-token is set up, it picks up presses from the admin
 page's remote through the website backend (see remote_control.py).
 
+on trash night it takes over the screens (see trash_alert.py):
+
+    GET  /trash?after=N        the trash alert and thanks screen, long-polled by the pages
+    POST /trash/done           the trash is out (any key on the kiosk keyboard)
+
+while that's up, the control keys above confirm the trash instead of going in the log.
+
 see pi/services/surfcam-agent/README.md for setup.
 """
 
@@ -57,6 +64,7 @@ from surf_conditions import (
     get_conditions,
     get_metrics,
 )
+from trash_alert import TrashWatcher, start_trash_watcher
 
 LISTEN_HOST = "127.0.0.1"
 LISTEN_PORT = 8765
@@ -179,6 +187,8 @@ CONTROL_STATUS_PATH = "/control/status"
 # a status report is a preset name in a tiny json object; anything bigger isn't one
 MAX_STATUS_BODY_BYTES = 1024
 STOP_ALL_PATH = "/cams/stop-all"
+TRASH_PATH = "/trash"
+TRASH_DONE_PATH = "/trash/done"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("surfcam-agent")
@@ -203,6 +213,7 @@ _shown_tokens: dict[str, Optional[str]] = {}
 # stands in for "no entry" when a token itself may be None
 _NOT_SHOWN = object()
 control_log = ControlLog()
+trash_watcher = TrashWatcher()
 
 
 def fetch_stream_url(page_url: str) -> str:
@@ -679,13 +690,14 @@ class AgentHandler(BaseHTTPRequestHandler):
         self._send_json(200, {})
 
     def do_POST(self) -> None:
-        """runs a cam action, records a control key press, or resets the control log."""
+        """runs a cam action, records a control key press, resets the control log, or confirms the trash."""
         path = urllib.parse.urlsplit(self.path).path
         key_route = CONTROL_KEY_ROUTE_PATTERN.match(path)
         if key_route and key_route["key"] in CONTROL_KEYS:
-            control_log.add([key_route["key"]])
-            log.info("key %s", key_route["key"])
-            self._send_json(200, {"ok": True})
+            self._record_key(key_route["key"])
+            return
+        if path == TRASH_DONE_PATH:
+            self._send_json(*trash_watcher.confirm())
             return
         if path == STOP_ALL_PATH:
             stop_all_players()
@@ -702,6 +714,21 @@ class AgentHandler(BaseHTTPRequestHandler):
             return
         token = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("token", [None])[0]
         self._run_cam_action(path, token)
+
+    def _record_key(self, key: str) -> None:
+        """adds a key press to the log, or during the trash takeover, confirms the trash with it.
+
+        args:
+            key: one of CONTROL_KEYS.
+        """
+        if not trash_watcher.is_taking_over():
+            control_log.add([key])
+            log.info("key %s", key)
+            self._send_json(200, {"ok": True})
+            return
+        log.info("key %s during the trash takeover, confirming instead", key)
+        # mashing keys through the thanks screen just gets 409s, which is fine
+        self._send_json(*trash_watcher.confirm())
 
     def _record_status(self) -> None:
         """stores the page's report of the milkdrop preset playing (see ControlLog.set_preset)."""
@@ -742,14 +769,15 @@ class AgentHandler(BaseHTTPRequestHandler):
         self._send_json(200, {"ok": True})
 
     def do_GET(self) -> None:
-        """returns a cam's conditions, or long-polls the control log (see kiosk_control.py)."""
+        """returns a cam's conditions, or long-polls the control log or trash status."""
         url = urllib.parse.urlsplit(self.path)
-        if url.path == CONTROL_LOG_PATH:
+        long_polls = {CONTROL_LOG_PATH: control_log.wait_for_change, TRASH_PATH: trash_watcher.wait_for_change}
+        if url.path in long_polls:
             after = urllib.parse.parse_qs(url.query).get("after", ["-1"])[0]
             if not after.lstrip("-").isdigit():
                 self._send_json(400, {"error": f"after must be an integer version, got {after!r}"})
                 return
-            self._send_json(200, control_log.wait_for_change(int(after)))
+            self._send_json(200, long_polls[url.path](int(after)))
             return
         route = CONDITIONS_ROUTE_PATTERN.match(url.path)
         if not route or route["cam"] not in CAMS:
@@ -773,6 +801,7 @@ def main() -> None:
     server = ThreadingHTTPServer((LISTEN_HOST, LISTEN_PORT), AgentHandler)
     log.info("listening on %s:%d", LISTEN_HOST, LISTEN_PORT)
     start_remote_control(control_log)
+    start_trash_watcher(trash_watcher)
     try:
         server.serve_forever()
     finally:

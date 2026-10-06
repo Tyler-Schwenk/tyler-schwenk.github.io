@@ -7,6 +7,8 @@ import BpmPanel, { BPM_VIEWS } from "./BpmPanel";
 import SurfCamPanel from "./SurfCamPanel";
 import SurfConditionsPanel from "./SurfConditionsPanel";
 import ControlOverlay from "./ControlOverlay";
+import TrashPanel from "./TrashPanel";
+import { useTrashTakeover } from "./trashTakeover";
 import { prepareSurfCam, type SurfCamId } from "./surfCams";
 import { clockSlotAt, msUntilNextClockSlot, useClockSlot } from "./useClockSlot";
 import {
@@ -57,6 +59,12 @@ import {
  * Bpm mode isn't in the rotation: it's only shown from its key (b), since it
  * keeps the mic recording while it's up. It cycles through its own views
  * (BPM_VIEWS) on the same clock as the rotation, or holds one.
+ *
+ * Trash night overrides all of it: while fart-pi says it's trash time (and for
+ * the thanks screen after), TrashPanel replaces whatever's up, nothing gets
+ * prepared, and the keyboard overlay is hidden (see trashTakeover.ts). The
+ * rotation carries on underneath on the clock, so it picks up where it would
+ * have been.
  *
  * Planned panels not yet implemented (add to ROTATION as each one is built,
  * using PlaceholderPanel to stub it out first if useful): MTS trolley info,
@@ -217,12 +225,14 @@ function pickSlots(state: ControlState, clockSlot: number): { current: RotationS
 export default function DisplayPage() {
   const role = useSyncExternalStore(subscribeNever, readScreenRole, readNothingOnServer);
   const controlLog = useControlLog();
+  const trash = useTrashTakeover();
   const state = useMemo(() => replayControl(controlLog, CONTROL_CONFIG), [controlLog]);
   const gridOffsetMs = state.anchorMs % PANEL_ROTATE_INTERVAL_MS;
   const clockSlot = useClockSlot(PANEL_ROTATE_INTERVAL_MS, gridOffsetMs);
   const side = role === "secondary" ? "secondary" : "primary";
   const slots = clockSlot === null ? null : pickSlots(state, clockSlot);
-  const nextPanel = slots?.next?.[side] ?? null;
+  // nothing's due next while trash night has the screens
+  const nextPanel = trash ? null : (slots?.next?.[side] ?? null);
 
   useEffect(() => {
     if (!nextPanel?.prepare) return;
@@ -234,6 +244,7 @@ export default function DisplayPage() {
   }, [nextPanel, gridOffsetMs]);
 
   if (!role || !slots || clockSlot === null) return <div className="fixed inset-0 bg-black" />;
+  if (trash) return <TrashPanel takeover={trash} role={role} />;
   const photoHold = state.mode.kind === "hold-photo" ? state.mode : null;
   const bpmView = pickBpmView(state, clockSlot);
   const bpmPresets = state.mode.kind === "bpm" ? state.mode.preset : INITIAL_PRESET_CONTROL;

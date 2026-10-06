@@ -22,7 +22,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/page.tsx` | Rotation controller — pairs each slot with what each screen shows (`ROTATION`); picks this screen's side from `?screen=` |
 | `website/app/display/displayConfig.ts` | What the display shows, with no panels in it: `ROTATION_SLOTS`, `BPM_VIEW_INFO`, `SHORTCUTS`, `CONTROL_CONFIG`, `PANEL_ROTATE_INTERVAL_MS`, and `describeDisplay` (the state in words). Shared with the admin page's remote |
 | `website/app/display/layout.tsx` | Turns off page scrolling for `/display` (every panel is a fixed full-screen layer; without it the kiosk browser can show scrollbars) |
-| `website/app/display/kioskControl.ts` | Keyboard control: the key-log state machine both pages (and the admin remote) replay (`replayControl`) and the long-poll hook (`useControlLog`) |
+| `website/app/display/kioskControl.ts` | Keyboard control: the key-log state machine both pages (and the admin remote) replay (`replayControl`), the generic agent long-poll hook (`useAgentLongPoll`) and the key log's (`useControlLog`) |
 | `website/app/display/ControlOverlay.tsx` | The shortcut menu and the top-right "held" indicator |
 | `website/app/display/useClockSlot.ts` | Wall-clock slot hook shared by the rotation and the photo slideshow |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos (`staggered` changes half a beat later) |
@@ -43,6 +43,9 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`useBpmStream`) plus helpers the views share (beat phase/pulse/counting, band ranges, beat grid, time axis) |
 | `website/app/display/spectrumLevels.ts` | Rise-and-fall spectrum levels with peak caps and auto gain, shared by the bars and halo views |
 | `website/app/display/useCanvasLoop.ts` | Full-window canvas + `requestAnimationFrame` loop hook, used by the bpm views |
+| `website/app/display/TrashPanel.tsx` | Trash night takeover: the alert (trash and the day's line below, "press any key" on top) and the happy cormorant after |
+| `website/app/display/trashTakeover.ts` | Client for the agent's trash status (`useTrashTakeover`, `confirmTrash`) |
+| `website/app/display/trashPhrases.ts` | Everything the trash screens say, including the weekly alert lines and the thanks lines |
 | `website/app/display/PlaceholderPanel.tsx` | Generic "Coming Soon: {name}" stand-in, reused as new panels get built |
 
 ### Adding a Panel
@@ -182,6 +185,41 @@ with `PlaceholderPanel` first as a stub) once it's actually being worked on.
   but the login session will eventually expire) or a server-side proxy endpoint on
   website-backend holding a Beszel service token (more durable, matches how the rest
   of the backend handles secrets — preferred if there's time to build it properly)
+
+## Trash Night
+
+Every Thursday evening fart-pi's trash reminder nags the house in Matt's voice until
+someone confirms the trash is out (`pi/docs/services/trash-reminder.md`). The display
+joins in, and it overrides everything: holds, bpm mode, the menu, all of it.
+
+- **Alert** (while fart-pi is reminding): the primary screen (monitor, below) shows the
+  trash with "It's trash day!" and a line about Matt or the cormorant; the secondary
+  (laptop, on top) says to press any key on the keyboard below. A lone screen shows the
+  alert with the instruction under it
+- **Any key confirms.** The keys xbindkeys grabs go to the surfcam agent, which confirms
+  with them instead of logging them while the takeover is up. Every other key reaches
+  whichever browser window has focus, where `TrashPanel` posts `POST /trash/done` itself
+- **Thanks**: for 10 s after a confirmation (from the kiosk or fart-pi's own button), both
+  screens show the happy cormorant with a thanks line, then the rotation comes back where
+  the clock says it should be
+
+`page.tsx` checks `useTrashTakeover()` before anything else and renders `TrashPanel` in
+place of the slot, so the slot's panels unmount (a surf cam stops, bpm mode lets go of
+the mic) and nothing gets `prepare`d. The key log isn't touched, so a hold set before
+trash time is still there after.
+
+The status comes from the agent's `GET /trash?after=<version>` long-poll (shape in
+`pi/services/surfcam-agent/README.md`), through the same `useAgentLongPoll` hook as the key
+log. The thanks end time is the agent's `thanks_until_ms`; the page re-renders when it
+passes.
+
+**What it says** is all in `trashPhrases.ts`. The alert line is picked by the week
+(`useClockSlot` with a week-long interval: epoch weeks turn over Wednesday afternoon in
+California, so it stays put all Thursday evening and moves on next week), cycling through
+the list. The thanks line is picked from `thanks_until_ms`, so both screens show the same
+one. Add or reword lines freely.
+
+The images are `website/public/images/display/trash.avif` and `cormorant.png`.
 
 ## Mallard Count
 

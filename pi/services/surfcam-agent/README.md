@@ -33,6 +33,8 @@ Stdlib-only Python server on `127.0.0.1:8765`, no dependencies beyond `mpv`.
 | `POST /control/reset` | Clear the key log (from `kiosk-run.sh` when the overnight sleep starts). |
 | `POST /control/status` | `{"preset": name or null}` from the page: the milkdrop preset playing, passed on to the admin remote (not part of the key log). |
 | `GET /control/log?after=<version>` | The key log since the last reset, `{"session_ms", "version", "events": [{"key", "at_ms"}]}`. Long-polls: waits up to 25 s for the version to differ from `after` (`-1` answers at once). |
+| `GET /trash?after=<version>` | Trash night status, `{"version", "alert", "thanks_until_ms"}` (below). Long-polls like `/control/log`. |
+| `POST /trash/done` | The trash is out: confirms with fart-pi, which plays its thanks. 200 with the new status, 409 when it isn't trash time, 502 when fart-pi can't be reached. |
 
 **Keyboard control** (`kiosk_control.py`): the agent is also the relay between the
 kiosk's keyboard and the two pages. It only stores the presses; what they mean is worked
@@ -58,6 +60,17 @@ Both send the shared secret from `~/surfcam-agent/kiosk-token` as `X-Kiosk-Token
 match `KIOSK_TOKEN` in the backend's `.env`. With no token file, remote control is off
 (logged at startup) and everything else works as before. A failed request is retried
 every 5 s; only the first failure and the recovery are logged.
+
+**Trash night** (`trash_alert.py`): fart-pi's trash reminder
+(`pi/docs/services/trash-reminder.md`) owns the schedule and the button. The agent polls
+its LAN api (`GET http://192.168.1.116:8770/status`) every 5 s and serves the result to the
+pages: `alert` is true while fart-pi is in `trash_active`, and `thanks_until_ms` is 10 s
+after the last confirmation (null once that's passed), whether it came from the kiosk or
+fart-pi's own button. While either is up, a key from xbindkeys (`POST /control/keys/<key>`)
+confirms the trash instead of going in the key log, so presses can't change the display
+behind the takeover; keys xbindkeys doesn't grab reach the page, which posts
+`/trash/done` itself. With fart-pi unreachable the last status stands for up to 60 s, then
+the alert comes down so the screens can't get stuck on it.
 
 The rotation controller calls `prepare` `PANEL_PREPARE_LEAD_MS` before a surf cam
 panel is due, the panel calls `show` on mount and `stop` on unmount. Only the primary

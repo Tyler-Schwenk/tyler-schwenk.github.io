@@ -11,6 +11,15 @@ Button behavior:
     sequence, and stops reminders for the rest of the week.
   - Any other time: plays an alternating idle greeting.
 
+It also serves a tiny LAN-only HTTP API so the display kiosk (displaytop) can
+take over its screens while it's trash time, and confirm from its keyboard:
+
+    GET  /status    {"state": "idle" | "trash_active" | "trash_done",
+                     "confirmed_at_ms": epoch ms of the last confirmation, or null}
+    POST /confirm   same as the button during trash time; 409 any other time
+
+see pi/docs/services/trash-reminder.md.
+
 Audio files live in the audio/ subdirectory next to this script.
 Copy them to the Pi with scp — they're not in git (binary files).
 """
@@ -22,6 +31,7 @@ import subprocess
 import threading
 import time
 from datetime import date, datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from signal import pause
 
@@ -46,6 +56,16 @@ ALSA_DEVICE = "plughw:2,0"
 
 # debounce window (s) — prevents double-fires on a single press
 BUTTON_DEBOUNCE_S = 0.2
+
+
+# ---- http api ----
+
+# every interface, so displaytop can reach it over the LAN. the cloudflare tunnel only
+# points at port 8000, so this never leaves the house
+API_LISTEN_HOST = "0.0.0.0"
+API_PORT = 8770
+API_STATUS_PATH = "/status"
+API_CONFIRM_PATH = "/confirm"
 
 
 # ---- paths ----
@@ -81,12 +101,19 @@ SIREN_PROBABILITY = 0.3
 # how often the scheduler wakes up to check the clock (s)
 SCHEDULE_CHECK_INTERVAL_S = 30
 
+# pause after killing a reminder mid-clip before the thanks starts (s)
+THANKS_GAP_S = 0.3
+
 
 # ---- shared state ----
 
 # current mode: "idle" | "trash_active" | "trash_done"
 _state = "idle"
 _state_lock = threading.Lock()
+
+# epoch ms of the last confirmation (button or kiosk), so the kiosk can show its thanks
+# screen whichever one did it. memory only: after a restart there's nothing to thank
+_confirmed_at_ms: int | None = None
 
 # tracked so we can kill it when the button is pressed mid-playback
 _current_proc: subprocess.Popen | None = None
@@ -109,6 +136,16 @@ def get_state() -> str:
     """
     with _state_lock:
         return _state
+
+
+def get_status() -> dict:
+    """Return the state plus when trash was last confirmed, as the http api serves it.
+
+    Returns:
+        {"state": str, "confirmed_at_ms": int | None}
+    """
+    with _state_lock:
+        return {"state": _state, "confirmed_at_ms": _confirmed_at_ms}
 
 
 def set_state(new_state: str) -> None:
@@ -321,29 +358,60 @@ def scheduler_loop() -> None:
         was_in_window = in_window
 
 
+# ---- confirmation ----
+
+def claim_confirmation() -> bool:
+    """Mark the trash as taken out, if it's trash time and nobody beat us to it.
+
+    Checked and set under one lock, so the button and the kiosk confirming at the
+    same moment only thank once.
+
+    Returns:
+        True if this call confirmed it, False if it wasn't trash_active.
+
+    Side effects:
+        Sets state to "trash_done" and _confirmed_at_ms. Persists the week to disk.
+    """
+    global _state, _confirmed_at_ms
+    with _state_lock:
+        if _state != "trash_active":
+            return False
+        # trash_done blocks the scheduler while the thanks sequence plays
+        _state = "trash_done"
+        _confirmed_at_ms = int(time.time() * 1000)
+    logger.info("State -> trash_done (confirmed)")
+    _save_confirmed_week()
+    return True
+
+
+def play_thanks() -> None:
+    """Cut off any reminder mid-clip and play the thanks sequence.
+
+    Side effects:
+        Blocks for the clips. Sets state back to "idle" afterwards.
+    """
+    stop_playback()
+    time.sleep(THANKS_GAP_S)
+    play_sequence(CLIP_THANKS, CLIP_I_LOVE_YOU)
+    # back to idle so the button works normally for the rest of the night
+    set_state("idle")
+
+
 # ---- button ----
 
 def on_button_press() -> None:
     """Handle a button press event.
 
-    During trash time: stop current audio, confirm trash is done, play thanks.
+    During trash time: confirm trash is done and play thanks.
     Any other time: play an alternating idle greeting.
 
     Side effects:
         May change state to "trash_done". Persists to disk. Plays audio.
     """
     global _idle_clip_index
-    state = get_state()
 
-    if state == "trash_active":
-        # trash_done blocks the scheduler while the thanks sequence plays
-        set_state("trash_done")
-        _save_confirmed_week()
-        stop_playback()
-        time.sleep(0.3)  # brief gap after kill before starting thanks
-        play_sequence(CLIP_THANKS, CLIP_I_LOVE_YOU)
-        # back to idle so the button works normally for the rest of the night
-        set_state("idle")
+    if claim_confirmation():
+        play_thanks()
         return
 
     # idle greeting — alternates between hey_guys and i_love_you
@@ -352,13 +420,67 @@ def on_button_press() -> None:
     play_sequence(clip)
 
 
+# ---- http api ----
+
+class ApiHandler(BaseHTTPRequestHandler):
+    """Serves the state to displaytop and takes its confirmations (see module docstring)."""
+
+    def _send_json(self, status: int, body: dict) -> None:
+        """Write a json response.
+
+        Args:
+            status: HTTP status code.
+            body: Response body.
+        """
+        payload = json.dumps(body).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def do_GET(self) -> None:
+        """Return the current status."""
+        if self.path != API_STATUS_PATH:
+            self._send_json(404, {"error": f"unknown route {self.path}, try GET {API_STATUS_PATH}"})
+            return
+        self._send_json(200, get_status())
+
+    def do_POST(self) -> None:
+        """Confirm the trash, like the button. Answers right away; the thanks plays after."""
+        if self.path != API_CONFIRM_PATH:
+            self._send_json(404, {"error": f"unknown route {self.path}, try POST {API_CONFIRM_PATH}"})
+            return
+        if not claim_confirmation():
+            status = get_status()
+            self._send_json(409, {"error": f"not trash time (state is {status['state']}), nothing to confirm", **status})
+            return
+        logger.info("Trash confirmed from %s", self.client_address[0])
+        threading.Thread(target=play_thanks, daemon=True, name="thanks").start()
+        self._send_json(200, get_status())
+
+    def log_message(self, format: str, *args) -> None:
+        """Silence per-request access logs; displaytop polls every few seconds."""
+
+
+def start_api() -> None:
+    """Serve the http api on a background thread.
+
+    Side effects:
+        Binds API_LISTEN_HOST:API_PORT.
+    """
+    server = ThreadingHTTPServer((API_LISTEN_HOST, API_PORT), ApiHandler)
+    threading.Thread(target=server.serve_forever, daemon=True, name="api").start()
+
+
 # ---- main ----
 
 def main() -> None:
     """Start the trash reminder service.
 
     Restores state from disk (so a restart mid-week doesnt re-trigger),
-    sets up the button listener and background scheduler, then blocks forever.
+    sets up the button listener, background scheduler and http api, then
+    blocks forever.
     """
     logger.info("Starting trash reminder service")
 
@@ -373,7 +495,12 @@ def main() -> None:
     scheduler = threading.Thread(target=scheduler_loop, daemon=True, name="scheduler")
     scheduler.start()
 
-    logger.info("Ready. Button on GPIO %d. Trash window: Thu %d:00-%d:00.", BUTTON_PIN, TRASH_START_HOUR, TRASH_END_HOUR)
+    start_api()
+
+    logger.info(
+        "Ready. Button on GPIO %d. Trash window: Thu %d:00-%d:00. API on port %d.",
+        BUTTON_PIN, TRASH_START_HOUR, TRASH_END_HOUR, API_PORT,
+    )
     pause()
 
 

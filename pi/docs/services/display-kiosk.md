@@ -133,6 +133,14 @@ ssh tyler@192.168.1.192 'umask 077; echo <secret> > ~/surfcam-agent/kiosk-token;
 Check it with `grep -i remote /tmp/surfcam-agent.log` ("remote control on" at startup) and
 the admin page, which should say "Online". To change the secret, do both halves again.
 
+### Trash night
+
+While fart-pi's trash reminder is reminding (Thursday evenings), both screens drop
+everything for the trash alert, and any key on the laptop's keyboard confirms the trash is
+out (fart-pi then plays its thanks and the screens show the happy cormorant for 10 s).
+The surfcam agent polls fart-pi's LAN api on port 8770 for it, so displaytop has to be on
+the same LAN as fart-pi. Details in `pi/docs/services/trash-reminder.md`.
+
 ### BPM visualizer
 
 The bpm agent (`pi/services/bpm-agent/README.md`) is a small Python server started from
@@ -354,7 +362,7 @@ panel should show the cam with the info bar across the top within a few rotation
 |---|---|
 | `pi/services/display-kiosk/setup-displaytop.sh` | Provisions a fresh Ubuntu install into the kiosk (idempotent) |
 | `pi/services/display-kiosk/kiosk-run.sh` | Becomes `~/kiosk-run.sh`: screens, browsers, agents, overnight sleep |
-| `pi/services/surfcam-agent/` | The surf cam player agent, its info overlay, keyboard control and the remote control relay (own README) |
+| `pi/services/surfcam-agent/` | The surf cam player agent, its info overlay, keyboard control, the remote control relay and the trash night relay (own README) |
 | `pi/services/bpm-agent/` | Mic beat tracker for the BPM visualizer (own README) |
 | `website/app/display/` | The page the browsers show (see `website/docs/DISPLAY.md`) |
 | On the laptop only | `/etc/netplan/50-cloud-init.yaml` (Wi-Fi), `/etc/sudoers.d/tyler-nopasswd`, `~/.ssh/authorized_keys`, `~/surfcam-agent/kiosk-token` (remote control secret) |
@@ -387,6 +395,15 @@ depends on the firmware and Intel graphics negotiating it themselves, and it onl
 up once the monitor is awake. Check
 `/sys/class/drm/card1-{DP-1,DP-2,HDMI-A-1,HDMI-A-2}/status` (one should read
 `connected`), re-seat the adapter, then run `pkill -x chrome` to re-detect.
+
+If the monitor's on and the adapter's USB devices (hub, mic) show up in `lsusb` but every
+DP/HDMI connector still reads `disconnected`, the kernel has stopped re-probing (dmesg
+shows `i915_hpd_poll_init_work ... hogged CPU` repeating, typically after the overnight
+monitor-off). Force a re-probe, then restart the browsers:
+```bash
+for c in DP-1 DP-2 HDMI-A-1 HDMI-A-2; do echo detect | sudo tee /sys/class/drm/card1-$c/status >/dev/null; done
+pkill -x chrome
+```
 
 **Screen blank after boot, but SSH works fine:** check `xrandr` for the active modes:
 ```bash

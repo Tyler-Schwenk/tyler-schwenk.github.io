@@ -19,6 +19,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Cloudflare Tunnel**](services/cloudflare-tunnel.md) - Public API access
 - [**Display Kiosk**](services/display-kiosk.md) - Always-on monitor (displaytop) showing the `/display` rotation
 - [**Cast Receiver**](services/cast-receiver.md) - AirPlay screen mirroring for the opium den TV (castpi, Pi 3B+)
+- [**Trash Reminder**](services/trash-reminder.md) - Thursday trash reminders in Matt's voice, and the display kiosk takeover
 
 ### For Tyler
 - [**Tyler's Quick Reference**](FORTYLER/README.md) - Practical guides and workflows

@@ -132,7 +132,7 @@ export const INITIAL_CONTROL_STATE: ControlState = {
 };
 
 // a failed long-poll (agent restarting, or not on the kiosk) waits this long before retrying
-const CONTROL_RETRY_DELAY_MS = 5_000;
+const LONG_POLL_RETRY_DELAY_MS = 5_000;
 
 // in bpm mode the digit keys pick a view
 const BPM_VIEW_KEY_PATTERN = /^[1-9]$/;
@@ -406,13 +406,14 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 /**
- * Keeps the agent's control log current by long-polling it: each request
- * waits at the agent until a key is pressed (or a timeout passes), so a press
- * shows up on screen straight away.
- * @returns The latest log, or null until the agent answers (always null away from the kiosk).
+ * Keeps something versioned on the surfcam agent current by long-polling it:
+ * each request waits at the agent until the version changes (or a timeout
+ * passes), so a change shows up on screen straight away.
+ * @param path - Agent path that takes `?after=<version>`, like `/control/log`.
+ * @returns The latest response, or null until the agent answers (always null away from the kiosk).
  */
-export function useControlLog(): ControlLog | null {
-  const [log, setLog] = useState<ControlLog | null>(null);
+export function useAgentLongPoll<T extends { version: number }>(path: string): T | null {
+  const [latest, setLatest] = useState<T | null>(null);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -420,19 +421,27 @@ export function useControlLog(): ControlLog | null {
       let version = -1;
       while (!abort.signal.aborted) {
         try {
-          const res = await fetch(`${SURFCAM_AGENT_URL}/control/log?after=${version}`, { signal: abort.signal });
+          const res = await fetch(`${SURFCAM_AGENT_URL}${path}?after=${version}`, { signal: abort.signal });
           if (!res.ok) throw new Error(`agent returned ${res.status}`);
-          const latest: ControlLog = await res.json();
-          version = latest.version;
-          setLog(latest);
+          const body: T = await res.json();
+          version = body.version;
+          setLatest(body);
         } catch {
-          await delay(CONTROL_RETRY_DELAY_MS, abort.signal);
+          await delay(LONG_POLL_RETRY_DELAY_MS, abort.signal);
         }
       }
     };
     poll();
     return () => abort.abort();
-  }, []);
+  }, [path]);
 
-  return log;
+  return latest;
+}
+
+/**
+ * Keeps the agent's control log current, so a key press shows up on screen straight away.
+ * @returns The latest log, or null until the agent answers (always null away from the kiosk).
+ */
+export function useControlLog(): ControlLog | null {
+  return useAgentLongPoll<ControlLog>("/control/log");
 }

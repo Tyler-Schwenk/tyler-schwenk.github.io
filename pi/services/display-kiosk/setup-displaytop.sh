@@ -18,7 +18,7 @@ CHROME_POLICY_DIR="/etc/opt/chrome/policies/managed"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SRC_DIR="$SCRIPT_DIR/../surfcam-agent"
-AGENT_FILES=(surfcam_agent.py surf_conditions.py kiosk_control.py remote_control.py)
+AGENT_FILES=(surfcam_agent.py surf_conditions.py kiosk_control.py remote_control.py trash_alert.py)
 AGENT_CONTROL_URL="http://127.0.0.1:8765/control/keys"
 BPM_AGENT_SRC_DIR="$SCRIPT_DIR/../bpm-agent"
 BPM_AGENT_FILES=(bpm_agent.py beat_tracker.py)
