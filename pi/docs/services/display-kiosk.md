@@ -64,8 +64,10 @@ and makes it primary (mpv opens on the primary screen, so the surf cams play the
 no external monitor the built-in screen runs alone. The script also polls the connected outputs every 30
 seconds while the browsers run, and when they change (a monitor plugged in, unplugged, or
 powered on or off) it relaunches the browsers and lays the screens out again. That covers
-a power outage where the laptop boots before the monitor wakes. To force it immediately
-run `pkill -x chrome`.
+a power outage where the laptop boots before the monitor wakes, and the smart plug cutting
+the monitor's power. Each relayout first turns off any output that's disconnected but
+still laid out, because the USB-C port can't detect a monitor coming back on a link X is
+still driving (see Troubleshooting). To force it immediately run `pkill -x chrome`.
 
 `EXTERNAL_MODE` is 1440p rather than the monitor's native 4K because a 4K monitor behind
 the USB-C/HDMI adapter only gets 30 Hz at 3840x2160 (HDMI 1.4 bandwidth).
@@ -396,14 +398,20 @@ up once the monitor is awake. Check
 `/sys/class/drm/card1-{DP-1,DP-2,HDMI-A-1,HDMI-A-2}/status` (one should read
 `connected`), re-seat the adapter, then run `pkill -x chrome` to re-detect.
 
-If the monitor's on and the adapter's USB devices (hub, mic) show up in `lsusb` but every
-DP/HDMI connector still reads `disconnected`, the kernel has stopped re-probing (dmesg
-shows `i915_hpd_poll_init_work ... hogged CPU` repeating, typically after the overnight
-monitor-off). Force a re-probe, then restart the browsers:
+If the monitor's on (and shows the HDMI input as present) and the adapter's USB devices
+(hub, mic) show up in `lsusb`, but every DP/HDMI connector still reads `disconnected`,
+check whether `xrandr` still shows the external output laid out while disconnected (e.g.
+`DP-2 disconnected primary 2560x1440+0+1504`). That happens when the monitor loses power
+(the smart plug cutting it overnight): X keeps driving the dead link, and the USB-C port
+can't detect the monitor coming back while its pipe is still held, so re-probing does
+nothing. `kiosk-run.sh` handles this itself (`release_stale_outputs` turns such outputs
+off on every relayout, and the 30 s poll triggers a relayout when it sees one). To do it
+by hand:
 ```bash
-for c in DP-1 DP-2 HDMI-A-1 HDMI-A-2; do echo detect | sudo tee /sys/class/drm/card1-$c/status >/dev/null; done
-pkill -x chrome
+DISPLAY=:0 XAUTHORITY=$(ls /tmp/serverauth.* | head -1) xrandr --output DP-2 --off
 ```
+The next `xrandr` query re-probes, the monitor shows up as `connected`, and the kiosk lays
+it out and relaunches the browsers within 30 seconds.
 
 **Screen blank after boot, but SSH works fine:** check `xrandr` for the active modes:
 ```bash

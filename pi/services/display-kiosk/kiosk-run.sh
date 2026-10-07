@@ -30,6 +30,19 @@ in_sleep_window() {
 monitor_off() { xset +dpms; xset dpms force off; }
 monitor_on() { xset dpms force on; xset -dpms; xset s off; xset s noblank; }
 
+# matches the "2560x1440+0+1504" geometry xrandr prints for an output that's laid out
+ACTIVE_GEOMETRY_RE='^[0-9]+x[0-9]+[+]'
+
+# turn off outputs that are disconnected but still laid out. when the monitor loses power
+# (smart plug, overnight), x keeps driving the dead link, and the usb-c port can't detect
+# the monitor coming back while its pipe is still held, so it'd stay blank until re-seated
+release_stale_outputs() {
+  local output
+  for output in $(xrandr | awk -v re="$ACTIVE_GEOMETRY_RE" '$2 == "disconnected" && ($3 ~ re || $4 ~ re) {print $1}'); do
+    xrandr --output "$output" --off
+  done
+}
+
 # lay the external monitor out below the built-in screen, matching how they physically
 # sit (laptop open on top, monitor underneath), and make it primary, which is where mpv
 # opens the surf cams. both stay on and each gets its own browser. with no external
@@ -37,6 +50,7 @@ monitor_on() { xset dpms force on; xset -dpms; xset s off; xset s noblank; }
 # monitor plugged in later gets picked up.
 arrange_outputs() {
   local internal external
+  release_stale_outputs
   internal=$(xrandr | awk '/^eDP/ {print $1; exit}')
   external=$(xrandr | awk '/ connected/ && $1 !~ /^eDP/ {print $1; exit}')
   [ -n "$external" ] || return 0
@@ -57,10 +71,15 @@ monitor_geometries() {
     END { for (i = 1; i <= n; i++) print geom[i], (n == 1 ? "solo" : (star[i] ? "primary" : "secondary")) }'
 }
 
-# names of the currently connected outputs, sorted. a change means a monitor was plugged in,
-# unplugged, or powered on/off, and the screens need laying out again
+# "name:status:on|off" for each output that's connected or still laid out, sorted. a change
+# means a monitor was plugged in, unplugged, or powered on/off, and the screens need laying
+# out again. on/off is there so a monitor detected just after a layout ran (connected but
+# off) still triggers another one. every xrandr query also makes the kernel re-probe outputs
 connected_outputs() {
-  xrandr | awk '/ connected/ {print $1}' | sort | tr '\n' ' '
+  xrandr | awk -v re="$ACTIVE_GEOMETRY_RE" '$2 ~ /connected$/ {
+    on = ($3 ~ re || $4 ~ re) ? "on" : "off"
+    if ($2 == "connected" || on == "on") print $1 ":" $2 ":" on
+  }' | sort | tr '\n' ' '
 }
 
 # true if any of the given pids is no longer running
