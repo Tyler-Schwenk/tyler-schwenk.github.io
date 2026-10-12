@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono } from "next/font/google";
+import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,6 +48,14 @@ const archivoBlack = Archivo_Black({
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-neo-mono",
+});
+
+// The garden page (/garden) uses a soft botanical serif for its headings and
+// date tags; body text reuses Inter (--font-inter above).
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-garden-serif",
 });
 
 const SITE_NAME = "Tyler Schwenk";
@@ -130,7 +138,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
-      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${fraunces.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

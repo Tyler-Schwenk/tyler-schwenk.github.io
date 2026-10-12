@@ -206,7 +206,7 @@ export default function SolarPage() {
                 </ExternalLink>
                 , which I think will be interesting since it&apos;s considered solarpunk but was
                 written in 1974. I&apos;m curious what an anarchist utopian future would look like
-                to someone from that time. I&apos;ll come back here to let y&apos;all know what I
+                to someone from that time. I&apos;ll come back here to lyk know what I
                 think of it after reading.
               </p>
               <PhotoFrame src="/images/solar/solarpunk_flag.webp" alt="Solarpunk flag" />

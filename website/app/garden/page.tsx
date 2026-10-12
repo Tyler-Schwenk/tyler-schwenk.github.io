@@ -1,24 +1,49 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import PageWrapper from "@/components/PageWrapper";
 import PhotoLightboxGrid from "@/components/PhotoLightboxGrid";
-import { TIMELAPSE_TIMESTAMPS } from "./timelapse-timestamps";
-import { API_BASE, photoUrl, videoStreamUrl } from "@/lib/api";
+import TimelapsePlayer from "./TimelapsePlayer";
+import { TIMELAPSE_SPAN } from "./timelapse-utils";
+import { API_BASE, photoUrl, videoStreamUrl, videoThumbnailUrl } from "@/lib/api";
 
 const TIMELAPSE_SLUG = "garden-timelapse";
 // slug of the Pi gallery that feeds the "Garden Photos" section below — create this
 // gallery once via the admin panel (Galleries tab -> New Gallery) with this exact slug,
 // then upload photos to it via Upload -> Photos -> Existing Gallery -> pick it from the list
 const GARDEN_GALLERY_SLUG = "garden-photos";
-const FRAME_DURATION_S = 1 / 30;
-const PLAYBACK_SPEEDS = [0.5, 1, 2, 3, 4];
+
+const FAVORITE_TOMATO = {
+  name: "Shimmer",
+  href: "https://www.burpee.com/tomato-shimmer-hybrid-prod500101.html",
+  source: "burpee.com",
+  note: "Soooo good. and it held up really well to powdery mildew in the garden. And very bountiful",
+};
+
+const INSPIRATION_LINKS = [
+  {
+    title: "San Diego Seed Company",
+    href: "https://sandiegoseedcompany.com/",
+    source: "sandiegoseedcompany.com",
+    note: "local seed company with solid info for SoCal gardening",
+  },
+  {
+    title: "San Diego Seed Co. on YouTube",
+    href: "https://www.youtube.com/@SanDiegoSeedCompany",
+    source: "@SanDiegoSeedCompany",
+    note: "videos on planting, growing, and harvesting for San Diego climate",
+  },
+  {
+    title: "Trellis to make you Jealous",
+    href: "https://www.youtube.com/watch?v=6vqRMKOxaW8",
+    source: "youtube.com",
+    note: "I use a modified version of this",
+  },
+];
 
 interface VideoMeta {
   id: number;
-  title: string;
 }
 
 interface GalleryPhoto {
@@ -26,43 +51,69 @@ interface GalleryPhoto {
 }
 
 /**
- * Returns the date label for the given playback position.
- * Walks the sorted timestamps and returns the last entry whose startSeconds
- * is <= currentSeconds — so we always show the most recent date.
+ * Small leaf mark used as a decorative bullet next to section eyebrows.
  *
- * @param {number} currentSeconds - Current video playback position in seconds.
- * @returns {string} Formatted date label, e.g. "Apr 13, 2026".
+ * @param {object} props - Component props.
+ * @param {string} [props.className] - Extra classes, mostly for sizing/color.
+ * @returns {JSX.Element} The leaf SVG.
  */
-function getDateAtTime(currentSeconds: number): string {
-  let label = TIMELAPSE_TIMESTAMPS[0]?.date ?? "";
-  for (const entry of TIMELAPSE_TIMESTAMPS) {
-    if (entry.startSeconds <= currentSeconds) {
-      label = entry.date;
-    } else {
-      break;
-    }
-  }
-  return label;
+function LeafMark({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z" />
+      <path d="M5 19l7-7" />
+    </svg>
+  );
 }
 
 /**
- * The garden page — shows a timelapse of the garden with a live date indicator,
- * plus a section of gardening inspiration links.
+ * Section heading with a small leafy eyebrow line above it.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.eyebrow - Short label above the heading.
+ * @param {string} props.title - The heading text.
+ * @returns {JSX.Element} The heading block.
+ */
+function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="mb-6">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--g-leaf)]">
+        <LeafMark />
+        {eyebrow}
+      </div>
+      <h2 className="garden-serif text-3xl text-[var(--g-ink)] sm:text-4xl">{title}</h2>
+    </div>
+  );
+}
+
+/**
+ * Soft bordered box for loading / empty states.
+ *
+ * @param {object} props - Component props.
+ * @param {string} [props.title] - Optional headline, e.g. "Coming soon".
+ * @param {string} props.message - Supporting text.
+ * @param {string} [props.className] - Extra classes, e.g. an aspect ratio.
+ * @returns {JSX.Element} The placeholder box.
+ */
+function Placeholder({ title, message, className = "" }: { title?: string; message: string; className?: string }) {
+  return (
+    <div className={`flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--g-border-strong)] bg-[var(--g-surface)] p-12 text-center ${className}`}>
+      {title && <p className="garden-serif mb-1 text-2xl text-[var(--g-ink)]">{title}</p>}
+      <p className="text-sm text-[var(--g-ink-muted)]">{message}</p>
+    </div>
+  );
+}
+
+/**
+ * The garden page — a timelapse of the backyard garden with a live date tag,
+ * a photo gallery, the favorite tomato of the year, and inspiration links.
+ * Video and photos are fetched from the Pi by slug at runtime.
  *
  * @returns {JSX.Element} The garden page layout.
  */
 export default function GardenPage() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isScrubbing = useRef(false);
   const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoNotFound, setVideoNotFound] = useState(false);
-  const [currentDate, setCurrentDate] = useState(TIMELAPSE_TIMESTAMPS[0]?.date ?? "");
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isEnded, setIsEnded] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(1);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[] | null>(null);
 
   // fetch the video ID by slug on mount — slug is stable, numeric ID is not
@@ -76,7 +127,7 @@ export default function GardenPage() {
         return res.json();
       })
       .then((data) => {
-        if (data) setVideoMeta({ id: data.id, title: data.title });
+        if (data) setVideoMeta({ id: data.id });
       })
       .catch(() => setVideoNotFound(true));
   }, []);
@@ -89,248 +140,81 @@ export default function GardenPage() {
       .catch(() => setGalleryPhotos([]));
   }, []);
 
-  useEffect(() => {
-    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onFullscreenChange);
-      document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
-    };
-  }, []);
-
-  const handleTimeUpdate = useCallback(() => {
-    // skip while the user is dragging — they own the slider position
-    if (isScrubbing.current) return;
-    const video = videoRef.current;
-    if (!video || !video.duration) return;
-    setProgress((video.currentTime / video.duration) * 100);
-    setCurrentDate(getDateAtTime(video.currentTime));
-  }, []);
-
-  const handleEnded = useCallback(() => {
-    setIsPlaying(false);
-    setIsEnded(true);
-  }, []);
-
-  // playbackRate is a property on the video element, not an HTML attribute, so it's applied via ref
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) video.playbackRate = playbackRate;
-  }, [playbackRate]);
-
-  const cyclePlaybackRate = useCallback(() => {
-    const nextIndex = (PLAYBACK_SPEEDS.indexOf(playbackRate) + 1) % PLAYBACK_SPEEDS.length;
-    setPlaybackRate(PLAYBACK_SPEEDS[nextIndex]);
-  }, [playbackRate]);
-
-  const toggleFullscreen = useCallback(() => {
-    const container = containerRef.current;
-    const video = videoRef.current;
-    if (!container || !video) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else if (container.requestFullscreen) {
-      container.requestFullscreen();
-    } else if ((video as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen) {
-      // iOS Safari only supports fullscreen on the video element itself
-      (video as HTMLVideoElement & { webkitEnterFullscreen: () => void }).webkitEnterFullscreen();
-    }
-  }, []);
-
-  // play/pause toggle — also handles replay from ended state
-  const handlePlayPause = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isEnded) {
-      video.currentTime = 0;
-      video.play();
-      setIsEnded(false);
-      return;
-    }
-    if (video.paused) {
-      video.play();
-    } else {
-      video.pause();
-    }
-  }, [isEnded]);
-
-  const handleScrubStart = useCallback(() => {
-    isScrubbing.current = true;
-  }, []);
-
-  const handleScrubEnd = useCallback(() => {
-    isScrubbing.current = false;
-  }, []);
-
-  // scrubbing: seek the video and update date + progress immediately
-  const handleScrub = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const video = videoRef.current;
-    if (!video || !video.duration) return;
-    const pct = parseFloat(e.target.value);
-    const newTime = (pct / 100) * video.duration;
-    video.currentTime = newTime;
-    setProgress(pct);
-    setCurrentDate(getDateAtTime(newTime));
-    if (isEnded) setIsEnded(false);
-  }, [isEnded]);
-
-  // step one frame forward or back
-  const stepFrame = useCallback((direction: 1 | -1) => {
-    const video = videoRef.current;
-    if (!video || !video.duration) return;
-    const newTime = Math.max(0, Math.min(video.duration, video.currentTime + direction * FRAME_DURATION_S));
-    video.currentTime = newTime;
-    setProgress((newTime / video.duration) * 100);
-    setCurrentDate(getDateAtTime(newTime));
-    if (isEnded && direction < 0) setIsEnded(false);
-  }, [isEnded]);
-
-  const videoSrc = videoMeta ? videoStreamUrl(videoMeta.id) : null;
+  const stats = [
+    { label: "First photo", value: TIMELAPSE_SPAN.firstDate },
+    { label: "Latest frame", value: TIMELAPSE_SPAN.lastDate },
+    { label: "Days of growth", value: TIMELAPSE_SPAN.totalDays?.toString() ?? "-" },
+  ];
 
   return (
     <PageWrapper>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-950 to-slate-900 py-16">
-        <div className="container mx-auto px-6 max-w-4xl">
-
-          {/* Header */}
-          <div className="text-center mb-10">
-            <div className="flex items-center justify-center gap-4 mb-3">
-              <Image src="/images/8bit/plant.png" alt="" width={48} height={48} />
-              <h1 className="text-4xl md:text-5xl font-bold text-green-400 pixel-font tracking-wider drop-shadow-[3px_3px_0_rgba(0,0,0,1)]">
-                THE GARDEN
-              </h1>
-              <Image src="/images/8bit/plant.png" alt="" width={48} height={48} />
+      <div className="garden-theme min-h-screen">
+        {/* hero */}
+        <header className="relative overflow-hidden border-b border-[var(--g-border)] bg-gradient-to-b from-[var(--g-leaf-soft)] to-[var(--g-paper)]">
+          <div className="mx-auto max-w-5xl px-6 pb-14 pt-28 sm:pt-32">
+            <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--g-leaf)]">
+              <LeafMark className="h-4 w-4" />
+              Home garden, San Diego
             </div>
-          </div>
+            <h1 className="garden-serif text-6xl leading-none text-[var(--g-ink)] sm:text-7xl md:text-8xl">
+              The <em className="text-[var(--g-leaf)]">Garden</em>
+            </h1>
+            <p className="mt-5 max-w-xl text-lg text-[var(--g-ink-muted)]">
+              A season of growing, one frame at a time. Scrub through the timelapse
+              to watch it fill in, or jump straight to a month.
+            </p>
 
-          {/* Timelapse Section */}
-          <div className="mb-16">
-            <h2 className="text-lg font-bold text-green-300 pixel-font mb-5 text-center tracking-wide">
-              TIMELAPSE
-            </h2>
-
-            {videoSrc ? (
-              <div
-                ref={containerRef}
-                className={isFullscreen ? "flex flex-col bg-black" : ""}
-              >
-                <video
-                  ref={videoRef}
-                  src={videoSrc}
-                  onTimeUpdate={handleTimeUpdate}
-                  onEnded={handleEnded}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  className={isFullscreen
-                    ? "flex-1 min-h-0 w-full object-contain"
-                    : "w-full rounded-lg border-2 border-green-700 shadow-2xl"}
-                >
-                  Your browser does not support the video tag.
-                </video>
-
-                {/* Custom controls */}
-                <div className={isFullscreen
-                  ? "w-full shrink-0 bg-black/90 px-4 py-3"
-                  : "mt-3 bg-green-950/60 border border-green-800 rounded-lg px-4 py-3"}>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handlePlayPause}
-                      className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-green-700 hover:bg-green-600 text-white transition-colors"
-                      aria-label={isEnded ? "Replay" : isPlaying ? "Pause" : "Play"}
-                    >
-                      {isEnded ? "↺" : isPlaying ? "⏸" : "▶"}
-                    </button>
-                    <button
-                      onClick={() => stepFrame(-1)}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors text-sm"
-                      aria-label="Previous frame"
-                    >
-                      &#x276E;
-                    </button>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={0.01}
-                      value={progress}
-                      onChange={handleScrub}
-                      onMouseDown={handleScrubStart}
-                      onMouseUp={handleScrubEnd}
-                      onTouchStart={handleScrubStart}
-                      onTouchEnd={handleScrubEnd}
-                      className="flex-1 cursor-pointer accent-green-400"
-                    />
-                    <button
-                      onClick={() => stepFrame(1)}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors text-sm"
-                      aria-label="Next frame"
-                    >
-                      &#x276F;
-                    </button>
-                    <button
-                      onClick={cyclePlaybackRate}
-                      className="flex-shrink-0 h-8 px-2 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors text-xs font-mono"
-                      aria-label={`Playback speed: ${playbackRate}x, click to change`}
-                    >
-                      {playbackRate}x
-                    </button>
-                    <button
-                      onClick={toggleFullscreen}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded bg-green-900 hover:bg-green-800 text-green-300 transition-colors"
-                      aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                    >
-                      {isFullscreen ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="4 14 10 14 10 20"></polyline>
-                          <polyline points="20 10 14 10 14 4"></polyline>
-                          <line x1="10" y1="14" x2="3" y2="21"></line>
-                          <line x1="21" y1="3" x2="14" y2="10"></line>
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="15 3 21 3 21 9"></polyline>
-                          <polyline points="9 21 3 21 3 15"></polyline>
-                          <line x1="21" y1="3" x2="14" y2="10"></line>
-                          <line x1="3" y1="21" x2="10" y2="14"></line>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  <div className="mt-2 text-center">
-                    <span className="text-green-300 font-mono text-base tracking-widest">
-                      {currentDate}
-                    </span>
-                  </div>
+            <dl className="mt-10 grid max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-xl border border-[var(--g-border)] bg-[var(--g-border)]">
+              {stats.map((stat) => (
+                <div key={stat.label} className="bg-[var(--g-surface)] px-4 py-3 sm:px-5 sm:py-4">
+                  <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--g-ink-faint)] sm:text-xs">
+                    {stat.label}
+                  </dt>
+                  <dd className="garden-serif mt-1 text-base text-[var(--g-ink)] sm:text-2xl">{stat.value}</dd>
                 </div>
-              </div>
-            ) : videoNotFound ? (
-              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
-                <p className="text-green-400 pixel-font text-lg mb-2">COMING SOON</p>
-                <p className="text-slate-400 text-sm">timelapse video is being processed</p>
-              </div>
-            ) : (
-              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
-                <p className="text-slate-400 text-sm">loading...</p>
-              </div>
-            )}
+              ))}
+            </dl>
           </div>
+        </header>
 
-          {/* Garden Photos Section */}
-          <div className="mb-16">
-            <h2 className="text-lg font-bold text-green-300 pixel-font mb-5 text-center tracking-wide">
-              GARDEN PHOTOS
-            </h2>
+        <main className="mx-auto max-w-5xl px-6 py-16">
+          {/* timelapse */}
+          <section className="mb-24">
+            <SectionHeading eyebrow="Timelapse" title="Watch it grow" />
+            {videoMeta ? (
+              <>
+                <TimelapsePlayer
+                  src={videoStreamUrl(videoMeta.id)}
+                  poster={videoThumbnailUrl(videoMeta.id)}
+                />
+                <p className="mt-4 hidden text-xs text-[var(--g-ink-faint)] sm:block">
+                  <kbd className="garden-kbd">space</kbd> play/pause
+                  <span className="mx-2">&middot;</span>
+                  <kbd className="garden-kbd">&larr;</kbd> <kbd className="garden-kbd">&rarr;</kbd> step a frame
+                  <span className="mx-2">&middot;</span>
+                  <kbd className="garden-kbd">shift</kbd> + arrows jump a day
+                  <span className="mx-2">&middot;</span>
+                  <kbd className="garden-kbd">f</kbd> fullscreen
+                </p>
+              </>
+            ) : videoNotFound ? (
+              <Placeholder title="Coming soon" message="the timelapse video is being processed" className="aspect-video" />
+            ) : (
+              <div className="aspect-video animate-pulse rounded-2xl bg-[var(--g-surface-sunk)]" aria-label="Loading timelapse" />
+            )}
+          </section>
 
+          {/* photos */}
+          <section className="mb-24">
+            <SectionHeading eyebrow="Snapshots" title="Garden photos" />
             {galleryPhotos === null ? (
-              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
-                <p className="text-slate-400 text-sm">loading...</p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" aria-label="Loading photos">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <div key={i} className="aspect-square animate-pulse rounded-lg bg-[var(--g-surface-sunk)]" />
+                ))}
               </div>
             ) : galleryPhotos.length === 0 ? (
-              <div className="bg-green-950/40 border-2 border-green-800 rounded-lg p-12 text-center">
-                <p className="text-green-400 pixel-font text-lg mb-2">COMING SOON</p>
-                <p className="text-slate-400 text-sm">photos will show up here once uploaded</p>
-              </div>
+              <Placeholder title="Coming soon" message="photos will show up here once uploaded" />
             ) : (
               <PhotoLightboxGrid
                 photos={galleryPhotos.map((photo) => ({
@@ -340,88 +224,74 @@ export default function GardenPage() {
                 }))}
               />
             )}
-          </div>
+          </section>
 
-          {/* Favorite Tomato */}
-          <div className="mb-16">
-            <h2 className="text-lg font-bold text-green-300 pixel-font mb-5 text-center tracking-wide">
-              FAVORITE TOMATO THIS YEAR
-            </h2>
-            <a
-              href="https://www.burpee.com/tomato-shimmer-hybrid-prod500101.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group max-w-md mx-auto text-center"
-            >
-              <div className="text-green-400 font-bold text-xl mb-1 group-hover:text-green-300">
-                &quot;Shimmer&quot;
-              </div>
-              <div className="text-slate-400 text-sm mb-2">burpee.com</div>
-              <div className="text-slate-500 text-xs">
-                Soooo good. and it held up really well to powdery mildew in the garden. And very bountiful
-              </div>
-            </a>
-          </div>
+          {/* notes */}
+          <section className="mb-20">
+            <SectionHeading eyebrow="Notes" title="What's working" />
+            <div className="grid gap-6 md:grid-cols-5">
+              {/* seed-packet card */}
+              <a
+                href={FAVORITE_TOMATO.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--g-border)] bg-[var(--g-surface)] shadow-[var(--g-shadow)] transition-transform hover:-translate-y-0.5 md:col-span-2"
+              >
+                <div className="bg-[var(--g-clay)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--g-on-clay)]">
+                  Favorite tomato this year
+                </div>
+                <div className="flex flex-1 flex-col p-6">
+                  <h3 className="garden-serif text-5xl text-[var(--g-ink)]">
+                    &ldquo;{FAVORITE_TOMATO.name}&rdquo;
+                  </h3>
+                  <p className="garden-serif mt-4 flex-1 text-lg italic leading-relaxed text-[var(--g-ink-muted)]">
+                    {FAVORITE_TOMATO.note}
+                  </p>
+                  <span className="mt-6 text-sm font-medium text-[var(--g-clay)] group-hover:underline">
+                    {FAVORITE_TOMATO.source} &rarr;
+                  </span>
+                </div>
+              </a>
 
-          {/* Gardening Inspiration */}
-          <div className="mb-16">
-            <h2 className="text-lg font-bold text-green-300 pixel-font mb-6 text-center tracking-wide">
-              GARDENING INSPIRATION
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <a
-                href="https://sandiegoseedcompany.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group"
-              >
-                <div className="text-green-400 font-bold text-lg mb-1 group-hover:text-green-300">
-                  San Diego Seed Company
-                </div>
-                <div className="text-slate-400 text-sm mb-2">sandiegoseedcompany.com</div>
-                <div className="text-slate-500 text-xs">
-                  local seed company with solid info for SoCal gardening
-                </div>
-              </a>
-              <a
-                href="https://www.youtube.com/@SanDiegoSeedCompany"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group"
-              >
-                <div className="text-green-400 font-bold text-lg mb-1 group-hover:text-green-300">
-                  San Diego Seed Co. — YouTube
-                </div>
-                <div className="text-slate-400 text-sm mb-2">@SanDiegoSeedCompany</div>
-                <div className="text-slate-500 text-xs">
-                  videos on planting, growing, and harvesting for San Diego climate
-                </div>
-              </a>
-              <a
-                href="https://www.youtube.com/watch?v=6vqRMKOxaW8"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-950/40 border-2 border-green-700 rounded-lg p-6 hover:bg-green-900/40 hover:border-green-500 transition-all group"
-              >
-                <div className="text-green-400 font-bold text-lg mb-1 group-hover:text-green-300">
-                  Trellis to make you Jealous
-                </div>
-                <div className="text-slate-400 text-sm mb-2">youtube.com</div>
-                <div className="text-slate-500 text-xs">
-                  I use a modified version of this
-                </div>
-              </a>
+              {/* inspiration links */}
+              <div className="rounded-2xl border border-[var(--g-border)] bg-[var(--g-surface)] p-2 md:col-span-3">
+                <h3 className="px-4 pb-1 pt-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--g-ink-faint)]">
+                  Gardening inspiration
+                </h3>
+                <ul className="divide-y divide-[var(--g-border)]">
+                  {INSPIRATION_LINKS.map((link) => (
+                    <li key={link.href}>
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-start gap-4 rounded-xl px-4 py-4 transition-colors hover:bg-[var(--g-leaf-soft)]"
+                      >
+                        <span className="mt-1 text-[var(--g-leaf)]">
+                          <LeafMark className="h-4 w-4" />
+                        </span>
+                        <span className="flex-1">
+                          <span className="block font-semibold text-[var(--g-ink)]">{link.title}</span>
+                          <span className="mt-0.5 block text-sm text-[var(--g-ink-muted)]">{link.note}</span>
+                          <span className="mt-1 block text-xs text-[var(--g-ink-faint)]">{link.source}</span>
+                        </span>
+                        <span className="mt-1 text-[var(--g-ink-faint)] transition-transform group-hover:translate-x-1 group-hover:text-[var(--g-leaf)]" aria-hidden="true">
+                          &rarr;
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Back Link */}
           <div className="text-center">
-            <Link href="/" className="text-slate-400 hover:text-white transition-colors">
-              ← Back to Main Menu
+            <Link href="/" className="text-sm text-[var(--g-ink-muted)] transition-colors hover:text-[var(--g-leaf)]">
+              &larr; Back to main menu
             </Link>
           </div>
-
-        </div>
+        </main>
       </div>
     </PageWrapper>
   );

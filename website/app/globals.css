@@ -295,3 +295,79 @@ body {
     --n-shadow-lg: 8px 8px 0 var(--n-border-default);
   }
 }
+
+/*
+ * Garden theme -- warm linen paper, deep leaf-green ink, terracotta accent,
+ * Fraunces serif headings. Scoped to `.garden-theme` (/garden). The player
+ * chrome tokens stay dark in both modes so the footage reads the same.
+ * Documented in website/docs/GARDEN.md.
+ */
+.garden-theme {
+  --g-paper: #F3EEE2;
+  --g-surface: #FBF8F0;
+  --g-surface-sunk: #E7DFCD;
+  --g-ink: #1E2A1B;
+  --g-ink-muted: #5E6656;
+  --g-ink-faint: #858B7A;
+  --g-leaf: #3D6B35;
+  --g-leaf-soft: #DFE8D3;
+  --g-clay: #B5532C;
+  --g-on-clay: #FFF8F0;
+  --g-border: #DCD3C0;
+  --g-border-strong: #C4B9A2;
+  --g-shadow: 0 1px 2px rgb(30 42 27 / 0.06), 0 12px 32px -16px rgb(30 42 27 / 0.28);
+
+  --g-player-bg: #10160E;
+  --g-player-raised: #1D2619;
+  --g-player-text: #ECE7D8;
+  --g-player-muted: #98A28C;
+  --g-player-accent: #A8D597;
+  --g-player-track: #34412E;
+  --g-tag-bg: #F7F1E2;
+  --g-tag-ink: #1E2A1B;
+
+  --g-font-serif: var(--font-garden-serif), Georgia, serif;
+  --g-font-sans: var(--font-inter), system-ui, sans-serif;
+
+  background: var(--g-paper);
+  color: var(--g-ink);
+  font-family: var(--g-font-sans);
+}
+
+@media (prefers-color-scheme: dark) {
+  .garden-theme {
+    --g-paper: #121811;
+    --g-surface: #1A2218;
+    --g-surface-sunk: #222C1F;
+    --g-ink: #EAE5D6;
+    --g-ink-muted: #A7AD9B;
+    --g-ink-faint: #7C8373;
+    --g-leaf: #93C483;
+    --g-leaf-soft: #1E2A1B;
+    --g-clay: #E38D66;
+    --g-on-clay: #1A0F09;
+    --g-border: #2B3628;
+    --g-border-strong: #3E4C39;
+    --g-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.7);
+    --g-player-bg: #0A0E09;
+  }
+}
+
+.garden-serif {
+  font-family: var(--g-font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.garden-kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--g-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--g-surface);
+  color: var(--g-ink-muted);
+  font-family: var(--g-font-sans);
+  text-align: center;
+}

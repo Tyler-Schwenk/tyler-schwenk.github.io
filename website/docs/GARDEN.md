@@ -2,9 +2,10 @@
 
 ## Overview
 
-The garden page (`/garden`) shows a timelapse of the home garden with a live date label
-that tracks which day is currently on screen, a "Garden Photos" gallery below it, and a
-static Gardening Inspiration section with links to San Diego Seed Company.
+The garden page (`/garden`) has a hero with stats derived from the timelapse dates
+(first photo, latest frame, days of growth), the timelapse player, a "Garden Photos"
+gallery, and a notes section with the favorite tomato of the year and gardening
+inspiration links.
 
 The video and gallery photos are both served from the Pi backend and fetched client-side
 by slug — new uploads show up on page load without a website rebuild. The date-tracking
@@ -20,7 +21,9 @@ build time and shipped with the static site, so a new timelapse video still need
 
 | File | Purpose |
 |------|---------|
-| `website/app/garden/page.tsx` | Garden page — fetches video + gallery metadata by slug, renders player, date label, and photo grid |
+| `website/app/garden/page.tsx` | Garden page — fetches video + gallery metadata by slug, renders hero, player, photo grid, and notes |
+| `website/app/garden/TimelapsePlayer.tsx` | Custom timelapse player (date tag overlay, chapter scrubber, day/frame stepping, speed, fullscreen, keyboard) |
+| `website/app/garden/timelapse-utils.ts` | Date lookups over the timestamps: date at a time, day number, month chapters, adjacent day, span |
 | `website/app/garden/timelapse-timestamps.ts` | Auto-generated timestamp map (video seconds → calendar date) |
 | `scripts/timelapse/compile_timelapse.py` | Compiles the raw footage into one MP4 and regenerates the timestamps module |
 | `website/components/PhotoLightboxGrid.tsx` | Reusable thumbnail grid + fullscreen lightbox used by the Garden Photos section |
@@ -36,7 +39,8 @@ compile_timelapse.py
   timelapse-timestamps.ts  (committed to repo)
         ↓
   garden page fetches video ID by slug from Pi, streams via /videos/{id}/stream
-  timeupdate events → lookup in TIMELAPSE_TIMESTAMPS → date label shown below player
+  player polls currentTime each animation frame while playing → lookup in
+  TIMELAPSE_TIMESTAMPS → date + day number shown on the plant-tag overlay
 ```
 
 ### Raw Data Location
@@ -49,6 +53,43 @@ C:\Users\tyler\important\projects\WebDev\Tylers Website\data\time lapse\
 ```
 
 New card pulls go in a new numbered folder (`3/`, `4/`, etc.).
+
+---
+
+## Timelapse Player
+
+`TimelapsePlayer` is a custom control set over a plain `<video>` (poster comes from
+`/videos/{id}/thumbnail`). Everything date-related is derived from
+`TIMELAPSE_TIMESTAMPS`, so it updates automatically when the timestamps are regenerated.
+
+- **Date tag** — overlay in the top-left of the video showing "Day N" (day 1 = first
+  timestamp entry) and the date. It's inside the fullscreen container, so it stays
+  visible in fullscreen.
+- **Scrubber** — pointer-captured custom track (works for mouse and touch). Hovering
+  shows a bubble with the date at that position. Notches mark the start of each month.
+- **Chapters** — one "Jump to" chip per calendar month, starting at that month's first
+  frame. The year is only shown if the footage spans more than one year.
+- **Stepping** — buttons for previous/next day (jumps to that day's first frame) and
+  previous/next frame (`FRAME_DURATION_S`, 30 fps).
+- **Speed** — cycles through `PLAYBACK_SPEEDS`.
+- **Keyboard** (when the player is focused): space/k play-pause, left/right step a
+  frame, shift+left/right jump a day, f fullscreen.
+
+The date is read every animation frame while playing rather than from `timeupdate`,
+which only fires a few times a second and would skip the short early days.
+
+---
+
+## Theme
+
+The page uses a scoped `.garden-theme` (in `website/app/globals.css`): warm linen paper,
+leaf-green ink, terracotta accent, with dark-mode overrides via `prefers-color-scheme`.
+Tokens are prefixed `--g-`. The `--g-player-*` and `--g-tag-*` tokens stay dark/cream in
+both modes so the footage looks the same either way.
+
+Fonts: Fraunces (`--font-garden-serif`, loaded in `app/layout.tsx`) for headings, the date
+tag, and anything with the `.garden-serif` class; Inter for body text. `.garden-kbd`
+styles the keyboard hint keys.
 
 ---
 
