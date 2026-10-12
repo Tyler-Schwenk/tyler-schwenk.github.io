@@ -69,6 +69,27 @@ function PhotoFrame({ src, alt }: { src: string; alt: string }) {
 }
 
 /**
+ * An inline link to an outside site, opened in a new tab and styled with the page accent.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.href - External URL.
+ * @param {React.ReactNode} props.children - Link text.
+ * @returns {JSX.Element} The link.
+ */
+function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-[#3275a8] underline underline-offset-2 hover:opacity-80"
+    >
+      {children}
+    </a>
+  );
+}
+
+/**
  * The Solar Setup page — a minimalist writeup of the home solar install: the plan,
  * the panels, the build itself, and the output. Deliberately styled apart from the
  * site's retro 8-bit theme, using a single blue accent color throughout.
@@ -112,14 +133,9 @@ export default function SolarPage() {
               They&apos;re super simple, easy to use as a renter, and help offset peak price spikes
               during the day when the sun is shining most and everyone is running their A/C due to
               the changing climate and diminishing availability of oil.{" "}
-              <a
-                href="https://www.brightsaver.org/plug-in-solar-products"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#3275a8] underline underline-offset-2 hover:opacity-80"
-              >
+              <ExternalLink href="https://www.brightsaver.org/plug-in-solar-products">
                 Check them out
-              </a>
+              </ExternalLink>
               .
             </p>
           </details>
@@ -167,20 +183,33 @@ export default function SolarPage() {
             <div className="space-y-4 text-sm leading-relaxed text-slate-700">
               <p>
                 Solar is becoming steadily cheaper and more efficient following Wright&apos;s law,{" "}
-                <a
-                  href="https://ourworldindata.org/learning-curve"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#3275a8] underline underline-offset-2 hover:opacity-80"
-                >
+                <ExternalLink href="https://ourworldindata.org/learning-curve">
                   check it out
-                </a>
+                </ExternalLink>
                 .
               </p>
               <PhotoFrame
                 src="/images/solar/solar-pv-prices-vs-cumulative-capacity.png"
                 alt="Solar PV module prices vs. cumulative installed capacity"
               />
+            </div>
+          </Section>
+
+          <Section title="Solarpunk">
+            <div className="space-y-4 text-sm leading-relaxed text-slate-700">
+              <p>
+                I also think the idea of{" "}
+                <ExternalLink href="https://en.wikipedia.org/wiki/Solarpunk">Solarpunk</ExternalLink>{" "}
+                is cool. I just got{" "}
+                <ExternalLink href="https://en.wikipedia.org/wiki/The_Dispossessed">
+                  The Dispossessed
+                </ExternalLink>
+                , which I think will be interesting since it&apos;s considered solarpunk but was
+                written in 1974. I&apos;m curious what an anarchist utopian future would look like
+                to someone from that time. I&apos;ll come back here to let y&apos;all know what I
+                think of it after reading.
+              </p>
+              <PhotoFrame src="/images/solar/solarpunk_flag.webp" alt="Solarpunk flag" />
             </div>
           </Section>
 
