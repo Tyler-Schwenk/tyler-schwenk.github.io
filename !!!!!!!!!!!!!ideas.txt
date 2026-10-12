@@ -1,3 +1,9 @@
+TODO (needs home network / fart-pi ssh): deploy the sideways-thumbnail fix
+    - push to main first
+    - ssh tyler@192.168.1.116, cd ~/tyler-schwenk.github.io, git pull
+    - cd pi/services/website-backend && docker compose up -d --build
+    - that's it -- old sideways photos straighten themselves the first time they're viewed
+
 add points of interest on map
     - half pipe, texas street, presidio, ob bike path
 Add friends data! have them run the script or just give me their login, 

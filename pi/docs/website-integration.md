@@ -334,20 +334,16 @@ All tables share the same database file: `website_backend.db`
 ### Photo Orientation
 
 Phone photos are often stored sideways with an EXIF orientation tag. On upload,
-`decode_and_normalize_image` (`app/image_utils.py`) rotates the pixels upright, and
-`create_thumbnail` applies the tag too, so thumbnails always match the original.
+`decode_and_normalize_image` (`app/image_utils.py`) rotates the pixels upright and drops
+the tag, and `create_thumbnail` applies the tag too, so thumbnails always match the original.
 
-Photos uploaded before that still have sideways pixels and may have sideways
-thumbnails (the original looks fine since browsers honor the tag). To rebuild those
-thumbnails and correct their stored width/height:
-
-```bash
-docker exec website-backend-api python scripts/fix_rotated_thumbnails.py --dry-run
-docker exec website-backend-api python scripts/fix_rotated_thumbnails.py
-```
-
-It only touches photos whose original has a rotation tag, so it's safe to re-run.
-Covers gallery and recipe photos.
+Photos uploaded before that still have sideways pixels plus the tag (browsers honor it, so
+the full image looks fine, but the old thumbnail is sideways). These heal themselves: both
+photo file endpoints (`/galleries/photos/{id}/file` and `/recipes/photos/{id}/file`) call
+`fix_legacy_orientation` first, which rewrites the original upright, regenerates the
+thumbnail, and corrects the stored width/height the first time the photo is requested.
+Since a stored original only keeps the tag if it's a legacy upload, every later request is
+just a header read and a no-op. Covers gallery and recipe photos.
 
 ## Development Workflow
 

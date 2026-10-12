@@ -68,7 +68,20 @@ const CAM_PLACE_NAMES: Record<SurfCamId, string> = {
   moonlight: "Moonlight Beach, Encinitas",
 };
 
-const clockFormat = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", minute: "2-digit" });
+/**
+ * Where each cam really streams, for the console's "watch it live" link. The streams
+ * themselves only play on their own sites: hdontap's embeds are locked to domains the cam
+ * owners allow, and surfline's player only to its partners.
+ */
+export const LIVE_CAM_PAGES: Record<SurfCamId, { url: string; site: string }> = {
+  pb: { url: "https://hdontap.com/stream/186699/pacific-beach-live-surf-webcam/", site: "HDOnTap" },
+  "la-jolla-shores": { url: "https://hdontap.com/stream/532541/la-jolla-shores-live-surf-cam/", site: "HDOnTap" },
+  scripps: { url: "https://www.surfline.com/surf-report/scripps/5842041f4e65fad6a7708839", site: "Surfline" },
+  "scripps-underwater": { url: "https://hdontap.com/stream/018408/scripps-pier-underwater-live-webcam/", site: "HDOnTap" },
+  moonlight: { url: "https://www.surfline.com/surf-report/moonlight-state-beach/5842041f4e65fad6a77088a3", site: "Surfline" },
+};
+
+const clockFormat =new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", minute: "2-digit" });
 const hourFormat = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", hourCycle: "h23" });
 
 /**

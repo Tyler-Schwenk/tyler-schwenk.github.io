@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import Link from "next/link";
 import { CONTROL_CONFIG } from "../display/displayConfig";
 import { DisplayEnvironmentProvider, type DisplayEnvironment } from "../display/displayEnvironment";
-import { useRotationClockSlot, type ScreenSide } from "../display/displayRotation";
+import { pickSlots, useRotationClockSlot, type ScreenSide } from "../display/displayRotation";
 import { INITIAL_CONTROL_STATE, applyControlEvent, type ControlState } from "../display/kioskControl";
 import ConsoleScene from "./ConsoleScene";
 import ConsoleControls, { BEAT_EARLIER_KEY, BEAT_LATER_KEY } from "./ConsoleControls";
@@ -45,14 +45,18 @@ function isConsoleKeyEvent(event: KeyboardEvent): boolean {
  * simulation of the display kiosk (website/app/display): the same rotation,
  * panels and keys, with stand-ins for what only exists on displaytop (the
  * surf cam video, the agents' surf conditions, the room mic, which gets a
- * synthesised song). The keys work from the on-page deck or the keyboard.
+ * synthesised song). The scene fills the screen; the keys work from a deck
+ * that opens beside it (below on phones), or from the keyboard.
  */
 export default function ConsolePage() {
   const [state, setState] = useState<ControlState>(INITIAL_CONTROL_STATE);
   const [focus, setFocus] = useState<ScreenSide | null>(null);
+  // the keys start hidden, so the scene opens full screen; the physical keyboard works either way
+  const [controlsOpen, setControlsOpen] = useState(false);
   const [engine] = useState(() => new SimBpmEngine(HOUSE_LOOP));
   const muted = useSyncExternalStore(engine.subscribeMuted, engine.isMuted, () => false);
   const clockSlot = useRotationClockSlot(state);
+  const liveCamId = clockSlot === null ? null : (pickSlots(state, clockSlot).current.camId ?? null);
 
   const environment = useMemo<DisplayEnvironment>(
     () => ({
@@ -94,26 +98,61 @@ export default function ConsolePage() {
   return (
     <DisplayEnvironmentProvider value={environment}>
       <div
-        className="flex min-h-dvh flex-col bg-slate-950 lg:h-dvh lg:flex-row"
+        className="fixed inset-0 flex flex-col bg-slate-950 lg:flex-row"
         style={{
           backgroundImage:
             "linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)",
           backgroundSize: "24px 24px",
         }}
       >
-        {/* on phones the scene sticks to the top, so the screens stay in view while the keys scroll under them */}
-        <div className="sticky top-0 z-10 aspect-square max-h-[60dvh] w-full bg-slate-950 lg:static lg:aspect-auto lg:h-full lg:max-h-none lg:flex-1 lg:bg-transparent">
+        {/* the scene takes whatever the controls leave, so with them closed it's the whole screen */}
+        <div className="relative min-h-0 min-w-0 flex-1">
           <ConsoleScene state={state} clockSlot={clockSlot} focus={focus} onFocus={setFocus} />
+          {!controlsOpen && (
+            <>
+              <Link
+                href="/"
+                className="absolute left-3 top-3 z-10 flex min-h-11 items-center rounded-lg bg-slate-900/80 px-3 font-mono text-sm text-slate-300 transition-colors hover:text-white"
+              >
+                &larr; main menu
+              </Link>
+              <button
+                type="button"
+                onClick={() => setControlsOpen(true)}
+                className="absolute bottom-3 right-3 z-10 min-h-11 rounded-lg border border-slate-600 bg-slate-900/85 px-4 font-mono text-sm text-slate-200 hover:bg-slate-800"
+              >
+                keys
+              </button>
+            </>
+          )}
         </div>
-        <aside className="flex flex-col gap-5 border-slate-800 p-4 lg:w-96 lg:overflow-y-auto lg:border-l lg:bg-slate-950/70">
-          <div className="flex items-baseline justify-between">
-            <h1 className="pixel-font text-xl text-[#F8D030] drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">CONSOLE</h1>
-            <Link href="/" className="font-mono text-sm text-slate-400 transition-colors hover:text-white">
-              &larr; main menu
-            </Link>
-          </div>
-          <ConsoleControls state={state} onKey={pressKey} muted={muted} onToggleMute={() => engine.setMuted(!muted)} />
-        </aside>
+        {controlsOpen && (
+          <aside className="flex max-h-[55dvh] shrink-0 flex-col gap-5 overflow-y-auto border-t border-slate-800 bg-slate-950/95 p-4 lg:max-h-none lg:w-96 lg:border-l lg:border-t-0">
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="font-mono text-lg uppercase tracking-widest text-slate-200">Console</h1>
+              <div className="flex items-center gap-2">
+                <Link href="/" className="font-mono text-sm text-slate-400 transition-colors hover:text-white">
+                  &larr; main menu
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setControlsOpen(false)}
+                  aria-label="Hide the keys"
+                  className="min-h-11 rounded-lg border border-slate-700 px-3 font-mono text-sm text-slate-300 hover:bg-slate-800"
+                >
+                  hide
+                </button>
+              </div>
+            </div>
+            <ConsoleControls
+              state={state}
+              onKey={pressKey}
+              muted={muted}
+              onToggleMute={() => engine.setMuted(!muted)}
+              liveCamId={liveCamId}
+            />
+          </aside>
+        )}
       </div>
     </DisplayEnvironmentProvider>
   );

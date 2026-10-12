@@ -3,6 +3,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { BPM_VIEW_INFO, SHORTCUTS, describeDisplay } from "../display/displayConfig";
 import { isShortcutActive, type ControlState } from "../display/kioskControl";
+import type { SurfCamId } from "../display/surfCams";
+import { LIVE_CAM_PAGES } from "./simSurf";
 
 // how often the "changes in" countdown ticks
 const STATUS_TICK_MS = 1_000;
@@ -91,6 +93,25 @@ function StatusLine({ state }: { state: ControlState }) {
 }
 
 /**
+ * A link out to the real stream of the cam that's up, since it can't play here.
+ * @param props.camId - The cam showing.
+ */
+function LiveCamLink({ camId }: { camId: SurfCamId }) {
+  const { url, site } = LIVE_CAM_PAGES[camId];
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-cyan-700/60 bg-cyan-950/40 px-4 py-2 font-mono text-sm text-cyan-200 transition-colors hover:border-cyan-400 hover:bg-cyan-900/40"
+    >
+      <span>the cam here is a stand-in: watch it live on {site}</span>
+      <span aria-hidden="true">&#8599;</span>
+    </a>
+  );
+}
+
+/**
  * The console's keyboard: the same keys the kiosk's keyboard has, as buttons,
  * plus what's showing and the sound switch for bpm mode. In bpm mode the
  * digits pick bpm views, like on the kiosk.
@@ -98,17 +119,20 @@ function StatusLine({ state }: { state: ControlState }) {
  * @param props.onKey - Called with the key a button presses.
  * @param props.muted - Whether the simulated song is silenced.
  * @param props.onToggleMute - Flips it.
+ * @param props.liveCamId - The surf cam showing, if any, to link to its real stream.
  */
 export default function ConsoleControls({
   state,
   onKey,
   muted,
   onToggleMute,
+  liveCamId,
 }: {
   state: ControlState;
   onKey: (key: string) => void;
   muted: boolean;
   onToggleMute: () => void;
+  liveCamId: SurfCamId | null;
 }) {
   const inBpm = state.mode.kind === "bpm";
   const heldBpmView = state.mode.kind === "bpm" ? state.mode.heldView : null;
@@ -116,6 +140,7 @@ export default function ConsoleControls({
   return (
     <div className="flex flex-col gap-5">
       <StatusLine state={state} />
+      {liveCamId && <LiveCamLink camId={liveCamId} />}
 
       <KeyGroup title="navigate">
         <KeyCap keyName="[" label="previous" onPress={() => onKey("prev")} />

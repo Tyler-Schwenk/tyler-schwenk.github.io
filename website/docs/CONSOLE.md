@@ -15,15 +15,17 @@ running on its two screens in perspective. It's an accurate simulation, not a mi
 - what only exists on displaytop gets a stand-in: the surf cam video, the surf conditions,
   and the room mic (a synthesised song)
 
-Tapping a screen zooms the view into it; with a mouse the scene leans slightly toward the
-pointer (not with `prefers-reduced-motion`).
+The solar page (`/solar`, "What It Runs") links here with a tilted still of the console
+(`ConsolePreview` in `website/app/solar/page.tsx`), since the console runs on that setup.
+
+Tapping a screen zooms the view into it.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `website/app/console/page.tsx` | Control state, the simulated environment, physical keyboard mapping, the layout |
-| `website/app/console/ConsoleScene.tsx` | The illustration, both screens, the lid shading, the zoom and tilt |
+| `website/app/console/ConsoleScene.tsx` | The illustration, both screens, the lid shading, the zoom |
 | `website/app/console/ScreenSurface.tsx` | A box at a screen's native resolution, warped onto its corners |
 | `website/app/console/sceneGeometry.ts` | Each screen's resolution and corners in the illustration, the lid strip, and the perspective math (`quadTransform`, `quadBounds`, `quadPoints`) |
 | `website/app/console/ConsoleControls.tsx` | The key deck, the "now showing" line, the sound switch |
@@ -87,6 +89,17 @@ rolling in and breaking, a headland for the La Jolla cams, the pier for Scripps,
 piling, fish and light rays for the underwater cam. Over it is the agent's info bar, laid out
 in mpv's 1920x1080 osd units like `build_overlay_ass` and worded like `get_metrics`.
 
+**Why not the real streams:** they can't play on this site. HDOnTap's embed player
+(`portal.hdontap.com/s/embed/?stream=<id>`) asks its backend for the stream with the
+embedding site's origin, and the backend only answers for domains the cam's owner has
+allowed; for tyler-schwenk.com it returns a "blocked" image instead. Its public `/embed/`
+pages send `X-Frame-Options: DENY`, and the HLS playlists refuse other origins (403).
+Surfline's embed player is for its partners (403). Spoofing the origin or relaying the
+streams through the Pi would get round the owners' restrictions, so it isn't done. Instead,
+while a cam is up the deck links to its real stream (`LIVE_CAM_PAGES` in `simSurf.ts`).
+If a cam owner ever allow-lists tyler-schwenk.com, that cam's stand-in could become an
+iframe of the portal player.
+
 `simSurf.ts` makes conditions in the agent's format, so the real `SurfConditionsPanel` and
 `TideGraph` show them unchanged. The tide is a harmonic curve with La Jolla's main
 constituents (the mixed two-highs-two-lows shape, though not the real times), with the
@@ -125,11 +138,35 @@ bracket corners into `sceneGeometry.ts`, and export a clean copy as `console.web
 
 ## Layout
 
-- **Desktop (lg and up):** the scene fills the left of the window, the deck sits in a
-  scrolling sidebar on the right
-- **Phones:** the scene is a square on top that sticks to the top of the viewport (at most
-  60% of its height), and the deck scrolls underneath, so the screens stay in view while
-  pressing keys. Keys are at least 44 px tall. The tilt is off without a mouse
+The scene fills the window (the illustration as big as fits, centred on the blueprint grid).
+The key deck starts hidden: a "keys" button opens it, beside the scene on desktop (lg and
+up) and below it on phones (at most 55% of the height), and the scene shrinks to the space
+left, zoom included. The physical keyboard works whether the deck is open or not. Keys are at
+least 44 px tall for touch.
 
 Both screens run the kiosk's panels at full native resolution, which is the same work the
 kiosk does; on a phone the canvases cost more battery than a normal page.
+
+## Keeping It in Sync with the Kiosk
+
+The console imports the kiosk's own code, so most changes to the display show up here on
+the next deploy with nothing else to do:
+
+- the rotation, its slots and timing (`displayConfig.ts`, `displayRotation.tsx`)
+- the shortcuts and their labels, the bpm views, the key handling (`kioskControl.ts`)
+- every panel's look and behaviour, the tab menu and the "held" indicator
+- the cam list (`SURF_CAMS`)
+
+These need updating by hand, and most of them fail the type check until they are:
+
+| Change on the kiosk | Update on the console |
+|---------------------|-----------------------|
+| a new cam in `SURF_CAMS` | its scene (`SCENES`), place name (`CAM_PLACE_NAMES`) and live page (`LIVE_CAM_PAGES`); all three are keyed by cam id, so it won't compile without them |
+| a new panel that talks to an agent | a field in `DisplayEnvironment` (`website/app/display/displayEnvironment.tsx`), which won't compile until the console gives it a stand-in |
+| a new panel sized from `window` or `vw`/`vh` | size it from its panel instead (see "Running Elsewhere" in `DISPLAY.md`), or it'll be the wrong size on the console |
+| the surfcam agent's overlay wording or layout, or its conditions' sources | `SimSurfCamPanel.tsx`, `simSurf.ts` |
+| the bpm agent's analysis settings (bands, dB range, frame rate, tempo range) | the matching constants at the top of `simBpmEngine.ts` |
+| the physical setup (a screen moved or swapped, a new resolution) | the illustration and the corners and resolutions in `sceneGeometry.ts` |
+
+Trash night isn't simulated, so changes to it don't affect the console.
+

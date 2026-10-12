@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.dependencies import require_admin
-from app.image_utils import create_thumbnail, decode_and_normalize_image
+from app.image_utils import create_thumbnail, decode_and_normalize_image, fix_legacy_orientation
 from app.models import Recipe, RecipePhoto, Tag
 from app.rate_limit import limiter
 from app.schemas import (
@@ -547,6 +547,11 @@ async def get_recipe_photo_file(photo_id: int, thumbnail: bool = False, db: Sess
         raise HTTPException(status_code=404, detail="Photo not found")
 
     photos_base = Path(settings.RECIPE_PHOTOS_DIR)
+
+    # old uploads may still be stored sideways -- straighten them on first view
+    if fix_legacy_orientation(photo, photos_base):
+        db.commit()
+
     file_path = photos_base / (photo.thumbnail_path if thumbnail and photo.thumbnail_path else photo.file_path)
 
     if not file_path.exists():

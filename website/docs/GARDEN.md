@@ -3,8 +3,8 @@
 ## Overview
 
 The garden page (`/garden`) has a masthead with a herbarium-style label (date range and
-day count derived from the timelapse dates), the timelapse player, a photographs section
-fed by the `garden-photos` gallery, and notes (tomato of the year, further reading).
+day count derived from the timelapse dates), the timelapse player, notes (tomato of the year, further reading), and a photographs
+section at the bottom fed by the `garden-photos` gallery.
 
 The video and gallery photos are both served from the Pi backend and fetched client-side
 by slug — new uploads show up on page load without a website rebuild. The date-tracking
@@ -91,15 +91,15 @@ The page borrows from seed catalogs and herbarium sheets rather than app UI: unc
 paper, near-black ink, hairline rules, a single tomato-red accent, square corners and
 no shadows.
 
-- **Masthead** — two-line "The / Garden" title, a short intro, and a herbarium-style
+- **Masthead** — two-line "The / Garden" title next to a herbarium-style
   specimen label (locality, habitat, collected date range, duration) instead of stat tiles.
   The range and duration come from `TIMELAPSE_SPAN`.
 - **Running heads** — each section opens with a full-width ink rule and a mono label.
+- **Notes** — a two-column ruled table: tomato of the year and further reading.
 - **Photographs** — shown at their natural proportions (width/height from the gallery
   API) in balanced columns: 2 below `lg`, 3 above. Each photo is dealt to the currently
   shortest column so plate numbers ("Pl. 01") read left to right. Both layouts are
   rendered and swapped with CSS. Clicking opens `PhotoLightbox`.
-- **Notes** — a two-column ruled table: tomato of the year and further reading.
 
 ### Theme tokens
 

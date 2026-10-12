@@ -226,8 +226,11 @@ To add a cam:
    `https://thredds.cdip.ucsd.edu/thredds/dodsC/cdip/model/MOP_alongshore/<id>_nowcast.nc.ascii?metaLatitude,metaLongitude`),
    and `SCRIPPS_PIER_WIND` if it's within about a km of the pier.
 3. Add the id and its name to `SURF_CAMS` in `website/app/display/surfCams.ts`. That's
-   all the page needs: the rotation, its shortcut key and the admin remote's button all
-   come from that list.
+   all the kiosk page needs: the rotation, its shortcut key and the admin remote's button
+   all come from that list.
+4. Give it a stand-in on the website's console page (`website/app/console/`): a scene in
+   `SCENES`, its place name in `CAM_PLACE_NAMES` and its real page in `LIVE_CAM_PAGES`.
+   The type check fails until all three are there (see `website/docs/CONSOLE.md`).
 
 ## Setup
 

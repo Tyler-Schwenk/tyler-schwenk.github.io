@@ -267,10 +267,6 @@ export default function GardenPage() {
                 <h1 className="garden-display text-[clamp(4.5rem,17vw,11rem)] leading-[0.82] tracking-tight">
                   The<br />Garden
                 </h1>
-                <p className="mt-8 max-w-[34ch] text-lg leading-relaxed text-[var(--g-ink-soft)] sm:text-xl">
-                  A home garden in San Diego, and a camera pointed at it. Drag along
-                  the ruler under the video to move through the season.
-                </p>
               </div>
               <div className="md:col-span-4 md:flex md:justify-end md:pb-2">
                 <HerbariumLabel />
@@ -300,21 +296,6 @@ export default function GardenPage() {
             )}
           </section>
 
-          {/* photographs */}
-          <section className="mb-20 md:mb-28">
-            <RunningHead
-              label="Photographs"
-              aside={galleryPhotos && galleryPhotos.length > 0 ? `${galleryPhotos.length} plates` : undefined}
-            />
-            {galleryPhotos === null ? (
-              <p className="garden-mono text-xs text-[var(--g-ink-faint)]">loading&hellip;</p>
-            ) : galleryPhotos.length === 0 ? (
-              <p className="text-lg italic text-[var(--g-ink-soft)]">Nothing here yet. Photos show up once they&rsquo;re uploaded.</p>
-            ) : (
-              <PhotoColumns photos={galleryPhotos} onOpen={setOpenPhotoIndex} />
-            )}
-          </section>
-
           {/* notes */}
           <section className="mb-20">
             <RunningHead label="Notes" />
@@ -334,7 +315,7 @@ export default function GardenPage() {
                       {FAVORITE_TOMATO.source}
                     </a>
                   </p>
-                  <blockquote className="mt-6 max-w-[36ch] border-l-2 border-[var(--g-tomato)] pl-5 text-xl italic leading-relaxed sm:text-2xl">
+                  <blockquote className="mt-6 max-w-[36ch] border-l-2 border-[var(--g-tomato)] pl-5 text-xl leading-relaxed sm:text-2xl">
                     &ldquo;{FAVORITE_TOMATO.note}&rdquo;
                   </blockquote>
                 </div>
@@ -365,6 +346,21 @@ export default function GardenPage() {
                 </ol>
               </div>
             </div>
+          </section>
+
+          {/* photographs */}
+          <section className="mb-20 md:mb-28">
+            <RunningHead
+              label="Photographs"
+              aside={galleryPhotos && galleryPhotos.length > 0 ? `${galleryPhotos.length} plates` : undefined}
+            />
+            {galleryPhotos === null ? (
+              <p className="garden-mono text-xs text-[var(--g-ink-faint)]">loading&hellip;</p>
+            ) : galleryPhotos.length === 0 ? (
+              <p className="text-lg italic text-[var(--g-ink-soft)]">Nothing here yet. Photos show up once they&rsquo;re uploaded.</p>
+            ) : (
+              <PhotoColumns photos={galleryPhotos} onOpen={setOpenPhotoIndex} />
+            )}
           </section>
 
           {/* colophon */}

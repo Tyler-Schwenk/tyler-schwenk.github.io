@@ -89,6 +89,40 @@ function ExternalLink({ href, children }: { href: string; children: React.ReactN
   );
 }
 
+// the console preview leans back in perspective, and straightens up a bit on hover
+const CONSOLE_PREVIEW_TILT = "perspective(1200px) rotateX(10deg) rotateY(-12deg)";
+const CONSOLE_PREVIEW_TILT_HOVER = "perspective(1200px) rotateX(4deg) rotateY(-4deg) scale(1.02)";
+
+/**
+ * A tilted, clickable picture of the console the solar setup powers, linking to the
+ * /console page where its screens actually run. Just the still image here, so the
+ * solar page stays light.
+ *
+ * @returns {JSX.Element} The linked preview.
+ */
+function ConsolePreview() {
+  return (
+    <Link href="/console" className="group block py-4" aria-label="Open the console page">
+      <div
+        className="overflow-hidden rounded-xl shadow-[0_30px_60px_-15px_rgba(15,23,42,0.45)] transition-transform duration-500 ease-out [transform:var(--tilt)] group-hover:[transform:var(--tilt-hover)]"
+        style={{ "--tilt": CONSOLE_PREVIEW_TILT, "--tilt-hover": CONSOLE_PREVIEW_TILT_HOVER } as React.CSSProperties}
+      >
+        <Image
+          src="/images/console.webp"
+          alt="The corner console: a laptop screen behind a record player, a monitor on the shelf below"
+          width={0}
+          height={0}
+          className="h-auto w-full"
+          sizes="(max-width: 768px) 100vw, 672px"
+        />
+      </div>
+      <p className="mt-6 text-center text-sm font-medium transition-opacity group-hover:opacity-80" style={{ color: ACCENT_HEX }}>
+        See what&apos;s on the screens &rarr;
+      </p>
+    </Link>
+  );
+}
+
 /**
  * The Solar Setup page — a minimalist writeup of the home solar install: the plan,
  * the panels, the build itself, and the output. Deliberately styled apart from the
@@ -154,6 +188,13 @@ export default function SolarPage() {
 
           <Section title="The Output">
             <PhotoFrame src="/images/solar/monitor.jpg" alt="Power output monitor" />
+          </Section>
+
+          <Section title="What It Runs">
+            <p className="mb-6 text-sm leading-relaxed text-slate-700">
+              This is what I have running on solar currently:
+            </p>
+            <ConsolePreview />
           </Section>
 
           <Section title="Inspiration">

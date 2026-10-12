@@ -21,7 +21,7 @@ from app.schemas import (
     GalleryPhotoRead, GalleryPhotoUpdate
 )
 from app.config import settings
-from app.image_utils import create_thumbnail, decode_and_normalize_image
+from app.image_utils import create_thumbnail, decode_and_normalize_image, fix_legacy_orientation
 
 logger = logging.getLogger(__name__)
 
@@ -354,6 +354,10 @@ async def get_photo_file(photo_id: int, thumbnail: bool = False, db: Session = D
         raise HTTPException(status_code=404, detail="Photo not found")
     
     photos_base = Path(settings.PHOTOS_DIR)
+
+    # old uploads may still be stored sideways -- straighten them on first view
+    if fix_legacy_orientation(photo, photos_base):
+        db.commit()
     
     if thumbnail and photo.thumbnail_path:
         file_path = photos_base / photo.thumbnail_path

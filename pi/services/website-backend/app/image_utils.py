@@ -1,13 +1,14 @@
 """
-Shared image processing helpers for photo uploads.
+Shared image processing helpers for photo uploads and serving.
 
-Used by any router that accepts user-uploaded photos (galleries, recipes) so
+Used by any router that handles user-uploaded photos (galleries, recipes) so
 decoding/normalization/thumbnailing logic lives in exactly one place.
 """
 
 import io
 import logging
 import shutil
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -16,6 +17,7 @@ from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 
 from app.config import settings
+from app.models import GalleryPhoto, RecipePhoto
 
 # lets Pillow decode HEIC/HEIF (default format for iPhone camera photos)
 register_heif_opener()
@@ -31,6 +33,7 @@ WEB_SAFE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
 # them using this tag. Pillow's resize/save drops the tag, so anything we
 # re-encode has to bake the rotation into the pixels first.
 EXIF_ORIENTATION_TAG = 0x0112
+DEFAULT_ORIENTATION = 1
 
 
 def save_upload_file(upload_file: UploadFile, destination: Path) -> None:
@@ -71,6 +74,30 @@ def create_thumbnail(
         oriented.save(thumbnail_path, optimize=True, quality=settings.THUMBNAIL_QUALITY)
 
 
+def encode_upright(img: Image.Image, target_format: str) -> tuple[bytes, int, int]:
+    """
+    Re-encode an image with its EXIF rotation baked into the pixels.
+
+    The output carries no EXIF, so there's no orientation tag left for a viewer
+    to apply a second time.
+
+    Args:
+        img: Open Pillow image (may still have an orientation tag).
+        target_format: Pillow format name to encode as, e.g. "JPEG".
+
+    Returns:
+        Tuple of (encoded_bytes, width, height) of the upright image.
+    """
+    oriented = ImageOps.exif_transpose(img)
+    if target_format == "JPEG":
+        oriented = oriented.convert("RGB")
+    save_kwargs = {"quality": settings.UPLOAD_JPEG_QUALITY} if target_format == "JPEG" else {}
+    buffer = io.BytesIO()
+    oriented.save(buffer, format=target_format, **save_kwargs)
+    width, height = oriented.size
+    return buffer.getvalue(), width, height
+
+
 def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[bytes, int, int, str, str]:
     """
     Decode an uploaded image, convert it to a web-safe format if needed, and bake
@@ -97,26 +124,14 @@ def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[byte
     try:
         with Image.open(io.BytesIO(file_content)) as img:
             img_format = img.format
-            orientation = img.getexif().get(EXIF_ORIENTATION_TAG, 1)
+            orientation = img.getexif().get(EXIF_ORIENTATION_TAG, DEFAULT_ORIENTATION)
 
-            if img_format not in WEB_SAFE_FORMATS or orientation != 1:
-                oriented = ImageOps.exif_transpose(img)
-                width, height = oriented.size
+            if img_format not in WEB_SAFE_FORMATS or orientation != DEFAULT_ORIENTATION:
                 target_format = img_format if img_format in WEB_SAFE_FORMATS else "JPEG"
-                if target_format == "JPEG":
-                    oriented = oriented.convert("RGB")
-
-                buffer = io.BytesIO()
-                save_kwargs = (
-                    {"quality": settings.UPLOAD_JPEG_QUALITY}
-                    if target_format == "JPEG"
-                    else {}
-                )
-                oriented.save(buffer, format=target_format, **save_kwargs)
-
+                content, width, height = encode_upright(img, target_format)
                 ext = Path(filename).suffix if img_format in WEB_SAFE_FORMATS else ".jpg"
                 return (
-                    buffer.getvalue(), width, height,
+                    content, width, height,
                     ext or f".{target_format.lower()}", f"image/{target_format.lower()}",
                 )
 
@@ -129,3 +144,53 @@ def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[byte
 
     ext = Path(filename).suffix or f".{img_format.lower()}"
     return file_content, width, height, ext, f"image/{img_format.lower()}"
+
+
+def fix_legacy_orientation(photo: GalleryPhoto | RecipePhoto, photos_base: Path) -> bool:
+    """
+    Straighten a photo uploaded before rotation was baked in at upload time.
+
+    Those originals still have sideways pixels plus an EXIF orientation tag
+    (browsers honor it, so the full image looks fine) but their thumbnails were
+    made from the raw pixels and show up sideways. New uploads never keep the
+    tag, so a tag on a stored original reliably means "legacy, needs fixing".
+    Rewrites the original upright (which drops the tag, so this is a no-op on
+    every later call), regenerates the thumbnail, and updates the photo's
+    width/height. Meant to be called on each photo request so old photos heal
+    themselves the first time they're viewed.
+
+    Args:
+        photo: Gallery or recipe photo row. width/height are mutated in place
+            when a fix happens; the caller commits.
+        photos_base: Directory the photo's relative paths are under.
+
+    Returns:
+        True if the photo was fixed (caller should commit), False otherwise.
+        Failures are logged and return False so the photo is still served as-is.
+    """
+    original = photos_base / photo.file_path
+    tmp_path = original.with_name(f".{uuid.uuid4().hex}{original.suffix}")
+    try:
+        with Image.open(original) as img:
+            if img.getexif().get(EXIF_ORIENTATION_TAG, DEFAULT_ORIENTATION) == DEFAULT_ORIENTATION:
+                return False
+            content, width, height = encode_upright(img, img.format)
+
+        # write-then-rename so a concurrent request never reads a half-written file
+        tmp_path.write_bytes(content)
+        tmp_path.replace(original)
+        if photo.thumbnail_path:
+            create_thumbnail(original, photos_base / photo.thumbnail_path)
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        logger.warning(
+            f"couldn't straighten legacy-rotated photo {original.name}: {e} -- "
+            "serving it unchanged; re-upload the photo if its thumbnail stays sideways"
+        )
+        tmp_path.unlink(missing_ok=True)
+        return False
+
+    photo.width, photo.height = width, height
+    logger.info(f"straightened legacy-rotated photo {original.name}")
+    return True
