@@ -109,7 +109,8 @@ dark-mode overrides via `prefers-color-scheme`.
 
 Fonts (loaded in `app/layout.tsx`): Libre Caslon Display for the title, date readout and
 tomato name (`.garden-display`); Libre Caslon Text for running text (the theme default);
-IBM Plex Mono for labels and data (`.garden-mono`).
+IBM Plex Mono for labels and data (`.garden-mono`). They're declared with `preload: false`
+so other pages don't download them; they load once the garden page renders text in them.
 
 ---
 

@@ -46,6 +46,7 @@ export default async function PeopleGallery({ params }: { params: Promise<{ cate
   const gallery = await fetchGalleryBySlug(config.slug);
   const photos = (gallery?.photos ?? []).map((photo) => ({
     src: photoUrl(photo.id),
+    thumbSrc: photoUrl(photo.id, true),
     alt: config.title,
     caption: "",
   }));

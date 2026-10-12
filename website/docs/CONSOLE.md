@@ -18,14 +18,15 @@ running on its two screens in perspective. It's an accurate simulation, not a mi
 The solar page (`/solar`, "What It Runs") links here with a tilted still of the console
 (`ConsolePreview` in `website/app/solar/page.tsx`), since the console runs on that setup.
 
-Tapping a screen zooms the view into it.
+Tapping a screen zooms the view into it. With a mouse the scene leans up to 2 degrees
+toward the pointer, just enough to read as 3d (not with `prefers-reduced-motion`).
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `website/app/console/page.tsx` | Control state, the simulated environment, physical keyboard mapping, the layout |
-| `website/app/console/ConsoleScene.tsx` | The illustration, both screens, the lid shading, the zoom |
+| `website/app/console/ConsoleScene.tsx` | The illustration, both screens, the lid shading, the zoom and tilt |
 | `website/app/console/ScreenSurface.tsx` | A box at a screen's native resolution, warped onto its corners |
 | `website/app/console/sceneGeometry.ts` | Each screen's resolution and corners in the illustration, the lid strip, and the perspective math (`quadTransform`, `quadBounds`, `quadPoints`) |
 | `website/app/console/ConsoleControls.tsx` | The key deck, the "now showing" line, the sound switch |
@@ -138,11 +139,15 @@ bracket corners into `sceneGeometry.ts`, and export a clean copy as `console.web
 
 ## Layout
 
-The scene fills the window (the illustration as big as fits, centred on the blueprint grid).
-The key deck starts hidden: a "keys" button opens it, beside the scene on desktop (lg and
-up) and below it on phones (at most 55% of the height), and the scene shrinks to the space
-left, zoom included. The physical keyboard works whether the deck is open or not. Keys are at
-least 44 px tall for touch.
+The scene fills the window: the illustration at 96% of the smaller side, centred on the
+blueprint grid, with rounded corners and a shadow so its edges show as it tilts.
+
+- **Desktop (lg and up):** the key deck is always open beside the scene
+- **Phones:** the deck starts hidden so the scene is full screen; a "keys" button opens it
+  below the scene (at most 55% of the height) and the scene shrinks to the space left, zoom
+  included. Keys are at least 44 px tall for touch, and there's no tilt without a mouse
+
+The physical keyboard works whether the deck is open or not.
 
 Both screens run the kiosk's panels at full native resolution, which is the same work the
 kiosk does; on a phone the canvases cost more battery than a normal page.

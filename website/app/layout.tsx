@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
+// only Press Start 2P (the homepage/nav pixel font) is preloaded. everything
+// below is section-specific, and a root-layout preload would make every page
+// download it up front. with preload off the browser only fetches a font
+// once a page actually renders text in it.
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  preload: false,
 });
 
 const pressStart2P = Press_Start_2P({
@@ -16,6 +21,7 @@ const pressStart2P = Press_Start_2P({
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
+  preload: false,
 });
 
 // The Kitchen section uses its own retro desktop-OS design system (see
@@ -23,16 +29,19 @@ const caveat = Caveat({
 const newsreader = Newsreader({
   subsets: ["latin"],
   variable: "--font-kitchen-serif",
+  preload: false,
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-kitchen-sans",
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-kitchen-mono",
+  preload: false,
 });
 
 // Round Table (/public-square) uses the neobrutalism design system (see
@@ -43,11 +52,13 @@ const archivoBlack = Archivo_Black({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-neo-display",
+  preload: false,
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-neo-mono",
+  preload: false,
 });
 
 // The garden page (/garden) borrows from old seed catalogs and herbarium
@@ -56,6 +67,7 @@ const caslonDisplay = Libre_Caslon_Display({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-garden-display",
+  preload: false,
 });
 
 const caslonText = Libre_Caslon_Text({
@@ -63,12 +75,14 @@ const caslonText = Libre_Caslon_Text({
   style: ["normal", "italic"],
   subsets: ["latin"],
   variable: "--font-garden-text",
+  preload: false,
 });
 
 const plexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
   subsets: ["latin"],
   variable: "--font-garden-mono",
+  preload: false,
 });
 
 const SITE_NAME = "Tyler Schwenk";

@@ -8,7 +8,8 @@ interface PeopleGalleryClientProps {
   gallery: {
     title: string;
     description: string;
-    photos: Array<{ src: string; alt: string; caption?: string }>;
+    /** thumbSrc is the small version for the strip -- falls back to src when there isn't one */
+    photos: Array<{ src: string; thumbSrc?: string; alt: string; caption?: string }>;
   };
 }
 
@@ -122,10 +123,11 @@ export default function PeopleGalleryClient({ gallery }: PeopleGalleryClientProp
                   }`}
                 >
                   <Image
-                    src={photo.src}
+                    src={photo.thumbSrc ?? photo.src}
                     alt={photo.alt}
                     fill
                     className="object-cover"
+                    sizes="96px"
                   />
                 </button>
               ))}

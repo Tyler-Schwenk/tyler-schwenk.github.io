@@ -79,7 +79,7 @@ Client component rendering gallery cards and a full-screen modal viewer.
     title: string;
     description: string;
     coverImage: string;
-    media: Array<{ src: string; alt: string; type: "image" | "video" }>;
+    media: Array<{ src: string; thumbSrc?: string; alt: string; type: "image" | "video" }>;
     externalUrl?: string;
     externalLinkText?: string;
   }>;
@@ -88,9 +88,11 @@ Client component rendering gallery cards and a full-screen modal viewer.
 
 Features: card grid, full-screen modal, keyboard nav (Escape/arrows), image preloading, video support, external-link overlay.
 
+`src` is the full-res photo shown in the main viewer; `thumbSrc` is the Pi thumbnail used in the bottom strip (falls back to `src` if missing). Always set `thumbSrc` for Pi photos -- the strip is 80px tiles, so loading originals there wastes megabytes.
+
 ### PeopleGalleryClient
 
-Full-page people gallery viewer with thumbnail strip, nav arrows, and photo counter.
+Full-page people gallery viewer with thumbnail strip, nav arrows, and photo counter. Photos take the same `src` / `thumbSrc` pair as GalleryModal.
 
 ---
 

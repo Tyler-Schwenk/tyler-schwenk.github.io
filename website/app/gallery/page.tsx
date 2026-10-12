@@ -68,7 +68,7 @@ type GalleryEntry = {
   title: string;
   description: string;
   coverImage: string;
-  media: Array<{ src: string; alt: string; type: "image" | "video" }>;
+  media: Array<{ src: string; thumbSrc?: string; alt: string; type: "image" | "video" }>;
   externalUrl?: string;
   externalLinkText?: string;
 };
@@ -136,6 +136,7 @@ async function buildApiGalleryEntry(
   const photos = detail?.photos ?? [];
   const media = photos.map((photo) => ({
     src: photoUrl(photo.id),
+    thumbSrc: photoUrl(photo.id, true),
     alt: gallery.name,
     type: "image" as const,
   }));

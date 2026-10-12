@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 
 interface MediaItem {
   src: string;
+  /** small version for the thumbnail strip -- falls back to src when there isn't one */
+  thumbSrc?: string;
   alt: string;
   type: "image" | "video";
 }
@@ -236,7 +238,7 @@ export default function GalleryModal({ galleries }: GalleryModalProps) {
                         {shouldLoad ? (
                           item.type === "image" ? (
                             <Image
-                              src={item.src}
+                              src={item.thumbSrc ?? item.src}
                               alt={item.alt}
                               fill
                               className="object-cover"

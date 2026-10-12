@@ -46,12 +46,13 @@ function isConsoleKeyEvent(event: KeyboardEvent): boolean {
  * panels and keys, with stand-ins for what only exists on displaytop (the
  * surf cam video, the agents' surf conditions, the room mic, which gets a
  * synthesised song). The scene fills the screen; the keys work from a deck
- * that opens beside it (below on phones), or from the keyboard.
+ * beside it on desktop (below it on phones, behind a toggle), or from the keyboard.
  */
 export default function ConsolePage() {
   const [state, setState] = useState<ControlState>(INITIAL_CONTROL_STATE);
   const [focus, setFocus] = useState<ScreenSide | null>(null);
-  // the keys start hidden, so the scene opens full screen; the physical keyboard works either way
+  // on phones the keys start hidden, so the scene opens full screen; on desktop they're always
+  // beside it (css, below). the physical keyboard works either way
   const [controlsOpen, setControlsOpen] = useState(false);
   const [engine] = useState(() => new SimBpmEngine(HOUSE_LOOP));
   const muted = useSyncExternalStore(engine.subscribeMuted, engine.isMuted, () => false);
@@ -109,7 +110,7 @@ export default function ConsolePage() {
         <div className="relative min-h-0 min-w-0 flex-1">
           <ConsoleScene state={state} clockSlot={clockSlot} focus={focus} onFocus={setFocus} />
           {!controlsOpen && (
-            <>
+            <div className="lg:hidden">
               <Link
                 href="/"
                 className="absolute left-3 top-3 z-10 flex min-h-11 items-center rounded-lg bg-slate-900/80 px-3 font-mono text-sm text-slate-300 transition-colors hover:text-white"
@@ -123,36 +124,36 @@ export default function ConsolePage() {
               >
                 keys
               </button>
-            </>
+            </div>
           )}
         </div>
-        {controlsOpen && (
-          <aside className="flex max-h-[55dvh] shrink-0 flex-col gap-5 overflow-y-auto border-t border-slate-800 bg-slate-950/95 p-4 lg:max-h-none lg:w-96 lg:border-l lg:border-t-0">
-            <div className="flex items-center justify-between gap-3">
-              <h1 className="font-mono text-lg uppercase tracking-widest text-slate-200">Console</h1>
-              <div className="flex items-center gap-2">
-                <Link href="/" className="font-mono text-sm text-slate-400 transition-colors hover:text-white">
-                  &larr; main menu
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setControlsOpen(false)}
-                  aria-label="Hide the keys"
-                  className="min-h-11 rounded-lg border border-slate-700 px-3 font-mono text-sm text-slate-300 hover:bg-slate-800"
-                >
-                  hide
-                </button>
-              </div>
+        <aside
+          className={`${controlsOpen ? "flex" : "hidden"} max-h-[55dvh] shrink-0 flex-col gap-5 overflow-y-auto border-t border-slate-800 bg-slate-950/95 p-4 lg:flex lg:max-h-none lg:w-96 lg:border-l lg:border-t-0`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="font-mono text-lg uppercase tracking-widest text-slate-200">Console</h1>
+            <div className="flex items-center gap-2">
+              <Link href="/" className="font-mono text-sm text-slate-400 transition-colors hover:text-white">
+                &larr; main menu
+              </Link>
+              <button
+                type="button"
+                onClick={() => setControlsOpen(false)}
+                aria-label="Hide the keys"
+                className="min-h-11 rounded-lg border border-slate-700 px-3 font-mono text-sm text-slate-300 hover:bg-slate-800 lg:hidden"
+              >
+                hide
+              </button>
             </div>
-            <ConsoleControls
-              state={state}
-              onKey={pressKey}
-              muted={muted}
-              onToggleMute={() => engine.setMuted(!muted)}
-              liveCamId={liveCamId}
-            />
-          </aside>
-        )}
+          </div>
+          <ConsoleControls
+            state={state}
+            onKey={pressKey}
+            muted={muted}
+            onToggleMute={() => engine.setMuted(!muted)}
+            liveCamId={liveCamId}
+          />
+        </aside>
       </div>
     </DisplayEnvironmentProvider>
   );
