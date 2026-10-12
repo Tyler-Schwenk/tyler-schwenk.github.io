@@ -7,6 +7,8 @@ import PhotoLightboxGrid from "@/components/PhotoLightboxGrid";
 
 // keep in sync with the accent color used throughout this page's inline classes
 const ACCENT_HEX = "#3275a8";
+// warm color so the plug-in solar notice reads as an alert, not part of the page's blue theme
+const NOTICE_HEX = "#ea580c";
 
 const EXECUTED_PHOTOS = [
   { src: "/images/solar/1.jpg", thumbSrc: "/images/solar/1.jpg", alt: "Solar install, step 1" },
@@ -44,7 +46,8 @@ function Section({
 }
 
 /**
- * A framed photo shown at its full extent (never cropped) on a soft neutral backdrop.
+ * A framed photo at full column width, sized to its own aspect ratio so it's never cropped
+ * or letterboxed (portrait shots just come out tall).
  *
  * @param {object} props - Component props.
  * @param {string} props.src - Image path.
@@ -52,16 +55,16 @@ function Section({
  * @returns {JSX.Element} The framed photo.
  */
 function PhotoFrame({ src, alt }: { src: string; alt: string }) {
+  // 0x0 lets the browser use the file's natural size (incl. EXIF rotation) via h-auto
   return (
-    <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        className="object-contain"
-        sizes="(max-width: 768px) 100vw, 672px"
-      />
-    </div>
+    <Image
+      src={src}
+      alt={alt}
+      width={0}
+      height={0}
+      className="h-auto w-full rounded-lg border border-slate-200"
+      sizes="(max-width: 768px) 100vw, 672px"
+    />
   );
 }
 
@@ -91,11 +94,14 @@ export default function SolarPage() {
           {/* Plug-in solar notice, collapsed by default */}
           <details
             className="group mb-16 rounded-lg px-5 py-4"
-            style={{ borderLeft: `4px solid ${ACCENT_HEX}`, backgroundColor: `${ACCENT_HEX}0d` }}
+            style={{ borderLeft: `4px solid ${NOTICE_HEX}`, backgroundColor: `${NOTICE_HEX}1a` }}
           >
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-slate-900 [&::-webkit-details-marker]:hidden">
+            <summary
+              className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold [&::-webkit-details-marker]:hidden"
+              style={{ color: NOTICE_HEX }}
+            >
               CA approved plug-in solar!!
-              <span className="text-slate-400 transition-transform group-open:rotate-180">
+              <span className="transition-transform group-open:rotate-180">
                 &#9662;
               </span>
             </summary>
