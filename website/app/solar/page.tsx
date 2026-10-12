@@ -116,6 +116,73 @@ export default function SolarPage() {
             <PhotoFrame src="/images/solar/monitor.jpg" alt="Power output monitor" />
           </Section>
 
+          <Section title="Inspiration">
+            <div className="space-y-4 text-sm leading-relaxed text-slate-700">
+              <p>
+                Mostly this project was motivated by the fact that if we don&apos;t start using more
+                sustainable energy, all of us humans will die horrible deaths due to things like
+                famine, poisoned water, and increasingly frequent and intense natural disasters. And
+                by the fact that this is already happening, particularly for people in the colonized
+                parts of the world. Solar is a very good solution that&apos;s been proven effective.
+                It&apos;s literally free energy raining down from the sky that would otherwise just
+                make your house a little hotter, so you might as well capture it and use it. Plants
+                do it all the time, we might as well join them.
+              </p>
+              <p>
+                This project has been nice on one hand to just get some solar capacity, but also to
+                gain a better understanding of the system, the costs, and where the inefficiencies
+                are (mostly the inverter, which is why plug-in solar is extra epic). It&apos;s also
+                given me a better perspective on how much power these panels supply, and how much my
+                different appliances draw (cool to see how the power draw changes when listening to
+                music at different volume levels).
+              </p>
+            </div>
+          </Section>
+
+          <Section title="Plug-In Solar">
+            <div className="space-y-4 text-sm leading-relaxed text-slate-700">
+              <p>
+                Also, CA just approved plug-in solar! So now you don&apos;t have to do what I did,
+                just get one of those. You won&apos;t need to deal with a battery, inverter, and
+                installation, which drive the majority of the cost (the panels themselves only make
+                up ~20% of a typical rooftop solar install). They&apos;re super simple, easy to use
+                as a renter, and help offset peak price spikes during the day when the sun is
+                shining most and everyone is running their A/C due to the changing climate and
+                diminishing availability of oil.{" "}
+                <a
+                  href="https://www.brightsaver.org/plug-in-solar-products"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#3275a8] underline underline-offset-2 hover:opacity-80"
+                >
+                  Check them out
+                </a>
+                .
+              </p>
+            </div>
+          </Section>
+
+          <Section title="Wright's Law">
+            <div className="space-y-4 text-sm leading-relaxed text-slate-700">
+              <p>
+                Solar is becoming steadily cheaper and more efficient following Wright&apos;s law,{" "}
+                <a
+                  href="https://ourworldindata.org/learning-curve"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#3275a8] underline underline-offset-2 hover:opacity-80"
+                >
+                  check it out
+                </a>
+                .
+              </p>
+              <PhotoFrame
+                src="/images/solar/solar-pv-prices-vs-cumulative-capacity.png"
+                alt="Solar PV module prices vs. cumulative installed capacity"
+              />
+            </div>
+          </Section>
+
           {/* Back Link */}
           <div className="text-center">
             <Link
