@@ -88,17 +88,35 @@ export default function SolarPage() {
           </div>
           <div className="h-1 w-16 rounded-full mb-10" style={{ backgroundColor: ACCENT_HEX }} />
 
-          {/* Disclaimer */}
-          <div
-            className="mb-16 rounded-lg px-5 py-4"
+          {/* Plug-in solar notice, collapsed by default */}
+          <details
+            className="group mb-16 rounded-lg px-5 py-4"
             style={{ borderLeft: `4px solid ${ACCENT_HEX}`, backgroundColor: `${ACCENT_HEX}0d` }}
           >
-            <p className="text-sm leading-relaxed text-slate-700">
-              This project is still in development. The panels and batteries and whatnot are wired
-              up and working, but I want to connect a battery monitor to my Pi to track its usage
-              over time and see how much savings come from it.
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-slate-900 [&::-webkit-details-marker]:hidden">
+              CA approved plug-in solar!!
+              <span className="text-slate-400 transition-transform group-open:rotate-180">
+                &#9662;
+              </span>
+            </summary>
+            <p className="mt-3 text-sm leading-relaxed text-slate-700">
+              So now you don&apos;t have to do what I did, just get one of those. You won&apos;t
+              need to deal with a battery, inverter, and installation, which drive the majority of
+              the cost (the panels themselves only make up ~20% of a typical rooftop solar install).
+              They&apos;re super simple, easy to use as a renter, and help offset peak price spikes
+              during the day when the sun is shining most and everyone is running their A/C due to
+              the changing climate and diminishing availability of oil.{" "}
+              <a
+                href="https://www.brightsaver.org/plug-in-solar-products"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#3275a8] underline underline-offset-2 hover:opacity-80"
+              >
+                Check them out
+              </a>
+              .
             </p>
-          </div>
+          </details>
 
           <Section title="The Plan">
             <PhotoFrame src="/images/solar/plan.jpg" alt="Hand-drawn plan for the solar setup" />
@@ -135,29 +153,6 @@ export default function SolarPage() {
                 given me a better perspective on how much power these panels supply, and how much my
                 different appliances draw (cool to see how the power draw changes when listening to
                 music at different volume levels).
-              </p>
-            </div>
-          </Section>
-
-          <Section title="Plug-In Solar">
-            <div className="space-y-4 text-sm leading-relaxed text-slate-700">
-              <p>
-                Also, CA just approved plug-in solar! So now you don&apos;t have to do what I did,
-                just get one of those. You won&apos;t need to deal with a battery, inverter, and
-                installation, which drive the majority of the cost (the panels themselves only make
-                up ~20% of a typical rooftop solar install). They&apos;re super simple, easy to use
-                as a renter, and help offset peak price spikes during the day when the sun is
-                shining most and everyone is running their A/C due to the changing climate and
-                diminishing availability of oil.{" "}
-                <a
-                  href="https://www.brightsaver.org/plug-in-solar-products"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#3275a8] underline underline-offset-2 hover:opacity-80"
-                >
-                  Check them out
-                </a>
-                .
               </p>
             </div>
           </Section>
