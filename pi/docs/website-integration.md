@@ -331,6 +331,24 @@ The Website Backend API uses a single SQLite database with multiple tables:
 
 All tables share the same database file: `website_backend.db`
 
+### Photo Orientation
+
+Phone photos are often stored sideways with an EXIF orientation tag. On upload,
+`decode_and_normalize_image` (`app/image_utils.py`) rotates the pixels upright, and
+`create_thumbnail` applies the tag too, so thumbnails always match the original.
+
+Photos uploaded before that still have sideways pixels and may have sideways
+thumbnails (the original looks fine since browsers honor the tag). To rebuild those
+thumbnails and correct their stored width/height:
+
+```bash
+docker exec website-backend-api python scripts/fix_rotated_thumbnails.py --dry-run
+docker exec website-backend-api python scripts/fix_rotated_thumbnails.py
+```
+
+It only touches photos whose original has a rotation tag, so it's safe to re-run.
+Covers gallery and recipe photos.
+
 ## Development Workflow
 
 ### Testing API Changes

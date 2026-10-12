@@ -10,8 +10,26 @@ const MAX_FRAME_DT_S = 0.1;
 const MS_PER_S = 1000;
 
 /**
- * Runs a full-window canvas animation: sizes the canvas to the window (and
- * again on resize) and calls `draw` every animation frame until unmount. The
+ * Calls `onResize` with the size of the element a canvas fills (its parent),
+ * now and whenever it changes. On the kiosk that's the whole window; inside
+ * the console page's screens it's the simulated screen.
+ * @param canvas - The canvas, laid out to fill its parent.
+ * @param onResize - Gets the parent's width and height in css px.
+ * @returns Stops watching.
+ */
+export function watchCanvasContainer(canvas: HTMLCanvasElement, onResize: (width: number, height: number) => void): () => void {
+  const container = canvas.parentElement;
+  if (!container) return () => {};
+  const report = () => onResize(container.clientWidth, container.clientHeight);
+  report();
+  const observer = new ResizeObserver(report);
+  observer.observe(container);
+  return () => observer.disconnect();
+}
+
+/**
+ * Runs a full-panel canvas animation: sizes the canvas to the panel it fills
+ * (and again when that resizes) and calls `draw` every animation frame until unmount. The
  * latest `draw` is always used, so it can close over fresh props.
  * @param draw - Draws one frame.
  * @returns A ref to attach to the canvas.
@@ -29,12 +47,10 @@ export function useCanvasLoop(draw: CanvasDraw): RefObject<HTMLCanvasElement | n
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener("resize", resize);
+    const stopWatching = watchCanvasContainer(canvas, (width, height) => {
+      canvas.width = width;
+      canvas.height = height;
+    });
 
     let lastFrameMs: number | null = null;
     let animationFrameId = 0;
@@ -48,7 +64,7 @@ export function useCanvasLoop(draw: CanvasDraw): RefObject<HTMLCanvasElement | n
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener("resize", resize);
+      stopWatching();
     };
   }, []);
 

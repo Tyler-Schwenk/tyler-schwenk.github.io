@@ -8,6 +8,7 @@ import BpmMilkdrop from "./BpmMilkdrop";
 import BpmReadout from "./BpmReadout";
 import BpmVisualizer from "./BpmVisualizer";
 import { useBpmStream, type BpmStream } from "./bpmAgent";
+import { useDisplayEnvironment } from "./displayEnvironment";
 import { BPM_VIEW_INFO, type BpmViewInfo } from "./displayConfig";
 import type { PresetControl } from "./kioskControl";
 
@@ -62,7 +63,8 @@ export default function BpmPanel({
 }) {
   const view = BPM_VIEWS[viewIndex] ?? BPM_VIEWS[0];
   // only the screen drawing the view needs the waveform
-  const stream = useBpmStream({ waveform: side === "primary" && (view.needsWaveform ?? false) });
+  const { connectBpm } = useDisplayEnvironment();
+  const stream = useBpmStream(connectBpm, { waveform: side === "primary" && (view.needsWaveform ?? false) });
 
   if (stream.error) {
     return (

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "@/lib/api";
+import { watchCanvasContainer } from "./useCanvasLoop";
 
 /**
  * Display panel: current mallard count, with a canvas-animated background
@@ -179,14 +180,12 @@ export default function MallardPanel() {
 
     const sprite = buildDuckSprite();
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    const stopWatching = watchCanvasContainer(canvas, (width, height) => {
+      canvas.width = width;
+      canvas.height = height;
       const renderedCount = Math.min(mallardCountRef.current ?? 0, MAX_RENDERED_DUCKS);
       flockRef.current = adjustFlock(flockRef.current, renderedCount, canvas.width, canvas.height);
-    };
-    resize();
-    window.addEventListener("resize", resize);
+    });
 
     let lastFrameTime = performance.now();
     let animationFrameId: number;
@@ -221,7 +220,7 @@ export default function MallardPanel() {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener("resize", resize);
+      stopWatching();
     };
   }, []);
 

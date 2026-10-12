@@ -2,10 +2,9 @@
 
 ## Overview
 
-The garden page (`/garden`) has a hero with stats derived from the timelapse dates
-(first photo, latest frame, days of growth), the timelapse player, a "Garden Photos"
-gallery, and a notes section with the favorite tomato of the year and gardening
-inspiration links.
+The garden page (`/garden`) has a masthead with a herbarium-style label (date range and
+day count derived from the timelapse dates), the timelapse player, a photographs section
+fed by the `garden-photos` gallery, and notes (tomato of the year, further reading).
 
 The video and gallery photos are both served from the Pi backend and fetched client-side
 by slug — new uploads show up on page load without a website rebuild. The date-tracking
@@ -21,12 +20,12 @@ build time and shipped with the static site, so a new timelapse video still need
 
 | File | Purpose |
 |------|---------|
-| `website/app/garden/page.tsx` | Garden page — fetches video + gallery metadata by slug, renders hero, player, photo grid, and notes |
-| `website/app/garden/TimelapsePlayer.tsx` | Custom timelapse player (date tag overlay, chapter scrubber, day/frame stepping, speed, fullscreen, keyboard) |
-| `website/app/garden/timelapse-utils.ts` | Date lookups over the timestamps: date at a time, day number, month chapters, adjacent day, span |
+| `website/app/garden/page.tsx` | Garden page — fetches video + gallery metadata by slug, renders masthead + herbarium label, player, photographs (balanced columns, natural proportions), and notes |
+| `website/app/garden/TimelapsePlayer.tsx` | Custom timelapse player (ruler scrubber, large date readout, day/frame stepping, speed, fullscreen, keyboard) |
+| `website/app/garden/timelapse-utils.ts` | Date lookups over the timestamps: date at a time, day number, month chapters, adjacent day, span + range, label splitting |
 | `website/app/garden/timelapse-timestamps.ts` | Auto-generated timestamp map (video seconds → calendar date) |
 | `scripts/timelapse/compile_timelapse.py` | Compiles the raw footage into one MP4 and regenerates the timestamps module |
-| `website/components/PhotoLightboxGrid.tsx` | Reusable thumbnail grid + fullscreen lightbox used by the Garden Photos section |
+| `website/components/PhotoLightbox.tsx` | Shared fullscreen lightbox opened when a photograph is clicked |
 
 ### Data Flow
 
@@ -40,7 +39,7 @@ compile_timelapse.py
         ↓
   garden page fetches video ID by slug from Pi, streams via /videos/{id}/stream
   player polls currentTime each animation frame while playing → lookup in
-  TIMELAPSE_TIMESTAMPS → date + day number shown on the plant-tag overlay
+  TIMELAPSE_TIMESTAMPS → date + day number shown in the readout under the ruler
 ```
 
 ### Raw Data Location
@@ -62,34 +61,55 @@ New card pulls go in a new numbered folder (`3/`, `4/`, etc.).
 `/videos/{id}/thumbnail`). Everything date-related is derived from
 `TIMELAPSE_TIMESTAMPS`, so it updates automatically when the timestamps are regenerated.
 
-- **Date tag** — overlay in the top-left of the video showing "Day N" (day 1 = first
-  timestamp entry) and the date. It's inside the fullscreen container, so it stays
-  visible in fullscreen.
-- **Scrubber** — pointer-captured custom track (works for mouse and touch). Hovering
-  shows a bubble with the date at that position. Notches mark the start of each month.
-- **Chapters** — one "Jump to" chip per calendar month, starting at that month's first
-  frame. The year is only shown if the footage spans more than one year.
-- **Stepping** — buttons for previous/next day (jumps to that day's first frame) and
-  previous/next frame (`FRAME_DURATION_S`, 30 fps).
-- **Speed** — cycles through `PLAYBACK_SPEEDS`.
+- **Ruler scrubber** — sits directly under the video. One short tick per timestamp entry
+  (so gaps in the footage show up as empty stretches), a longer tick at each month start,
+  and month labels underneath. Labels closer than `MIN_MONTH_LABEL_GAP_PCT` drop the
+  earlier one so they don't collide on phones; labels past `RIGHT_ALIGN_LABEL_PCT` hang
+  left of their tick. Pointer-captured, so it works for mouse and touch; the date under
+  the cursor shows above it while hovering or dragging. The red playhead marks the
+  current position.
+- **Readout** — the current date set large ("Apr 22") with the year, "day N of M"
+  (day 1 = first timestamp entry) and the clock underneath.
+- **Control strip** — Play/Pause/Replay, speed (cycles `PLAYBACK_SPEEDS`), full screen,
+  and previous/next day (jumps to that day's first frame) and frame (`FRAME_DURATION_S`,
+  30 fps). On phones it's a 4-column grid (play/speed/full screen on top, steppers below);
+  from `md` up it's one row.
 - **Keyboard** (when the player is focused): space/k play-pause, left/right step a
-  frame, shift+left/right jump a day, f fullscreen.
+  frame, shift+left/right jump a day, f full screen. The hint line only shows on wide
+  screens with a hover-capable pointer.
+- **Full screen** — the whole player (video, ruler, readout, controls) goes full screen,
+  on the paper background. iOS Safari falls back to native video full screen.
 
 The date is read every animation frame while playing rather than from `timeupdate`,
 which only fires a few times a second and would skip the short early days.
 
 ---
 
-## Theme
+## Page Design
 
-The page uses a scoped `.garden-theme` (in `website/app/globals.css`): warm linen paper,
-leaf-green ink, terracotta accent, with dark-mode overrides via `prefers-color-scheme`.
-Tokens are prefixed `--g-`. The `--g-player-*` and `--g-tag-*` tokens stay dark/cream in
-both modes so the footage looks the same either way.
+The page borrows from seed catalogs and herbarium sheets rather than app UI: uncoated
+paper, near-black ink, hairline rules, a single tomato-red accent, square corners and
+no shadows.
 
-Fonts: Fraunces (`--font-garden-serif`, loaded in `app/layout.tsx`) for headings, the date
-tag, and anything with the `.garden-serif` class; Inter for body text. `.garden-kbd`
-styles the keyboard hint keys.
+- **Masthead** — two-line "The / Garden" title, a short intro, and a herbarium-style
+  specimen label (locality, habitat, collected date range, duration) instead of stat tiles.
+  The range and duration come from `TIMELAPSE_SPAN`.
+- **Running heads** — each section opens with a full-width ink rule and a mono label.
+- **Photographs** — shown at their natural proportions (width/height from the gallery
+  API) in balanced columns: 2 below `lg`, 3 above. Each photo is dealt to the currently
+  shortest column so plate numbers ("Pl. 01") read left to right. Both layouts are
+  rendered and swapped with CSS. Clicking opens `PhotoLightbox`.
+- **Notes** — a two-column ruled table: tomato of the year and further reading.
+
+### Theme tokens
+
+Scoped `.garden-theme` in `website/app/globals.css`, tokens prefixed `--g-` (`paper`,
+`paper-raised`, `ink`, `ink-soft`, `ink-faint`, `rule`, `tomato`, `on-ink`), with
+dark-mode overrides via `prefers-color-scheme`.
+
+Fonts (loaded in `app/layout.tsx`): Libre Caslon Display for the title, date readout and
+tomato name (`.garden-display`); Libre Caslon Text for running text (the theme default);
+IBM Plex Mono for labels and data (`.garden-mono`).
 
 ---
 

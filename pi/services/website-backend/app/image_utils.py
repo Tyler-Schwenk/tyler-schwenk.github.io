@@ -28,8 +28,8 @@ WEB_SAFE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
 
 # EXIF "Orientation" tag ID. 1 means "no rotation needed" -- anything else means
 # the pixels are stored sideways/upside-down and a viewer is expected to rotate
-# them using this tag. Our thumbnail generator doesn't do that, so we bake the
-# rotation into the pixels ourselves at upload time instead of relying on it.
+# them using this tag. Pillow's resize/save drops the tag, so anything we
+# re-encode has to bake the rotation into the pixels first.
 EXIF_ORIENTATION_TAG = 0x0112
 
 
@@ -50,7 +50,11 @@ def create_thumbnail(
     image_path: Path, thumbnail_path: Path, size: Optional[tuple[int, int]] = None
 ) -> None:
     """
-    Create a thumbnail from an image.
+    Create a thumbnail from an image, with any EXIF rotation baked in.
+
+    Saving a resized copy drops the EXIF orientation tag, so without the
+    transpose a sideways-stored phone photo would come out sideways even though
+    browsers show the original upright. Overwrites thumbnail_path if it exists.
 
     Args:
         image_path: Path to the source image
@@ -62,8 +66,9 @@ def create_thumbnail(
 
     thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(image_path) as img:
-        img.thumbnail(size, Image.Resampling.LANCZOS)
-        img.save(thumbnail_path, optimize=True, quality=settings.THUMBNAIL_QUALITY)
+        oriented = ImageOps.exif_transpose(img)
+        oriented.thumbnail(size, Image.Resampling.LANCZOS)
+        oriented.save(thumbnail_path, optimize=True, quality=settings.THUMBNAIL_QUALITY)
 
 
 def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[bytes, int, int, str, str]:
@@ -74,8 +79,8 @@ def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[byte
     HEIC/HEIF (the default iPhone camera format) doesn't render in most desktop
     browsers, so it gets re-encoded to JPEG here. Separately, phone photos are
     often stored "sideways" with an EXIF orientation tag telling viewers how to
-    rotate them -- since our thumbnail generator ignores that tag, any non-default
-    orientation gets physically rotated into the pixels here instead. Already
+    rotate them -- any non-default orientation gets physically rotated into the
+    pixels here so every consumer of the stored file sees it upright. Already
     web-safe, non-rotated images pass through untouched to avoid a lossy re-encode.
 
     Args:

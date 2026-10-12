@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { ButterchurnVisualizer } from "butterchurn";
 import { beatPhase, countBeat, WAVEFORM_LENGTH, type BeatCounter, type BpmTempo } from "./bpmAgent";
 import type { BpmViewProps } from "./BpmPanel";
-import { reportPlayingPreset, wrapIndex, type PresetControl } from "./kioskControl";
+import { useDisplayEnvironment } from "./displayEnvironment";
+import { wrapIndex, type PresetControl } from "./kioskControl";
+import { watchCanvasContainer } from "./useCanvasLoop";
 import { loadPresetLibrary, sortedPresetNames, unwrapExport, type PresetLibrary } from "./milkdropPresets";
 
 /**
@@ -106,11 +108,13 @@ async function loadMilkdrop(): Promise<MilkdropLibs> {
 }
 
 /**
- * The drawing height that matches the window's shape at RENDER_WIDTH_PX wide.
+ * The drawing height that matches a screen's shape at RENDER_WIDTH_PX wide.
+ * @param width - The screen's width, css px.
+ * @param height - The screen's height, css px.
  * @returns Height, px.
  */
-function renderHeight(): number {
-  return Math.round((RENDER_WIDTH_PX * window.innerHeight) / window.innerWidth);
+function renderHeight(width: number, height: number): number {
+  return Math.round((RENDER_WIDTH_PX * height) / width);
 }
 
 /**
@@ -192,7 +196,7 @@ function runMilkdrop(
   onPreset: (preset: PresetInfo) => void
 ): () => void {
   canvas.width = RENDER_WIDTH_PX;
-  canvas.height = renderHeight();
+  canvas.height = renderHeight(canvas.clientWidth, canvas.clientHeight);
   const visualizer = libs.createVisualizer(canvas, canvas.width, canvas.height);
   const sorted = sortedPresetNames(libs.presets);
   const cycle: PresetCycle = {
@@ -234,12 +238,11 @@ function runMilkdrop(
     }
   };
 
-  const resize = () => {
+  const stopWatching = watchCanvasContainer(canvas, (width, height) => {
     canvas.width = RENDER_WIDTH_PX;
-    canvas.height = renderHeight();
+    canvas.height = renderHeight(width, height);
     visualizer.setRendererSize(canvas.width, canvas.height);
-  };
-  window.addEventListener("resize", resize);
+  });
 
   let animationFrameId = 0;
   let lastFrameMs = performance.now();
@@ -257,12 +260,13 @@ function runMilkdrop(
 
   return () => {
     cancelAnimationFrame(animationFrameId);
-    window.removeEventListener("resize", resize);
+    stopWatching();
   };
 }
 
 export default function BpmMilkdrop({ stream, presets }: BpmViewProps) {
   const { waveformRef, tempoRef } = stream;
+  const { reportPlayingPreset } = useDisplayEnvironment();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const presetsRef = useRef(presets);
   const [preset, setPreset] = useState<PresetInfo | null>(null);
@@ -295,7 +299,7 @@ export default function BpmMilkdrop({ stream, presets }: BpmViewProps) {
       stop?.();
       reportPlayingPreset(null);
     };
-  }, [waveformRef, tempoRef]);
+  }, [waveformRef, tempoRef, reportPlayingPreset]);
 
   // the preset name fades out a few seconds after each change
   useEffect(() => {

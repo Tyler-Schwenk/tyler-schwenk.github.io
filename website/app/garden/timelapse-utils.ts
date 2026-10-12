@@ -87,26 +87,26 @@ function buildChapters(): TimelapseChapter[] {
 
 export const TIMELAPSE_CHAPTERS = buildChapters();
 
-/** first and latest dates in the footage, plus how many days that covers */
+/**
+ * Formats the first-to-latest date range, dropping the first year when both
+ * dates share it, e.g. "Mar 8 – Jul 1, 2026".
+ *
+ * @returns {string} Human-readable date range.
+ */
+function formatSpanRange(): string {
+  const firstYear = FIRST_DATE_LABEL.slice(-4);
+  const lastYear = LAST_DATE_LABEL.slice(-4);
+  const first = firstYear === lastYear ? FIRST_DATE_LABEL.replace(/, \d{4}$/, "") : FIRST_DATE_LABEL;
+  return `${first} – ${LAST_DATE_LABEL}`;
+}
+
+/** first and latest dates in the footage, the range between them, and how many days that covers */
 export const TIMELAPSE_SPAN = {
   firstDate: FIRST_DATE_LABEL,
   lastDate: LAST_DATE_LABEL,
+  range: formatSpanRange(),
   totalDays: getDayNumber(LAST_DATE_LABEL),
 };
-
-/**
- * Finds the index of the chapter that contains a playback position.
- *
- * @param {number} seconds - Video playback position in seconds.
- * @returns {number} Index into TIMELAPSE_CHAPTERS (0 if before the first chapter).
- */
-export function getChapterIndexAtTime(seconds: number): number {
-  let index = 0;
-  TIMELAPSE_CHAPTERS.forEach((chapter, i) => {
-    if (chapter.startSeconds <= seconds) index = i;
-  });
-  return index;
-}
 
 /**
  * Finds the start of the previous or next day relative to a playback position.
@@ -124,6 +124,17 @@ export function getAdjacentDayStart(seconds: number, direction: 1 | -1): number 
   }
   const earlier = TIMELAPSE_TIMESTAMPS.filter((entry) => entry.startSeconds < seconds);
   return earlier[earlier.length - 1]?.startSeconds ?? null;
+}
+
+/**
+ * Splits a date label into its month/day and year parts for separate styling.
+ *
+ * @param {string} label - Date label like "Apr 13, 2026".
+ * @returns {{ monthDay: string, year: string }} e.g. { monthDay: "Apr 13", year: "2026" }.
+ */
+export function splitDateLabel(label: string): { monthDay: string; year: string } {
+  const [monthDay = label, year = ""] = label.split(", ");
+  return { monthDay, year };
 }
 
 /**

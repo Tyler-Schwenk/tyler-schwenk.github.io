@@ -98,6 +98,26 @@ export interface BpmStream {
 /** Samples per waveform event (the agent's WAVEFORM_SAMPLES). */
 export const WAVEFORM_LENGTH = 1024;
 
+/** What a bpm stream connection delivers, as it arrives. */
+export interface BpmHandlers {
+  onConfig: (config: BpmConfig) => void;
+  onFrame: (frame: BpmFrame) => void;
+  /** The latest WAVEFORM_LENGTH samples (see BpmStream.waveformRef); the buffer may be reused. */
+  onWaveform: (bytes: Uint8Array) => void;
+  onTempo: (tempo: BpmTempo) => void;
+  /** The stream failed or the source reported a problem; the message is shown on screen. */
+  onError: (message: string) => void;
+}
+
+/**
+ * Opens a bpm stream: the agent's on the kiosk, a simulated one on the console
+ * page (see DisplayEnvironment).
+ * @param options.waveform - Also deliver the raw waveform.
+ * @param handlers - Called as data arrives.
+ * @returns Closes the stream.
+ */
+export type BpmConnector = (options: { waveform: boolean }, handlers: BpmHandlers) => () => void;
+
 /**
  * Decodes a waveform event's base64 bytes into a reused buffer.
  * @param base64 - The event's `bytes`.
@@ -112,14 +132,38 @@ function decodeWaveform(base64: string, target: Uint8Array | null): Uint8Array {
 }
 
 /**
- * Keeps an event stream open to the bpm agent while mounted, which is what
- * keeps the mic recording. Frames go into a ref (they arrive far faster than
- * React should re-render); config and tempo are state too. Changing
- * `waveform` reopens the stream (the agent keeps listening across that).
+ * Opens an event stream to the bpm agent, which is what keeps the mic recording.
+ * @param options.waveform - Also stream the raw waveform.
+ * @param handlers - Called as events arrive.
+ * @returns Closes the stream.
+ */
+export const connectBpmAgent: BpmConnector = ({ waveform }, handlers) => {
+  const source = new EventSource(`${BPM_AGENT_URL}/stream${waveform ? "?waveform=1" : ""}`);
+  let waveformBuffer: Uint8Array | null = null;
+  source.addEventListener("config", (event) => handlers.onConfig(JSON.parse(event.data)));
+  source.addEventListener("frame", (event) => handlers.onFrame(JSON.parse(event.data)));
+  source.addEventListener("waveform", (event) => {
+    waveformBuffer = decodeWaveform(JSON.parse(event.data).bytes, waveformBuffer);
+    handlers.onWaveform(waveformBuffer);
+  });
+  source.addEventListener("tempo", (event) => handlers.onTempo(JSON.parse(event.data)));
+  // the agent's own `error` event carries a message; a bare one is the connection failing
+  source.addEventListener("error", (event) => {
+    handlers.onError(event instanceof MessageEvent ? JSON.parse(event.data).message : AGENT_UNREACHABLE_MESSAGE);
+  });
+  return () => source.close();
+};
+
+/**
+ * Keeps a bpm stream open while mounted (on the kiosk, that's what keeps the
+ * mic recording). Frames go into a ref (they arrive far faster than React
+ * should re-render); config and tempo are state too. Changing `waveform`
+ * reopens the stream (the agent keeps listening across that).
+ * @param connect - Opens the stream (from the DisplayEnvironment).
  * @param options.waveform - Also stream the raw waveform (into waveformRef).
  * @returns The stream's latest data.
  */
-export function useBpmStream({ waveform = false }: { waveform?: boolean } = {}): BpmStream {
+export function useBpmStream(connect: BpmConnector, { waveform = false }: { waveform?: boolean } = {}): BpmStream {
   const [config, setConfig] = useState<BpmConfig | null>(null);
   const [tempo, setTempo] = useState<BpmTempo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,36 +172,37 @@ export function useBpmStream({ waveform = false }: { waveform?: boolean } = {}):
   const waveformRef = useRef<Uint8Array | null>(null);
 
   useEffect(() => {
-    const source = new EventSource(`${BPM_AGENT_URL}/stream${waveform ? "?waveform=1" : ""}`);
     const frames = framesRef.current;
-    source.addEventListener("config", (event) => {
-      setConfig(JSON.parse(event.data));
-      setError(null);
-    });
-    source.addEventListener("frame", (event) => {
-      frames.push(JSON.parse(event.data));
-      if (frames.length > FRAME_HISTORY_LENGTH) frames.splice(0, frames.length - FRAME_HISTORY_LENGTH);
-    });
-    source.addEventListener("waveform", (event) => {
-      waveformRef.current = decodeWaveform(JSON.parse(event.data).bytes, waveformRef.current);
-    });
-    source.addEventListener("tempo", (event) => {
-      const latest: BpmTempo = JSON.parse(event.data);
-      tempoRef.current = latest;
-      setTempo(latest);
-    });
-    // the agent's own `error` event carries a message; a bare one is the connection failing
-    source.addEventListener("error", (event) => {
-      const message = event instanceof MessageEvent ? JSON.parse(event.data).message : AGENT_UNREACHABLE_MESSAGE;
-      setError(message);
-      tempoRef.current = null;
-      setTempo(null);
-    });
+    const close = connect(
+      { waveform },
+      {
+        onConfig: (latest) => {
+          setConfig(latest);
+          setError(null);
+        },
+        onFrame: (frame) => {
+          frames.push(frame);
+          if (frames.length > FRAME_HISTORY_LENGTH) frames.splice(0, frames.length - FRAME_HISTORY_LENGTH);
+        },
+        onWaveform: (bytes) => {
+          waveformRef.current = bytes;
+        },
+        onTempo: (latest) => {
+          tempoRef.current = latest;
+          setTempo(latest);
+        },
+        onError: (message) => {
+          setError(message);
+          tempoRef.current = null;
+          setTempo(null);
+        },
+      }
+    );
     return () => {
-      source.close();
+      close();
       frames.length = 0;
     };
-  }, [waveform]);
+  }, [connect, waveform]);
 
   return { config, tempo, tempoRef, framesRef, waveformRef, error };
 }

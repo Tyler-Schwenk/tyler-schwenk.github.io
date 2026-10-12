@@ -19,7 +19,9 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 
 | File | Purpose |
 |------|---------|
-| `website/app/display/page.tsx` | Rotation controller — pairs each slot with what each screen shows (`ROTATION`); picks this screen's side from `?screen=` |
+| `website/app/display/page.tsx` | The kiosk page: replays the key log, picks this screen's side from `?screen=`, prepares the next panel, hands over to trash night |
+| `website/app/display/displayRotation.tsx` | What each screen shows for a control state: pairs each slot with its panels (`FIXED_SLOT_PANELS`, cam slots), picks the current slot and bpm view (`pickSlots`), renders one screen (`DisplayScreen`). Shared with the console page |
+| `website/app/display/displayEnvironment.tsx` | Where panels get what only exists on displaytop (bpm stream, surf conditions, the surf cam player, preset reporting); defaults to the agents, the console page swaps in a simulation (see "Running Elsewhere") |
 | `website/app/display/displayConfig.ts` | What the display shows, with no panels in it: `ROTATION_SLOTS`, `BPM_VIEW_INFO`, `SHORTCUTS`, `CONTROL_CONFIG`, `PANEL_ROTATE_INTERVAL_MS`, and `describeDisplay` (the state in words). Shared with the admin page's remote |
 | `website/app/display/layout.tsx` | Turns off page scrolling for `/display` (every panel is a fixed full-screen layer; without it the kiosk browser can show scrollbars) |
 | `website/app/display/kioskControl.ts` | Keyboard control: the key-log state machine both pages (and the admin remote) replay (`replayControl`), the generic agent long-poll hook (`useAgentLongPoll`) and the key log's (`useControlLog`) |
@@ -40,9 +42,9 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/milkdropPresets.ts` | Loads and merges the four preset packs (`loadPresetLibrary`) and gives the fixed sorted order (`sortedPresetNames`) that `preset-<n>` keys index; shared with the admin remote's preset browser |
 | `website/app/display/butterchurn.d.ts` | Minimal types for the `butterchurn` and `butterchurn-presets` packages |
 | `website/app/display/BpmReadout.tsx` | The tempo over a beat-pulsing ring and the current view's name, for the other screen |
-| `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`useBpmStream`) plus helpers the views share (beat phase/pulse/counting, band ranges, beat grid, time axis) |
+| `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`connectBpmAgent`, and `useBpmStream`, which takes any `BpmConnector`) plus helpers the views share (beat phase/pulse/counting, band ranges, beat grid, time axis) |
 | `website/app/display/spectrumLevels.ts` | Rise-and-fall spectrum levels with peak caps and auto gain, shared by the bars and halo views |
-| `website/app/display/useCanvasLoop.ts` | Full-window canvas + `requestAnimationFrame` loop hook, used by the bpm views |
+| `website/app/display/useCanvasLoop.ts` | Full-panel canvas + `requestAnimationFrame` loop hook, used by the bpm views; `watchCanvasContainer` sizes a canvas to the panel it fills |
 | `website/app/display/TrashPanel.tsx` | Trash night takeover: the alert (trash and the day's line below, "press any key" on top) and the happy cormorant after |
 | `website/app/display/trashTakeover.ts` | Client for the agent's trash status (`useTrashTakeover`, `confirmTrash`) |
 | `website/app/display/trashPhrases.ts` | Everything the trash screens say, including the weekly alert lines and the thanks lines |
@@ -54,7 +56,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
    `MallardPanel.tsx` as a template: fetch its own data, manage its own polling, render
    `fixed inset-0` full-bleed.
 2. Add a slot to `ROTATION_SLOTS` in `displayConfig.ts` (id and the name the remote shows),
-   and its panels to `FIXED_SLOT_PANELS` in `page.tsx`, saying what each screen shows during
+   and its panels to `FIXED_SLOT_PANELS` in `displayRotation.tsx`, saying what each screen shows during
    it (or put it on one side of an existing slot).
 3. If it's slow to start, give its panel entry a `prepare` hook (see below).
 
@@ -185,6 +187,20 @@ with `PlaceholderPanel` first as a stub) once it's actually being worked on.
   but the login session will eventually expire) or a server-side proxy endpoint on
   website-backend holding a Beszel service token (more durable, matches how the rest
   of the backend handles secrets — preferred if there's time to build it properly)
+
+### Running Elsewhere
+
+The panels also run on the console page (`website/docs/CONSOLE.md`), inside simulated
+screens. Two rules keep that working:
+
+- **Size from the panel, not the window.** Panels fill their screen with `fixed inset-0`;
+  on the console, each screen is a transformed box, which becomes the containing block for
+  fixed children. Canvases size themselves from the element they fill
+  (`watchCanvasContainer`), never `window.innerWidth`/`innerHeight`, and layout avoids
+  `vw`/`vh` (only `TrashPanel` uses them, and the console doesn't show it)
+- **Reach the agents through the environment.** Anything that talks to displaytop goes
+  through `useDisplayEnvironment()` (`displayEnvironment.tsx`), so the console can swap in
+  its simulation. The key log and trash status are the kiosk page's own, not the panels'
 
 ## Trash Night
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,12 +50,25 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-neo-mono",
 });
 
-// The garden page (/garden) uses a soft botanical serif for its headings and
-// date tags; body text reuses Inter (--font-inter above).
-const fraunces = Fraunces({
+// The garden page (/garden) borrows from old seed catalogs and herbarium
+// labels: Caslon for display and running text, a typewriter-ish mono for data.
+const caslonDisplay = Libre_Caslon_Display({
+  weight: "400",
   subsets: ["latin"],
+  variable: "--font-garden-display",
+});
+
+const caslonText = Libre_Caslon_Text({
+  weight: ["400", "700"],
   style: ["normal", "italic"],
-  variable: "--font-garden-serif",
+  subsets: ["latin"],
+  variable: "--font-garden-text",
+});
+
+const plexMono = IBM_Plex_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  variable: "--font-garden-mono",
 });
 
 const SITE_NAME = "Tyler Schwenk";
@@ -138,7 +151,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
-      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${fraunces.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${caslonDisplay.variable} ${caslonText.variable} ${plexMono.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

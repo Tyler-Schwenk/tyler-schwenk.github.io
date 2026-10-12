@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import TideGraph from "./TideGraph";
+import { useDisplayEnvironment } from "./displayEnvironment";
 import {
-  fetchSurfConditions,
   type SurfCamId,
   type SurfConditions,
   type TideReading,
@@ -207,6 +207,7 @@ function TideView({ tide }: { tide: TideReading | null }) {
 export default function SurfConditionsPanel({ camId }: { camId: SurfCamId }) {
   const [conditions, setConditions] = useState<SurfConditions | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { fetchSurfConditions } = useDisplayEnvironment();
 
   useEffect(() => {
     let unmounted = false;
@@ -224,7 +225,7 @@ export default function SurfConditionsPanel({ camId }: { camId: SurfCamId }) {
       unmounted = true;
       clearInterval(refreshTimer);
     };
-  }, [camId]);
+  }, [camId, fetchSurfConditions]);
 
   if (!conditions) {
     return (

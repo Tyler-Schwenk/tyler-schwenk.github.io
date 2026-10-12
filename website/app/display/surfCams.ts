@@ -96,7 +96,7 @@ export interface SurfConditions {
 }
 
 /** Either the agent's response body, or a human-readable reason it couldn't be had. */
-type AgentResult<T> = { data: T; error?: undefined } | { data?: undefined; error: string };
+export type AgentResult<T> = { data: T; error?: undefined } | { data?: undefined; error: string };
 
 /**
  * Makes one request to the agent.
