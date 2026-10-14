@@ -11,8 +11,9 @@
   and newest book first). Each entry has the cover, title, subtitle, author, my star
   rating, the day I finished it, and my review if there is one.
 
-It's a static server component built entirely from `data/library.json` -- no backend,
-no client JS. Changing a book means editing the json and pushing.
+It's built entirely from `data/library.json` at build time -- no backend. The page is a
+server component; the only client JS is the shelf (`Bookshelf.tsx`), for picking a book.
+Changing a book means editing the json and pushing.
 
 Linked from the home menu ("THE LIBRARY", icon `public/images/8bit/library.png`), in
 the "I'm feeling lucky" routes, and in the sitemap.
@@ -24,7 +25,8 @@ the "I'm feeling lucky" routes, and in the sitemap.
 | `data/library.json` | All the books: `owned` and `read` lists |
 | `app/library/page.tsx` | Page + metadata. Masthead, shelf, reading log |
 | `app/library/libraryData.ts` | Types, the typed `OWNED_BOOKS` / `READ_BOOKS`, `getCoverSrc` (build-time cover lookup), `groupByYearRead` |
-| `components/library/BookSpine.tsx` | One owned book as a spine on the shelf |
+| `components/library/Bookshelf.tsx` | Client component: the shelf of spines plus the caption bar for the picked book |
+| `components/library/BookSpine.tsx` | One owned book as a spine on the shelf (a button) |
 | `components/library/BookCover.tsx` | Cover image, or a plain cloth binding with the title when there's no cover |
 | `components/library/bookCloth.ts` | Picks a book's cloth color from its id |
 | `components/library/ReadingEntry.tsx` | One book in the reading log |
@@ -64,8 +66,9 @@ the "I'm feeling lucky" routes, and in the sitemap.
 - `dateRead` -- `YYYY-MM-DD`, the day I finished it. If Goodreads has no read date, use the
   date it was added. Order in the file doesn't matter; the page sorts by this.
 
-The reading log was first filled in from the Goodreads "My Books" page, which cuts long
-reviews off -- those end in "…". The full Goodreads export (CSV) has the complete text.
+Reviews are shown in full, so paste the complete text. The Goodreads "My Books" page cuts
+long reviews off with "…" -- copy from the review's own page or the Goodreads export (CSV,
+`My Review` column, `<br/>` = line break) instead.
 
 ## Covers
 
@@ -98,9 +101,25 @@ catalog-style labels (`--font-garden-mono`).
 tall with the plank height reserved at its bottom, and the shelf background repeats one
 plank tile at that same interval. That keeps a plank under every row however many rows
 there are. Spine width, height, and cloth color come from the book id via
-`lib/seededRandom.ts`, so they're stable across builds. Long titles cut off with an
-ellipsis; hovering shows the full title and author, and lifts the spine (off under
-`prefers-reduced-motion`).
+`lib/seededRandom.ts`, so they're stable across builds (38-54px wide). Long titles cut
+off with an ellipsis.
 
-**Reading log** -- each entry is a two-column grid (cover, details). Dates are formatted
-in UTC since they're plain calendar days.
+Since cut-off titles can't be read on a phone (no hover), every spine is a button: tapping
+or clicking one (or Enter/Space) pulls it partway off the shelf and shows its full title
+and author in the caption bar under the shelf. Tapping it again or the close button puts
+it back. If the book is also in the reading log, the caption links to its entry
+(`#read-<id>`; entries have `scroll-margin-top` so they land below the fixed nav icon).
+With nothing picked the bar just shows a hint and sits under the shelf; while a book is
+picked it's `position: sticky` at the bottom of the screen, so it stays visible on a
+shelf taller than the phone without covering the bottom row the rest of the time.
+
+On devices with a real pointer, hovering a spine lifts it a little and shows a native
+tooltip. The hover lift is behind `@media (hover: hover)` because touch browsers leave
+`:hover` stuck on the last tapped element. Spine motion is off under
+`prefers-reduced-motion`. Tap targets (close button, reading log link) are 44px.
+
+**Reading log** -- each entry is a two-column grid (cover, details); the cover column
+narrows under 480px. Dates are formatted in UTC since they're plain calendar days.
+
+Tested in Chromium, WebKit (Safari's engine) and Firefox, at 320px, iPhone SE/13, Pixel 7,
+iPad, and 1280-1920px desktop: no horizontal scroll at any width.

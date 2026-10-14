@@ -128,15 +128,14 @@
 }
 
 .spine {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  display: block;
   padding: 0.75rem 0;
+  border: 0;
   border-radius: 2px 2px 0 0;
-  writing-mode: vertical-rl;
+  font: inherit;
+  cursor: pointer;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
   /* cloth color comes from the cloth class; the gradient adds the rounded-spine shading */
   background-image: linear-gradient(
     to right,
@@ -150,8 +149,40 @@
   transition: transform 150ms ease;
 }
 
-.spine:hover {
-  transform: translateY(-6px);
+/* hover only where there's a real pointer -- on touch screens :hover sticks after a
+   tap, which would leave the last-tapped book floating */
+@media (hover: hover) {
+  .spine:hover {
+    transform: translateY(-6px);
+  }
+}
+
+.spine:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+}
+
+/* the picked book is pulled partway off the shelf */
+.spine[aria-pressed="true"] {
+  transform: translateY(-12px);
+  box-shadow:
+    inset 0 6px 0 -3px rgba(255, 255, 255, 0.12),
+    inset 0 -10px 0 -6px rgba(0, 0, 0, 0.3),
+    0 0 0 2px var(--paper);
+}
+
+/* the vertical text lives on a span, not the button -- some browsers ignore
+   writing-mode on form controls */
+.spineLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  height: 100%;
+  /* tight lines so title + author fit side by side on the thinnest spine */
+  line-height: 1.15;
+  writing-mode: vertical-rl;
 }
 
 .spineTitle,
@@ -174,6 +205,86 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   opacity: 0.8;
+}
+
+/* ---------- caption bar under the shelf ---------- */
+
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  min-height: 3.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  /* clear the iPhone home indicator when it's stuck to the bottom */
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  background: var(--wood-edge);
+  color: var(--paper);
+  border-radius: 0 0 4px 4px;
+}
+
+/* while a book's picked: sticky, so the caption stays on screen while any of the
+   shelf is, however tall the shelf gets. not when it's just the hint, or it'd sit
+   over the bottom row of books on a phone */
+.captionPinned {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.captionText,
+.captionHint {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.captionTitle {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.captionAuthor,
+.captionHint,
+.captionLink {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.captionAuthor {
+  display: block;
+  margin-top: 0.15rem;
+  opacity: 0.75;
+}
+
+.captionHint {
+  opacity: 0.6;
+}
+
+.captionLink {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  /* comfortable tap target, same as the close button */
+  min-height: 44px;
+  color: var(--paper);
+  text-underline-offset: 3px;
+}
+
+.captionClose {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--paper);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 /* ---------- bookcloth colors (spines and fallback covers) ---------- */
@@ -220,6 +331,8 @@
 }
 
 .entry {
+  /* clear the fixed nav icon when jumped to from the shelf */
+  scroll-margin-top: 5rem;
   display: grid;
   grid-template-columns: 5.5rem 1fr;
   gap: 1.25rem;
@@ -330,6 +443,19 @@
 
   .entryTitle {
     font-size: 1.15rem;
+  }
+
+  /* stack the reading log link under the title so the title gets the full width */
+  .caption {
+    flex-wrap: wrap;
+  }
+
+  .captionText {
+    flex-basis: calc(100% - 44px - 1rem);
+  }
+
+  .captionLink {
+    order: 3;
   }
 }
 

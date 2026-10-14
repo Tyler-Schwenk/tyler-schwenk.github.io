@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Navigation from "@/components/Navigation";
-import BookSpine from "@/components/library/BookSpine";
+import Bookshelf from "@/components/library/Bookshelf";
 import ReadingEntry from "@/components/library/ReadingEntry";
 import styles from "@/components/library/library.module.css";
 import { OWNED_BOOKS, READ_BOOKS, getCoverSrc, groupByYearRead } from "./libraryData";
@@ -49,11 +49,7 @@ export default function LibraryPage() {
             These are the ones I currently own. LMK if you want to borrow any of them or trade!
           </p>
           {OWNED_BOOKS.length > 0 ? (
-            <ul className={styles.shelf}>
-              {OWNED_BOOKS.map((book) => (
-                <BookSpine key={book.id} book={book} />
-              ))}
-            </ul>
+            <Bookshelf books={OWNED_BOOKS} readIds={READ_BOOKS.map((book) => book.id)} />
           ) : (
             <div className={`${styles.shelf} ${styles.shelfEmpty}`}>
               <p>Still shelving. Check back soon.</p>

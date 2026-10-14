@@ -1,5 +1,96 @@
 {
-  "owned": [],
+  "owned": [
+    {
+      "id": "socialism-and-man-in-cuba",
+      "title": "Socialism and Man in Cuba",
+      "author": "Ernesto Che Guevara"
+    },
+    {
+      "id": "reason-for-hope",
+      "title": "Reason for Hope",
+      "author": "Jane Goodall"
+    },
+    {
+      "id": "dear-america",
+      "title": "Dear America",
+      "author": "Jose Antonio Vargas"
+    },
+    {
+      "id": "surviving-the-21st-century",
+      "title": "Surviving the 21st Century",
+      "author": "Saúl Alvídrez"
+    },
+    {
+      "id": "braiding-sweetgrass",
+      "title": "Braiding Sweetgrass",
+      "author": "Robin Wall Kimmerer"
+    },
+    {
+      "id": "cultivating-compassion",
+      "title": "Cultivating Compassion",
+      "author": "Jeffrey Hopkins"
+    },
+    {
+      "id": "arabic-for-beginners",
+      "title": "Arabic for Beginners",
+      "author": "Syed Ali"
+    },
+    {
+      "id": "the-poisonwood-bible",
+      "title": "The Poisonwood Bible",
+      "author": "Barbara Kingsolver"
+    },
+    {
+      "id": "to-shake-the-sleeping-self",
+      "title": "To Shake the Sleeping Self",
+      "author": "Jedidiah Jenkins"
+    },
+    {
+      "id": "moon-palace",
+      "title": "Moon Palace",
+      "author": "Paul Auster"
+    },
+    {
+      "id": "the-message",
+      "title": "The Message",
+      "author": "Ta-Nehisi Coates"
+    },
+    {
+      "id": "wealth-supremacy",
+      "title": "Wealth Supremacy",
+      "author": "Marjorie Kelly"
+    },
+    {
+      "id": "the-trinity-of-fundamentals",
+      "title": "The Trinity of Fundamentals",
+      "author": "Wisam Rafeedie"
+    },
+    {
+      "id": "the-lean-startup",
+      "title": "The Lean Startup",
+      "author": "Eric Ries"
+    },
+    {
+      "id": "alices-adventures-in-wonderland",
+      "title": "Alice’s Adventures in Wonderland",
+      "author": "Lewis Carroll"
+    },
+    {
+      "id": "untamed",
+      "title": "Untamed",
+      "author": "Will Harlan"
+    },
+    {
+      "id": "american-dirt",
+      "title": "American Dirt",
+      "author": "Jeanine Cummins"
+    },
+    {
+      "id": "the-alchemist",
+      "title": "The Alchemist",
+      "author": "Paulo Coelho"
+    }
+  ],
   "read": [
     {
       "id": "brave-new-world",
@@ -7,7 +98,7 @@
       "author": "Aldous Huxley",
       "rating": 3,
       "dateRead": "2026-07-24",
-      "review": "I felt like there wasn't really much of a plot until later in the book, but it became interesting later on and gave me some things to think about…"
+      "review": "I felt like there wasn't really much of a plot until later in the book, but it became interesting later on and gave me some things to think about"
     },
     {
       "id": "socialism-and-man-in-cuba",
@@ -30,7 +121,7 @@
       "author": "Ernesto Che Guevara",
       "rating": 5,
       "dateRead": "2026-04-02",
-      "review": "Such a banger. Inspiring adventure, funny, and good motivation for revolutionary politics.\n\n\"In nine months a man can think a lot of thoughts, from the…"
+      "review": "Such a banger. Inspiring adventure, funny, and good motivation for revolutionary politics.\n\n\"In nine months a man can think a lot of thoughts, from the height of philosophical conjecture to the most abject longing for a bowl of soup - in perfect harmony with the state of his stomach\""
     },
     {
       "id": "reason-for-hope",
@@ -39,7 +130,7 @@
       "author": "Jane Goodall",
       "rating": 3,
       "dateRead": "2026-03-09",
-      "review": "I was hoping for a nice hopeful book and this was definitely not that. It filled me with more of an understanding for how cruel humanity can be rather…"
+      "review": "I was hoping for a nice hopeful book and this was definitely not that. It filled me with more of an understanding for how cruel humanity can be rather than with hope. But she lived an interesting life and I learned some things"
     },
     {
       "id": "dear-america",
@@ -48,7 +139,7 @@
       "author": "Jose Antonio Vargas",
       "rating": 4,
       "dateRead": "2026-03-02",
-      "review": "my first book with the borderlands book club. I learned a lot from his perspective, mostly that I really don't know much about how immigration works…"
+      "review": "my first book with the borderlands book club. I learned a lot from his perspective, mostly that I really don't know much about how immigration works in America."
     },
     {
       "id": "surviving-the-21st-century",
@@ -56,7 +147,7 @@
       "author": "Saúl Alvídrez",
       "rating": 4,
       "dateRead": "2026-02-14",
-      "review": "Good words from two very good old men. Some ideas I liked:\n\nCapitalism is not just an issue of economic setup, but of our culture. We can fight it by cu…"
+      "review": "Good words from two very good old men. Some ideas I liked:\n\nCapitalism is not just an issue of economic setup, but of our culture. We can fight it by cultivating a culture of community and creation rather than consumerism and individualism.\n\nIt is not the man who has little, but the man who craves more, who is poor."
     },
     {
       "id": "arabic-for-beginners",
@@ -65,7 +156,7 @@
       "author": "Syed Ali",
       "rating": 2,
       "dateRead": "2026-02-11",
-      "review": "I suppose I should have known by looking at the squiggles that I wouldn't be able to learn Arabic in a book. It helped to get an understanding of some…"
+      "review": "I suppose I should have known by looking at the squiggles that I wouldn't be able to learn Arabic in a book. It helped to get an understanding of some of the concepts of how the language/numbers work, but you can't hear how to pronounce anything from the book..."
     },
     {
       "id": "the-poisonwood-bible",
@@ -87,7 +178,7 @@
       "author": "Tommy Orange",
       "rating": 5,
       "dateRead": "2025-09-17",
-      "review": "It was kinda hard to keep track of who was who but each chapter was great as a story on its own so i didn’t mind. I loved the way the writing would br…"
+      "review": "It was kinda hard to keep track of who was who but each chapter was great as a story on its own so i didn’t mind. I loved the way the writing would bring you in with a casual, down to earth tone that somehow smoothly transitioned into poetry without you noticing. Really fucking tragic though"
     },
     {
       "id": "to-shake-the-sleeping-self",
@@ -119,7 +210,7 @@
       "author": "Jack Kerouac",
       "rating": 4,
       "dateRead": "2025-07-12",
-      "review": "I really liked this book. The writing style was fun and the content was also fun and inspiring. I did feel like there was no real overarching plot for…"
+      "review": "I really liked this book. The writing style was fun and the content was also fun and inspiring. I did feel like there was no real overarching plot for me to really get invested in though so it took a while to get through just because i didn’t find myself excited to see how things would unfold. Still very enjoyable thanks jeff"
     },
     {
       "id": "east-of-eden",
@@ -145,7 +236,7 @@
       "author": "Marjorie Kelly",
       "rating": 3,
       "dateRead": "2025-03-14",
-      "review": "Book club book finished late.\n\nThis shined a light on some of the underlying systems that lead to our exploitation under our current form of capitalism.…"
+      "review": "Book club book finished late.\n\nThis shined a light on some of the underlying systems that lead to our exploitation under our current form of capitalism. Finance is something that I was not very knowledgeable about before this book and i feel like it gave a good introduction to some of these topics.\n\nThe third part gave ideas of how to improve our situation which i enjoyed, but they felt very rushed and a little abstract. I would like a more in depth explanation of some of them, but i guess that would take another book."
     },
     {
       "id": "the-trinity-of-fundamentals",
@@ -153,7 +244,7 @@
       "author": "Wisam Rafeedie",
       "rating": 3,
       "dateRead": "2025-02-26",
-      "review": "This book was a bit disappointing. Maybe its the translation from Arabic, but the writing did not flow well. It also spent much of the time describing…"
+      "review": "This book was a bit disappointing. Maybe its the translation from Arabic, but the writing did not flow well. It also spent much of the time describing periods of waiting/hiding which just made the pacing feel very slow. Maybe thats the point but it was tough to read. That being said its a compelling story, and I could see why it had such a strong impact in the right context"
     },
     {
       "id": "how-to-know-a-person",
@@ -162,7 +253,7 @@
       "author": "David Brooks",
       "rating": 4,
       "dateRead": "2025-02-21",
-      "review": "My first audio book, it was nice to listen to on bike rides. Definitely had good lessons on compassion. There were also times where he seemed to be ma…"
+      "review": "My first audio book, it was nice to listen to on bike rides. Definitely had good lessons on compassion. There were also times where he seemed to be making generalizations about certain types of people that i think simplified things too much. Good stuff all in all though"
     },
     {
       "id": "the-message",
@@ -170,7 +261,7 @@
       "author": "Ta-Nehisi Coates",
       "rating": 5,
       "dateRead": "2025-04-06",
-      "review": "Really great book. The writing style was really engaging and eloquent.\n\nHe did a great job showing the connected systems of oppression from the us to pa…"
+      "review": "Really great book. The writing style was really engaging and eloquent.\n\nHe did a great job showing the connected systems of oppression from the us to palestine and from the past to its current implementation. I felt like the way he told it as a narrative helped the flow if the book while he still got the important information across."
     },
     {
       "id": "the-lean-startup",
@@ -186,7 +277,7 @@
       "author": "Lewis Carroll",
       "rating": 4,
       "dateRead": "2025-01-20",
-      "review": "The back of the book says its in the “literary nonsense genre”, And that definitely feels accurate. Theres cool characters and clever dialog but it ul…"
+      "review": "The back of the book says its in the “literary nonsense genre”, And that definitely feels accurate. Theres cool characters and clever dialog but it ultimately amounts to illogical nonsense, which isn’t necessarily a bad thing."
     },
     {
       "id": "siddhartha",
@@ -194,7 +285,7 @@
       "author": "Hermann Hesse",
       "rating": 5,
       "dateRead": "2024-12-18",
-      "review": "Really good. Im a big fan of the buddhist perspective. Describes the way everything is one in a way that feels undeniable. Also lots of other good lif…"
+      "review": "Really good. Im a big fan of the buddhist perspective. Describes the way everything is one in a way that feels undeniable. Also lots of other good life lessons\n\n“People are children”"
     },
     {
       "id": "red-state-revolt",
@@ -203,7 +294,7 @@
       "author": "Eric Blanc",
       "rating": 3,
       "dateRead": "2024-12-09",
-      "review": "A refreshing positive outlook on class struggle in the US. Affirming to hear an example of how grassroots organizing - particularly through unions and…"
+      "review": "A refreshing positive outlook on class struggle in the US. Affirming to hear an example of how grassroots organizing - particularly through unions and in the workplace - can win more concessions from employers than years of lobbying."
     },
     {
       "id": "life-of-pi",
@@ -211,7 +302,7 @@
       "author": "Yann Martel",
       "rating": 4,
       "dateRead": "2024-10-25",
-      "review": "Themes of perseverance, religion, and story telling. The ending really got my goat. I liked this:\n\n“The world isnt just the way it is. It is how we unde…"
+      "review": "Themes of perseverance, religion, and story telling. The ending really got my goat. I liked this:\n\n“The world isnt just the way it is. It is how we understand it. And in understanding something, we bring something to it. Doesnt that make life a story?”\n\nIs there an objective reality outside our perception of it?\n\nAlso, hearing about how good a turtle tastes when youre stranded at sea kinda made me want to eat some raw meat."
     },
     {
       "id": "beloved",
@@ -257,7 +348,7 @@
       "author": "Jeanine Cummins",
       "rating": 5,
       "dateRead": "2024-07-31",
-      "review": "I felt like i had to take a second to catch my breathe after every chapter. I learned a lot about the human capacity for both good and evil, and defin…"
+      "review": "I felt like i had to take a second to catch my breathe after every chapter. I learned a lot about the human capacity for both good and evil, and definitely gained appreciation for my safety."
     },
     {
       "id": "braiding-sweetgrass",
@@ -291,7 +382,7 @@
       "author": "Kurt Vonnegut Jr.",
       "rating": 3,
       "dateRead": "2024-06-24",
-      "review": "I liked the writing style and it was interesting, but it was just a bad time for me to be reading this book. Ive been thinking about/fighting against…"
+      "review": "I liked the writing style and it was interesting, but it was just a bad time for me to be reading this book. Ive been thinking about/fighting against US genocide a lot lately and this book took a nihilist position that war is inevitable which i think is a load of malarky, and a position that creates more preventable war. It was entertaining though"
     },
     {
       "id": "culture-and-resistance",
@@ -300,7 +391,7 @@
       "author": "Edward W. Said",
       "rating": 3,
       "dateRead": "2024-08-12",
-      "review": "I think i would have preferred to read one of edward said’s books. This was easy to read and informative though. I definitely learned a lot. Just didn…"
+      "review": "I think i would have preferred to read one of edward said’s books. This was easy to read and informative though. I definitely learned a lot. Just didnt have a unified, in depth look at any one particular subject."
     }
   ]
 }

@@ -12,7 +12,7 @@ const READ_DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
 
 /**
  * One book in the reading log: cover, title, author, rating, the day I finished it,
- * and my review if I wrote one.
+ * and my review if I wrote one. its element id is `read-<book id>` so the shelf can link to it.
  *
  * @param {object} props - Component props.
  * @param {ReadBook} props.book - The book.
@@ -21,7 +21,7 @@ const READ_DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
  */
 export default function ReadingEntry({ book, coverSrc }: { book: ReadBook; coverSrc: string | null }) {
   return (
-    <li className={styles.entry}>
+    <li id={`read-${book.id}`} className={styles.entry}>
       <BookCover bookId={book.id} title={book.title} author={book.author} coverSrc={coverSrc} />
       <div className={styles.entryBody}>
         <h4 className={styles.entryTitle}>{book.title}</h4>
