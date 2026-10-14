@@ -4,13 +4,23 @@
       "widthPx": 640,
       "heightPx": 360,
       "horizonPx": 124,
-      "backdropSrc": "/images/home/world-desktop.png"
+      "backdropSrc": "/images/home/world-desktop.png",
+      "roof": {
+        "x": 520,
+        "y": 184,
+        "widthPx": 162
+      }
     },
     "mobile": {
       "widthPx": 360,
       "heightPx": 960,
       "horizonPx": 170,
-      "backdropSrc": "/images/home/world-mobile.png"
+      "backdropSrc": "/images/home/world-mobile.png",
+      "roof": {
+        "x": 180,
+        "y": 681,
+        "widthPx": 254
+      }
     }
   },
   "footPads": {
@@ -25,11 +35,11 @@
     "/images/8bit/events.png": 17.9,
     "/images/8bit/library.png": 0.0,
     "/images/8bit/lightbulb.png": 19.6,
-    "/images/8bit/mallard_8bit.png": 17.9,
+    "/images/8bit/mallard.png": 0.0,
     "/images/8bit/pacman.png": 3.6,
     "/images/8bit/plant.png": 14.3,
     "/images/8bit/round_table.png": 16.1,
-    "/images/8bit/solar.png": 21.4,
+    "/images/8bit/solar.png": 0.0,
     "/images/8bit/traderoutes.png": 10.7,
     "/images/8bit/work.png": 24.1
   }

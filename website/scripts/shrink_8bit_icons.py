@@ -1,10 +1,11 @@
 """
 shrinks the 8-bit menu/nav icons in public/images/8bit/ down to web size, in place.
 
-they come out of the generator at ~1024px and 1-1.5MB each, but the site never
-shows them bigger than 56px (the nav logo), so anything past 2x that is wasted
-download. icons already at or under the max edge are left alone, so it's safe
-to rerun after dropping in new ones.
+they come out of the generator at ~1024px and 1-1.5MB each, but most never show
+much bigger than 56px (the nav logo), so anything past 2x that is wasted
+download. a few render big in the home page world and get a larger cap in
+MAX_EDGE_OVERRIDES_PX. icons already at or under their max edge are left alone,
+so it's safe to rerun after dropping in new ones.
 
 usage (from anywhere): python website/scripts/shrink_8bit_icons.py
 """
@@ -19,10 +20,15 @@ ICON_DIR = Path(__file__).resolve().parent.parent / "public" / "images" / "8bit"
 # 2x the biggest render size (56px nav logo) so they stay sharp on retina screens
 ICON_MAX_EDGE_PX = 112
 
+# sprites the home page world draws much bigger than an icon. solar.png is the
+# whole house roof there, up to ~450px wide on a big desktop
+MAX_EDGE_OVERRIDES_PX = {"solar.png": 480}
+
 
 def shrink_icon(path: Path) -> tuple[int, int] | None:
     """
-    resize one icon so its longest edge is ICON_MAX_EDGE_PX, keeping aspect ratio.
+    resize one icon so its longest edge is its max (ICON_MAX_EDGE_PX unless it's
+    in MAX_EDGE_OVERRIDES_PX), keeping aspect ratio.
 
     Args:
         path: the png to shrink. overwritten in place.
@@ -31,13 +37,14 @@ def shrink_icon(path: Path) -> tuple[int, int] | None:
         (bytes before, bytes after), or None if it was already small enough.
     """
     size_before = path.stat().st_size
+    max_edge = MAX_EDGE_OVERRIDES_PX.get(path.name, ICON_MAX_EDGE_PX)
     with Image.open(path) as img:
-        if max(img.size) <= ICON_MAX_EDGE_PX:
+        if max(img.size) <= max_edge:
             return None
         img.load()
         # LANCZOS rather than NEAREST -- the source art isn't on a true pixel grid,
         # so nearest-neighbor would just alias it
-        img.thumbnail((ICON_MAX_EDGE_PX, ICON_MAX_EDGE_PX), Image.Resampling.LANCZOS)
+        img.thumbnail((max_edge, max_edge), Image.Resampling.LANCZOS)
         img.save(path, "PNG", optimize=True)
     return size_before, path.stat().st_size
 

@@ -394,7 +394,8 @@ body {
 .world-object:hover,
 .world-object:focus-visible,
 .world-object[data-selected="true"] {
-  z-index: 1000;
+  /* above every depth z-index, which tops out at the tallest backdrop's height in px */
+  z-index: 10000;
   outline: none;
 }
 

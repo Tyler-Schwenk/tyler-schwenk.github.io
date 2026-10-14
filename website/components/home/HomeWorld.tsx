@@ -38,9 +38,6 @@ const SPRITE_SOURCE_PX = 112;
 // objects this close to a side edge anchor their name tag to that edge so it doesn't get clipped
 const TAG_EDGE_MARGIN_PCT = 15;
 
-// depth sorts by y, times this, so z-indexes stay whole numbers but keep sub-pixel order
-const Z_INDEX_PER_PX = 10;
-
 const FOOT_PADS: Record<string, number> = worldMeta.footPads;
 
 /**
@@ -70,7 +67,9 @@ const layoutVars = (obj: WorldObject, layoutName: LayoutName): Record<string, st
 
   const depthT = (placement.y - layout.horizonPx) / (layout.heightPx - layout.horizonPx);
   const scale = placement.scale ?? tuning.minScale + depthT * (tuning.maxScale - tuning.minScale);
-  const widthPct = tuning.baseSpriteWidthPct * scale * (placement.size ?? obj.size);
+  const widthPct = placement.widthPx !== undefined
+    ? (placement.widthPx / layout.widthPx) * 100
+    : tuning.baseSpriteWidthPct * scale * (placement.size ?? obj.size);
   const xPct = (placement.x / layout.widthPx) * 100;
   const tag = tagPosition(xPct);
   const prefix = VAR_PREFIX[layoutName];
@@ -79,7 +78,9 @@ const layoutVars = (obj: WorldObject, layoutName: LayoutName): Record<string, st
     [`${prefix}-left`]: `${xPct}%`,
     [`${prefix}-top`]: `${(placement.y / layout.heightPx) * 100}%`,
     [`${prefix}-width`]: `${widthPct}%`,
-    [`${prefix}-z`]: `${Math.round(placement.y * Z_INDEX_PER_PX)}`,
+    // z-index is just the ground y in backdrop px, so nearer things stack on top.
+    // globals.css lifts a lit-up object above all of them
+    [`${prefix}-z`]: `${Math.round(placement.y)}`,
     [`${prefix}-tag-left`]: tag.left,
     [`${prefix}-tag-right`]: tag.right,
     [`${prefix}-tag-shift`]: tag.shift,
@@ -243,7 +244,7 @@ function WorldObjectBody({ obj }: { obj: WorldObject }) {
 
   return (
     <>
-      {!obj.floating && obj.iconSrc && (
+      {!obj.floating && !obj.noShadow && obj.iconSrc && (
         <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3/4 aspect-[4/1] rounded-[50%] bg-black/25 pointer-events-none" />
       )}
 

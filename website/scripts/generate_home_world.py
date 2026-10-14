@@ -13,6 +13,8 @@ site scales the images up with `image-rendering: pixelated`.
 it also writes components/home/world.generated.json with:
   - each layout's native size and horizon row, which the page uses to turn
     sprite positions (backdrop pixels) into percents and depth scales
+  - each layout's roof footprint -- the house roof is the solar sprite, placed
+    straight from these numbers so it always fits the house
   - each 8-bit sprite's footPad -- the percent of its height that's empty
     below the art -- so sprites can stand on the ground instead of hovering
 
@@ -137,9 +139,6 @@ FLOOR_LIGHT = "#d4a068"
 RUG = "#c84848"
 RUG_BORDER = "#f0d090"
 RUG_DARK = "#983434"
-ROOF = "#8a3c34"
-ROOF_DARK = "#6a2a24"
-ROOF_LIGHT = "#a85048"
 WINDOW_FRAME = "#f8f4ec"
 WINDOW_GLASS = "#88c0ec"
 WINDOW_GLASS_LIGHT = "#c0e0f8"
@@ -503,13 +502,15 @@ class HouseSpec:
     the back of the room is the front opening shrunk toward the vanishing
     point by `depth`.
 
+    the roof isn't painted here -- it's the solar sprite (solar panels on a
+    roof), which the page sizes and places from roof_footprint() via the json.
+
     Attributes:
         left, right: x of the front edges of the side walls.
         wall_top: row the front edges of the side walls are cut at.
         floor: row of the front edge of the floor.
         vanish: (x, y) vanishing point.
         depth: back wall size as a fraction of the front opening (0..1).
-        roof_rise: how far the roof climbs above the back wall, px.
         window: (x0, x1) of the back-wall window, or None.
         table: (cx, floor y, half width, leg height) of the table, or None.
     """
@@ -520,7 +521,6 @@ class HouseSpec:
     floor: int
     vanish: tuple[int, int]
     depth: float
-    roof_rise: int
     window: tuple[int, int] | None
     table: tuple[int, int, int, int] | None
 
@@ -529,19 +529,34 @@ class HouseSpec:
         vx, vy = self.vanish
         return round(vx + (x - vx) * self.depth), round(vy + (y - vy) * self.depth)
 
+    def cut(self) -> int:
+        """thickness of the sliced wall faces, scaled to the house size."""
+        return max(3, (self.right - self.left) // 50)
+
+    def roof_footprint(self) -> dict:
+        """
+        where the roof sprite goes: centered on the back wall, eaves overhanging
+        it a little, its bottom edge resting on the wall's cut top.
+
+        Returns:
+            {"x", "y", "widthPx"} in backdrop px -- a placement the page can use as-is.
+        """
+        (left, top), (right, _) = self.back(self.left, self.wall_top), self.back(self.right, self.wall_top)
+        overhang = self.cut() * 2
+        return {"x": (left + right) // 2, "y": top + self.cut() // 2, "widthPx": right - left + overhang * 2}
+
 
 def draw_house(draw: ImageDraw.ImageDraw, house: HouseSpec) -> None:
     """
-    the cutaway house: roof, back wall with window, side walls, plank floor,
-    rug, table, and the plum cut faces where the walls are sliced.
+    the cutaway house: back wall with window, side walls, plank floor, rug,
+    table, and the plum cut faces where the walls are sliced.
     """
     fl, fr, ft, ff = house.left, house.right, house.wall_top, house.floor
     bl_top, br_top = house.back(fl, ft), house.back(fr, ft)
     bl_floor, br_floor = house.back(fl, ff), house.back(fr, ff)
-    cut = max(3, (fr - fl) // 50)
+    cut = house.cut()
 
     ellipse(draw, (fl + fr) / 2, ff + 6, (fr - fl) / 2 + 12, 10, GRASS_DEEP)
-    draw_roof(draw, bl_top, br_top, house.roof_rise, cut)
 
     # back wall with pinstripes and a baseboard
     draw.rectangle((bl_top[0], bl_top[1], br_top[0], bl_floor[1]), fill=WALL_BACK)
@@ -566,28 +581,6 @@ def draw_house(draw: ImageDraw.ImageDraw, house: HouseSpec) -> None:
     draw.rectangle((fr, ft, fr + cut, ff), fill=CUT_DARK)
     draw.rectangle((fl - cut, ff, fr + cut, ff + cut * 2), fill=CUT)
     draw.rectangle((fl - cut, ff + cut * 2, fr + cut, ff + cut * 2 + 2), fill=CUT_DARK)
-
-
-def draw_roof(draw: ImageDraw.ImageDraw, bl_top: tuple[int, int], br_top: tuple[int, int], rise: int, cut: int) -> None:
-    """
-    a shingled roof slope climbing back from the top of the back wall. the
-    front half of the roof is cut away with the front wall, so this is all
-    that's left -- the solar panel sits on it.
-    """
-    inset = rise // 3
-    top_left, top_right = (bl_top[0] + inset, bl_top[1] - rise), (br_top[0] - inset, br_top[1] - rise)
-    eave_left, eave_right = (bl_top[0] - cut * 2, bl_top[1]), (br_top[0] + cut * 2, br_top[1])
-    draw.polygon([eave_left, eave_right, top_right, top_left], fill=ROOF)
-    for i in range(1, rise // 5):
-        t = i * 5 / rise
-        y = round(lerp(eave_left[1], top_left[1], t))
-        x0, x1 = lerp(eave_left[0], top_left[0], t), lerp(eave_right[0], top_right[0], t)
-        draw.line([(x0, y), (x1, y)], fill=ROOF_DARK)
-        offset = 5 if i % 2 else 0
-        for sx in range(round(x0) + offset, round(x1), 10):
-            draw.line([(sx, y), (sx, y + 4)], fill=ROOF_DARK)
-    draw.line([top_left, top_right], fill=ROOF_LIGHT, width=2)
-    draw.line([eave_left, eave_right], fill=ROOF_DARK, width=2)
 
 
 def draw_window(draw: ImageDraw.ImageDraw, span: tuple[int, int], wall_top: int, wall_bottom: int) -> None:
@@ -638,7 +631,7 @@ def draw_floor(draw: ImageDraw.ImageDraw, house: HouseSpec, bl_floor: tuple[int,
 def draw_table(draw: ImageDraw.ImageDraw, cx: int, floor_y: int, half_w: int, leg_h: int) -> None:
     """
     a small wooden side table. its top surface is at floor_y - leg_h, which
-    is where the coffee sprite sits.
+    is where the coffee and dice sprites sit.
     """
     top = floor_y - leg_h
     ellipse(draw, cx, floor_y, half_w + 2, 3, FLOOR_DARK)
@@ -655,6 +648,12 @@ def draw_table(draw: ImageDraw.ImageDraw, cx: int, floor_y: int, half_w: int, le
 
 DESKTOP_W_PX, DESKTOP_H_PX, DESKTOP_HORIZON_PX = 640, 360, 124
 MOBILE_W_PX, MOBILE_H_PX, MOBILE_HORIZON_PX = 360, 960, 170
+
+
+DESKTOP_HOUSE = HouseSpec(left=410, right=630, wall_top=212, floor=342, vanish=(520, 124),
+                          depth=0.66, window=(498, 540), table=(518, 326, 30, 12))
+MOBILE_HOUSE = HouseSpec(left=16, right=344, wall_top=728, floor=928, vanish=(180, 560),
+                         depth=0.7, window=(156, 204), table=(180, 900, 42, 14))
 
 
 def desktop_path_span(y: int) -> tuple[int, int]:
@@ -688,7 +687,8 @@ def render_desktop() -> Image.Image:
     draw_hill(draw, 80, 140, 150, 30, HILL_FAR, HILL_FAR_LIGHT)
     draw_hill(draw, 290, 138, 110, 18, HILL_FAR, HILL_FAR_LIGHT)
     draw_hill(draw, 560, 150, 140, 64, HILL_NEAR, HILL_NEAR_LIGHT)
-    draw_cave(img, draw, 564, 118, 40, 38)
+    # far right, so the roof sprite rising off the house doesn't cover it
+    draw_cave(img, draw, 614, 118, 40, 38)
     draw_ground(img, draw, rng, h)
     draw_treeline(draw, rng, h, [(0, 250), (372, 470)], (16, 30))
     draw_path(img, draw, rng, desktop_path_span, h + 1, DESKTOP_H_PX)
@@ -703,8 +703,7 @@ def render_desktop() -> Image.Image:
     for x, y in [(24, 300), (226, 300), (452, 196), (612, 200), (368, 252)]:
         draw_rock(draw, x, y, 7)
     draw_grill(draw, 80, 312, 20)
-    draw_house(draw, HouseSpec(left=410, right=630, wall_top=212, floor=342, vanish=(520, 124),
-                               depth=0.66, roof_rise=34, window=(498, 540), table=(518, 326, 22, 12)))
+    draw_house(draw, DESKTOP_HOUSE)
     return img
 
 
@@ -734,11 +733,11 @@ def render_mobile() -> Image.Image:
     draw_pond(img, draw, (88, 452), (72, 32), [(124, 462), (52, 466), (104, 434)],
               [(16, 446), (160, 444), (154, 456)])
     draw_garden(draw, [(232, 424), (330, 424), (340, 462), (222, 462)])
-    for x, y in [(20, 330), (340, 390), (30, 560), (330, 530), (120, 620)]:
+    for x, y in [(20, 330), (340, 390), (18, 612), (330, 530)]:
         draw_rock(draw, x, y, 7)
-    draw_grill(draw, 64, 566, 20)
-    draw_house(draw, HouseSpec(left=16, right=344, wall_top=728, floor=928, vanish=(180, 560),
-                               depth=0.7, roof_rise=46, window=(156, 204), table=(180, 900, 26, 14)))
+    # up and left, clear of the roof sprite
+    draw_grill(draw, 40, 536, 20)
+    draw_house(draw, MOBILE_HOUSE)
     return img
 
 
@@ -764,14 +763,15 @@ def measure_foot_pads() -> dict[str, float]:
 
 
 def build_meta() -> dict:
-    """the json the page reads: layout sizes/horizons/backdrop urls plus sprite foot pads."""
-    def layout(name: str, w: int, h: int, horizon: int) -> dict:
-        return {"widthPx": w, "heightPx": h, "horizonPx": horizon, "backdropSrc": f"/images/home/world-{name}.png"}
+    """the json the page reads: layout sizes/horizons/backdrop urls/roof spots plus sprite foot pads."""
+    def layout(name: str, w: int, h: int, horizon: int, house: HouseSpec) -> dict:
+        return {"widthPx": w, "heightPx": h, "horizonPx": horizon,
+                "backdropSrc": f"/images/home/world-{name}.png", "roof": house.roof_footprint()}
 
     return {
         "layouts": {
-            "desktop": layout("desktop", DESKTOP_W_PX, DESKTOP_H_PX, DESKTOP_HORIZON_PX),
-            "mobile": layout("mobile", MOBILE_W_PX, MOBILE_H_PX, MOBILE_HORIZON_PX),
+            "desktop": layout("desktop", DESKTOP_W_PX, DESKTOP_H_PX, DESKTOP_HORIZON_PX, DESKTOP_HOUSE),
+            "mobile": layout("mobile", MOBILE_W_PX, MOBILE_H_PX, MOBILE_HORIZON_PX, MOBILE_HOUSE),
         },
         "footPads": measure_foot_pads(),
     }

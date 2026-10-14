@@ -1,3 +1,5 @@
+import worldMeta from "./world.generated.json";
+
 /**
  * everything clickable on the home page, used by both the pixel world and the
  * list view. array order is the list-view order.
@@ -19,6 +21,8 @@ export type Placement = {
   size?: number;
   /** pins the depth scale instead of deriving it from y -- for floaters and hotspots above the horizon. */
   scale?: number;
+  /** exact width in backdrop px, skipping depth scaling and size -- for sprites that must fit a painted shape (the roof). */
+  widthPx?: number;
 };
 
 /** one clickable thing in the world. */
@@ -39,6 +43,8 @@ export type WorldObject = {
   size: number;
   /** bobs in the air with no ground shadow. */
   floating?: boolean;
+  /** skips the ground shadow -- for things that aren't standing on the ground (the roof). */
+  noShadow?: boolean;
   desktop: Placement;
   mobile: Placement;
 };
@@ -79,8 +85,8 @@ export const pickLuckyRoute = (): string =>
 
 export const WORLD_OBJECTS: WorldObject[] = [
   {
-    id: "lucky", label: "I'M FEELING LUCKY", lucky: true, iconSrc: "/images/8bit/dice.png", size: 0.55,
-    desktop: { x: 190, y: 344 }, mobile: { x: 290, y: 610 },
+    id: "lucky", label: "I'M FEELING LUCKY", lucky: true, iconSrc: "/images/8bit/dice.png", size: 0.25,
+    desktop: { x: 502, y: 311 }, mobile: { x: 158, y: 883, size: 0.3 },
   },
   {
     id: "events", label: "UPCOMING EVENTS", href: "/events", iconSrc: "/images/8bit/events.png", size: 0.75,
@@ -92,11 +98,11 @@ export const WORLD_OBJECTS: WorldObject[] = [
   },
   {
     id: "biking", label: "BIKING", href: "/biking", iconSrc: "/images/8bit/bike.png", size: 1.1,
-    desktop: { x: 300, y: 322 }, mobile: { x: 178, y: 600 },
+    desktop: { x: 300, y: 322 }, mobile: { x: 186, y: 520 },
   },
   {
     id: "kitchen", label: "THE KITCHEN", href: "/kitchen", iconSrc: "/images/8bit/chef.png", size: 0.6,
-    desktop: { x: 80, y: 311 }, mobile: { x: 64, y: 565 },
+    desktop: { x: 80, y: 311 }, mobile: { x: 40, y: 535 },
   },
   {
     id: "garden", label: "THE GARDEN", href: "/garden", iconSrc: "/images/8bit/plant.png", size: 0.9,
@@ -104,22 +110,23 @@ export const WORLD_OBJECTS: WorldObject[] = [
   },
   {
     id: "sd-workspaces", label: "SD WORKSPACES", href: "/sd-workspaces", iconSrc: "/images/8bit/coffee.png", size: 0.4,
-    desktop: { x: 518, y: 311 }, mobile: { x: 180, y: 883, size: 0.5 },
+    desktop: { x: 532, y: 311 }, mobile: { x: 200, y: 883, size: 0.5 },
   },
   {
     id: "frog", label: "FROG WORK", href: "/projects/ribbit-radar", iconSrc: "/images/8bit/crlf_8bit.png", size: 0.7,
     desktop: { x: 206, y: 263 }, mobile: { x: 124, y: 463 },
   },
   {
-    id: "solar", label: "SOLAR SETUP", href: "/solar", iconSrc: "/images/8bit/solar.png", size: 0.8,
-    desktop: { x: 480, y: 170 }, mobile: { x: 120, y: 662 },
+    // the sprite is the house roof, so it's placed from the roof footprint the generator measured
+    id: "solar", label: "SOLAR SETUP", href: "/solar", iconSrc: "/images/8bit/solar.png", size: 1, noShadow: true,
+    desktop: worldMeta.layouts.desktop.roof, mobile: worldMeta.layouts.mobile.roof,
   },
   {
     id: "console", label: "THE CONSOLE", href: "/console", iconSrc: "/images/8bit/console.png", size: 0.8,
     desktop: { x: 470, y: 270 }, mobile: { x: 104, y: 820, size: 1.1 },
   },
   {
-    id: "mallard", label: "MALLARD COUNTER", href: "/mallard", iconSrc: "/images/8bit/mallard_8bit.png", size: 0.75,
+    id: "mallard", label: "MALLARD COUNTER", href: "/mallard", iconSrc: "/images/8bit/mallard.png", size: 0.6,
     desktop: { x: 120, y: 252 }, mobile: { x: 60, y: 450 },
   },
   {
@@ -148,6 +155,6 @@ export const WORLD_OBJECTS: WorldObject[] = [
   },
   {
     id: "opium-den", label: "ENTER THE VIRTUAL OPIUM DEN", href: "/opium-den", size: 0.7,
-    desktop: { x: 564, y: 118, scale: 1 }, mobile: { x: 300, y: 168, scale: 1, size: 0.45 },
+    desktop: { x: 614, y: 118, scale: 1 }, mobile: { x: 300, y: 168, scale: 1, size: 0.45 },
   },
 ];

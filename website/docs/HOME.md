@@ -20,7 +20,7 @@ There are two scenes, each composed for its screen:
 | `components/home/worldObjects.ts` | Every clickable object: label, link, sprite, size, and a placement per layout. Also the "I'm feeling lucky" route list |
 | `components/home/HomeWorld.tsx` | Renders the world: backdrop, depth-scaled sprites, hover/tap behavior, per-layout depth tuning |
 | `components/home/MainMenuList.tsx` | The list view, built from the same `WORLD_OBJECTS` |
-| `components/home/world.generated.json` | Generated. Layout sizes, horizons, backdrop urls, sprite foot pads |
+| `components/home/world.generated.json` | Generated. Layout sizes, horizons, backdrop urls, roof footprints, sprite foot pads |
 | `app/globals.css` (`.world-*` rules) | Layout switching, hover lift, yellow pixel outline, name tags, floating bob |
 | `scripts/generate_home_world.py` | Paints both backdrops and writes the json |
 | `public/images/home/world-desktop.png`, `world-mobile.png` | Generated backdrops |
@@ -37,7 +37,9 @@ python website/scripts/generate_home_world.py
 ```
 
 Rerun it after editing the scenes or adding/replacing a sprite in `public/images/8bit/`
-(that refreshes the foot pads).
+(that refreshes the foot pads). Run `shrink_8bit_icons.py` first on new sprites -- it caps
+icons at 112px, except the ones the world draws big (`MAX_EDGE_OVERRIDES_PX`, e.g. the
+480px roof).
 
 Each scene is composed in its own `render_desktop()` / `render_mobile()` function from
 shared drawing helpers (pond, garden, crate, grill, tripod, signpost, cave, house...). The
@@ -45,8 +47,13 @@ sprites are not painted in -- the backdrops only contain the set pieces they sta
 
 The house is a cutaway room in one-point perspective (`HouseSpec`): the front wall is
 sliced off like a dollhouse so you see the back wall, side walls, plank floor, rug and
-table inside, with plum "cut" faces where the walls are sliced. Only the back slope of the
-roof remains, which is where the solar panel sits.
+table inside, with plum "cut" faces where the walls are sliced.
+
+The roof isn't painted -- it's the solar sprite (`solar.png`, panels on a roof). The
+generator works out where it goes (`HouseSpec.roof_footprint()`: centered on the back wall,
+eaves overhanging it, resting on the wall's cut top) and writes that into the json as each
+layout's `roof`. The solar object uses those numbers directly as its placement, so the roof
+always fits the house. It rises well above the back wall, so keep other props clear of it.
 
 Either backdrop can be replaced with any image of the same aspect ratio. Update the sizes in
 `build_meta()` if the resolution changes, and move object placements to match.
@@ -62,12 +69,15 @@ pixels** of that layout -- read coordinates straight off the png in any image ed
 - `size` (optional) -- overrides the object's `size` for that layout only.
 - `scale` (optional) -- pins the depth scale instead of deriving it from `y`. Used for things
   above the horizon (the lightbulb, the cave hotspot).
+- `widthPx` (optional) -- exact width in backdrop px, skipping depth scaling and `size`. Used
+  for sprites that must fit a painted shape (the roof).
 
 Object-level fields:
 
 - `size` -- multiplier for things that are small or large in real life (a mug vs. a
   bookshelf).
 - `floating` -- bobs in the air with no ground shadow (the lightbulb).
+- `noShadow` -- skips the ground shadow for things not standing on the ground (the roof).
 - `href` / `external` / `lucky` -- where it goes. `lucky` picks a random `LUCKY_ROUTES` page
   on click.
 - No `iconSrc` -- renders as an invisible square hotspot, outlined on hover (the cave).

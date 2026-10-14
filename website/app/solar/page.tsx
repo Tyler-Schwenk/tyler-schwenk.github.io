@@ -155,7 +155,7 @@ export default function SolarPage() {
               className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold [&::-webkit-details-marker]:hidden"
               style={{ color: NOTICE_HEX }}
             >
-              CA approved plug-in solar!!
+              CA just approved plug-in solar!!
               <span className="transition-transform group-open:rotate-180">
                 &#9662;
               </span>
