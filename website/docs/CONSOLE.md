@@ -149,6 +149,12 @@ blueprint grid, with rounded corners and a shadow so its edges show as it tilts.
 
 The physical keyboard works whether the deck is open or not.
 
+On touch screens (`pointer: coarse`, via tailwind's `pointer-coarse:` variant) a banner
+above the scene says it's better viewed on a computer. Its x hides it until the page is
+reloaded. It's gated in css rather than js, so desktop never renders it.
+
+The home page's main menu links here ("THE CONSOLE", icon `public/images/8bit/console.png`).
+
 Both screens run the kiosk's panels at full native resolution, which is the same work the
 kiosk does; on a phone the canvases cost more battery than a normal page.
 

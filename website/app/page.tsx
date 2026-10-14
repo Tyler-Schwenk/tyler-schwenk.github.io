@@ -62,6 +62,9 @@ export default function Home() {
                 <MenuOption href="/solar" iconSrc="/images/solar/solar_icon.png">
                   SOLAR SETUP
                 </MenuOption>
+                <MenuOption href="/console" iconSrc="/images/8bit/console.png">
+                  THE CONSOLE
+                </MenuOption>
                 <MenuOption href="/mallard" iconSrc="/images/8bit/mallard_8bit.png">
                   MALLARD COUNTER
                 </MenuOption>

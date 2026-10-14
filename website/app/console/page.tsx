@@ -41,6 +41,29 @@ function isConsoleKeyEvent(event: KeyboardEvent): boolean {
 }
 
 /**
+ * A dismissable banner telling touch-screen visitors the console's nicer on a computer.
+ * It's css-gated on a coarse pointer, so it never renders on desktop and there's no
+ * hydration flash from sniffing the device in js.
+ * @param props.onDismiss - Called when the x is tapped.
+ * @returns The banner, hidden unless the main pointer is a finger.
+ */
+function MobileNotice({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="hidden shrink-0 items-center justify-between gap-3 border-b border-amber-700/60 bg-amber-950/90 px-4 py-1 font-mono text-sm text-amber-100 pointer-coarse:flex">
+      <span>This is better viewed on a computer, sorry!</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss this notice"
+        className="flex min-h-11 min-w-11 items-center justify-center text-lg text-amber-200 hover:text-white"
+      >
+        &times;
+      </button>
+    </div>
+  );
+}
+
+/**
  * The console page: my corner console with its two screens running a
  * simulation of the display kiosk (website/app/display): the same rotation,
  * panels and keys, with stand-ins for what only exists on displaytop (the
@@ -54,6 +77,7 @@ export default function ConsolePage() {
   // on phones the keys start hidden, so the scene opens full screen; on desktop they're always
   // beside it (css, below). the physical keyboard works either way
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [mobileNoticeDismissed, setMobileNoticeDismissed] = useState(false);
   const [engine] = useState(() => new SimBpmEngine(HOUSE_LOOP));
   const muted = useSyncExternalStore(engine.subscribeMuted, engine.isMuted, () => false);
   const clockSlot = useRotationClockSlot(state);
@@ -107,25 +131,28 @@ export default function ConsolePage() {
         }}
       >
         {/* the scene takes whatever the controls leave, so with them closed it's the whole screen */}
-        <div className="relative min-h-0 min-w-0 flex-1">
-          <ConsoleScene state={state} clockSlot={clockSlot} focus={focus} onFocus={setFocus} />
-          {!controlsOpen && (
-            <div className="lg:hidden">
-              <Link
-                href="/"
-                className="absolute left-3 top-3 z-10 flex min-h-11 items-center rounded-lg bg-slate-900/80 px-3 font-mono text-sm text-slate-300 transition-colors hover:text-white"
-              >
-                &larr; main menu
-              </Link>
-              <button
-                type="button"
-                onClick={() => setControlsOpen(true)}
-                className="absolute bottom-3 right-3 z-10 min-h-11 rounded-lg border border-slate-600 bg-slate-900/85 px-4 font-mono text-sm text-slate-200 hover:bg-slate-800"
-              >
-                keys
-              </button>
-            </div>
-          )}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {!mobileNoticeDismissed && <MobileNotice onDismiss={() => setMobileNoticeDismissed(true)} />}
+          <div className="relative min-h-0 flex-1">
+            <ConsoleScene state={state} clockSlot={clockSlot} focus={focus} onFocus={setFocus} />
+            {!controlsOpen && (
+              <div className="lg:hidden">
+                <Link
+                  href="/"
+                  className="absolute left-3 top-3 z-10 flex min-h-11 items-center rounded-lg bg-slate-900/80 px-3 font-mono text-sm text-slate-300 transition-colors hover:text-white"
+                >
+                  &larr; main menu
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setControlsOpen(true)}
+                  className="absolute bottom-3 right-3 z-10 min-h-11 rounded-lg border border-slate-600 bg-slate-900/85 px-4 font-mono text-sm text-slate-200 hover:bg-slate-800"
+                >
+                  keys
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <aside
           className={`${controlsOpen ? "flex" : "hidden"} max-h-[55dvh] shrink-0 flex-col gap-5 overflow-y-auto border-t border-slate-800 bg-slate-950/95 p-4 lg:flex lg:max-h-none lg:w-96 lg:border-l lg:border-t-0`}
