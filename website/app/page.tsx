@@ -2,6 +2,28 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+// pages "I'm feeling lucky" can land on. hand-picked so it skips the menu itself
+// plus utility pages (admin, display kiosk, confirm/success screens)
+const LUCKY_ROUTES = [
+  "/events",
+  "/gallery",
+  "/biking",
+  "/kitchen",
+  "/garden",
+  "/sd-workspaces",
+  "/projects/ribbit-radar",
+  "/solar",
+  "/console",
+  "/mallard",
+  "/projects/trade-routes",
+  "/community-board",
+  "/public-square",
+  "/projects/others",
+  "/opium-den",
+  "/pac-tyler",
+];
 
 /**
  * Renders the retro main menu landing page.
@@ -38,6 +60,7 @@ export default function Home() {
                 </div>
 
                 {/* Menu Items */}
+                <LuckyOption />
                 <MenuOption href="/events" iconSrc="/images/8bit/events.png">
                   UPCOMING EVENTS
                 </MenuOption>
@@ -137,6 +160,65 @@ function MenuOption({
   external?: boolean;
 }) {
   const content = (
+    <MenuRow icon={icon} iconSrc={iconSrc}>
+      {children}
+    </MenuRow>
+  );
+
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    );
+  }
+
+  return <Link href={href}>{content}</Link>;
+}
+
+/**
+ * Menu option that sends you to a random page from LUCKY_ROUTES.
+ *
+ * the pick happens on click rather than render so the server-built html and
+ * the client agree, and every click rolls fresh.
+ *
+ * @returns {JSX.Element} The "I'm feeling lucky" menu entry.
+ */
+function LuckyOption() {
+  const router = useRouter();
+
+  /** rolls the dice and navigates to the winning route. */
+  const goSomewhereRandom = () => {
+    const route = LUCKY_ROUTES[Math.floor(Math.random() * LUCKY_ROUTES.length)];
+    router.push(route);
+  };
+
+  return (
+    <button type="button" onClick={goSomewhereRandom} className="block w-full text-left">
+      <MenuRow iconSrc="/images/8bit/dice.png">I&apos;M FEELING LUCKY</MenuRow>
+    </button>
+  );
+}
+
+/**
+ * The visual row shared by every menu option -- icon, label, and arrow.
+ *
+ * @param {object} props - Component props.
+ * @param {string} [props.icon] - Text icon fallback.
+ * @param {string} [props.iconSrc] - Image icon source.
+ * @param {React.ReactNode} props.children - Option label.
+ * @returns {JSX.Element} The styled row, with no link/click behavior of its own.
+ */
+function MenuRow({
+  icon,
+  iconSrc,
+  children,
+}: {
+  icon?: string;
+  iconSrc?: string;
+  children: React.ReactNode;
+}) {
+  return (
     <div className="group border-2 border-black bg-[#2840A0] p-3 hover:bg-[#F8D030] hover:text-[#3850A0] transition-all cursor-pointer flex items-center gap-3 shadow-md">
       {iconSrc ? (
         <div className="w-12 h-12 relative flex-shrink-0 group-hover:animate-bounce">
@@ -155,14 +237,4 @@ function MenuOption({
       <span className="text-white group-hover:text-[#3850A0] pixel-font text-xs">▶</span>
     </div>
   );
-
-  if (external) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer">
-        {content}
-      </a>
-    );
-  }
-
-  return <Link href={href}>{content}</Link>;
 }
