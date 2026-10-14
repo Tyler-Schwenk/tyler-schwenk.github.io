@@ -1,0 +1,360 @@
+/*
+ * community board look: a wood-framed cork board hanging on a wall, with
+ * paper notes pinned or taped to it. every note reserves a fixed strip at the
+ * top for its fastener so text never runs under a pin.
+ */
+
+.wall {
+  min-height: 100vh;
+  padding: 5rem 0.5rem 2rem;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 240, 210, 0.08), transparent 60%),
+    #2b2723;
+}
+
+@media (min-width: 640px) {
+  .wall {
+    padding: 5rem 1.5rem 3rem;
+  }
+}
+
+/* ---------- frame + cork ---------- */
+
+.frame {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0.6rem;
+  border-radius: 0.4rem;
+  background:
+    repeating-linear-gradient(
+      92deg,
+      rgba(0, 0, 0, 0.08) 0 2px,
+      transparent 2px 7px,
+      rgba(255, 255, 255, 0.05) 7px 8px,
+      transparent 8px 13px
+    ),
+    linear-gradient(180deg, #8a5a33, #6b4224 55%, #5a3519);
+  box-shadow:
+    0 1.5rem 3rem rgba(0, 0, 0, 0.55),
+    0 0.25rem 0.5rem rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 220, 180, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 640px) {
+  .frame {
+    padding: 1rem;
+  }
+}
+
+.cork {
+  padding: 1.25rem 0.75rem 2rem;
+  border-radius: 0.15rem;
+  background-image: url("/images/cork bg 2.avif");
+  background-repeat: repeat;
+  background-size: 420px;
+  background-color: #b98a57;
+  /* the frame lip casts a shadow onto the cork */
+  box-shadow:
+    inset 0 0.4rem 0.8rem rgba(0, 0, 0, 0.45),
+    inset 0 -0.15rem 0.4rem rgba(0, 0, 0, 0.25);
+}
+
+@media (min-width: 640px) {
+  .cork {
+    padding: 2rem 2rem 3rem;
+  }
+}
+
+.sections {
+  --note-width: calc(50% - 0.45rem);
+  --note-gap-x: 0.9rem;
+  --note-gap-y: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2.5rem 3rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 640px) {
+  .sections {
+    --note-width: 10.5rem;
+    --note-gap-x: 1.75rem;
+    --note-gap-y: 2rem;
+  }
+}
+
+/* on phones every section is full width; on wider screens a section is
+   exactly as wide as its note columns so clusters stay tight */
+.section {
+  display: flex;
+  flex: 0 1 100%;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .section {
+    flex-basis: calc(
+      var(--section-cols, 1) * var(--note-width) + (var(--section-cols, 1) - 1) * var(--note-gap-x)
+    );
+  }
+}
+
+.notes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--note-gap-y) var(--note-gap-x);
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+/* ---------- labels (masking tape with marker on it) ---------- */
+
+.label {
+  position: relative;
+  display: inline-block;
+  padding: 0.35rem 1.4rem 0.25rem;
+  font-family: var(--font-caveat), cursive;
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  /* a one-note section is narrower than its label, let the tape hang past it */
+  white-space: nowrap;
+  color: #1f1d1a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 40%),
+    rgba(236, 222, 186, 0.92);
+  /* ragged torn ends */
+  clip-path: polygon(
+    0% 8%, 2% 0%, 98% 4%, 100% 0%, 99% 30%, 100% 55%, 98% 80%, 100% 100%,
+    3% 96%, 0% 100%, 1% 70%, 0% 45%, 2% 25%
+  );
+  transform: rotate(var(--rot, 0deg));
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.titleLabel {
+  font-size: 2.1rem;
+  padding: 0.5rem 2rem 0.35rem;
+}
+
+@media (min-width: 640px) {
+  .titleLabel {
+    font-size: 2.6rem;
+  }
+}
+
+.titleWrap {
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- notes ---------- */
+
+.note {
+  position: relative;
+  display: block;
+  width: var(--note-width);
+  color: #24211d;
+  text-decoration: none;
+  transform: translate(var(--shift-x, 0px), var(--shift-y, 0px)) rotate(var(--rot, 0deg));
+  transition: transform 180ms ease, filter 180ms ease;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+
+.note:hover,
+.note:focus-visible {
+  z-index: 2;
+  transform: translate(var(--shift-x, 0px), calc(var(--shift-y, 0px) - 4px)) rotate(0deg) scale(1.04);
+  filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.35));
+}
+
+.note:focus-visible {
+  outline: none;
+}
+
+.note:focus-visible .paper {
+  outline: 3px dashed #1f1d1a;
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note {
+    transition: none;
+  }
+}
+
+/* the curled-corner shadows sit behind the paper's bottom corners */
+.note::before,
+.note::after {
+  content: "";
+  position: absolute;
+  bottom: 0.6rem;
+  width: 45%;
+  height: 1.2rem;
+  z-index: 0;
+  background: transparent;
+  box-shadow: 0 0.6rem 0.6rem rgba(0, 0, 0, 0.35);
+}
+
+.note::before {
+  left: 0.4rem;
+  transform: rotate(-4deg);
+}
+
+.note::after {
+  right: 0.4rem;
+  transform: rotate(4deg);
+}
+
+.paper {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 9rem;
+  /* top padding is the fastener zone, keep it clear of text */
+  padding: 2.1rem 0.85rem 0.85rem;
+  font-family: var(--font-caveat), cursive;
+}
+
+.name {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  margin-top: 0.3rem;
+  font-size: 1.15rem;
+  line-height: 1.15;
+  opacity: 0.85;
+}
+
+.host {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.1;
+  opacity: 0.6;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* sticky notes: flat color, a little darker at the bottom where it lifts off */
+.sticky {
+  background: linear-gradient(180deg, var(--paper) 0%, var(--paper) 70%, var(--paper-shade) 100%);
+}
+
+.stickyYellow {
+  --paper: #fbec8f;
+  --paper-shade: #ecd96f;
+}
+
+.stickyPink {
+  --paper: #f8c3d0;
+  --paper-shade: #eaaabb;
+}
+
+.stickyGreen {
+  --paper: #cdeaa6;
+  --paper-shade: #b7d98c;
+}
+
+.stickyBlue {
+  --paper: #bfe1f2;
+  --paper-shade: #a5cfe4;
+}
+
+.stickyOrange {
+  --paper: #fcd29b;
+  --paper-shade: #efbd7d;
+}
+
+/* index card: white stock, red header rule, faint blue lines only below it */
+.indexCard {
+  background-color: #fbfaf5;
+  background-image:
+    linear-gradient(180deg, #e58a8a 0 1px, transparent 1px),
+    repeating-linear-gradient(180deg, transparent 0 calc(1.35rem - 1px), #b9d3ea calc(1.35rem - 1px) 1.35rem);
+  background-position: 0 1.85rem, 0 1.85rem;
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* scrap: torn from a notebook, ragged bottom edge */
+.scrap {
+  padding-bottom: 1.4rem;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.5), transparent 60%),
+    #f1ead8;
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 92%, 94% 97%, 88% 93%, 80% 98%, 71% 94%, 63% 99%,
+    55% 94%, 46% 98%, 38% 93%, 29% 98%, 21% 94%, 12% 99%, 5% 94%, 0% 97%
+  );
+}
+
+/* ---------- fasteners ---------- */
+
+.pin {
+  position: absolute;
+  z-index: 3;
+  top: 0.55rem;
+  left: calc(50% + var(--pin-shift, 0px));
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-left: -0.575rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.85) 0 12%, transparent 30%),
+    radial-gradient(circle at 50% 50%, var(--pin-color) 0 55%, color-mix(in srgb, var(--pin-color) 55%, black) 100%);
+  /* shadow falls down-right like the needle's leaning on light from the top-left */
+  box-shadow:
+    0.15rem 0.25rem 0.2rem rgba(0, 0, 0, 0.4),
+    inset -0.1rem -0.12rem 0.15rem rgba(0, 0, 0, 0.3);
+}
+
+.pinRed {
+  --pin-color: #d63a2f;
+}
+
+.pinBlue {
+  --pin-color: #2f6fd6;
+}
+
+.pinGreen {
+  --pin-color: #2e9b5a;
+}
+
+.pinYellow {
+  --pin-color: #f0c22e;
+}
+
+.pinWhite {
+  --pin-color: #f2efe8;
+}
+
+.tape {
+  position: absolute;
+  z-index: 3;
+  top: -0.55rem;
+  left: 50%;
+  width: 4.5rem;
+  height: 1.5rem;
+  margin-left: -2.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 50%),
+    rgba(232, 222, 190, 0.78);
+  clip-path: polygon(
+    0% 10%, 4% 0%, 96% 6%, 100% 0%, 98% 50%, 100% 100%, 5% 94%, 0% 100%, 2% 50%
+  );
+  transform: rotate(var(--tape-rot, 0deg));
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}

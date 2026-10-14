@@ -1,63 +1,39 @@
 # Community Board
 
 ## Overview
-The Community Board route (`/community-board`) is a full-screen interactive corkboard where users can explore curated links by dragging and zooming across a two-axis board. Links are organized into visual groups with category headers.
+`/community-board` is a wood-framed cork board with links to friends' sites, local orgs, and other favorites. Each link is a piece of paper pinned or taped to the board. It's a static server component — no client JS, no pan/zoom.
 
-## Main Route
-- `/community-board`
-  - Full-screen 2-axis corkboard implementation
-  - Background: `/images/cork bg 2.avif` with repeating texture
-  - Navigation header with frog icon in top left to return home
-  - Board dimensions: 2400px x 1600px
-  - Default view: 1.0x scale at offset (-400, -200)
+## Files
+- `app/community-board/page.tsx` — page + metadata. Lays out sections from the data file.
+- `data/communityBoardLinks.ts` — `COMMUNITY_BOARD_SECTIONS`, the only place links live.
+- `components/community-board/BoardNote.tsx` — one linked note (paper, fastener, tilt).
+- `components/community-board/BoardLabel.tsx` — masking-tape heading, used for the board title (`h1`) and section titles (`h2`).
+- `components/community-board/boardJitter.ts` — seeded hash helpers (`seededUnit`, `seededRange`, `seededPick`).
+- `components/community-board/communityBoard.module.css` — all board styling.
 
-## Interactive Features
-- **Drag to pan**: Click and drag anywhere on the board to navigate
-- **Scroll to zoom**: Mouse wheel zooms in/out from cursor position (min: dynamic to fill viewport, max: 1.8x)
-- **Boundary constraints**: Cannot scroll or zoom beyond board edges; minimum zoom is dynamically calculated to ensure the board always fills the viewport, preventing any background from showing
-- **Cursor-based zoom**: Zoom always centers on the cursor position, not a fixed point
-- **Touch support**: Pointer events handle both mouse and touch interactions
+## Data Format
+```ts
+type CommunityBoardSection = { id: string; title: string; links: CommunityBoardLink[] };
+type CommunityBoardLink = { id: string; name: string; href: string; description: string };
+```
+Sections render in array order, links in array order within each section. To add a link, add one entry to the right section — there are no positions to maintain.
 
-## Visual Organization
-Links are grouped into four categories with dedicated header post-its:
+## Note Appearance
+Everything about a note's look is derived from its `id` via `boardJitter.ts`, so it's stable across builds but varies note to note:
+- **Paper**: sticky note (yellow, pink, green, blue, orange), lined index card, or torn notebook scrap.
+- **Fastener**: pushpin (red, blue, green, yellow, white, with a small horizontal offset) or a strip of tape (~30% of notes).
+- **Tilt / nudge**: up to +/-4deg rotation, small x/y offset.
 
-### Friends Section (Left)
-- Header: Blue post-it at top
-- 6 friend links below in 2 rows
-- X range: 150-720px
+Changing a link's `id` reshuffles its look. Section labels are tilted the same way from the section `id`.
 
-### Beloved Local Orgs Section (Middle)
-- Header: Blue post-it at top
-- 4 organization links below in 2 rows
-- X range: 1000-1300px
+Each note's paper reserves a fixed top padding strip for the fastener, so text can never run under a pin or tape. Notes show name, description, and the link's host (without `www.`). Hovering or focusing a note straightens it and lifts it. Motion is disabled under `prefers-reduced-motion`. All links open in a new tab.
 
-### Other Inspirations Section (Right Top)
-- Header: Blue post-it at top
-- 2 inspiration links below
-- X range: 1780-1820px
+## Layout
+- **Phones (< 640px)**: sections stack full width, notes two across (one note centers).
+- **640px and up**: notes are a fixed width and each section is exactly as wide as `min(link count, 3)` note columns. Sections flow side by side and wrap, centered. At typical desktop widths Friends and Local Orgs share the first row.
+- The board is capped at `80rem` wide and the page scrolls vertically. Top padding leaves room for the fixed frog nav icon.
 
-### Personal Links Section (Right Bottom)
-- Header: Blue post-it below Other Inspirations
-- 1 link (Goodreads)
-- X range: 1780-1820px
-- Y position: 720-880px
-
-## Link Data
-- Source file: `data/communityBoardLinks.ts`
-- Structure: `CommunityBoardLink` type with optional `isHeader` boolean
-- Contains 20 total entries:
-  - 4 category headers (non-clickable, blue, larger)
-  - 16 clickable links (yellow/amber/orange/lime colors)
-
-## Styling
-- **Headers**: 280px wide, blue background (`bg-blue-300`), bold centered text, no hover effect
-- **Links**: 220px wide, colored backgrounds with rotation variety, hover scale effect, shadow
-- **Cursor feedback**: Grab cursor for dragging, grabbing cursor while dragging
-
-## Behavior Notes
-- Cork texture repeats seamlessly as board expands
-- All links open in new browser tab (`target="_blank"`)
-- Pan boundaries calculated dynamically based on viewport size and current zoom level
-- Minimum zoom is calculated to ensure the board always fills the viewport, preventing any background from showing through
-- Zoom calculations preserve the board point under the cursor during scale changes
-- Pointer events use pointer capture for smooth drag interactions
+## Assets
+- Cork texture: `/images/cork bg 2.avif`, tiled at 420px.
+- Notes, pins, tape, and the wood frame are pure CSS — no images.
+- Fonts: Caveat (`--font-caveat`, loaded in `app/layout.tsx`) for all handwriting.
