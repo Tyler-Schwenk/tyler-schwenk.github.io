@@ -8,13 +8,6 @@
   --rule: #c9b89a;
   --accent: #7c2f2a;
   --star: #b07a1c;
-  --wood: #6a4426;
-  --wood-edge: #3b2414;
-  --wall: #4a3a2c;
-
-  /* shelf geometry: every row of spines is one slot tall, with the plank at the bottom */
-  --shelf-row-height: 218px;
-  --shelf-plank-height: 16px;
 
   min-height: 100vh;
   background: var(--paper);
@@ -75,227 +68,253 @@
   margin: 0 0 1.5rem;
 }
 
-/* ---------- the shelf ---------- */
+/* ---------- the shelf: a looping cover carousel ---------- */
 
-.shelf {
-  margin: 0;
-  /* no top padding: rows (and their planks) start right at the top edge */
-  padding: 0 1.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-evenly;
-  align-items: flex-end;
-  gap: 0 1.5rem;
-  border: 10px solid var(--wood-edge);
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-  /* a plank under every row: the rows are all --shelf-row-height tall, so one
-     plank tile repeated at that interval always lands under the books */
-  background:
-    linear-gradient(
-      to bottom,
-      transparent calc(var(--shelf-row-height) - var(--shelf-plank-height)),
-      var(--wood) calc(var(--shelf-row-height) - var(--shelf-plank-height)),
-      var(--wood-edge) var(--shelf-row-height)
-    )
-    0 0 / 100% var(--shelf-row-height),
-    linear-gradient(to bottom, #2c2016, var(--wall));
-  box-shadow: inset 0 8px 24px rgba(0, 0, 0, 0.45);
+.carousel {
+  /* size of the middle book; side books are the same size, just turned and pushed back */
+  --cover-w: 200px;
+  --cover-h: 300px;
+  /* how far the first side book sits from the middle, then each one after that */
+  --first-gap: 190px;
+  --rest-gap: 72px;
+  --depth-step: 70px;
+  --side-angle: 52deg;
+  --flip-duration: 450ms;
 }
 
-.shelfEmpty {
-  height: var(--shelf-row-height);
-  justify-content: center;
-  align-items: center;
-  padding-bottom: var(--shelf-plank-height);
+.carouselView {
+  position: relative;
 }
 
-.shelfEmpty p {
-  margin: 0;
-  font-family: var(--font-garden-mono), ui-monospace, monospace;
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--paper-deep);
-  opacity: 0.7;
+.stage {
+  position: relative;
+  height: calc(var(--cover-h) + 4rem);
+  perspective: 1400px;
+  overflow: hidden;
+  /* vertical swipes still scroll the page; sideways ones flip books */
+  touch-action: pan-y;
+  user-select: none;
+  /* side books fade out toward the edges */
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
 }
 
-/* every stack and decor piece sits in a slot one row tall, bottom on the plank */
-.shelfSlot {
-  height: var(--shelf-row-height);
-  padding-bottom: var(--shelf-plank-height);
-  display: flex;
-  align-items: flex-end;
-  /* let a stack shrink on a narrow phone so long titles wrap instead of overflowing */
-  min-width: 0;
-  max-width: 100%;
-}
-
-.decor svg {
-  display: block;
-}
-
-.stack {
-  list-style: none;
-  margin: 0;
+/* one book. --distance (steps from the middle) and --side (-1 left, 0 middle, 1 right)
+   are set inline; everything else is worked out from them here */
+.slide {
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  width: var(--cover-w);
+  height: var(--cover-h);
+  margin-left: calc(var(--cover-w) / -2);
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: 100%;
-}
-
-.stackBook {
-  display: flex;
-  max-width: 100%;
-}
-
-/* a book lying flat, spine out. title and author share a line when there's room
-   and wrap when there isn't -- never cut off */
-.spine {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0 0.9rem;
-  max-width: 100%;
   border: 0;
-  border-radius: 2px;
-  font: inherit;
-  line-height: 1.2;
-  text-align: left;
+  background: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  /* color comes from the cover (inline) or a cloth class; the gradient rounds the spine */
+  transform-style: preserve-3d;
+  /* left books turn to face the middle and show their spines, right books show pages */
+  transform:
+    translateX(calc(var(--side) * (var(--first-gap) + (var(--distance) - 1) * var(--rest-gap))))
+    translateZ(calc(var(--distance) * var(--depth-step) * -1))
+    rotateY(calc(var(--side) * var(--side-angle) * -1));
+  transition:
+    transform var(--flip-duration) cubic-bezier(0.2, 0.7, 0.2, 1),
+    visibility var(--flip-duration);
+}
+
+.slide[aria-current="true"] {
+  cursor: default;
+}
+
+/* past the visible range, including the book wrapping round from one end to the other */
+.slideHidden {
+  visibility: hidden;
+}
+
+.slide:focus-visible {
+  outline: none;
+}
+
+.slide:focus-visible .bookFront {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* soft shadow on the "table" under each book */
+.slideShadow {
+  position: absolute;
+  top: 100%;
+  left: 4%;
+  right: 4%;
+  height: 26px;
+  margin-top: 2px;
+  background: radial-gradient(ellipse at center, rgba(42, 33, 25, 0.38), rgba(42, 33, 25, 0) 70%);
+  pointer-events: none;
+}
+
+/* ---------- a book as a 3D box ---------- */
+
+.bookModel {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.bookFace {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+/* books fade toward the paper the further they are from the middle. it's an overlay
+   on each face because opacity or filter on the box would flatten the 3D */
+.bookFace::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  opacity: calc(var(--distance) * 0.2);
+  pointer-events: none;
+  transition: opacity var(--flip-duration);
+}
+
+.bookFront {
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0 3px 3px 0;
+  transform: translateZ(calc(var(--thickness) / 2));
+  box-shadow: 0 22px 30px -14px rgba(42, 33, 25, 0.55);
+}
+
+.bookFront .cover {
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* the hinge crease near the spine, plus a faint sheen across the cover */
+.bookFront::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.28),
+      rgba(255, 255, 255, 0.18) 2.5%,
+      rgba(0, 0, 0, 0.14) 5%,
+      rgba(255, 255, 255, 0) 9%
+    ),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 40%);
+}
+
+/* the spine face; its color comes from the cover (inline) or a cloth class */
+.bookSpine {
+  left: calc(var(--thickness) / -2);
+  width: var(--thickness);
+  transform: rotateY(-90deg);
   background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.16),
-    rgba(255, 255, 255, 0) 35%,
-    rgba(0, 0, 0, 0.05) 65%,
-    rgba(0, 0, 0, 0.32)
+    to right,
+    rgba(0, 0, 0, 0.35),
+    rgba(255, 255, 255, 0.14) 40%,
+    rgba(0, 0, 0, 0.28)
   );
-  /* darker page edges at each end, and a hairline between stacked books */
-  box-shadow:
-    inset 5px 0 0 -2px rgba(0, 0, 0, 0.18),
-    inset -5px 0 0 -2px rgba(0, 0, 0, 0.18),
-    0 1px 0 rgba(0, 0, 0, 0.35);
-  color: #f3e7c8;
-  transition: transform 150ms ease;
 }
 
-/* hover only where there's a real pointer -- on touch screens :hover sticks after a
-   tap, which would leave the last-tapped book sticking out */
-@media (hover: hover) {
-  .spine:hover {
-    transform: translateX(6px);
-  }
+/* page edges, tucked in a little from the cover boards */
+.bookPages {
+  top: 3px;
+  right: calc(var(--thickness) / -2);
+  width: var(--thickness);
+  height: calc(100% - 6px);
+  transform: rotateY(90deg);
+  background:
+    linear-gradient(to right, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.12)),
+    repeating-linear-gradient(to right, #f6efdd 0 1px, #e2d5b6 1px 2px);
 }
 
-.spine:focus-visible {
-  outline: 2px solid var(--paper);
+/* ---------- arrows, count and the middle book's details ---------- */
+
+.carouselArrow {
+  position: absolute;
+  top: calc(1.25rem + var(--cover-h) / 2);
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%);
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(42, 33, 25, 0.2);
+}
+
+.carouselArrow:focus-visible {
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* the picked book slides partway out of its stack */
-.spine[aria-pressed="true"] {
-  transform: translateX(14px);
-  box-shadow:
-    inset 5px 0 0 -2px rgba(0, 0, 0, 0.18),
-    inset -5px 0 0 -2px rgba(0, 0, 0, 0.18),
-    0 0 0 2px var(--paper);
+.carouselPrev {
+  left: 0;
 }
 
-.spineTitle {
-  font-size: 0.88rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+.carouselNext {
+  right: 0;
 }
 
-.spineAuthor {
+.carouselCount {
+  margin: 0.25rem 0 0;
+  text-align: center;
   font-family: var(--font-garden-mono), ui-monospace, monospace;
-  font-size: 0.58rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.8;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
 }
 
-/* the candle's flame scales from its base */
-.flame {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: flicker 2.4s ease-in-out infinite;
+.carouselDetails {
+  max-width: 36rem;
+  margin: 1.25rem auto 0;
+  text-align: center;
+  animation: detailsIn 350ms ease-out;
 }
 
-@keyframes flicker {
-  0%, 100% { transform: scale(1, 1) rotate(0deg); }
-  30% { transform: scale(0.94, 1.06) rotate(-2deg); }
-  55% { transform: scale(1.04, 0.95) rotate(1.5deg); }
-  80% { transform: scale(0.97, 1.03) rotate(-1deg); }
+.carouselDetails .entryMeta {
+  justify-content: center;
 }
 
-/* ---------- drawer under the shelf ---------- */
-
-.drawer {
-  display: flex;
-  align-items: center;
-  min-height: 3.5rem;
-  padding: 0.5rem 1.25rem;
-  background: var(--wood-edge);
-  color: var(--paper);
-  border-radius: 0 0 4px 4px;
-  /* clear the fixed nav icon and leave a gap below when scrolled into view */
-  scroll-margin: 5rem 0 1rem;
+.carouselDetails .review {
+  text-align: left;
 }
 
-.drawerHint {
-  margin: 0;
-  font-family: var(--font-garden-mono), ui-monospace, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-
-/* the picked book's details, on paper, sliding open downward */
-.drawerCard {
-  position: relative;
-  display: grid;
-  grid-template-columns: 5.5rem 1fr;
-  gap: 1.25rem;
-  width: 100%;
-  margin: 0.5rem 0 0.75rem;
-  /* room on the right for the close button */
-  padding: 1.25rem 3rem 1.25rem 1.25rem;
-  background: var(--paper);
-  color: var(--ink);
-  border-radius: 3px;
-  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.18);
-  animation: drawerOpen 280ms ease-out;
-}
-
-@keyframes drawerOpen {
+@keyframes detailsIn {
   from {
-    clip-path: inset(0 0 100% 0);
-    opacity: 0.4;
+    opacity: 0;
+    transform: translateY(6px);
   }
   to {
-    clip-path: inset(0 0 0 0);
     opacity: 1;
+    transform: none;
   }
 }
 
-.drawerClose {
+.srOnly {
   position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
-  width: 44px;
-  height: 44px;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
   border: 0;
-  background: none;
-  color: var(--ink-soft);
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
 }
 
 /* ---------- bookcloth colors (spines and fallback covers) ---------- */
@@ -454,24 +473,40 @@
     font-size: 1.15rem;
   }
 
-  .drawerCard {
-    grid-template-columns: 4.5rem 1fr;
-    gap: 1rem;
-    padding: 1rem 2.5rem 1rem 1rem;
+  .carousel {
+    --cover-w: 150px;
+    --cover-h: 225px;
+    --first-gap: 128px;
+    --rest-gap: 40px;
   }
 
-  .drawer {
-    padding: 0.5rem 0.75rem;
+  /* no room beside the books on a phone, so the arrows flank the count instead */
+  .carouselArrow {
+    top: auto;
+    bottom: calc(-0.25rem - 44px);
+    transform: none;
+  }
+
+  .carouselPrev {
+    left: calc(50% - 7rem);
+  }
+
+  .carouselNext {
+    right: calc(50% - 7rem);
+  }
+
+  .carouselCount {
+    line-height: 44px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spine {
+  .slide,
+  .bookFace::after {
     transition: none;
   }
 
-  .flame,
-  .drawerCard {
+  .carouselDetails {
     animation: none;
   }
 }

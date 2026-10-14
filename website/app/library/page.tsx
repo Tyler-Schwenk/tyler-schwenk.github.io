@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Navigation from "@/components/Navigation";
-import Bookshelf from "@/components/library/Bookshelf";
+import BookCarousel from "@/components/library/BookCarousel";
 import ReadingEntry from "@/components/library/ReadingEntry";
 import styles from "@/components/library/library.module.css";
 import { OWNED_BOOKS, READ_BOOKS, getCoverSrc, getShelfBooks, groupByYearRead } from "./libraryData";
@@ -49,11 +49,9 @@ export default function LibraryPage() {
             These are the ones I currently own. LMK if you want to borrow any of them or trade!
           </p>
           {OWNED_BOOKS.length > 0 ? (
-            <Bookshelf books={getShelfBooks()} />
+            <BookCarousel books={getShelfBooks()} />
           ) : (
-            <div className={`${styles.shelf} ${styles.shelfEmpty}`}>
-              <p>Still shelving. Check back soon.</p>
-            </div>
+            <p className={styles.note}>Still shelving. Check back soon.</p>
           )}
         </section>
 

@@ -4,17 +4,17 @@
 
 `/library` has two sections:
 
-- **On the Shelf** -- the books I own right now, lying flat in stacks on a wooden
-  bookshelf with a plant, a hookah and a candle between them, and a note that they're up
-  for borrowing or trading. Picking a book opens a drawer under the shelf with my review. While the
-  owned list is empty it shows an empty shelf with "Still shelving".
+- **On the Shelf** -- the books I own right now, as a looping 3D cover carousel with a
+  note that they're up for borrowing or trading. The middle book faces front with my
+  rating and review under it; the rest angle away to each side. While the owned list is
+  empty it shows "Still shelving" instead.
 - **Reading Log** -- every book I've read, grouped by the year I finished it (newest year
   and newest book first). Each entry has the cover, title, subtitle, author, my star
   rating, the day I finished it, and my review if there is one.
 
 It's built entirely from `data/library.json` at build time -- no backend. The page is a
-server component; the only client JS is the shelf (`Bookshelf.tsx`), for picking a book
-and opening its drawer.
+server component; the only client JS is the carousel (`BookCarousel.tsx`), for flipping between
+books.
 Changing a book means editing the json and pushing.
 
 Linked from the home menu ("THE LIBRARY", icon `public/images/8bit/library.png`), in
@@ -28,14 +28,12 @@ the "I'm feeling lucky" routes, and in the sitemap.
 | `app/library/page.tsx` | Page + metadata. Masthead, shelf, reading log |
 | `data/spineColors.json` | Generated: spine background + ink per book id, from its cover |
 | `app/library/libraryData.ts` | Types, the typed `OWNED_BOOKS` / `READ_BOOKS`, `getCoverSrc` (build-time cover lookup), `getShelfBooks` (owned books joined with spine color, cover and log entry), `groupByYearRead` |
-| `components/library/Bookshelf.tsx` | Client component: the shelf plus the drawer for the picked book |
-| `components/library/shelfLayout.ts` | Splits the owned books into stacks and slots the decor between them |
-| `components/library/BookSpine.tsx` | One owned book lying flat in a stack (a button) |
-| `components/library/ShelfDecor.tsx` | SVG plant, hookah and candle |
+| `components/library/BookCarousel.tsx` | Client component: the looping cover carousel plus the middle book's details |
+| `components/library/BookModel.tsx` | A book as a 3D box: cover on the front, spine on the left, page edges on the right |
 | `components/library/BookCover.tsx` | Cover image, or a plain cloth binding with the title when there's no cover |
 | `components/library/bookCloth.ts` | Picks a book's cloth color from its id |
 | `components/library/ReadingEntry.tsx` | One book in the reading log |
-| `components/library/ReadingDetails.tsx` | Title, author, stars, date and review -- shared by the log and the drawer |
+| `components/library/ReadingDetails.tsx` | Title, author, stars, date and review -- shared by the log and the carousel |
 | `components/library/StarRating.tsx` | Rating out of 5 as stars, or "unrated" |
 | `components/library/library.module.css` | All library styling |
 | `lib/seededRandom.ts` | Seeded hash helpers, shared with the community board |
@@ -65,11 +63,12 @@ the "I'm feeling lucky" routes, and in the sitemap.
 ```
 
 - `id` -- kebab-case, unique within its list. It names the cover file and seeds the
-  spine's size and offset, so changing it means renaming the cover too. A book that's in
+  book's thickness, so changing it means renaming the cover too. A book that's in
   both lists should use the same id in each so it shares one cover and color.
 - `subtitle`, `review` -- optional. Reviews keep their line breaks (blank line = new
   paragraph).
-- `owned` order is shelf order: the first four books make the first stack, and so on.
+- `owned` order is carousel order: the first book is in the middle when the page loads,
+  and flipping right goes down the list (looping back to the top).
 - `rating` -- whole stars 1 to 5, or `null` for unrated.
 - `dateRead` -- `YYYY-MM-DD`, the day I finished it. If Goodreads has no read date, use the
   date it was added. Order in the file doesn't matter; the page sorts by this.
@@ -117,36 +116,41 @@ Old reading room: cream paper background, Libre Caslon Display headings
 (`--font-garden-display`), Newsreader body text (`--font-kitchen-serif`), IBM Plex Mono for
 catalog-style labels (`--font-garden-mono`).
 
-**Shelf** -- owned books lie flat in stacks, alternating 4 and 3 books, in the order of
-the `owned` list. Within a stack the books are sorted by title + author length, shortest
-on top, so it looks like a real pile. A decor piece (plant, then hookah, then candle) goes
-after every other stack, starting after the first, until they run out. Decor is inline
-SVG, hidden from screen readers; the candle flickers.
+**Shelf carousel** -- a coverflow. Every owned book is a `BookModel` (a CSS 3D box:
+cover on the front face, spine on the left face, page edges on the right) inside a
+button. Each book gets two inline custom properties, `--distance` (steps from the middle)
+and `--side` (-1 left, 0 middle, 1 right), and the CSS turns those into its transform:
+pushed out sideways (`--first-gap` for the first step, `--rest-gap` after), pushed back
+(`--depth-step`) and turned `--side-angle` toward the middle. So left books show their
+spines and right books show their pages. Books fade toward the paper the further out they
+are -- an overlay on each face, because opacity or filter on the box would flatten the
+3D -- and the stage's edges fade out with a mask. All the sizes live on `.carousel` and
+shrink under 480px.
 
-Stacks and decor wrap into rows. Each sits in a slot exactly `--shelf-row-height` tall
-with the plank height reserved at its bottom, and the shelf background repeats one plank
-tile at that same interval. That keeps a plank under every row however many rows there
-are. A stack of four books, even with every title wrapped to two lines, fits in a row.
+It loops: a book's distance is measured whichever way round the list is shorter, so the
+last book sits just left of the first. Books more than 3 steps out are hidden, which also
+hides the one book that jumps from one end to the other on each flip.
 
-Each spine reads left to right: title, then author. They share a line when there's room
-and wrap when there isn't (narrow phones), so nothing gets cut off. Spine color comes from
-`data/spineColors.json`; padding (so width and thickness) and a small left/right offset
-come from the book id via `lib/seededRandom.ts`, so they're stable across builds.
+Flipping: the arrow buttons (beside the books on desktop, beside the "3 / 18" count on
+phones), the left/right arrow keys while focus is in the carousel, a swipe or mouse drag
+of 40px+ (swipe left for the next book; vertical swipes still scroll the page), a
+sideways trackpad scroll (one flip per 60px, at most one per 300ms so a flick doesn't
+spin through everything), or clicking a side book to bring it to the middle. The stage
+blocks the browser's native image drag, since that would cancel a mouse swipe.
 
-Every spine is a button: tapping or clicking one (or Enter/Space) slides it partway out
-of its stack and opens the drawer under the shelf -- the cover plus `ReadingDetails`
-(title, author, stars, date read, full review), or "Haven't read it yet" for a book
-that's not in the log. The drawer clips open downward and scrolls into view, which
-matters on a phone where the shelf is several screens tall. Tapping the book again or the
-close button puts it back. With nothing picked the drawer is a thin bar with a hint.
+Under the middle book: the count, then `ReadingDetails` (title, subtitle, author, stars,
+date read, full review), fading in on each flip -- or "Haven't read it yet" for a book
+that's not in the log. A visually hidden live region announces the new book on every
+flip. The middle book is the only one in the tab order; the side books are reachable
+with the arrows.
 
-On devices with a real pointer, hovering a spine slides it out a little. That's behind
-`@media (hover: hover)` because touch browsers leave `:hover` stuck on the last tapped
-element. Spine motion, the drawer animation and the candle flicker are off under
-`prefers-reduced-motion`. The close button is a 44px tap target.
+Spine color comes from `data/spineColors.json` (bookcloth when missing) and thickness
+(16-30px) from the book id via `lib/seededRandom.ts`, so both are stable across builds.
+Flip animation and the details fade are off under `prefers-reduced-motion`.
 
 **Reading log** -- each entry is a two-column grid (cover, details); the cover column
 narrows under 480px. Dates are formatted in UTC since they're plain calendar days.
 
-Checked in Chromium at 390px (phone emulation) and 1200px: no horizontal scroll, and the
-drawer opens and scrolls into view.
+Checked in Chromium at 320px and 390px (phone emulation) and 1200px: no horizontal
+scroll; arrow buttons, arrow keys, mouse drag and clicking a side book all flip, and
+flipping back from the first book wraps to the last.

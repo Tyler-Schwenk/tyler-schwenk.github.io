@@ -17,7 +17,7 @@ type ReadingDetailsProps = {
 
 /**
  * What I thought of a book: title, subtitle, author, rating, the day I finished it,
- * and my review if I wrote one. shared by the reading log and the shelf's drawer.
+ * and my review if I wrote one. shared by the reading log and the shelf carousel.
  *
  * @param {ReadingDetailsProps} props - The book and the title's heading level.
  * @returns {JSX.Element} The details, no wrapper.
