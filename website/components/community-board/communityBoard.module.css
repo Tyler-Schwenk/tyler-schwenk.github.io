@@ -109,6 +109,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  /* don't stretch notes to the row height, or the curl shadows hang below shorter papers */
+  align-items: flex-start;
   gap: var(--note-gap-y) var(--note-gap-x);
   width: 100%;
   margin-top: 1.5rem;
