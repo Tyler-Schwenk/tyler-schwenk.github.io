@@ -61,6 +61,12 @@ export const COMMUNITY_BOARD_SECTIONS: CommunityBoardSection[] = [
         href: "https://soundcloud.com/byrdmp3/spectrum-techno-presents-live-from-the-techno-jungle-w-tommypips",
         description: "He goes by Tracepoint now!!",
       },
+      {
+        id: "rimma",
+        name: "Rimma",
+        href: "https://pmc.ncbi.nlm.nih.gov/articles/PMC12871695/",
+        description: "Her PhD paper. I dont get it",
+      },
     ],
   },
   {
