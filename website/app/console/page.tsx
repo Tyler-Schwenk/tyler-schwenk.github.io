@@ -7,14 +7,15 @@ import { DisplayEnvironmentProvider, type DisplayEnvironment } from "../display/
 import { pickSlots, useRotationClockSlot, type ScreenSide } from "../display/displayRotation";
 import { INITIAL_CONTROL_STATE, applyControlEvent, type ControlState } from "../display/kioskControl";
 import ConsoleScene from "./ConsoleScene";
-import ConsoleControls, { BEAT_EARLIER_KEY, BEAT_LATER_KEY } from "./ConsoleControls";
+import ConsolePanel, { BEAT_EARLIER_KEY, BEAT_LATER_KEY } from "./ConsolePanel";
+import { CONSOLE_SECTIONS, holdSlotState, sectionForMode, type SectionId } from "./consoleSections";
 import SimSurfCamPanel from "./SimSurfCamPanel";
 import { SimBpmEngine } from "./simBpmEngine";
 import { HOUSE_LOOP } from "./simSong";
 import { fetchSimulatedSurfConditions } from "./simSurf";
 
 // the physical keys a visitor can press, mapped to the kiosk's key names (tab is left
-// alone so it still moves focus around the page; the deck has a tab button)
+// alone so it still moves focus around the page)
 const KEYBOARD_KEYS: Record<string, string> = {
   "[": "prev",
   "]": "next",
@@ -68,20 +69,21 @@ function MobileNotice({ onDismiss }: { onDismiss: () => void }) {
  * simulation of the display kiosk (website/app/display): the same rotation,
  * panels and keys, with stand-ins for what only exists on displaytop (the
  * surf cam video, the agents' surf conditions, the room mic, which gets a
- * synthesised song). The scene fills the screen; the keys work from a deck
- * beside it on desktop (below it on phones, behind a toggle), or from the keyboard.
+ * synthesised song). The scene keeps its full size on the left (on top on
+ * phones), and an info and control panel takes the rest: an overview running
+ * the standard rotation, and a tab for each thing the screens show. The
+ * kiosk's keys work from the keyboard too.
  */
 export default function ConsolePage() {
   const [state, setState] = useState<ControlState>(INITIAL_CONTROL_STATE);
   const [focus, setFocus] = useState<ScreenSide | null>(null);
-  // on phones the keys start hidden, so the scene opens full screen; on desktop they're always
-  // beside it (css, below). the physical keyboard works either way
-  const [controlsOpen, setControlsOpen] = useState(false);
   const [mobileNoticeDismissed, setMobileNoticeDismissed] = useState(false);
   const [engine] = useState(() => new SimBpmEngine(HOUSE_LOOP));
   const muted = useSyncExternalStore(engine.subscribeMuted, engine.isMuted, () => false);
   const clockSlot = useRotationClockSlot(state);
-  const liveCamId = clockSlot === null ? null : (pickSlots(state, clockSlot).current.camId ?? null);
+  const currentSlot = clockSlot === null ? null : pickSlots(state, clockSlot).current;
+  const currentSlotId = currentSlot?.id ?? null;
+  const liveCamId = currentSlot?.camId ?? null;
 
   const environment = useMemo<DisplayEnvironment>(
     () => ({
@@ -120,6 +122,12 @@ export default function ConsolePage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pressKey]);
 
+  // picking the tab that's already up leaves it be, so it doesn't restart a rotation or the bpm cycling
+  const selectSection = useCallback((id: SectionId) => {
+    const section = CONSOLE_SECTIONS.find((candidate) => candidate.id === id);
+    if (section) setState((current) => (sectionForMode(current.mode) === id ? current : section.enter(Date.now())));
+  }, []);
+
   return (
     <DisplayEnvironmentProvider value={environment}>
       <div
@@ -130,56 +138,33 @@ export default function ConsolePage() {
           backgroundSize: "24px 24px",
         }}
       >
-        {/* the scene takes whatever the controls leave, so with them closed it's the whole screen */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* the scene's square, so on desktop it gets the full height (as wide as that, leaving the panel
+            at least 22rem) and the panel takes whatever width is left; on phones it sits on top */}
+        <div className="flex shrink-0 flex-col lg:h-full lg:w-[min(100dvh,calc(100vw-22rem))]">
           {!mobileNoticeDismissed && <MobileNotice onDismiss={() => setMobileNoticeDismissed(true)} />}
-          <div className="relative min-h-0 flex-1">
+          <div className="relative aspect-square max-h-[55dvh] w-full lg:aspect-auto lg:max-h-none lg:min-h-0 lg:flex-1">
             <ConsoleScene state={state} clockSlot={clockSlot} focus={focus} onFocus={setFocus} />
-            {!controlsOpen && (
-              <div className="lg:hidden">
-                <Link
-                  href="/"
-                  className="absolute left-3 top-3 z-10 flex min-h-11 items-center rounded-lg bg-slate-900/80 px-3 font-mono text-sm text-slate-300 transition-colors hover:text-white"
-                >
-                  &larr; main menu
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setControlsOpen(true)}
-                  className="absolute bottom-3 right-3 z-10 min-h-11 rounded-lg border border-slate-600 bg-slate-900/85 px-4 font-mono text-sm text-slate-200 hover:bg-slate-800"
-                >
-                  keys
-                </button>
-              </div>
-            )}
           </div>
         </div>
-        <aside
-          className={`${controlsOpen ? "flex" : "hidden"} max-h-[55dvh] shrink-0 flex-col gap-5 overflow-y-auto border-t border-slate-800 bg-slate-950/95 p-4 lg:flex lg:max-h-none lg:w-96 lg:border-l lg:border-t-0`}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="font-mono text-lg uppercase tracking-widest text-slate-200">Console</h1>
-            <div className="flex items-center gap-2">
-              <Link href="/" className="font-mono text-sm text-slate-400 transition-colors hover:text-white">
+        <aside className="min-h-0 flex-1 overflow-y-auto border-t border-slate-800 bg-slate-950/95 lg:border-l lg:border-t-0">
+          <div className="mx-auto flex max-w-2xl flex-col gap-5 p-4 lg:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="font-mono text-lg uppercase tracking-widest text-slate-200">Console</h1>
+              <Link href="/" className="flex min-h-11 items-center font-mono text-sm text-slate-400 transition-colors hover:text-white">
                 &larr; main menu
               </Link>
-              <button
-                type="button"
-                onClick={() => setControlsOpen(false)}
-                aria-label="Hide the keys"
-                className="min-h-11 rounded-lg border border-slate-700 px-3 font-mono text-sm text-slate-300 hover:bg-slate-800 lg:hidden"
-              >
-                hide
-              </button>
             </div>
+            <ConsolePanel
+              state={state}
+              currentSlotId={currentSlotId}
+              liveCamId={liveCamId}
+              muted={muted}
+              onSelectSection={selectSection}
+              onKey={pressKey}
+              onHoldSlot={(slotId) => setState(holdSlotState(slotId))}
+              onToggleMute={() => engine.setMuted(!muted)}
+            />
           </div>
-          <ConsoleControls
-            state={state}
-            onKey={pressKey}
-            muted={muted}
-            onToggleMute={() => engine.setMuted(!muted)}
-            liveCamId={liveCamId}
-          />
         </aside>
       </div>
     </DisplayEnvironmentProvider>

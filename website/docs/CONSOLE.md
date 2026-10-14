@@ -8,8 +8,8 @@ running on its two screens in perspective. It's an accurate simulation, not a mi
 
 - the screens run the kiosk's own rotation, panels and key handling, on the wall clock, so
   with no keys pressed they show the slot the real screens are on
-- visitors press the kiosk's keys from the deck beside the scene (or their keyboard), and
-  only their own copy changes; the real kiosk never hears about it
+- visitors drive it from the info panel beside the scene (or the kiosk's keys on their
+  keyboard), and only their own copy changes; the real kiosk never hears about it
 - photos and the mallard count are fetched live like on the kiosk (each screen shuffles its
   own photos, so they aren't the same photos the real screens show)
 - what only exists on displaytop gets a stand-in: the surf cam video, the surf conditions,
@@ -26,10 +26,11 @@ toward the pointer, just enough to read as 3d (not with `prefers-reduced-motion`
 | File | Purpose |
 |------|---------|
 | `website/app/console/page.tsx` | Control state, the simulated environment, physical keyboard mapping, the layout |
+| `website/app/console/consoleSections.ts` | The panel's sections: tab labels, descriptions, the state each one puts the screens in, and which section a display mode belongs to |
+| `website/app/console/ConsolePanel.tsx` | The info and control panel: section tabs, the "now showing" line, each section's controls and description |
 | `website/app/console/ConsoleScene.tsx` | The illustration, both screens, the lid shading, the zoom and tilt |
 | `website/app/console/ScreenSurface.tsx` | A box at a screen's native resolution, warped onto its corners |
 | `website/app/console/sceneGeometry.ts` | Each screen's resolution and corners in the illustration, the lid strip, and the perspective math (`quadTransform`, `quadBounds`, `quadPoints`) |
-| `website/app/console/ConsoleControls.tsx` | The key deck, the "now showing" line, the sound switch |
 | `website/app/console/SimSurfCamPanel.tsx` | Surf cam stand-in: an animated canvas scene per cam plus the agent's info overlay |
 | `website/app/console/simSurf.ts` | Made-up surf conditions in the surfcam agent's json format |
 | `website/app/console/simBpmEngine.ts` | Stand-in for the bpm agent: plays a song and streams frames and tempo |
@@ -52,10 +53,33 @@ The display's panels don't know they're on the console. Two shared pieces make t
 | `reportPlayingPreset` | tells the admin remote | does nothing |
 
 Key presses go through `applyControlEvent` from `kioskControl.ts`, the kiosk's own state
-machine, on a local state instead of the agent's key log. The `ControlOverlay` (tab menu,
-"held" indicator) draws on the laptop screen, as on the kiosk's secondary screen.
+machine, on a local state instead of the agent's key log. The `ControlOverlay`'s "held"
+indicator draws on the laptop screen, as on the kiosk's secondary screen (its tab menu
+never opens here, since the panel replaces it and tab is left for page focus).
 
-**Keys:** the deck has every kiosk key. The physical keyboard maps `1`-`9`, `b`, `[`, `]`,
+## The Panel
+
+The panel beside the scene has a tab per section (`CONSOLE_SECTIONS`). Each shows the "now
+showing" line, that section's controls, and a description of what it is:
+
+| Section | Picking it puts the screens on | Controls |
+|---------|--------------------------------|----------|
+| overview (default) | the standard rotation | the rotation's slots, the current one lit; picking one stays on it |
+| photos | the photos slot, photos still changing | keep changing / freeze this photo, and previous/next while frozen |
+| mallards | the mallard counter | none |
+| surf cams | the cam-only rotation | all cams rotating, or one cam; a link to the real stream of the cam that's up |
+| bpm | bpm mode, cycling the views | cycle or hold a view, previous/next (views, or milkdrop presets), sound, beat earlier/later |
+
+The tab isn't its own state: it's worked out from the display mode (`sectionForMode`), so
+keys pressed on the keyboard move the panel too. Picking the tab that's already up does
+nothing, so it doesn't restart a rotation. Every control goes through the kiosk's state
+machine, except holding a slot: the kiosk has no key that holds the photos slot without
+freezing the photo, so the panel builds `hold-slot` states directly (`holdSlotState`), the
+same state ] and [ lead to on the kiosk.
+
+The overview's "how it works" text is placeholder lorem ipsum for now.
+
+**Keys:** the physical keyboard maps `1`-`9`, `b`, `[`, `]`,
 backspace, esc, `-` and `=`; tab isn't taken over, so it still moves focus around the page.
 `-`/`=` nudge the simulated beat 10 ms earlier/later (only in bpm mode, like the agent).
 
@@ -76,8 +100,8 @@ sound comes out of the speakers.
 
 The engine starts when the first stream connects (bpm mode opening, always after a key
 press, which browsers need before audio can play) and stops 5 s after the last closes, so
-switching views doesn't restart the song. The song plays out loud by default; the deck's
-`snd` key mutes it without stopping the views.
+switching views doesn't restart the song. The song plays out loud by default; the bpm
+section's sound switch mutes it without stopping the views.
 
 To use a real song instead: implement `SimSong` (`bpm`, `firstBeatS`, and `render`, which
 can fetch and `decodeAudioData` a file) and pass it to `SimBpmEngine` in `page.tsx`. The
@@ -97,7 +121,7 @@ allowed; for tyler-schwenk.com it returns a "blocked" image instead. Its public 
 pages send `X-Frame-Options: DENY`, and the HLS playlists refuse other origins (403).
 Surfline's embed player is for its partners (403). Spoofing the origin or relaying the
 streams through the Pi would get round the owners' restrictions, so it isn't done. Instead,
-while a cam is up the deck links to its real stream (`LIVE_CAM_PAGES` in `simSurf.ts`).
+while a cam is up the surf cams section links to its real stream (`LIVE_CAM_PAGES` in `simSurf.ts`).
 If a cam owner ever allow-lists tyler-schwenk.com, that cam's stand-in could become an
 iframe of the portal player.
 
@@ -139,15 +163,14 @@ bracket corners into `sceneGeometry.ts`, and export a clean copy as `console.web
 
 ## Layout
 
-The scene fills the window: the illustration at 96% of the smaller side, centred on the
-blueprint grid, with rounded corners and a shadow so its edges show as it tilts.
+The illustration is drawn at 96% of the smaller side of its area, centred on the blueprint
+grid, with rounded corners and a shadow so its edges show as it tilts.
 
-- **Desktop (lg and up):** the key deck is always open beside the scene
-- **Phones:** the deck starts hidden so the scene is full screen; a "keys" button opens it
-  below the scene (at most 55% of the height) and the scene shrinks to the space left, zoom
-  included. Keys are at least 44 px tall for touch, and there's no tilt without a mouse
-
-The physical keyboard works whether the deck is open or not.
+- **Desktop (lg and up):** the scene's area is square and as tall as the window (narrower
+  only if that would leave the panel less than 22rem), on the left; the panel takes the rest
+  of the width, its content capped at `max-w-2xl` so wide screens don't stretch the text
+- **Phones:** the scene sits on top, square, at most 55% of the height; the panel scrolls
+  below it. Controls are at least 44 px tall for touch, and there's no tilt without a mouse
 
 On touch screens (`pointer: coarse`, via tailwind's `pointer-coarse:` variant) a banner
 above the scene says it's better viewed on a computer. Its x hides it until the page is
