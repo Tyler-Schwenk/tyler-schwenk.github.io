@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import Navigation from "@/components/Navigation";
 import { CONTROL_CONFIG } from "../display/displayConfig";
 import { DisplayEnvironmentProvider, type DisplayEnvironment } from "../display/displayEnvironment";
 import { pickSlots, useRotationClockSlot, type ScreenSide } from "../display/displayRotation";
@@ -50,7 +51,7 @@ function isConsoleKeyEvent(event: KeyboardEvent): boolean {
  */
 function MobileNotice({ onDismiss }: { onDismiss: () => void }) {
   return (
-    <div className="hidden shrink-0 items-center justify-between gap-3 border-b border-amber-700/60 bg-amber-950/90 px-4 py-1 font-mono text-sm text-amber-100 pointer-coarse:flex">
+    <div className="hidden shrink-0 items-center justify-between gap-3 border-b border-amber-700/60 bg-amber-950/90 py-1 pl-20 pr-4 font-mono text-sm text-amber-100 pointer-coarse:flex">
       <span>This is better viewed on a computer, sorry!</span>
       <button
         type="button"
@@ -138,6 +139,7 @@ export default function ConsolePage() {
           backgroundSize: "24px 24px",
         }}
       >
+        <Navigation />
         {/* the scene's square, so on desktop it gets the full height (as wide as that, leaving the panel
             at least 22rem) and the panel takes whatever width is left; on phones it sits on top */}
         <div className="flex shrink-0 flex-col lg:h-full lg:w-[min(100dvh,calc(100vw-22rem))]">

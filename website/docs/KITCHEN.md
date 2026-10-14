@@ -43,6 +43,7 @@ RecipeBrowser (client component)
 ### Routes
 
 - `/kitchen` — the only route ([app/kitchen/page.tsx](../app/kitchen/page.tsx)). Recipe detail and the add-recipe form are modals, not separate pages.
+- `/cookbook` — the old url, printed as a QR code in the physical cookbooks. [app/cookbook/page.tsx](../app/cookbook/page.tsx) is a meta-refresh redirect to `/kitchen` (static export has no server redirects), marked noindex. Never delete it or the printed codes break.
 
 ---
 
