@@ -22,6 +22,8 @@ Sections render in array order, links in array order within each section. To add
 Everything about a note's look is derived from its `id` via `boardJitter.ts`, so it's stable across builds but varies note to note:
 - **Paper**: sticky note (yellow, pink, green, blue, orange), lined index card, or torn notebook scrap.
 - **Fastener**: pushpin (red, blue, green, yellow, white, with a small horizontal offset) or a strip of tape (~30% of notes).
+- **Ink**: black felt-tip, blue ballpoint, or pencil. Text uses `mix-blend-mode: multiply` with a slight blur so it reads as ink in the paper.
+- **Wear**: every paper (and the tape) gets a shared fractal-noise grain (`--paper-grain`, an inline SVG defined on `.wall`), darkened edges, and a faint stain at a seeded position/strength. Paper colors are deliberately faded rather than bright.
 - **Tilt / nudge**: up to +/-4deg rotation, small x/y offset.
 
 Changing a link's `id` reshuffles its look. Section labels are tilted the same way from the section `id`.

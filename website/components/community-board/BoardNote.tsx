@@ -22,6 +22,21 @@ const PAPER_CLASSES = [
   styles.scrap,
 ] as const;
 
+// a faint stain lands somewhere in the lower-middle of each note, never fully opaque
+const STAIN_POSITION_MIN_PCT = 20;
+const STAIN_POSITION_MAX_PCT = 85;
+const STAIN_ALPHA_MIN = 0.05;
+const STAIN_ALPHA_MAX = 0.2;
+
+// felt-tip and ballpoint are more common than pencil
+const INK_CLASSES = [
+  styles.inkBlack,
+  styles.inkBlack,
+  styles.inkBlue,
+  styles.inkBlue,
+  styles.inkPencil,
+] as const;
+
 const PIN_CLASSES = [
   styles.pinRed,
   styles.pinBlue,
@@ -65,9 +80,9 @@ function Fastener({ seed }: { seed: string }) {
 }
 
 /**
- * A single linked note on the community board. paper type, fastener, tilt, and
- * nudge are all derived from the link id, so a note looks the same on every
- * build but the board as a whole looks hand-tacked.
+ * A single linked note on the community board. paper type, ink, stain, fastener,
+ * tilt, and nudge are all derived from the link id, so a note looks the same on
+ * every build but the board as a whole looks hand-tacked.
  *
  * @param {{ link: CommunityBoardLink }} props - Link to render.
  * @returns {JSX.Element} Anchor styled as a pinned piece of paper; opens in a new tab.
@@ -77,11 +92,18 @@ export default function BoardNote({ link }: { link: CommunityBoardLink }) {
   const shiftXPx = seededRange(link.id, "shift-x", -NOTE_SHIFT_X_MAX_PX, NOTE_SHIFT_X_MAX_PX);
   const shiftYPx = seededRange(link.id, "shift-y", 0, NOTE_SHIFT_Y_MAX_PX);
   const paperClass = seededPick(link.id, "paper", PAPER_CLASSES);
+  const inkClass = seededPick(link.id, "ink", INK_CLASSES);
+  const stainXPct = seededRange(link.id, "stain-x", STAIN_POSITION_MIN_PCT, STAIN_POSITION_MAX_PCT);
+  const stainYPct = seededRange(link.id, "stain-y", STAIN_POSITION_MIN_PCT, STAIN_POSITION_MAX_PCT);
+  const stainAlpha = seededRange(link.id, "stain-alpha", STAIN_ALPHA_MIN, STAIN_ALPHA_MAX);
 
   const style = {
     "--rot": `${tiltDeg}deg`,
     "--shift-x": `${shiftXPx}px`,
     "--shift-y": `${shiftYPx}px`,
+    "--stain-x": `${stainXPct}%`,
+    "--stain-y": `${stainYPct}%`,
+    "--stain-alpha": stainAlpha,
   } as CSSProperties;
 
   return (
@@ -92,7 +114,7 @@ export default function BoardNote({ link }: { link: CommunityBoardLink }) {
       className={styles.note}
       style={style}
     >
-      <span className={`${styles.paper} ${paperClass}`}>
+      <span className={`${styles.paper} ${paperClass} ${inkClass}`}>
         <span className={styles.name}>{link.name}</span>
         <span className={styles.description}>{link.description}</span>
         <span className={styles.host}>{displayHost(link.href)}</span>

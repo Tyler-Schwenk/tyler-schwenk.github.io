@@ -5,6 +5,8 @@
  */
 
 .wall {
+  /* fractal noise tinted brown, multiplied over paper and tape so they read as fibers, not flat fills */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.33 0 0 0 0 0.2 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   min-height: 100vh;
   padding: 5rem 0.5rem 2rem;
   background:
@@ -126,8 +128,9 @@
   white-space: nowrap;
   color: #1f1d1a;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 40%),
-    rgba(236, 222, 186, 0.92);
+    var(--paper-grain),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 40%),
+    rgba(222, 206, 166, 0.93);
   /* ragged torn ends */
   clip-path: polygon(
     0% 8%, 2% 0%, 98% 4%, 100% 0%, 99% 30%, 100% 55%, 98% 80%, 100% 100%,
@@ -222,6 +225,37 @@
   font-family: var(--font-caveat), cursive;
 }
 
+/* wear layer over every paper: grain, a faint stain, and edges darkened from
+   handling. multiply means it only ever darkens, so text stays readable */
+.paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(
+      ellipse 45% 35% at var(--stain-x, 70%) var(--stain-y, 70%),
+      rgba(150, 110, 50, var(--stain-alpha, 0.12)),
+      transparent 70%
+    ),
+    var(--paper-grain);
+  box-shadow:
+    inset 0 0 1.1rem rgba(110, 80, 35, 0.28),
+    inset 0 -0.5rem 0.9rem rgba(110, 80, 35, 0.12);
+}
+
+/* ink sits in the paper rather than on top of it, with a hair of bleed */
+.name,
+.description,
+.host {
+  position: relative;
+  z-index: 1;
+  color: var(--ink, #2a2620);
+  mix-blend-mode: multiply;
+  text-shadow: 0 0 0.6px var(--ink, #2a2620);
+}
+
 .name {
   font-size: 1.45rem;
   font-weight: 700;
@@ -233,7 +267,7 @@
   margin-top: 0.3rem;
   font-size: 1.15rem;
   line-height: 1.15;
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
 .host {
@@ -241,49 +275,66 @@
   padding-top: 0.5rem;
   font-size: 1rem;
   line-height: 1.1;
-  opacity: 0.6;
+  opacity: 0.65;
   overflow-wrap: anywhere;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
-/* sticky notes: flat color, a little darker at the bottom where it lifts off */
+/* inks: felt-tip, ballpoint, and pencil (pencil is lighter and a bit lower contrast) */
+.inkBlack {
+  --ink: #24221f;
+}
+
+.inkBlue {
+  --ink: #1e2d63;
+}
+
+.inkPencil {
+  --ink: #45433f;
+}
+
+.inkPencil .name {
+  font-weight: 600;
+}
+
+/* sticky notes: faded, slightly dirty colors, darker at the bottom where it lifts off */
 .sticky {
-  background: linear-gradient(180deg, var(--paper) 0%, var(--paper) 70%, var(--paper-shade) 100%);
+  background: linear-gradient(175deg, var(--paper) 0%, var(--paper) 60%, var(--paper-shade) 100%);
 }
 
 .stickyYellow {
-  --paper: #fbec8f;
-  --paper-shade: #ecd96f;
+  --paper: #e9d987;
+  --paper-shade: #d4bf6a;
 }
 
 .stickyPink {
-  --paper: #f8c3d0;
-  --paper-shade: #eaaabb;
+  --paper: #e5b9bd;
+  --paper-shade: #cfa1a5;
 }
 
 .stickyGreen {
-  --paper: #cdeaa6;
-  --paper-shade: #b7d98c;
+  --paper: #c4d49d;
+  --paper-shade: #acbd83;
 }
 
 .stickyBlue {
-  --paper: #bfe1f2;
-  --paper-shade: #a5cfe4;
+  --paper: #b6ccd6;
+  --paper-shade: #9bb3bf;
 }
 
 .stickyOrange {
-  --paper: #fcd29b;
-  --paper-shade: #efbd7d;
+  --paper: #e8c08f;
+  --paper-shade: #d1a672;
 }
 
-/* index card: white stock, red header rule, faint blue lines only below it */
+/* index card: off-white stock, red header rule, faint blue lines only below it */
 .indexCard {
-  background-color: #fbfaf5;
+  background-color: #efe9d9;
   background-image:
-    linear-gradient(180deg, #e58a8a 0 1px, transparent 1px),
-    repeating-linear-gradient(180deg, transparent 0 calc(1.35rem - 1px), #b9d3ea calc(1.35rem - 1px) 1.35rem);
+    linear-gradient(180deg, rgba(196, 110, 100, 0.75) 0 1px, transparent 1px),
+    repeating-linear-gradient(180deg, transparent 0 calc(1.35rem - 1px), rgba(120, 155, 185, 0.45) calc(1.35rem - 1px) 1.35rem);
   background-position: 0 1.85rem, 0 1.85rem;
   background-size: 100% 100%, 100% 100%;
   background-repeat: no-repeat;
@@ -293,8 +344,8 @@
 .scrap {
   padding-bottom: 1.4rem;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.5), transparent 60%),
-    #f1ead8;
+    radial-gradient(ellipse at 30% 20%, rgba(255, 250, 235, 0.35), transparent 60%),
+    #e4dac3;
   clip-path: polygon(
     0% 0%, 100% 0%, 100% 92%, 94% 97%, 88% 93%, 80% 98%, 71% 94%, 63% 99%,
     55% 94%, 46% 98%, 38% 93%, 29% 98%, 21% 94%, 12% 99%, 5% 94%, 0% 97%
@@ -350,8 +401,9 @@
   height: 1.5rem;
   margin-left: -2.25rem;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 50%),
-    rgba(232, 222, 190, 0.78);
+    var(--paper-grain),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25), transparent 50%),
+    rgba(220, 206, 168, 0.8);
   clip-path: polygon(
     0% 10%, 4% 0%, 96% 6%, 100% 0%, 98% 50%, 100% 100%, 5% 94%, 0% 100%, 2% 50%
   );
