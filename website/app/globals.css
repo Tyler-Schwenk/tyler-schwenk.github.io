@@ -342,3 +342,67 @@ body {
 .garden-mono {
   font-family: var(--g-font-mono);
 }
+
+/*
+ * home page pixel world (components/home/HomeWorld.tsx). an object "lights up"
+ * on hover, keyboard focus, or a first tap on touch (data-selected) -- the
+ * sprite lifts, gets a yellow pixel outline, and its name tag shows. steps()
+ * timing keeps the motion choppy like old sprite animation.
+ */
+.world-object:hover,
+.world-object:focus-visible,
+.world-object[data-selected="true"] {
+  /* important because each object's depth z-index is set inline */
+  z-index: 1000 !important;
+  outline: none;
+}
+
+.world-lift {
+  transition: transform 150ms steps(3);
+}
+
+.world-object:hover .world-lift,
+.world-object:focus-visible .world-lift,
+.world-object[data-selected="true"] .world-lift {
+  transform: translateY(-8%);
+}
+
+.world-object:hover .world-sprite,
+.world-object:focus-visible .world-sprite,
+.world-object[data-selected="true"] .world-sprite {
+  filter: drop-shadow(2px 0 0 #f8d030) drop-shadow(-2px 0 0 #f8d030)
+    drop-shadow(0 2px 0 #f8d030) drop-shadow(0 -2px 0 #f8d030);
+}
+
+/* spriteless hotspots (the cave) get a dashed box instead of an outline */
+.world-object:hover .world-hotspot,
+.world-object:focus-visible .world-hotspot,
+.world-object[data-selected="true"] .world-hotspot {
+  border-color: #f8d030;
+  box-shadow: 0 0 12px 2px rgba(176, 96, 224, 0.8);
+}
+
+.world-tag {
+  opacity: 0;
+  transition: opacity 100ms steps(2);
+}
+
+.world-object:hover .world-tag,
+.world-object:focus-visible .world-tag,
+.world-object[data-selected="true"] .world-tag {
+  opacity: 1;
+}
+
+@keyframes world-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10%); }
+}
+
+.world-float {
+  animation: world-bob 2.4s steps(6) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-float { animation: none; }
+  .world-lift { transition: none; }
+}

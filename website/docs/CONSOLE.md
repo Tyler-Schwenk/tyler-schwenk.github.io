@@ -176,7 +176,7 @@ On touch screens (`pointer: coarse`, via tailwind's `pointer-coarse:` variant) a
 above the scene says it's better viewed on a computer. Its x hides it until the page is
 reloaded. It's gated in css rather than js, so desktop never renders it.
 
-The home page's main menu links here ("THE CONSOLE", icon `public/images/8bit/console.png`).
+The home page links here ("THE CONSOLE" -- the record-player stand on the deck in the world view, icon `public/images/8bit/console.png`). See `HOME.md`.
 
 Both screens run the kiosk's panels at full native resolution, which is the same work the
 kiosk does; on a phone the canvases cost more battery than a normal page.

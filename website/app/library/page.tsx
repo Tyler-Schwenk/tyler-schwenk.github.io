@@ -46,7 +46,7 @@ export default function LibraryPage() {
         <section className={styles.section} aria-labelledby="shelf-heading">
           <h2 id="shelf-heading" className={styles.sectionHeading}>On the Shelf</h2>
           <p className={styles.note}>
-            These are the ones I currently own. LMK if you want to borrow any of them or trade!
+            These are books ones I currently own. Let me know if you want to borrow any of them or trade!
           </p>
           {OWNED_BOOKS.length > 0 ? (
             <BookCarousel books={getShelfBooks()} />
