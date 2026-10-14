@@ -138,7 +138,7 @@ export default function SolarPage() {
           {/* Header */}
           <div className="flex items-center gap-4 mb-3">
             <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-slate-200">
-              <Image src="/images/solar/solar_icon.png" alt="" fill className="object-contain" />
+              <Image src="/images/8bit/solar.png" alt="" fill className="object-contain" />
             </div>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">
               Solar Setup

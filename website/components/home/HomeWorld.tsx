@@ -3,21 +3,34 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { WORLD_OBJECTS, pickLuckyRoute, type WorldObject } from "./worldObjects";
+import { useRef, useState, type CSSProperties } from "react";
+import worldMeta from "./world.generated.json";
+import { WORLD_OBJECTS, pickLuckyRoute, type LayoutName, type WorldObject } from "./worldObjects";
 
-const WORLD_BACKDROP_SRC = "/images/home/world.png";
+/** how sprites scale with depth in each layout. */
+type DepthTuning = {
+  /** scale for something sitting right on the horizon. */
+  minScale: number;
+  /** scale for something at the bottom edge. */
+  maxScale: number;
+  /** sprite width at scale 1 and size 1, as a percent of the world width. */
+  baseSpriteWidthPct: number;
+};
 
-// matches HORIZON_Y_PX / WORLD_H_PX in scripts/generate_home_world.py
-const HORIZON_PCT = 34.4;
+// desktop leans hard on shrink-with-distance to sell the fake 3D. mobile keeps
+// things big since the screen's narrow and fingers need something to hit
+const DEPTH_TUNING: Record<LayoutName, DepthTuning> = {
+  desktop: { minScale: 0.4, maxScale: 1.2, baseSpriteWidthPct: 10 },
+  mobile: { minScale: 0.7, maxScale: 1.0, baseSpriteWidthPct: 22 },
+};
 
-// sprites on the horizon render at MIN, ones at the bottom edge at MAX. scaling
-// by distance is what sells the fake 3D
-const MIN_DEPTH_SCALE = 0.4;
-const MAX_DEPTH_SCALE = 1.2;
+const LAYOUT_NAMES: LayoutName[] = ["desktop", "mobile"];
 
-// sprite width at depth scale 1 and size 1, as a percent of world width
-const BASE_SPRITE_WIDTH_PCT = 10;
+// css var prefix per layout -- globals.css reads --m-* by default and --d-* from md up
+const VAR_PREFIX: Record<LayoutName, string> = { desktop: "--d", mobile: "--m" };
+
+// matches tailwind's md breakpoint, where globals.css switches to the --d-* vars
+const DESKTOP_MEDIA_QUERY = "(min-width: 48rem)";
 
 // sprites' source art is 112px; only used for next/image's aspect hint
 const SPRITE_SOURCE_PX = 112;
@@ -25,53 +38,74 @@ const SPRITE_SOURCE_PX = 112;
 // objects this close to a side edge anchor their name tag to that edge so it doesn't get clipped
 const TAG_EDGE_MARGIN_PCT = 15;
 
+// depth sorts by y, times this, so z-indexes stay whole numbers but keep sub-pixel order
+const Z_INDEX_PER_PX = 10;
+
+const FOOT_PADS: Record<string, number> = worldMeta.footPads;
+
 /**
- * how big an object draws based on how far back it sits.
+ * where a name tag sits relative to its object, as css values.
  *
- * @param {WorldObject} obj - the object to size.
- * @returns {number} depth scale, MIN_DEPTH_SCALE on the horizon up to MAX_DEPTH_SCALE at the bottom edge.
+ * @param {number} xPct - the object's horizontal center, percent of world width.
+ * @returns {{left: string, right: string, shift: string}} tag left/right and horizontal translate.
  */
-const depthScale = (obj: WorldObject): number => {
-  if (obj.scale !== undefined) return obj.scale;
-  const t = (obj.y - HORIZON_PCT) / (100 - HORIZON_PCT);
-  return MIN_DEPTH_SCALE + t * (MAX_DEPTH_SCALE - MIN_DEPTH_SCALE);
+const tagPosition = (xPct: number) => {
+  if (xPct < TAG_EDGE_MARGIN_PCT) return { left: "0", right: "auto", shift: "0" };
+  if (xPct > 100 - TAG_EDGE_MARGIN_PCT) return { left: "auto", right: "0", shift: "0" };
+  return { left: "50%", right: "auto", shift: "-50%" };
 };
 
 /**
- * tailwind classes that line an object's name tag up with it, or with the
- * nearest edge if it's close to one.
+ * css custom properties placing an object in one layout: position, width,
+ * stacking, and name-tag anchoring. globals.css picks which layout's vars apply.
  *
- * @param {number} x - the object's horizontal center, percent of world width.
- * @returns {string} positioning classes for the tag.
+ * @param {WorldObject} obj - the object to place.
+ * @param {LayoutName} layoutName - which layout to compute for.
+ * @returns {Record<string, string>} vars like --d-left, --d-width, --d-z.
  */
-const tagAlignClasses = (x: number): string => {
-  if (x < TAG_EDGE_MARGIN_PCT) return "left-0";
-  if (x > 100 - TAG_EDGE_MARGIN_PCT) return "right-0";
-  return "left-1/2 -translate-x-1/2";
+const layoutVars = (obj: WorldObject, layoutName: LayoutName): Record<string, string> => {
+  const layout = worldMeta.layouts[layoutName];
+  const tuning = DEPTH_TUNING[layoutName];
+  const placement = obj[layoutName];
+
+  const depthT = (placement.y - layout.horizonPx) / (layout.heightPx - layout.horizonPx);
+  const scale = placement.scale ?? tuning.minScale + depthT * (tuning.maxScale - tuning.minScale);
+  const widthPct = tuning.baseSpriteWidthPct * scale * (placement.size ?? obj.size);
+  const xPct = (placement.x / layout.widthPx) * 100;
+  const tag = tagPosition(xPct);
+  const prefix = VAR_PREFIX[layoutName];
+
+  return {
+    [`${prefix}-left`]: `${xPct}%`,
+    [`${prefix}-top`]: `${(placement.y / layout.heightPx) * 100}%`,
+    [`${prefix}-width`]: `${widthPct}%`,
+    [`${prefix}-z`]: `${Math.round(placement.y * Z_INDEX_PER_PX)}`,
+    [`${prefix}-tag-left`]: tag.left,
+    [`${prefix}-tag-right`]: tag.right,
+    [`${prefix}-tag-shift`]: tag.shift,
+  };
 };
 
 /**
  * the home page as a little pixel-art world -- every section is an object
  * sitting somewhere in the scene, and clicking one goes there.
  *
+ * there are two scenes: a wide landscape from tailwind's md breakpoint up,
+ * and a tall one on phones that you scroll down through. both render from the
+ * same elements -- each object carries css vars for both placements and
+ * globals.css switches between them, and the backdrop is a <picture> so the
+ * browser only downloads the one it needs.
+ *
  * on mouse, hovering lights an object up and shows its name. on touch there's
  * no hover, so the first tap does the lighting up and the second tap goes.
- * on narrow screens the world keeps its height and scrolls sideways instead of
- * shrinking to a sliver, starting centered.
  *
- * @returns {JSX.Element} the scrollable world.
+ * @returns {JSX.Element} the world.
  */
 export default function HomeWorld() {
   const router = useRouter();
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const lastPointerType = useRef<string>("mouse");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-    scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
-  }, []);
+  const lastPointerType = useRef("mouse");
+  const { desktop, mobile } = worldMeta.layouts;
 
   /**
    * click handler shared by every object. swallows the first touch tap so it
@@ -89,48 +123,50 @@ export default function HomeWorld() {
     if (obj.lucky) router.push(pickLuckyRoute());
   };
 
-  // draw back to front so nearer things overlap farther ones
-  const objectsByDepth = [...WORLD_OBJECTS].sort((a, b) => a.y - b.y);
+  const sceneVars = {
+    "--m-aspect": `${mobile.widthPx} / ${mobile.heightPx}`,
+    "--d-aspect": `${desktop.widthPx} / ${desktop.heightPx}`,
+  } as CSSProperties;
 
   return (
     <div
-      ref={scrollerRef}
-      className="w-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+      className="world-scene relative w-full border-y-4 md:border-4 border-black shadow-2xl overflow-hidden bg-[#62bc58]"
+      style={sceneVars}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) setSelectedId(null);
+      }}
     >
-      <div
-        className="relative mx-auto aspect-video w-[calc(72svh*16/9)] md:w-[min(96vw,calc(82svh*16/9))] border-4 border-black shadow-2xl overflow-hidden bg-[#62bc58]"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) setSelectedId(null);
-        }}
-      >
-        <Image
-          src={WORLD_BACKDROP_SRC}
-          alt="pixel-art meadow with a pond, a dirt path, a garden, a wooden deck, and a glowing cave in the hills"
-          fill
-          priority
-          className="pixelated object-cover pointer-events-none select-none"
+      <picture>
+        <source media={DESKTOP_MEDIA_QUERY} srcSet={desktop.backdropSrc} />
+        {/* plain img on purpose: next/image can't do art direction, and <picture> is
+            what keeps phones from downloading the desktop scene and vice versa */}
+        <img
+          src={mobile.backdropSrc}
+          alt="pixel-art meadow with a pond, a dirt path, a garden, a cutaway house, and a glowing cave in the hills"
+          className="pixelated absolute inset-0 w-full h-full pointer-events-none select-none"
+          draggable={false}
         />
+      </picture>
 
-        <p className="absolute top-[3%] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none pixel-font text-[9px] md:text-xs text-[#F8D030] drop-shadow-[2px_2px_0_rgba(0,0,0,1)] animate-pulse">
-          <span className="[@media(hover:none)]:hidden">CLICK SOMETHING TO EXPLORE</span>
-          <span className="[@media(hover:hover)]:hidden">TAP TO LOOK, TAP AGAIN TO GO</span>
-        </p>
+      <p className="absolute top-[1%] md:top-[3%] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none pixel-font text-[9px] md:text-xs text-[#F8D030] drop-shadow-[2px_2px_0_rgba(0,0,0,1)] animate-pulse text-center">
+        <span className="[@media(hover:none)]:hidden">CLICK SOMETHING TO EXPLORE</span>
+        <span className="[@media(hover:hover)]:hidden">TAP TO LOOK, TAP AGAIN TO GO</span>
+      </p>
 
-        {objectsByDepth.map((obj) => (
-          <WorldObjectLink
-            key={obj.id}
-            obj={obj}
-            selected={selectedId === obj.id}
-            onPointerDown={(event) => {
-              lastPointerType.current = event.pointerType;
-            }}
-            onKeyDown={() => {
-              lastPointerType.current = "keyboard";
-            }}
-            onClick={(event) => handleActivate(event, obj)}
-          />
-        ))}
-      </div>
+      {WORLD_OBJECTS.map((obj) => (
+        <WorldObjectLink
+          key={obj.id}
+          obj={obj}
+          selected={selectedId === obj.id}
+          onPointerDown={(event) => {
+            lastPointerType.current = event.pointerType;
+          }}
+          onKeyDown={() => {
+            lastPointerType.current = "keyboard";
+          }}
+          onClick={(event) => handleActivate(event, obj)}
+        />
+      ))}
     </div>
   );
 }
@@ -161,10 +197,10 @@ function WorldObjectLink({
   onKeyDown: () => void;
   onClick: (event: React.MouseEvent) => void;
 }) {
-  const widthPct = BASE_SPRITE_WIDTH_PCT * depthScale(obj) * obj.size;
+  const vars = Object.assign({}, ...LAYOUT_NAMES.map((name) => layoutVars(obj, name)));
   const shared = {
     className: "world-object absolute block -translate-x-1/2 -translate-y-full cursor-pointer",
-    style: { left: `${obj.x}%`, top: `${obj.y}%`, width: `${widthPct}%`, zIndex: Math.round(obj.y * 10) },
+    style: vars as CSSProperties,
     "aria-label": obj.label,
     "data-selected": selected,
     onPointerDown,
@@ -202,6 +238,9 @@ function WorldObjectLink({
  * @returns {JSX.Element} shadow + sprite/hotspot + name tag.
  */
 function WorldObjectBody({ obj }: { obj: WorldObject }) {
+  // pull the art down past its transparent padding so its feet land on the spot
+  const footPad = obj.iconSrc ? (FOOT_PADS[obj.iconSrc] ?? 0) : 0;
+
   return (
     <>
       {!obj.floating && obj.iconSrc && (
@@ -218,7 +257,7 @@ function WorldObjectBody({ obj }: { obj: WorldObject }) {
               height={SPRITE_SOURCE_PX}
               draggable={false}
               className="world-sprite pixelated block w-full h-auto select-none"
-              style={{ transform: `translateY(${obj.footPad ?? 0}%)` }}
+              style={{ transform: `translateY(${footPad}%)` }}
             />
           ) : (
             <span className="world-hotspot block aspect-square border-2 border-dashed border-transparent" />
@@ -228,7 +267,7 @@ function WorldObjectBody({ obj }: { obj: WorldObject }) {
 
       <span
         aria-hidden="true"
-        className={`world-tag absolute bottom-full mb-1 ${tagAlignClasses(obj.x)} whitespace-nowrap pointer-events-none pixel-font text-[8px] md:text-[10px] text-[#F8D030] bg-[#3850A0] border-2 border-black px-2 py-1 shadow-[2px_2px_0_rgba(0,0,0,1)]`}
+        className="world-tag absolute bottom-full mb-1 whitespace-nowrap pointer-events-none pixel-font text-[8px] md:text-[10px] text-[#F8D030] bg-[#3850A0] border-2 border-black px-2 py-1 shadow-[2px_2px_0_rgba(0,0,0,1)]"
       >
         {obj.label}
       </span>

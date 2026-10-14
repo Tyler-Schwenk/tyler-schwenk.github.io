@@ -1,0 +1,36 @@
+{
+  "layouts": {
+    "desktop": {
+      "widthPx": 640,
+      "heightPx": 360,
+      "horizonPx": 124,
+      "backdropSrc": "/images/home/world-desktop.png"
+    },
+    "mobile": {
+      "widthPx": 360,
+      "heightPx": 960,
+      "horizonPx": 170,
+      "backdropSrc": "/images/home/world-mobile.png"
+    }
+  },
+  "footPads": {
+    "/images/8bit/bike.png": 23.2,
+    "/images/8bit/camera.png": 24.1,
+    "/images/8bit/chef.png": 6.9,
+    "/images/8bit/coffee.png": 0.9,
+    "/images/8bit/community.png": 3.3,
+    "/images/8bit/console.png": 0.0,
+    "/images/8bit/crlf_8bit.png": 25.0,
+    "/images/8bit/dice.png": 0.0,
+    "/images/8bit/events.png": 17.9,
+    "/images/8bit/library.png": 0.0,
+    "/images/8bit/lightbulb.png": 19.6,
+    "/images/8bit/mallard_8bit.png": 17.9,
+    "/images/8bit/pacman.png": 3.6,
+    "/images/8bit/plant.png": 14.3,
+    "/images/8bit/round_table.png": 16.1,
+    "/images/8bit/solar.png": 21.4,
+    "/images/8bit/traderoutes.png": 10.7,
+    "/images/8bit/work.png": 24.1
+  }
+}

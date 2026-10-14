@@ -344,16 +344,57 @@ body {
 }
 
 /*
- * home page pixel world (components/home/HomeWorld.tsx). an object "lights up"
- * on hover, keyboard focus, or a first tap on touch (data-selected) -- the
- * sprite lifts, gets a yellow pixel outline, and its name tag shows. steps()
- * timing keeps the motion choppy like old sprite animation.
+ * home page pixel world (components/home/HomeWorld.tsx).
+ *
+ * the scene and every object carry css vars for both layouts -- --m-* for the
+ * tall phone scene, --d-* for the wide desktop one -- and these rules pick
+ * which set applies. that way one set of elements serves both scenes.
+ */
+.world-scene {
+  aspect-ratio: var(--m-aspect);
+
+  @variant md {
+    aspect-ratio: var(--d-aspect);
+    /* fit the whole landscape on screen. the 16/9 matches the desktop backdrop */
+    width: min(96vw, calc(82svh * 16 / 9));
+  }
+}
+
+.world-object {
+  left: var(--m-left);
+  top: var(--m-top);
+  width: var(--m-width);
+  z-index: var(--m-z);
+
+  @variant md {
+    left: var(--d-left);
+    top: var(--d-top);
+    width: var(--d-width);
+    z-index: var(--d-z);
+  }
+}
+
+.world-tag {
+  left: var(--m-tag-left);
+  right: var(--m-tag-right);
+  translate: var(--m-tag-shift) 0;
+
+  @variant md {
+    left: var(--d-tag-left);
+    right: var(--d-tag-right);
+    translate: var(--d-tag-shift) 0;
+  }
+}
+
+/*
+ * an object "lights up" on hover, keyboard focus, or a first tap on touch
+ * (data-selected) -- the sprite lifts, gets a yellow pixel outline, and its
+ * name tag shows. steps() timing keeps the motion choppy like old sprite animation.
  */
 .world-object:hover,
 .world-object:focus-visible,
 .world-object[data-selected="true"] {
-  /* important because each object's depth z-index is set inline */
-  z-index: 1000 !important;
+  z-index: 1000;
   outline: none;
 }
 
@@ -379,7 +420,7 @@ body {
 .world-object:focus-visible .world-hotspot,
 .world-object[data-selected="true"] .world-hotspot {
   border-color: #f8d030;
-  box-shadow: 0 0 12px 2px rgba(176, 96, 224, 0.8);
+  box-shadow: 0 0 12px 2px rgba(224, 64, 48, 0.8);
 }
 
 .world-tag {
