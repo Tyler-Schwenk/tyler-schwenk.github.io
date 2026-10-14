@@ -1,6 +1,6 @@
 import type { CSSProperties, ElementType } from "react";
 import styles from "./communityBoard.module.css";
-import { seededRange } from "./boardJitter";
+import { seededRange } from "@/lib/seededRandom";
 
 const LABEL_TILT_MAX_DEG = 2.5;
 

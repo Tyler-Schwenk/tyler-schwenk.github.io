@@ -1,0 +1,340 @@
+/* the library: old reading room -- cream paper, walnut shelves, faded bookcloth */
+
+.page {
+  --paper: #f2ead9;
+  --paper-deep: #e8dcc3;
+  --ink: #2a2119;
+  --ink-soft: #66574a;
+  --rule: #c9b89a;
+  --accent: #7c2f2a;
+  --star: #b07a1c;
+  --wood: #6a4426;
+  --wood-edge: #3b2414;
+  --wall: #4a3a2c;
+
+  /* shelf geometry: every row of spines is one slot tall, with the plank at the bottom */
+  --shelf-row-height: 218px;
+  --shelf-plank-height: 16px;
+
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-kitchen-serif), Georgia, serif;
+  padding: 5.5rem 1rem 4rem;
+}
+
+.masthead,
+.section {
+  max-width: 54rem;
+  margin: 0 auto;
+}
+
+/* ---------- masthead ---------- */
+
+.masthead {
+  text-align: center;
+  padding-bottom: 2rem;
+  border-bottom: 3px double var(--rule);
+}
+
+.kicker {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 0.75rem;
+}
+
+.title {
+  font-family: var(--font-garden-display), Georgia, serif;
+  font-size: clamp(2.75rem, 9vw, 5rem);
+  font-weight: 400;
+  line-height: 1;
+  margin: 0;
+}
+
+/* ---------- sections ---------- */
+
+.section {
+  padding-top: 3rem;
+}
+
+.sectionHeading {
+  font-family: var(--font-garden-display), Georgia, serif;
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 400;
+  margin: 0 0 1rem;
+}
+
+.note {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 0 0 1.5rem;
+}
+
+/* ---------- the shelf ---------- */
+
+.shelf {
+  list-style: none;
+  margin: 0;
+  /* no top padding: rows (and their planks) start right at the top edge */
+  padding: 0 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 2px;
+  border: 10px solid var(--wood-edge);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  /* a plank under every row: the rows are all --shelf-row-height tall, so one
+     plank tile repeated at that interval always lands under the books */
+  background:
+    linear-gradient(
+      to bottom,
+      transparent calc(var(--shelf-row-height) - var(--shelf-plank-height)),
+      var(--wood) calc(var(--shelf-row-height) - var(--shelf-plank-height)),
+      var(--wood-edge) var(--shelf-row-height)
+    )
+    0 0 / 100% var(--shelf-row-height),
+    linear-gradient(to bottom, #2c2016, var(--wall));
+  box-shadow: inset 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.shelfEmpty {
+  height: var(--shelf-row-height);
+  justify-content: center;
+  align-items: center;
+  padding-bottom: var(--shelf-plank-height);
+}
+
+.shelfEmpty p {
+  margin: 0;
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-deep);
+  opacity: 0.7;
+}
+
+.spineSlot {
+  height: var(--shelf-row-height);
+  padding-bottom: var(--shelf-plank-height);
+  display: flex;
+  align-items: flex-end;
+}
+
+.spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-radius: 2px 2px 0 0;
+  writing-mode: vertical-rl;
+  overflow: hidden;
+  /* cloth color comes from the cloth class; the gradient adds the rounded-spine shading */
+  background-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.35),
+    rgba(255, 255, 255, 0.08) 35%,
+    rgba(0, 0, 0, 0.05) 70%,
+    rgba(0, 0, 0, 0.4)
+  );
+  box-shadow: inset 0 6px 0 -3px rgba(255, 255, 255, 0.12), inset 0 -10px 0 -6px rgba(0, 0, 0, 0.3);
+  color: #f3e7c8;
+  transition: transform 150ms ease;
+}
+
+.spine:hover {
+  transform: translateY(-6px);
+}
+
+.spineTitle,
+.spineAuthor {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 100%;
+}
+
+.spineTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.spineAuthor {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* ---------- bookcloth colors (spines and fallback covers) ---------- */
+
+.clothOxblood { background-color: #6e2a26; }
+.clothForest  { background-color: #2f4a37; }
+.clothNavy    { background-color: #273a52; }
+.clothMustard { background-color: #a27b2c; }
+.clothRust    { background-color: #8c4a2a; }
+.clothSlate   { background-color: #4c5559; }
+.clothPlum    { background-color: #4f2f44; }
+.clothOlive   { background-color: #5c5a31; }
+
+/* ---------- reading log ---------- */
+
+.year + .year {
+  margin-top: 2.5rem;
+}
+
+.yearHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-family: var(--font-garden-display), Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.yearCount {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 1.25rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px dashed var(--rule);
+}
+
+.cover {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 1px 3px 3px 1px;
+  box-shadow: 2px 3px 8px rgba(42, 33, 25, 0.35);
+}
+
+.clothCover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.6rem 0.45rem;
+  text-align: center;
+  color: #f3e7c8;
+  /* a faint stamped border, like a library rebind */
+  outline: 1px solid rgba(243, 231, 200, 0.35);
+  outline-offset: -5px;
+}
+
+.clothTitle {
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.clothAuthor {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.entryBody {
+  min-width: 0;
+}
+
+.entryTitle {
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.entrySubtitle {
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 0.2rem 0 0;
+}
+
+.entryAuthor {
+  font-size: 1rem;
+  margin: 0.35rem 0 0;
+}
+
+.entryMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  margin: 0.5rem 0 0;
+}
+
+.stars {
+  letter-spacing: 0.1em;
+  font-size: 1rem;
+}
+
+.starOn {
+  color: var(--star);
+}
+
+.starOff {
+  color: var(--rule);
+}
+
+.unrated,
+.entryDate {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.review {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  white-space: pre-line;
+  margin: 0.85rem 0 0;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--accent);
+}
+
+@media (max-width: 480px) {
+  .entry {
+    grid-template-columns: 4.5rem 1fr;
+    gap: 1rem;
+  }
+
+  .entryTitle {
+    font-size: 1.15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spine {
+    transition: none;
+  }
+}

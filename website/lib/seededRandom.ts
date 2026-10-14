@@ -9,7 +9,7 @@ const ROUNDING_FACTOR = 100;
 
 /**
  * Hashes a string to an unsigned 32-bit int. same input always gives the same
- * output, which is what keeps each note's look stable across builds.
+ * output, which is what keeps each seeded look (board notes, book spines) stable across builds.
  *
  * @param {string} value - String to hash.
  * @returns {number} Unsigned 32-bit hash.

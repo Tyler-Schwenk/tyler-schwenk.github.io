@@ -8,7 +8,7 @@
 - `data/communityBoardLinks.ts` — `COMMUNITY_BOARD_SECTIONS`, the only place links live.
 - `components/community-board/BoardNote.tsx` — one linked note (paper, fastener, tilt).
 - `components/community-board/BoardLabel.tsx` — masking-tape heading, used for the board title (`h1`) and section titles (`h2`).
-- `components/community-board/boardJitter.ts` — seeded hash helpers (`seededUnit`, `seededRange`, `seededPick`).
+- `lib/seededRandom.ts` — seeded hash helpers, shared with the library page (`seededUnit`, `seededRange`, `seededPick`).
 - `components/community-board/communityBoard.module.css` — all board styling.
 
 ## Data Format
@@ -19,7 +19,7 @@ type CommunityBoardLink = { id: string; name: string; href: string; description:
 Sections render in array order, links in array order within each section. To add a link, add one entry to the right section — there are no positions to maintain.
 
 ## Note Appearance
-Everything about a note's look is derived from its `id` via `boardJitter.ts`, so it's stable across builds but varies note to note:
+Everything about a note's look is derived from its `id` via `lib/seededRandom.ts`, so it's stable across builds but varies note to note:
 - **Paper**: sticky note (yellow, pink, green, blue, orange), lined index card, or torn notebook scrap.
 - **Fastener**: pushpin (red, blue, green, yellow, white, with a small horizontal offset) or a strip of tape (~30% of notes).
 - **Ink**: black felt-tip, blue ballpoint, or pencil. Text uses `mix-blend-mode: multiply` with a slight blur so it reads as ink in the paper.

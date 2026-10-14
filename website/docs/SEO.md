@@ -17,6 +17,7 @@ A static sitemap is generated with:
 - Core site routes
 - Music page route (`/opium-den`)
 - Public discussion route (`/public-square`)
+- Library route (`/library`)
 - Gallery trip routes
 - Gallery people routes
 

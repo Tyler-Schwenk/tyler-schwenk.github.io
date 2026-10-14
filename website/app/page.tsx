@@ -19,6 +19,7 @@ const LUCKY_ROUTES = [
   "/mallard",
   "/projects/trade-routes",
   "/community-board",
+  "/library",
   "/public-square",
   "/projects/others",
   "/opium-den",
@@ -99,6 +100,9 @@ export default function Home() {
                 </MenuOption>
                 <MenuOption href="/community-board" iconSrc="/images/8bit/community.png">
                   COMMUNITY BOARD
+                </MenuOption>
+                <MenuOption href="/library" iconSrc="/images/8bit/library.png">
+                  THE LIBRARY
                 </MenuOption>
                 <MenuOption href="/public-square" iconSrc="/images/8bit/round_table.png">
                   ROUND TABLE

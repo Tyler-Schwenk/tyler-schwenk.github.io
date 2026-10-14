@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { CommunityBoardLink } from "@/data/communityBoardLinks";
 import styles from "./communityBoard.module.css";
-import { seededPick, seededRange, seededUnit } from "./boardJitter";
+import { seededPick, seededRange, seededUnit } from "@/lib/seededRandom";
 
 const NOTE_TILT_MAX_DEG = 4;
 const NOTE_SHIFT_X_MAX_PX = 6;
