@@ -1,29 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import type { OwnedBook } from "@/app/library/libraryData";
+import { useEffect, useRef, useState } from "react";
+import type { ShelfBook } from "@/app/library/libraryData";
 import styles from "./library.module.css";
+import BookCover from "./BookCover";
 import BookSpine from "./BookSpine";
+import ReadingDetails from "./ReadingDetails";
+import ShelfDecor from "./ShelfDecor";
+import { layoutShelf } from "./shelfLayout";
 
-type BookshelfProps = {
-  books: OwnedBook[];
-  /** ids of books that also have a reading log entry, so the caption can link to it */
-  readIds: string[];
-};
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 /**
- * The shelf of owned books. spine titles get cut off and phones can't hover, so
- * tapping (or clicking) a spine pulls it out and shows its full title and author in
- * a caption bar. while a book's picked the bar sticks to the bottom of the screen
- * (as long as the shelf's in view), so it's visible even when the shelf is taller than
- * the phone. with nothing picked it just sits under the shelf, out of the way.
+ * The shelf of owned books, lying in stacks with some decor between them. tapping
+ * (or clicking) a book pulls it out and opens a drawer under the shelf with its
+ * cover, my rating and my review. the drawer scrolls into view when it opens, since
+ * on a phone it can be well below the book that was tapped.
  *
- * @param {BookshelfProps} props - Owned books, and which of them have been read.
- * @returns {JSX.Element} The shelf plus its caption bar.
+ * @param {object} props - Component props.
+ * @param {ShelfBook[]} props.books - Owned books in shelf order.
+ * @returns {JSX.Element} The shelf plus its drawer.
  */
-export default function Bookshelf({ books, readIds }: BookshelfProps) {
+export default function Bookshelf({ books }: { books: ShelfBook[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const selected = books.find((book) => book.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+    drawerRef.current?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest" });
+  }, [selectedId]);
 
   /** picks a book, or puts it back if it's already the one pulled out. */
   const toggleBook = (bookId: string) => {
@@ -32,34 +39,48 @@ export default function Bookshelf({ books, readIds }: BookshelfProps) {
 
   return (
     <div>
-      <ul className={styles.shelf}>
-        {books.map((book) => (
-          <BookSpine
-            key={book.id}
-            book={book}
-            selected={book.id === selectedId}
-            onSelect={() => toggleBook(book.id)}
-          />
-        ))}
-      </ul>
-      <div className={`${styles.caption} ${selected ? styles.captionPinned : ""}`} aria-live="polite">
-        {selected ? (
-          <>
-            <p className={styles.captionText}>
-              <span className={styles.captionTitle}>{selected.title}</span>
-              <span className={styles.captionAuthor}>{selected.author}</span>
-            </p>
-            {readIds.includes(selected.id) && (
-              <a href={`#read-${selected.id}`} className={styles.captionLink}>
-                In my reading log
-              </a>
+      <div className={styles.shelf}>
+        {layoutShelf(books).map((item) => (
+          <div key={item.id} className={styles.shelfSlot}>
+            {item.kind === "decor" ? (
+              <ShelfDecor kind={item.decor} />
+            ) : (
+              <ul className={styles.stack}>
+                {item.books.map((book) => (
+                  <BookSpine
+                    key={book.id}
+                    book={book}
+                    selected={book.id === selectedId}
+                    onSelect={() => toggleBook(book.id)}
+                  />
+                ))}
+              </ul>
             )}
-            <button type="button" className={styles.captionClose} onClick={() => setSelectedId(null)} aria-label="Put the book back">
+          </div>
+        ))}
+      </div>
+      <div ref={drawerRef} className={styles.drawer} aria-live="polite">
+        {selected ? (
+          // keyed so the open animation replays when switching books
+          <div key={selected.id} className={styles.drawerCard}>
+            <BookCover bookId={selected.id} title={selected.title} author={selected.author} coverSrc={selected.coverSrc} />
+            <div className={styles.entryBody}>
+              {selected.read ? (
+                <ReadingDetails book={selected.read} titleAs="h3" />
+              ) : (
+                <>
+                  <h3 className={styles.entryTitle}>{selected.title}</h3>
+                  <p className={styles.entryAuthor}>{selected.author}</p>
+                  <p className={styles.entryDate}>Haven&apos;t read it yet</p>
+                </>
+              )}
+            </div>
+            <button type="button" className={styles.drawerClose} onClick={() => setSelectedId(null)} aria-label="Put the book back">
               {"×"}
             </button>
-          </>
+          </div>
         ) : (
-          <p className={styles.captionHint}>Pick a book to see what it is</p>
+          <p className={styles.drawerHint}>Pick a book to see what I thought of it</p>
         )}
       </div>
     </div>

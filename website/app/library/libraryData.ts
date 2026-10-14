@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import library from "@/data/library.json";
+import spineColors from "@/data/spineColors.json";
 
 /** a book on the shelf right now, up for borrowing or trading */
 export type OwnedBook = {
@@ -21,6 +22,22 @@ export type ReadBook = {
   review?: string;
 };
 
+/** a spine's color, pulled from the book's cover by scripts/extract_spine_colors.py */
+export type SpineColor = {
+  background: string;
+  /** text color with the most contrast on the background */
+  ink: string;
+};
+
+/** an owned book with everything the shelf needs to draw it and open it up */
+export type ShelfBook = OwnedBook & {
+  /** null when there's no cover to take it from, so the spine gets a bookcloth color */
+  spineColor: SpineColor | null;
+  coverSrc: string | null;
+  /** my reading log entry for it, or null if I haven't read it */
+  read: ReadBook | null;
+};
+
 /** every book read in one calendar year, newest first */
 export type ReadingYear = {
   year: string;
@@ -35,6 +52,7 @@ const YEAR_LENGTH = 4;
 
 export const OWNED_BOOKS: OwnedBook[] = library.owned;
 export const READ_BOOKS: ReadBook[] = library.read;
+const SPINE_COLORS: Record<string, SpineColor> = spineColors;
 
 /**
  * url of a book's cover, if one's been downloaded. runs at build time (the page is
@@ -71,4 +89,20 @@ export function groupByYearRead(books: ReadBook[]): ReadingYear[] {
     }
   }
   return years;
+}
+
+/**
+ * the owned books, in shelf order, joined up with their spine colors, covers and
+ * reading log entries. runs at build time (getCoverSrc checks the disk).
+ *
+ * @returns {ShelfBook[]} One entry per owned book.
+ */
+export function getShelfBooks(): ShelfBook[] {
+  const readById = new Map(READ_BOOKS.map((book) => [book.id, book]));
+  return OWNED_BOOKS.map((book) => ({
+    ...book,
+    spineColor: SPINE_COLORS[book.id] ?? null,
+    coverSrc: getCoverSrc(book.id),
+    read: readById.get(book.id) ?? null,
+  }));
 }

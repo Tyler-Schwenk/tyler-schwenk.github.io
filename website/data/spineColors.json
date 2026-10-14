@@ -1,0 +1,150 @@
+{
+  "alices-adventures-in-wonderland": {
+    "background": "#9b2616",
+    "ink": "#f3e7c8"
+  },
+  "american-dirt": {
+    "background": "#85bdcd",
+    "ink": "#2a2119"
+  },
+  "angle-of-repose": {
+    "background": "#845c32",
+    "ink": "#f3e7c8"
+  },
+  "arabic-for-beginners": {
+    "background": "#e8d25e",
+    "ink": "#2a2119"
+  },
+  "beloved": {
+    "background": "#8d7d71",
+    "ink": "#2a2119"
+  },
+  "braiding-sweetgrass": {
+    "background": "#fcf5eb",
+    "ink": "#2a2119"
+  },
+  "brave-new-world": {
+    "background": "#847e4a",
+    "ink": "#2a2119"
+  },
+  "cultivating-compassion": {
+    "background": "#c44648",
+    "ink": "#f3e7c8"
+  },
+  "culture-and-resistance": {
+    "background": "#ceaa71",
+    "ink": "#2a2119"
+  },
+  "dear-america": {
+    "background": "#f7f005",
+    "ink": "#2a2119"
+  },
+  "east-of-eden": {
+    "background": "#85311e",
+    "ink": "#f3e7c8"
+  },
+  "how-to-blow-up-a-pipeline": {
+    "background": "#dbb2ad",
+    "ink": "#2a2119"
+  },
+  "how-to-know-a-person": {
+    "background": "#896c60",
+    "ink": "#f3e7c8"
+  },
+  "life-of-pi": {
+    "background": "#cc8f4a",
+    "ink": "#2a2119"
+  },
+  "moon-palace": {
+    "background": "#ffffff",
+    "ink": "#2a2119"
+  },
+  "on-the-road": {
+    "background": "#c1cbd5",
+    "ink": "#2a2119"
+  },
+  "reason-for-hope": {
+    "background": "#38393c",
+    "ink": "#f3e7c8"
+  },
+  "red-state-revolt": {
+    "background": "#f9b320",
+    "ink": "#2a2119"
+  },
+  "siddhartha": {
+    "background": "#000000",
+    "ink": "#f3e7c8"
+  },
+  "slaughterhouse-five": {
+    "background": "#718a5f",
+    "ink": "#2a2119"
+  },
+  "socialism-and-man-in-cuba": {
+    "background": "#f7e3e2",
+    "ink": "#2a2119"
+  },
+  "surviving-the-21st-century": {
+    "background": "#ffffff",
+    "ink": "#2a2119"
+  },
+  "the-alchemist": {
+    "background": "#bb9d69",
+    "ink": "#2a2119"
+  },
+  "the-hitchhikers-guide-to-the-galaxy": {
+    "background": "#243e45",
+    "ink": "#f3e7c8"
+  },
+  "the-lean-startup": {
+    "background": "#1a75b8",
+    "ink": "#f3e7c8"
+  },
+  "the-message": {
+    "background": "#b09476",
+    "ink": "#2a2119"
+  },
+  "the-motorcycle-diaries": {
+    "background": "#454e4a",
+    "ink": "#f3e7c8"
+  },
+  "the-name-of-the-wind": {
+    "background": "#332b29",
+    "ink": "#f3e7c8"
+  },
+  "the-narrow-road-between-desires": {
+    "background": "#10092a",
+    "ink": "#f3e7c8"
+  },
+  "the-overstory": {
+    "background": "#405f45",
+    "ink": "#f3e7c8"
+  },
+  "the-poisonwood-bible": {
+    "background": "#5f6c59",
+    "ink": "#f3e7c8"
+  },
+  "the-trinity-of-fundamentals": {
+    "background": "#e0d2ae",
+    "ink": "#2a2119"
+  },
+  "the-wise-mans-fear": {
+    "background": "#060505",
+    "ink": "#f3e7c8"
+  },
+  "there-there": {
+    "background": "#fc3d05",
+    "ink": "#2a2119"
+  },
+  "to-shake-the-sleeping-self": {
+    "background": "#ffffff",
+    "ink": "#2a2119"
+  },
+  "untamed": {
+    "background": "#2e2f23",
+    "ink": "#f3e7c8"
+  },
+  "wealth-supremacy": {
+    "background": "#f2e8cd",
+    "ink": "#2a2119"
+  }
+}
