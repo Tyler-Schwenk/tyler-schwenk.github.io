@@ -21,8 +21,9 @@ it also relays the kiosk's keyboard to the pages (see kiosk_control.py):
     POST /control/keys/<key>   a key press, from xbindkeys
     POST /control/reset        clear the presses (kiosk-run.sh, when the overnight sleep starts)
     GET  /control/log?after=N  the presses since the last reset, long-polled by the pages
-    POST /control/status       {"preset": name or null}: the milkdrop preset playing, from
-                               the page, passed on to the admin page's remote
+    POST /control/status       {"preset": name or null, "screen": "primary"|"secondary"}:
+                               the milkdrop preset playing on a screen, from its page,
+                               passed on to the admin page's remote
 
 and, when ~/surfcam-agent/kiosk-token is set up, it picks up presses from the admin
 page's remote through the website backend (see remote_control.py).
@@ -53,7 +54,7 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Optional
 
-from kiosk_control import CONTROL_KEYS, ControlLog
+from kiosk_control import CONTROL_KEYS, PRESET_SCREENS, ControlLog
 from remote_control import start_remote_control
 from surf_conditions import (
     SCRIPPS_PIER_WIND,
@@ -731,17 +732,23 @@ class AgentHandler(BaseHTTPRequestHandler):
         self._send_json(*trash_watcher.confirm())
 
     def _record_status(self) -> None:
-        """stores the page's report of the milkdrop preset playing (see ControlLog.set_preset)."""
+        """stores a page's report of the milkdrop preset playing on its screen (see ControlLog.set_preset)."""
         length = int(self.headers.get("Content-Length") or 0)
         if length > MAX_STATUS_BODY_BYTES:
             self._send_json(413, {"error": f"status body is {length} bytes; at most {MAX_STATUS_BODY_BYTES}"})
             return
         try:
-            preset = json.loads(self.rfile.read(length) or b"{}").get("preset")
+            status = json.loads(self.rfile.read(length) or b"{}")
+            preset = status.get("preset")
+            # pages from before both screens could run milkdrop don't say, and only ran it on the primary
+            screen = status.get("screen", "primary")
         except (json.JSONDecodeError, AttributeError) as err:
-            self._send_json(400, {"error": f'status must be json like {{"preset": "name"}}: {err}'})
+            self._send_json(400, {"error": f'status must be json like {{"preset": "name", "screen": "primary"}}: {err}'})
             return
-        control_log.set_preset(preset if isinstance(preset, str) else None)
+        if screen not in PRESET_SCREENS:
+            self._send_json(400, {"error": f"unknown screen {screen!r}; send one of {', '.join(PRESET_SCREENS)}"})
+            return
+        control_log.set_preset(preset if isinstance(preset, str) else None, screen)
         self._send_json(200, {"ok": True})
 
     def _run_cam_action(self, path: str, token: Optional[str]) -> None:

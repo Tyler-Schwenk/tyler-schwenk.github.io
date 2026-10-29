@@ -3,6 +3,7 @@ import {
   bpmViewAt,
   rotationSlotIdAt,
   wrapIndex,
+  type BpmTopView,
   type ControlConfig,
   type ControlState,
   type Shortcut,
@@ -126,6 +127,17 @@ function bpmModeLabel(heldView: number | null, presetHeld: boolean): string {
 }
 
 /**
+ * What the top screen shows in bpm mode, in words.
+ * @param top - The top screen's setting.
+ * @returns Like "both screens" or "milkdrop on top".
+ */
+function bpmTopLabel(top: BpmTopView): string {
+  if (top === "same") return "both screens";
+  if (top === "tempo") return "tempo on top";
+  return `${BPM_VIEW_INFO[top]?.label ?? "unknown view"} on top`;
+}
+
+/**
  * How long until a rotating mode moves on to its next item.
  * @param state - Control state, for its anchor.
  * @param atMs - The moment, epoch ms on the kiosk's clock.
@@ -149,7 +161,7 @@ export function describeDisplay(state: ControlState, atMs: number): DisplayDescr
     const view = BPM_VIEW_INFO[bpmViewAt(state, CONTROL_CONFIG, atMs)];
     return {
       showing: `BPM: ${view?.label ?? "unknown view"}`,
-      mode: bpmModeLabel(mode.heldView, mode.preset.held),
+      mode: `${bpmModeLabel(mode.heldView, mode.preset.held)}, ${bpmTopLabel(mode.top)}`,
       nextChangeInMs: mode.heldView === null ? msUntilNextItem(state, atMs) : null,
     };
   }

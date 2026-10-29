@@ -68,7 +68,7 @@ showing" line, that section's controls, and a description of what it is:
 | photos | the photos slot, photos still changing | keep changing / freeze this photo, and previous/next while frozen |
 | mallards | the mallard counter | none |
 | surf cams | the cam-only rotation | all cams rotating, or one cam; a link to the real stream of the cam that's up |
-| bpm | bpm mode, cycling the views | cycle or hold a view, previous/next (views, or milkdrop presets), sound, beat earlier/later |
+| bpm | bpm mode, cycling the views | cycle or hold the monitor's view, previous/next (views, or milkdrop presets), what the laptop screen shows (same as the monitor, a view, or the tempo), sound, beat earlier/later |
 
 The tab isn't its own state: it's worked out from the display mode (`sectionForMode`), so
 keys pressed on the keyboard move the panel too. Picking the tab that's already up does

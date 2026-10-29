@@ -94,17 +94,31 @@ with `CONTROL_CONFIG` from `displayConfig.ts`), then `describeDisplay` turns it 
 showing: La Jolla Shores, held". The rotation's position comes from the clock, so the
 page uses the backend's clock (`now_ms` in each answer) rather than the phone's.
 
+The remote has two layouts. Normally it shows the rotation's controls: a big "Start BPM
+visuals" button, the step and back buttons, the shortcuts, and the preset list. In bpm mode
+it becomes a dj remote, laid out for one thumb mid-set: the preset deck at the top (what's
+playing, big previous/next, auto/hold), then a picker for each screen, then the preset
+search, beat sync (folded away) and "Leave BPM".
+
+Presses queue up and go to the backend one after another, so the buttons never grey out
+waiting on the network and quick taps still land in order.
+
 The remote's buttons:
 
 | Button | Keys sent |
 |--------|-----------|
+| Start BPM visuals | `escape` then `b` |
 | Previous / Next *thing* | `prev` / `next`: step one and hold there. Labelled with what they step right now: screen (slot), photo (while a photo's held), view (bpm mode) or preset (on milkdrop), from `stepTarget` |
 | Back action | `backspace`: undo one step. Labelled with what it'd do (`backAction`): "Resume rotation", "Let presets move on", "Cycle views again", "Leave BPM", "Close the on-screen menu"; hidden on the standard rotation, where it does nothing |
 | Standard rotation | `escape` |
 | Each shortcut in "Show" (from `SHORTCUTS`) | `escape` then its key, so it means the same in every mode (in bpm mode the digits pick bpm views instead) |
-| BPM views (only shown in bpm mode) | the view's digit; "cycle views" sends `b` |
+| Bottom screen (bpm mode) | the view's digit; "cycle all" sends `b` |
+| Top screen (bpm mode) | `top-same`, `top-<n>` (the view's digit) or `top-tempo` |
+| Previous / Next preset (bpm mode) | `preset-prev` / `preset-next`: step and hold, on whichever screen milkdrop is (the bottom one's put on milkdrop if neither is) |
+| Auto / Hold (bpm mode) | `preset-auto` / `preset-hold` |
+| Leave BPM | `escape` |
 | Beat earlier / later | `beat-earlier` / `beat-later`, which the agent forwards to the bpm agent like the `-` and `=` keys |
-| A preset in "Milkdrop presets" | `preset-<n>`: jump to that preset and hold it, switching to BPM mode on milkdrop if needed. "Random" picks one at random |
+| A preset in "Milkdrop presets" / "Find a preset" | `preset-<n>`: jump to that preset and hold it, switching to BPM mode on milkdrop if needed. "Random" picks one at random |
 
 **Milkdrop presets:** the section shows the preset playing (the kiosk page reports it to
 its agent, which passes it up with the key log as `preset`) and a searchable list of
@@ -112,8 +126,8 @@ every preset (`PresetBrowser.tsx`). The list comes from loading the same preset 
 kiosk uses, sorted the same way (`website/app/display/milkdropPresets.ts`), so a preset's
 place in it is its `n`. The packs are ~450 KB gzipped, so they're only fetched when you tap
 "Browse all presets". If the kiosk is running an older deploy with a different preset set,
-the numbers can point at the wrong preset until its browsers reload. In BPM mode the
-section moves up under the step buttons.
+the numbers can point at the wrong preset until its browsers reload. If both screens run
+milkdrop, "Playing" is the bottom screen's.
 
 The button for what's on screen now is outlined orange (`isShortcutActive`, the same
 check the kiosk's own menu uses).

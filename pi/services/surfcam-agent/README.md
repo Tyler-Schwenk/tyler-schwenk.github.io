@@ -31,7 +31,7 @@ Stdlib-only Python server on `127.0.0.1:8765`, no dependencies beyond `mpv`.
 | `GET /cams/<cam>/conditions` | The cam's place name, waves, wind and tide (with its graph data) as json (below), for the conditions panel on the laptop screen. |
 | `POST /control/keys/<key>` | Log a keyboard-control key press (from xbindkeys). Keys: `tab`, `escape`, `backspace`, `next`, `prev`, `1`-`9`. |
 | `POST /control/reset` | Clear the key log (from `kiosk-run.sh` when the overnight sleep starts). |
-| `POST /control/status` | `{"preset": name or null}` from the page: the milkdrop preset playing, passed on to the admin remote (not part of the key log). |
+| `POST /control/status` | `{"preset": name or null, "screen": "primary" or "secondary"}` from a page: the milkdrop preset playing on that screen (`screen` defaults to primary). The remote gets one name, the primary's or else the secondary's (not part of the key log). |
 | `GET /control/log?after=<version>` | The key log since the last reset, `{"session_ms", "version", "events": [{"key", "at_ms"}]}`. Long-polls: waits up to 25 s for the version to differ from `after` (`-1` answers at once). |
 | `GET /trash?after=<version>` | Trash night status, `{"version", "alert", "thanks_until_ms"}` (below). Long-polls like `/control/log`. |
 | `POST /trash/done` | The trash is out: confirms with fart-pi, which plays its thanks. 200 with the new status, 409 when it isn't trash time, 502 when fart-pi can't be reached. |
@@ -51,7 +51,9 @@ each on its own thread:
   each one's keys to the key log as one change (`ControlLog.add`), so a remote "escape then 4"
   never shows the standard rotation in between. `beat-earlier` / `beat-later` go to the bpm
   agent's `POST /offset/earlier|later` instead, like the `-` and `=` keys. Besides the
-  keyboard's keys it accepts `preset-<n>` (jump to a milkdrop preset; `is_control_key`). On startup it
+  keyboard's keys it accepts the remote's own (`REMOTE_KEY_PATTERN`, `is_control_key`):
+  `preset-<n>` (jump to a milkdrop preset), `preset-next|prev|hold|auto`, and
+  `top-same|tempo|<n>` (what bpm mode's top screen shows). On startup it
   sends `after=-1`, which skips presses queued before it was listening
 - **push**: `PUT /kiosk/log` with the whole key log and the playing preset every time
   either changes (`ControlLog.wait_for_push`), and every 25 s anyway as a heartbeat (that's what makes the admin page show the kiosk as online)

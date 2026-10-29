@@ -169,15 +169,18 @@ export function ProgressBar({ fraction }: { fraction: number }) {
  * @param props.options - Values and their labels.
  * @param props.value - The chosen value.
  * @param props.onChange - Called with the new value.
+ * @param props.disabled - Grey it out and ignore taps.
  */
 export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  disabled = false,
 }: {
   options: { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg border border-slate-800 bg-slate-900 p-1">
@@ -186,7 +189,9 @@ export function Segmented<T extends string>({
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          className={`min-h-10 rounded-md text-sm font-semibold transition ${
+          disabled={disabled}
+          aria-pressed={option.value === value}
+          className={`min-h-10 rounded-md text-sm font-semibold transition disabled:opacity-40 ${
             option.value === value ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"
           }`}
         >

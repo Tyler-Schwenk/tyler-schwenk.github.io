@@ -41,7 +41,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/BpmMilkdrop.tsx` | View 5, milkdrop: all ~395 MilkDrop presets via butterchurn (WebGL), fed the agent's raw waveform, a new preset every 32 beats or by hand with ] / [ |
 | `website/app/display/milkdropPresets.ts` | Loads and merges the four preset packs (`loadPresetLibrary`) and gives the fixed sorted order (`sortedPresetNames`) that `preset-<n>` keys index; shared with the admin remote's preset browser |
 | `website/app/display/butterchurn.d.ts` | Minimal types for the `butterchurn` and `butterchurn-presets` packages |
-| `website/app/display/BpmReadout.tsx` | The tempo over a beat-pulsing ring and the current view's name, for the other screen |
+| `website/app/display/BpmReadout.tsx` | The tempo over a beat-pulsing ring and the bottom view's name, for the top screen when the remote picks "tempo" |
 | `website/app/display/bpmAgent.ts` | Client for the bpm agent on displaytop (`connectBpmAgent`, and `useBpmStream`, which takes any `BpmConnector`) plus helpers the views share (beat phase/pulse/counting, band ranges, beat grid, time axis) |
 | `website/app/display/spectrumLevels.ts` | Rise-and-fall spectrum levels with peak caps and auto gain, shared by the bars and halo views |
 | `website/app/display/useCanvasLoop.ts` | Full-panel canvas + `requestAnimationFrame` loop hook, used by the bpm views; `watchCanvasContainer` sizes a canvas to the panel it fills |
@@ -79,7 +79,7 @@ both screens show at the same time:
 
 Bpm mode is a slot too, but it's not in `ROTATION_SLOTS`: it only comes up from its key (`b`,
 below), since it keeps the mic recording while it's on screen. It has its own views (see
-"BPM Visualizer") on the primary screen and the tempo on the other.
+"BPM Visualizer"): visuals on both screens by default, or the tempo on top (see "Top screen").
 
 The active slot comes from the wall clock, not a timer chain (`useClockSlot.ts`): time
 is cut into `PANEL_ROTATE_INTERVAL_MS` slots counted from the epoch, and slot `n` is
@@ -116,7 +116,8 @@ the menu first); tab just shows the list on the top screen.
 | `esc` | straight back to the standard display |
 
 A hold (including one from `]`/`[`), the cam-only rotation or bpm mode shows a small indicator in the top right of the top
-screen ("held" / "surf cams only" / "bpm" / "bpm, held", "backspace to return"). Everything goes back to the
+screen ("held" / "surf cams only" / "bpm" / "bpm, held", "backspace to return"); in bpm mode only while the top
+screen shows the tempo, so it never sits on the visuals. Everything goes back to the
 standard rotation when the overnight sleep starts.
 
 **How it works:** xbindkeys on displaytop grabs those keys system-wide (so they work even
@@ -157,10 +158,17 @@ keys need adding to `CONTROL_KEYS` in both `setup-displaytop.sh` and `kiosk_cont
 ### Remote Control (admin page)
 
 The admin page's Display tab (`website/docs/ADMIN.md`) presses the same keys from a phone
-or laptop anywhere, plus one key with no physical counterpart: `preset-<n>` jumps to
-milkdrop preset n (an index into `sortedPresetNames`) and holds it, entering bpm mode on
-the milkdrop view first if needed (`PresetControl.jump`, with `jumps` counting jumps so a
-repeat still registers). Backspace lets presets move on again, as after `]`. Its presses go through the website backend to the surfcam agent,
+or laptop anywhere, plus some keys with no physical counterpart:
+
+| Key | Does |
+|-----|------|
+| `preset-<n>` | jump to milkdrop preset n (an index into `sortedPresetNames`) and hold it (`PresetControl.jump`, with `jumps` counting jumps so a repeat still registers) |
+| `preset-next` / `preset-prev` | step the presets and hold, like `]` / `[` on milkdrop, but whichever screen milkdrop is on |
+| `preset-hold` / `preset-auto` | hold the preset that's up / let presets move on by themselves again |
+| `top-same`, `top-tempo`, `top-<n>` | what the top screen shows in bpm mode (see "Top screen" under "BPM Visualizer"); ignored outside it |
+
+A preset key with no milkdrop on either screen holds the bottom screen on milkdrop first,
+entering bpm mode if needed (`changePresets`). Backspace lets presets move on again, as after `]`. Its presses go through the website backend to the surfcam agent,
 which adds them to the same key log, so to the pages they're no different from the
 keyboard: both screens replay them, the overlay shows "held" and so on. The agent also
 sends the log back up, and the remote replays it through `replayControl` to show what's on
@@ -291,9 +299,9 @@ agent's event stream (`GET http://127.0.0.1:8766/stream`) open while mounted, an
 agent starts recording when the first page connects and stops a few seconds after the
 last one leaves.
 
-Both screens render `BpmPanel`, so both hold the stream. The primary screen shows the
-current view, the secondary `BpmReadout` (the tempo over a ring that pulses on the beat,
-and the view's name). The views, in `BPM_VIEWS` order:
+Both screens render `BpmPanel`, so both hold the stream. The primary screen (the monitor,
+below) shows the current view; the secondary (the laptop, on top) shows whatever the top
+screen is set to (below). The views, in `BPM_VIEWS` order:
 
 | # | View | What it shows |
 |---|------|---------------|
@@ -336,15 +344,33 @@ the agent's grace period covers.
   then stays put with "held" in the corner until backspace. The admin remote can also jump
   straight to any preset by name (see "Remote Control"); the view finds it in its own
   shuffled order and carries on from there
-- Each new preset is reported to the surfcam agent (`reportPlayingPreset`, `POST
-  /control/status`), and `null` when the view closes, so the remote can show what's playing The key log only records how
-  many steps (`PresetControl.step`), and the view moves by however much that changes, so the
-  order itself is per page load and not shared (only the primary screen runs milkdrop)
+- Each new preset is reported to the surfcam agent with the screen it's on
+  (`reportPlayingPreset`, `POST /control/status`), and `null` when the view closes there, so
+  the remote can show what's playing (the bottom screen's, if both run milkdrop)
+- The key log only records how many steps (`PresetControl.step`), and the view moves by
+  however much that changes, so the order itself is per page load and not shared. With
+  milkdrop on both screens, each runs its own shuffle, so they show different presets and
+  both move on a step; a jump puts both on the same one
 - It draws at 1280 px wide (the height follows the screen's shape) and the browser scales
   that up, so the GPU isn't rendering 2560x1440 MilkDrop shaders all evening
 - butterchurn and the four packs are their own chunks (~450 KB gzipped together), only
   fetched when the view opens. Parsed, the presets take ~10 MB of memory; only the one or
   two on screen are compiled into shaders
+
+**Top screen:** bpm mode's state has a `top` (`BpmTopView` in `kioskControl.ts`) saying
+what the secondary screen shows, picked from the admin remote (`top-*` keys, no physical
+key):
+
+| `top` | Top screen shows |
+|-------|------------------|
+| `"same"` (default) | the bottom screen's view, cycling with it |
+| a view index | that view, held, whatever the bottom one does |
+| `"tempo"` | `BpmReadout`: the tempo over a ring that pulses on the beat, the bottom view's name, and the calibration keys while calibrating |
+
+It carries over `b` and backspace inside bpm mode, and goes back to `"same"` each time bpm
+mode starts. The "bpm" indicator in the corner only shows over the tempo readout, never
+over visuals. Milkdrop on both screens means two WebGL renders (each at 1280 px wide), which
+is the heaviest thing the kiosk runs.
 
 **Beat sync:** the agent runs on the same machine, so its beat times are on the page's
 clock. Each `tempo` event gives a beat time (`beat_ms`, calibration offset already

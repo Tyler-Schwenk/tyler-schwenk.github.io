@@ -8,7 +8,14 @@ import SurfConditionsPanel from "./SurfConditionsPanel";
 import { useDisplayEnvironment } from "./displayEnvironment";
 import { prepareSurfCam, type SurfCamId } from "./surfCams";
 import { clockSlotAt, useClockSlot } from "./useClockSlot";
-import { INITIAL_PRESET_CONTROL, wrapIndex, type ControlState, type PresetControl } from "./kioskControl";
+import {
+  DEFAULT_BPM_TOP,
+  INITIAL_PRESET_CONTROL,
+  wrapIndex,
+  type BpmTopView,
+  type ControlState,
+  type PresetControl,
+} from "./kioskControl";
 import {
   MALLARDS_SLOT_ID,
   PANEL_ROTATE_INTERVAL_MS,
@@ -25,10 +32,11 @@ import {
  * simulation, so the two can't show different things for the same state.
  */
 
-/** What a panel needs to know beyond its own props: the photo hold, and bpm mode's view and preset stepping. */
+/** What a panel needs to know beyond its own props: the photo hold, and bpm mode's views and preset stepping. */
 interface PanelContext {
   photoHold: PhotoHold | null;
   bpmView: number;
+  bpmTop: BpmTopView;
   bpmPresets: PresetControl;
 }
 
@@ -62,10 +70,14 @@ const MALLARDS: DisplayPanel = { render: () => <MallardPanel /> };
 const BPM_SLOT: RotationSlot = {
   id: "bpm",
   primary: {
-    render: ({ bpmView, bpmPresets }) => <BpmPanel side="primary" viewIndex={bpmView} presets={bpmPresets} />,
+    render: ({ bpmView, bpmTop, bpmPresets }) => (
+      <BpmPanel side="primary" bottomView={bpmView} top={bpmTop} presets={bpmPresets} />
+    ),
   },
   secondary: {
-    render: ({ bpmView, bpmPresets }) => <BpmPanel side="secondary" viewIndex={bpmView} presets={bpmPresets} />,
+    render: ({ bpmView, bpmTop, bpmPresets }) => (
+      <BpmPanel side="secondary" bottomView={bpmView} top={bpmTop} presets={bpmPresets} />
+    ),
   },
 };
 
@@ -151,7 +163,7 @@ function anchoredIndex(state: ControlState, clockSlot: number): number {
 }
 
 /**
- * Which bpm view is up (only meaningful in bpm mode).
+ * Which bpm view is up on the bottom screen (only meaningful in bpm mode).
  * @param state - Control state.
  * @param clockSlot - From useRotationClockSlot.
  * @returns Index into BPM_VIEWS.
@@ -190,6 +202,7 @@ export function DisplayScreen({ side, state, clockSlot }: { side: ScreenSide; st
   const { current } = pickSlots(state, clockSlot);
   const photoHold = state.mode.kind === "hold-photo" ? state.mode : null;
   const bpmView = pickBpmView(state, clockSlot);
+  const bpmTop = state.mode.kind === "bpm" ? state.mode.top : DEFAULT_BPM_TOP;
   const bpmPresets = state.mode.kind === "bpm" ? state.mode.preset : INITIAL_PRESET_CONTROL;
-  return current[side].render({ photoHold, bpmView, bpmPresets });
+  return current[side].render({ photoHold, bpmView, bpmTop, bpmPresets });
 }

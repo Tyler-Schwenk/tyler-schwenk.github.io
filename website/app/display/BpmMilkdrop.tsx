@@ -22,7 +22,8 @@ import { loadPresetLibrary, sortedPresetNames, unwrapExport, type PresetLibrary 
  * also jump straight to one (presets.jump, an index into sortedPresetNames).
  * Each new preset's name and place in the order shows briefly in the corner,
  * or stays up while held, and is reported to the surfcam agent so the remote
- * can show what's playing.
+ * can show what's playing. Both screens can run it at once, each in its own
+ * shuffled order, so they show different presets until a jump lines them up.
  *
  * A room mic is far quieter than the line-level audio MilkDrop was made for,
  * so the waveform gets an auto gain first (otherwise its wave shapes are flat
@@ -32,6 +33,7 @@ import { loadPresetLibrary, sortedPresetNames, unwrapExport, type PresetLibrary 
  * that up, which keeps the GPU load sane on the kiosk.
  * @param props.stream - The bpm agent stream (from BpmPanel), opened with `waveform`.
  * @param props.presets - Preset stepping from the keyboard.
+ * @param props.side - Which screen it's on, for the preset report.
  */
 
 // drawing resolution; the height follows the screen's shape
@@ -264,7 +266,7 @@ function runMilkdrop(
   };
 }
 
-export default function BpmMilkdrop({ stream, presets }: BpmViewProps) {
+export default function BpmMilkdrop({ stream, presets, side }: BpmViewProps) {
   const { waveformRef, tempoRef } = stream;
   const { reportPlayingPreset } = useDisplayEnvironment();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -287,7 +289,7 @@ export default function BpmMilkdrop({ stream, presets }: BpmViewProps) {
         stop = runMilkdrop(libs, canvasRef.current, waveformRef, tempoRef, presetsRef, (info) => {
           setPreset(info);
           setShowPresetName(true);
-          reportPlayingPreset(info.name);
+          reportPlayingPreset(info.name, side);
         });
       })
       .catch((err: unknown) => {
@@ -297,9 +299,9 @@ export default function BpmMilkdrop({ stream, presets }: BpmViewProps) {
     return () => {
       cancelled = true;
       stop?.();
-      reportPlayingPreset(null);
+      reportPlayingPreset(null, side);
     };
-  }, [waveformRef, tempoRef, reportPlayingPreset]);
+  }, [waveformRef, tempoRef, reportPlayingPreset, side]);
 
   // the preset name fades out a few seconds after each change
   useEffect(() => {

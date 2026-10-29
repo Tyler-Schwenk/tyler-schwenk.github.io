@@ -1,23 +1,41 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { isShortcutActive, type ControlState } from "@/app/display/kioskControl";
-import { BPM_VIEW_INFO, SHORTCUTS, backAction, describeDisplay, stepTarget } from "@/app/display/displayConfig";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  bpmPresetsShown,
+  bpmViewAt,
+  isShortcutActive,
+  presetActionKey,
+  topViewKey,
+  type BpmMode,
+  type ControlState,
+} from "@/app/display/kioskControl";
+import {
+  BPM_VIEW_INFO,
+  CONTROL_CONFIG,
+  SHORTCUTS,
+  backAction,
+  describeDisplay,
+  stepTarget,
+} from "@/app/display/displayConfig";
 import { errorMessage } from "./adminApi";
 import { formatElapsed } from "./format";
 import PresetBrowser from "./PresetBrowser";
-import { Badge, Button, Card, FlashMessage, Muted, useFlash } from "./ui";
+import { Badge, Button, Card, FlashMessage, Muted, Segmented, useFlash } from "./ui";
 import { useDisplayControl, type DisplayControl } from "./useDisplayControl";
 
 /**
  * The display kiosk's remote: what the screens are showing right now, and
  * buttons that press the kiosk's keys for you (see website/docs/ADMIN.md and
- * website/docs/DISPLAY.md for what each key does). Buttons that jump
- * somewhere send escape first, so they mean the same thing whatever mode the
- * screens are in (a digit means something else in bpm mode). The step and
- * back buttons are labelled with what they'd do right now (next photo, next
- * preset, resume rotation...), since the same key does different things in
- * different modes.
+ * website/docs/DISPLAY.md for what each key does).
+ *
+ * It has two layouts. Normally it's the rotation's controls: step, back, and
+ * a button per shortcut. Buttons that jump somewhere send escape first, so
+ * they mean the same thing whatever mode the screens are in (a digit means
+ * something else in bpm mode), and the step and back buttons are labelled
+ * with what they'd do right now. In bpm mode it turns into a dj remote: the
+ * presets up top with big previous/next buttons, then what each screen shows,
+ * so everything needed mid-set is a thumb's reach away.
  */
 
 // how often the "now showing" line and countdown refresh
@@ -35,6 +53,15 @@ const KEY = {
   beatLater: "beat-later",
 } as const;
 
+type PresetMode = "auto" | "hold";
+const PRESET_MODE_OPTIONS: { value: PresetMode; label: string }[] = [
+  { value: "auto", label: "Auto" },
+  { value: "hold", label: "Hold" },
+];
+
+/** Sends keys to the kiosk, in order, as one press. */
+type Press = (keys: string[]) => void;
+
 /**
  * The current time, updated every CLOCK_TICK_MS.
  * @returns Epoch ms.
@@ -51,12 +78,16 @@ function useNow(): number {
 /**
  * A titled group of controls.
  * @param props.title - Group name.
+ * @param props.note - Smaller text beside the title.
  * @param props.children - The controls.
  */
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</h2>
+      <h2 className="flex items-baseline justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        {title}
+        {note && <span className="font-normal normal-case tracking-normal text-slate-500">{note}</span>}
+      </h2>
       {children}
     </section>
   );
@@ -65,20 +96,20 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 /**
  * A big remote button, outlined orange while it's what the screens are doing.
  * @param props.label - What it does.
- * @param props.hint - The kiosk key it matches, shown small.
+ * @param props.detail - A smaller line under it (the kiosk key, or what's on now).
  * @param props.active - Highlight it.
  * @param props.disabled - Grey it out.
  * @param props.onPress - Called on tap.
  */
 function RemoteButton({
   label,
-  hint,
+  detail,
   active = false,
   disabled,
   onPress,
 }: {
   label: string;
-  hint?: string;
+  detail?: string;
   active?: boolean;
   disabled: boolean;
   onPress: () => void;
@@ -96,7 +127,7 @@ function RemoteButton({
       }`}
     >
       <span className="text-sm font-semibold first-letter:uppercase">{label}</span>
-      {hint && <span className="text-[11px] text-slate-500">key {hint}</span>}
+      {detail && <span className="text-[11px] text-slate-500">{detail}</span>}
     </button>
   );
 }
@@ -138,43 +169,160 @@ function NowShowing({ control, nowMs }: { control: DisplayControl; nowMs: number
 }
 
 /**
- * Bpm mode's own controls: its views, cycling, and beat calibration.
+ * The dj remote's preset deck: what's playing, big previous/next, and auto/hold.
+ * The buttons work whichever screen milkdrop is on, and put it on the bottom
+ * screen if it's on neither.
  * @param props.state - Control state (in bpm mode).
+ * @param props.mode - Its bpm mode.
+ * @param props.nowMs - Current time on the backend's clock.
+ * @param props.playing - The preset playing, if milkdrop is on screen.
  * @param props.disabled - Grey the buttons out.
  * @param props.press - Sends keys.
  */
-function BpmControls({
+function PresetDeck({
   state,
+  mode,
+  nowMs,
+  playing,
   disabled,
   press,
 }: {
   state: ControlState;
+  mode: BpmMode;
+  nowMs: number;
+  playing: string | null;
   disabled: boolean;
-  press: (keys: string[]) => void;
+  press: Press;
 }) {
-  const heldView = state.mode.kind === "bpm" ? state.mode.heldView : null;
+  const shown = bpmPresetsShown(state, CONTROL_CONFIG, nowMs);
   return (
-    <Section title="BPM views">
+    <Section title="Milkdrop presets">
+      <Card className="p-3">
+        <div className="text-xs text-slate-500">{shown ? "Playing" : "Milkdrop isn't on either screen"}</div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2 break-words text-sm font-semibold text-white">
+          {shown ? (playing ?? "starting...") : "Any button here puts it on the bottom screen"}
+          {shown && mode.preset.held && <Badge tone="orange">held</Badge>}
+        </div>
+      </Card>
+      <div className="grid grid-cols-2 gap-2">
+        <Button className="min-h-16 text-base" disabled={disabled} onClick={() => press([presetActionKey("prev")])}>
+          Previous preset
+        </Button>
+        <Button variant="primary" className="min-h-16 text-base" disabled={disabled} onClick={() => press([presetActionKey("next")])}>
+          Next preset
+        </Button>
+      </div>
+      <Segmented
+        options={PRESET_MODE_OPTIONS}
+        value={mode.preset.held ? "hold" : "auto"}
+        onChange={(value) => press([presetActionKey(value)])}
+        disabled={disabled}
+      />
+      <p className="text-xs text-slate-500">
+        Auto moves on every 32 beats; previous / next hold the one they land on. The presets are shuffled, so next is
+        always a surprise.
+      </p>
+    </Section>
+  );
+}
+
+/**
+ * What the bottom screen (the monitor) shows: cycling through the views, or one held.
+ * @param props.state - Control state (in bpm mode).
+ * @param props.mode - Its bpm mode.
+ * @param props.nowMs - Current time on the backend's clock.
+ * @param props.disabled - Grey the buttons out.
+ * @param props.press - Sends keys.
+ */
+function BottomScreenPicker({
+  state,
+  mode,
+  nowMs,
+  disabled,
+  press,
+}: {
+  state: ControlState;
+  mode: BpmMode;
+  nowMs: number;
+  disabled: boolean;
+  press: Press;
+}) {
+  const cycling = mode.heldView === null;
+  const onNow = BPM_VIEW_INFO[bpmViewAt(state, CONTROL_CONFIG, nowMs)]?.label;
+  return (
+    <Section title="Bottom screen" note="the monitor">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <RemoteButton
+          label="cycle all"
+          detail={cycling && onNow ? `on ${onNow} now` : "key b"}
+          active={cycling}
+          disabled={disabled}
+          onPress={() => press([KEY.bpm])}
+        />
         {BPM_VIEW_INFO.map((view, i) => (
           <RemoteButton
             key={view.id}
             label={view.label}
-            hint={String(i + 1)}
-            active={heldView === i}
+            detail={`key ${i + 1}`}
+            active={mode.heldView === i}
             disabled={disabled}
             onPress={() => press([String(i + 1)])}
           />
         ))}
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * What the top screen (the laptop) shows: the bottom screen's view, one of its
+ * own, or the tempo readout.
+ * @param props.mode - Bpm mode.
+ * @param props.disabled - Grey the buttons out.
+ * @param props.press - Sends keys.
+ */
+function TopScreenPicker({ mode, disabled, press }: { mode: BpmMode; disabled: boolean; press: Press }) {
+  return (
+    <Section title="Top screen" note="the laptop">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <RemoteButton
-          label="cycle views"
-          hint="b"
-          active={heldView === null}
+          label="same as bottom"
+          detail="follows it"
+          active={mode.top === "same"}
           disabled={disabled}
-          onPress={() => press([KEY.bpm])}
+          onPress={() => press([topViewKey("same")])}
+        />
+        {BPM_VIEW_INFO.map((view, i) => (
+          <RemoteButton
+            key={view.id}
+            label={view.label}
+            active={mode.top === i}
+            disabled={disabled}
+            onPress={() => press([topViewKey(i)])}
+          />
+        ))}
+        <RemoteButton
+          label="tempo"
+          detail="the bpm number"
+          active={mode.top === "tempo"}
+          disabled={disabled}
+          onPress={() => press([topViewKey("tempo")])}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+    </Section>
+  );
+}
+
+/**
+ * Beat calibration, folded away since it's set once rather than played with.
+ * @param props.disabled - Grey the buttons out.
+ * @param props.press - Sends keys.
+ */
+function BeatSync({ disabled, press }: { disabled: boolean; press: Press }) {
+  return (
+    <details className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+      <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-slate-400">Beat sync</summary>
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <Button disabled={disabled} onClick={() => press([KEY.beatEarlier])}>
           Beat earlier
         </Button>
@@ -182,10 +330,51 @@ function BpmControls({
           Beat later
         </Button>
       </div>
-      <p className="text-xs text-slate-500">
-        Beat earlier/later nudge the calibration by 10 ms (the kiosk&apos;s - and = keys); watch the calibration view.
+      <p className="mt-2 text-xs text-slate-500">
+        Nudges where the beat lands on screen by 10 ms (the kiosk&apos;s - and = keys). Put calibration on a screen and
+        play a click track to line it up.
       </p>
-    </Section>
+    </details>
+  );
+}
+
+/**
+ * The dj remote, shown in bpm mode: presets first, then each screen, then the rarely touched stuff.
+ * @param props.state - Control state (in bpm mode).
+ * @param props.mode - Its bpm mode.
+ * @param props.nowMs - Current time on the backend's clock.
+ * @param props.playing - The preset playing, if milkdrop is on screen.
+ * @param props.disabled - Grey the buttons out.
+ * @param props.press - Sends keys.
+ */
+function DjControls({
+  state,
+  mode,
+  nowMs,
+  playing,
+  disabled,
+  press,
+}: {
+  state: ControlState;
+  mode: BpmMode;
+  nowMs: number;
+  playing: string | null;
+  disabled: boolean;
+  press: Press;
+}) {
+  return (
+    <>
+      <PresetDeck state={state} mode={mode} nowMs={nowMs} playing={playing} disabled={disabled} press={press} />
+      <BottomScreenPicker state={state} mode={mode} nowMs={nowMs} disabled={disabled} press={press} />
+      <TopScreenPicker mode={mode} disabled={disabled} press={press} />
+      <Section title="Find a preset">
+        <PresetBrowser playing={playing} disabled={disabled} press={press} />
+      </Section>
+      <BeatSync disabled={disabled} press={press} />
+      <Button variant="danger" className="min-h-14" disabled={disabled} onClick={() => press([KEY.escape])}>
+        Leave BPM (mic off, back to the rotation)
+      </Button>
+    </>
   );
 }
 
@@ -206,7 +395,7 @@ function StepControls({
   state: ControlState | null;
   nowMs: number;
   disabled: boolean;
-  press: (keys: string[]) => void;
+  press: Press;
 }) {
   const target = state ? stepTarget(state, nowMs) : "screen";
   const back = state ? backAction(state) : null;
@@ -220,10 +409,10 @@ function StepControls({
           Next {target}
         </Button>
       </div>
-      {back && <RemoteButton label={back} hint="backspace" disabled={disabled} onPress={() => press([KEY.back])} />}
+      {back && <RemoteButton label={back} detail="key backspace" disabled={disabled} onPress={() => press([KEY.back])} />}
       <RemoteButton
         label="standard rotation"
-        hint="esc"
+        detail="key esc"
         active={state?.mode.kind === "rotation"}
         disabled={disabled}
         onPress={() => press([KEY.escape])}
@@ -236,39 +425,57 @@ function StepControls({
 }
 
 /**
- * Milkdrop's presets: what's playing, and a searchable list to jump to any of them.
+ * The remote outside bpm mode: a big way into bpm mode, the rotation's
+ * controls, the shortcuts, and the preset list (which also leads into bpm mode).
  * @param props.state - Control state, or null before the kiosk's first report.
- * @param props.playing - The preset playing, if milkdrop is on screen.
+ * @param props.nowMs - Current time on the backend's clock.
  * @param props.disabled - Grey the buttons out.
  * @param props.press - Sends keys.
  */
-function PresetControls({
+function RotationControls({
   state,
-  playing,
+  nowMs,
   disabled,
   press,
 }: {
   state: ControlState | null;
-  playing: string | null;
+  nowMs: number;
   disabled: boolean;
-  press: (keys: string[]) => void;
+  press: Press;
 }) {
-  const held = state?.mode.kind === "bpm" && state.mode.preset.held;
+  const mode = state?.mode;
+  // bpm mode has its own big button above
+  const shortcuts = SHORTCUTS.filter((shortcut) => shortcut.action.kind !== "bpm");
   return (
-    <Section title="Milkdrop presets">
-      {playing ? (
-        <Card className="p-3">
-          <div className="text-xs text-slate-500">Playing</div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-2 break-words text-sm font-semibold text-white">
-            {playing}
-            {held && <Badge tone="orange">held</Badge>}
-          </div>
-        </Card>
-      ) : (
-        <p className="text-xs text-slate-500">Milkdrop isn&apos;t on screen. Picking a preset switches to it (BPM mode, mic on).</p>
-      )}
-      <PresetBrowser playing={playing} disabled={disabled} press={press} />
-    </Section>
+    <>
+      <div className="flex flex-col gap-2">
+        <Button variant="primary" className="min-h-16 text-base" disabled={disabled} onClick={() => press([KEY.escape, KEY.bpm])}>
+          Start BPM visuals
+        </Button>
+        <p className="text-xs text-slate-500">
+          Turns the kiosk&apos;s mic on and puts music visuals on both screens, with dj controls here.
+        </p>
+      </div>
+      <StepControls state={state} nowMs={nowMs} disabled={disabled} press={press} />
+      <Section title="Show">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {shortcuts.map((shortcut) => (
+            <RemoteButton
+              key={shortcut.key}
+              label={shortcut.label}
+              detail={`key ${shortcut.key}`}
+              active={mode ? isShortcutActive(shortcut, mode) : false}
+              disabled={disabled}
+              onPress={() => press([KEY.escape, shortcut.key])}
+            />
+          ))}
+        </div>
+      </Section>
+      <Section title="Milkdrop presets">
+        <p className="text-xs text-slate-500">Picking a preset starts BPM visuals on it.</p>
+        <PresetBrowser playing={null} disabled={disabled} press={press} />
+      </Section>
+    </>
   );
 }
 
@@ -279,29 +486,27 @@ export default function DisplayTab() {
   const control = useDisplayControl();
   const nowMs = useNow() + control.clockOffsetMs;
   const [flash, showFlash] = useFlash();
-  const [sending, setSending] = useState(false);
+  // presses queue up rather than greying the buttons out while one's in flight, so tapping
+  // next a few times mid-set just works, and they still reach the kiosk in the order tapped
+  const pressQueue = useRef<Promise<void>>(Promise.resolve());
+  const { sendKeys } = control;
 
-  const press = async (keys: string[]) => {
-    setSending(true);
-    try {
-      await control.sendKeys(keys);
-    } catch (err) {
-      showFlash("error", errorMessage(err));
-    } finally {
-      setSending(false);
-    }
-  };
+  const press = useCallback(
+    (keys: string[]) => {
+      pressQueue.current = pressQueue.current
+        .then(() => sendKeys(keys))
+        .catch((err: unknown) => showFlash("error", errorMessage(err)));
+    },
+    [sendKeys, showFlash]
+  );
 
   if (!control.loaded) {
     return <Muted>{control.error ?? "Checking on the kiosk..."}</Muted>;
   }
 
   const state = control.state;
-  const disabled = sending || !control.online;
-  const mode = state?.mode;
-  // in bpm mode the presets matter most, so they move up under the step buttons
-  const inBpm = mode?.kind === "bpm";
-  const presets = <PresetControls state={state} playing={control.playingPreset} disabled={disabled} press={press} />;
+  const disabled = !control.online;
+  const bpmMode = state?.mode.kind === "bpm" ? state.mode : null;
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -316,27 +521,18 @@ export default function DisplayTab() {
         </p>
       )}
 
-      <StepControls state={state} nowMs={nowMs} disabled={disabled} press={press} />
-      {inBpm && presets}
-
-      {state && inBpm && <BpmControls state={state} disabled={disabled} press={press} />}
-
-      <Section title="Show">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {SHORTCUTS.map((shortcut) => (
-            <RemoteButton
-              key={shortcut.key}
-              label={shortcut.label}
-              hint={shortcut.key}
-              active={mode ? isShortcutActive(shortcut, mode) : false}
-              disabled={disabled}
-              onPress={() => press([KEY.escape, shortcut.key])}
-            />
-          ))}
-        </div>
-      </Section>
-
-      {!inBpm && presets}
+      {state && bpmMode ? (
+        <DjControls
+          state={state}
+          mode={bpmMode}
+          nowMs={nowMs}
+          playing={control.playingPreset}
+          disabled={disabled}
+          press={press}
+        />
+      ) : (
+        <RotationControls state={state} nowMs={nowMs} disabled={disabled} press={press} />
+      )}
     </div>
   );
 }

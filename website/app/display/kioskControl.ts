@@ -27,9 +27,14 @@ import { SURFCAM_AGENT_URL } from "./surfCams";
  * presets (milkdrop), ] and [ step its presets instead and hold the view and
  * preset, and backspace first lets the presets move on by themselves again.
  *
- * `preset-<n>` (only sent by the admin page's remote, there's no physical key)
- * jumps to preset n of the sorted preset list (milkdropPresets.ts) and holds
- * it, entering bpm mode on that view if it isn't up already.
+ * In bpm mode the top screen shows the same view as the bottom one by default.
+ * The admin page's remote can give it a view of its own or the tempo readout
+ * instead (`top-same`, `top-tempo`, `top-<n>`), and work the presets whichever
+ * screen they're on (`preset-next`, `preset-prev`, `preset-hold`,
+ * `preset-auto`). `preset-<n>` jumps to preset n of the sorted preset list
+ * (milkdropPresets.ts) and holds it. A preset key with no preset view on
+ * either screen puts the bottom one on the first view with presets, entering
+ * bpm mode if it isn't up. None of these have a physical key.
  */
 
 /** A key press as the agent logs it. `at_ms` is epoch ms on the kiosk's clock. */
@@ -67,12 +72,8 @@ export type DisplayMode =
   | { kind: "cam-rotation" }
   /** Staying on one slot. */
   | { kind: "hold-slot"; slotId: string }
-  /**
-   * Bpm mode (never part of the main rotation): staying on view `heldView`,
-   * or cycling through the views from the anchor when it's null. `preset`
-   * is what ] and [ have done on a view with presets.
-   */
-  | { kind: "bpm"; heldView: number | null; preset: PresetControl }
+  /** Bpm mode (never part of the main rotation), see BpmMode. */
+  | BpmMode
   /**
    * Staying on the photos slot with each screen's photo frozen as it was at
    * `frozenAtMs`, moved on `photoStep` photos by ] and [.
@@ -95,6 +96,27 @@ export interface PresetControl {
 
 /** Preset control before any preset key. */
 export const INITIAL_PRESET_CONTROL: PresetControl = { step: 0, held: false, jump: null, jumps: 0 };
+
+/**
+ * What the top screen shows in bpm mode: whatever the bottom one shows
+ * ("same"), the tempo readout ("tempo"), or a view of its own (its index).
+ */
+export type BpmTopView = "same" | "tempo" | number;
+
+/** The top screen entering bpm mode: visuals on both screens. */
+export const DEFAULT_BPM_TOP: BpmTopView = "same";
+
+/**
+ * Bpm mode: the bottom screen stays on view `heldView`, or cycles through the
+ * views from the anchor when it's null. `top` is what the top screen shows,
+ * and `preset` is what the preset keys have done.
+ */
+export interface BpmMode {
+  kind: "bpm";
+  heldView: number | null;
+  top: BpmTopView;
+  preset: PresetControl;
+}
 
 export interface ControlState {
   menuOpen: boolean;
@@ -141,6 +163,20 @@ const BPM_VIEW_KEY_PATTERN = /^[1-9]$/;
 const PRESET_KEY_PREFIX = "preset-";
 const PRESET_KEY_PATTERN = /^preset-(\d{1,4})$/;
 
+// the remote's preset buttons, and what each does to the preset control
+const PRESET_ACTION_KEY_PATTERN = /^preset-(next|prev|hold|auto)$/;
+type PresetAction = "next" | "prev" | "hold" | "auto";
+const PRESET_ACTIONS: Record<PresetAction, (preset: PresetControl) => PresetControl> = {
+  next: (preset) => ({ ...preset, step: preset.step + 1, held: true }),
+  prev: (preset) => ({ ...preset, step: preset.step - 1, held: true }),
+  hold: (preset) => ({ ...preset, held: true }),
+  auto: (preset) => ({ ...preset, held: false }),
+};
+
+// the remote's pick for the top screen in bpm mode: top-same, top-tempo, or top-<view, 1 = the first>
+const TOP_KEY_PREFIX = "top-";
+const TOP_KEY_PATTERN = /^top-(same|tempo|[1-9])$/;
+
 /**
  * The key that jumps to a preset.
  * @param index - Index into the sorted preset list (milkdropPresets.ts).
@@ -148,6 +184,59 @@ const PRESET_KEY_PATTERN = /^preset-(\d{1,4})$/;
  */
 export function presetKey(index: number): string {
   return `${PRESET_KEY_PREFIX}${index}`;
+}
+
+/**
+ * The remote's key for a preset button.
+ * @param action - next/prev (step and hold), hold (stay on this one), auto (move on by itself).
+ * @returns Like "preset-next".
+ */
+export function presetActionKey(action: PresetAction): string {
+  return `${PRESET_KEY_PREFIX}${action}`;
+}
+
+/**
+ * The remote's key that puts the top screen on something in bpm mode.
+ * @param top - What it should show.
+ * @returns Like "top-same" or "top-5" (view index 4).
+ */
+export function topViewKey(top: BpmTopView): string {
+  return `${TOP_KEY_PREFIX}${typeof top === "number" ? top + 1 : top}`;
+}
+
+/**
+ * Which view the top screen shows in bpm mode.
+ * @param top - The top screen's setting.
+ * @param bottomView - The view on the bottom screen.
+ * @returns Its view index, or null for the tempo readout.
+ */
+export function bpmTopViewIndex(top: BpmTopView, bottomView: number): number | null {
+  if (top === "tempo") return null;
+  return top === "same" ? bottomView : top;
+}
+
+/**
+ * Whether either screen shows a view with presets.
+ * @param top - The top screen's setting.
+ * @param bottomView - The view on the bottom screen.
+ * @param config - Rotation config.
+ * @returns True if a preset view is up somewhere.
+ */
+function presetViewShown(top: BpmTopView, bottomView: number, config: ControlConfig): boolean {
+  const topView = bpmTopViewIndex(top, bottomView);
+  return config.bpmPresetViews.includes(bottomView) || (topView !== null && config.bpmPresetViews.includes(topView));
+}
+
+/**
+ * Whether presets are on screen right now, for the remote.
+ * @param state - Control state.
+ * @param config - Rotation config.
+ * @param atMs - The moment, epoch ms.
+ * @returns True in bpm mode with a preset view on either screen.
+ */
+export function bpmPresetsShown(state: ControlState, config: ControlConfig, atMs: number): boolean {
+  if (state.mode.kind !== "bpm") return false;
+  return presetViewShown(state.mode.top, bpmViewAt(state, config, atMs), config);
 }
 
 /**
@@ -188,7 +277,7 @@ function step(state: ControlState, delta: number, atMs: number, config: ControlC
   if (mode.kind === "hold-photo") {
     return { ...state, mode: { ...mode, photoStep: mode.photoStep + delta } };
   }
-  if (mode.kind === "bpm") return stepBpm(state, mode.preset, delta, atMs, config);
+  if (mode.kind === "bpm") return stepBpm(state, mode, delta, atMs, config);
   const currentSlotId = mode.kind === "hold-slot" ? mode.slotId : rotationSlotIdAt(state, config, atMs);
   const index = config.slotIds.indexOf(currentSlotId);
   const slotId = config.slotIds[wrapIndex(index + delta, config.slotIds.length)];
@@ -221,22 +310,23 @@ export function bpmViewAt(state: ControlState, config: ControlConfig, atMs: numb
 }
 
 /**
- * ] or [ in bpm mode: the next/previous preset on a view with presets
- * (holding that view and preset), else the next/previous view (held).
+ * ] or [ in bpm mode: the next/previous preset when the bottom screen's view
+ * has presets (holding that view and preset), else the next/previous view (held).
  * @param state - State before the press (in bpm mode).
- * @param preset - Its preset stepping.
+ * @param mode - Its bpm mode.
  * @param delta - +1 for ], -1 for [.
  * @param atMs - When the key was pressed.
  * @param config - Rotation config.
  * @returns State after it.
  */
-function stepBpm(state: ControlState, preset: PresetControl, delta: number, atMs: number, config: ControlConfig): ControlState {
+function stepBpm(state: ControlState, mode: BpmMode, delta: number, atMs: number, config: ControlConfig): ControlState {
   const view = bpmViewAt(state, config, atMs);
   if (config.bpmPresetViews.includes(view)) {
-    return { ...state, mode: { kind: "bpm", heldView: view, preset: { ...preset, step: preset.step + delta, held: true } } };
+    const preset = { ...mode.preset, step: mode.preset.step + delta, held: true };
+    return { ...state, mode: { ...mode, heldView: view, preset } };
   }
   const heldView = wrapIndex(view + delta, config.bpmViewCount);
-  return { ...state, mode: { kind: "bpm", heldView, preset } };
+  return { ...state, mode: { ...mode, heldView } };
 }
 
 /**
@@ -246,11 +336,12 @@ function stepBpm(state: ControlState, preset: PresetControl, delta: number, atMs
  * @param fromView - The view to start on.
  * @param atMs - When cycling starts (it gets a full interval).
  * @param presets - Preset control so far (INITIAL_PRESET_CONTROL entering bpm mode).
+ * @param top - What the top screen shows (DEFAULT_BPM_TOP entering bpm mode).
  * @returns The new state, menu closed.
  */
-function cycleBpmViews(fromView: number, atMs: number, presets: PresetControl): ControlState {
+function cycleBpmViews(fromView: number, atMs: number, presets: PresetControl, top: BpmTopView): ControlState {
   const preset = { ...presets, held: false };
-  return { ...INITIAL_CONTROL_STATE, mode: { kind: "bpm", heldView: null, preset }, anchorMs: atMs, anchorIndex: fromView };
+  return { ...INITIAL_CONTROL_STATE, mode: { kind: "bpm", heldView: null, top, preset }, anchorMs: atMs, anchorIndex: fromView };
 }
 
 /**
@@ -265,13 +356,13 @@ function goBack(state: ControlState, atMs: number): ControlState {
   const mode = state.mode;
   if (mode.kind !== "bpm") return INITIAL_CONTROL_STATE;
   if (mode.preset.held) return { ...state, mode: { ...mode, preset: { ...mode.preset, held: false } } };
-  if (mode.heldView !== null) return cycleBpmViews(mode.heldView, atMs, mode.preset);
+  if (mode.heldView !== null) return cycleBpmViews(mode.heldView, atMs, mode.preset, mode.top);
   return INITIAL_CONTROL_STATE;
 }
 
 /**
- * A digit pressed in bpm mode: holds that view, if there is one. A held
- * preset stays held only if the new view has presets.
+ * A digit pressed in bpm mode: holds that view on the bottom screen, if there
+ * is one. A held preset stays held only if a view with presets is still up.
  * @param state - State before the press (in bpm mode).
  * @param key - The digit.
  * @param config - Rotation config.
@@ -279,10 +370,26 @@ function goBack(state: ControlState, atMs: number): ControlState {
  */
 function holdBpmView(state: ControlState, key: string, config: ControlConfig): ControlState {
   const view = Number(key) - 1;
-  if (view >= config.bpmViewCount || state.mode.kind !== "bpm") return state;
-  const presetHeld = state.mode.preset.held && config.bpmPresetViews.includes(view);
-  const preset = { ...state.mode.preset, held: presetHeld };
-  return { ...state, menuOpen: false, mode: { kind: "bpm", heldView: view, preset } };
+  const mode = state.mode;
+  if (view >= config.bpmViewCount || mode.kind !== "bpm") return state;
+  const presetHeld = mode.preset.held && presetViewShown(mode.top, view, config);
+  const preset = { ...mode.preset, held: presetHeld };
+  return { ...state, menuOpen: false, mode: { ...mode, heldView: view, preset } };
+}
+
+/**
+ * The remote's top-screen pick in bpm mode (outside it, nothing happens).
+ * @param state - State before the press.
+ * @param choice - What followed "top-": same, tempo, or a view's digit.
+ * @param config - Rotation config.
+ * @returns State after it (unchanged for a digit past the last view).
+ */
+function setBpmTop(state: ControlState, choice: string, config: ControlConfig): ControlState {
+  const mode = state.mode;
+  if (mode.kind !== "bpm") return state;
+  const top: BpmTopView = choice === "same" || choice === "tempo" ? choice : Number(choice) - 1;
+  if (typeof top === "number" && top >= config.bpmViewCount) return state;
+  return { ...state, menuOpen: false, mode: { ...mode, top } };
 }
 
 /**
@@ -296,8 +403,8 @@ function holdBpmView(state: ControlState, key: string, config: ControlConfig): C
  */
 function startShortcut(action: ShortcutAction, atMs: number, state: ControlState, config: ControlConfig): ControlState {
   if (action.kind === "bpm") {
-    if (state.mode.kind !== "bpm") return cycleBpmViews(0, atMs, INITIAL_PRESET_CONTROL);
-    return cycleBpmViews(bpmViewAt(state, config, atMs), atMs, state.mode.preset);
+    if (state.mode.kind !== "bpm") return cycleBpmViews(0, atMs, INITIAL_PRESET_CONTROL, DEFAULT_BPM_TOP);
+    return cycleBpmViews(bpmViewAt(state, config, atMs), atMs, state.mode.preset, state.mode.top);
   }
   if (action.kind === "hold-photo") {
     return { ...INITIAL_CONTROL_STATE, mode: { kind: "hold-photo", frozenAtMs: atMs, photoStep: 0 } };
@@ -309,22 +416,46 @@ function startShortcut(action: ShortcutAction, atMs: number, state: ControlState
 }
 
 /**
- * Jumps to a preset and holds it, on the (first) view with presets, entering
- * bpm mode there if it isn't up.
+ * Which view the bottom screen should hold while a preset is held: its own
+ * view if that has presets, else wherever it is if the top screen has them,
+ * else the first view with presets (so the held preset is on screen somewhere).
+ * @param mode - Bpm mode before the press.
+ * @param bottomView - The bottom screen's view now.
+ * @param config - Rotation config.
+ * @returns The view to hold, or null to keep cycling.
+ */
+function presetHoldView(mode: BpmMode, bottomView: number, config: ControlConfig): number | null {
+  if (config.bpmPresetViews.includes(bottomView)) return bottomView;
+  if (presetViewShown(mode.top, bottomView, config)) return mode.heldView;
+  return config.bpmPresetViews[0];
+}
+
+/**
+ * Changes the preset control (a jump, a step, hold or auto). If that holds a
+ * preset, a view with presets is kept on screen, entering bpm mode on the
+ * first one if it isn't up.
  * @param state - State before the press.
- * @param preset - Index into the sorted preset list.
+ * @param change - What the press does to the preset control.
  * @param atMs - When the key was pressed.
  * @param config - Rotation config.
  * @returns State after it (unchanged if no view has presets).
  */
-function jumpToPreset(state: ControlState, preset: number, atMs: number, config: ControlConfig): ControlState {
-  const view = config.bpmPresetViews[0];
-  if (view === undefined) return state;
-  const inBpm = state.mode.kind === "bpm";
-  const current = state.mode.kind === "bpm" ? state.mode.preset : INITIAL_PRESET_CONTROL;
-  const presets = { ...current, held: true, jump: preset, jumps: current.jumps + 1 };
-  const base = inBpm ? state : { ...INITIAL_CONTROL_STATE, anchorMs: atMs };
-  return { ...base, menuOpen: false, mode: { kind: "bpm", heldView: view, preset: presets } };
+function changePresets(
+  state: ControlState,
+  change: (preset: PresetControl) => PresetControl,
+  atMs: number,
+  config: ControlConfig
+): ControlState {
+  const firstPresetView = config.bpmPresetViews[0];
+  if (firstPresetView === undefined) return state;
+  const mode = state.mode;
+  if (mode.kind !== "bpm") {
+    const preset = change(INITIAL_PRESET_CONTROL);
+    return { ...INITIAL_CONTROL_STATE, anchorMs: atMs, mode: { kind: "bpm", heldView: firstPresetView, top: DEFAULT_BPM_TOP, preset } };
+  }
+  const preset = change(mode.preset);
+  const heldView = preset.held ? presetHoldView(mode, bpmViewAt(state, config, atMs), config) : mode.heldView;
+  return { ...state, menuOpen: false, mode: { ...mode, heldView, preset } };
 }
 
 /**
@@ -356,7 +487,14 @@ export function applyControlEvent(state: ControlState, event: ControlEvent, conf
     return { ...step(state, key === "next" ? 1 : -1, atMs, config), menuOpen: false };
   }
   const presetJump = PRESET_KEY_PATTERN.exec(key);
-  if (presetJump) return jumpToPreset(state, Number(presetJump[1]), atMs, config);
+  if (presetJump) {
+    const jump = Number(presetJump[1]);
+    return changePresets(state, (preset) => ({ ...preset, held: true, jump, jumps: preset.jumps + 1 }), atMs, config);
+  }
+  const presetAction = PRESET_ACTION_KEY_PATTERN.exec(key);
+  if (presetAction) return changePresets(state, PRESET_ACTIONS[presetAction[1] as PresetAction], atMs, config);
+  const topChoice = TOP_KEY_PATTERN.exec(key);
+  if (topChoice) return setBpmTop(state, topChoice[1], config);
   if (state.mode.kind === "bpm" && BPM_VIEW_KEY_PATTERN.test(key)) return holdBpmView(state, key, config);
   const shortcut = config.shortcuts.find((candidate) => candidate.key === key);
   return shortcut ? startShortcut(shortcut.action, atMs, state, config) : state;
@@ -375,14 +513,16 @@ export function replayControl(log: ControlLog | null, config: ControlConfig): Co
 
 /**
  * Tells the surfcam agent which milkdrop preset is playing, so the admin
- * page's remote can show it (the agent passes it up with the key log).
+ * page's remote can show it (the agent passes it up with the key log). Each
+ * screen reports its own, since both can run milkdrop at once.
  * @param name - The preset's name, or null when milkdrop closes.
+ * @param screen - Which screen it's playing on.
  */
-export function reportPlayingPreset(name: string | null): void {
+export function reportPlayingPreset(name: string | null, screen: "primary" | "secondary"): void {
   fetch(`${SURFCAM_AGENT_URL}/control/status`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ preset: name }),
+    body: JSON.stringify({ preset: name, screen }),
   }).catch(() => {
     // away from the kiosk there's no agent, and on the kiosk a missed report only means
     // the remote shows the previous name until the next preset; nothing to recover

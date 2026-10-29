@@ -885,7 +885,7 @@ Two kinds of auth:
 - **Admin** endpoints take the usual JWT bearer token
 - **Kiosk** endpoints (`/display-control/kiosk/...`) take the shared secret in an `X-Kiosk-Token` header, which must equal `KIOSK_TOKEN` in the backend's `.env`. With `KIOSK_TOKEN` unset they answer `503`; a wrong token gets `401`
 
-Key names: `tab`, `escape`, `backspace`, `next`, `prev`, `b`, `1`-`9` and `preset-<n>` (jump to milkdrop preset n, up to 4 digits) (the kiosk's key log, see `website/docs/DISPLAY.md`), plus `beat-earlier` / `beat-later` (bpm calibration, forwarded by the agent to the bpm agent).
+Key names: `tab`, `escape`, `backspace`, `next`, `prev`, `b`, `1`-`9`, `preset-<n>` (jump to milkdrop preset n, up to 4 digits), `preset-next` / `preset-prev` / `preset-hold` / `preset-auto`, and `top-same` / `top-tempo` / `top-1`-`top-9` (bpm mode's top screen) (the kiosk's key log, see `website/docs/DISPLAY.md`), plus `beat-earlier` / `beat-later` (bpm calibration, forwarded by the agent to the bpm agent).
 
 Long-polls wait up to 25 s and then answer anyway, so callers just loop.
 

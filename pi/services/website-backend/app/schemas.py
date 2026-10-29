@@ -405,10 +405,14 @@ class RecipeUpdate(BaseModel):
 # Display Kiosk Remote Control Schemas
 #
 # Key names must match what pi/services/surfcam-agent/kiosk_control.py accepts
-# (CONTROL_KEYS, plus preset-<n> jumps to a milkdrop preset), which is what the
-# display page's state machine understands, plus the two bpm calibration nudges
-# the agent forwards to the bpm agent instead of its log.
-DISPLAY_KEY_PATTERN = r"^(tab|escape|backspace|next|prev|b|[1-9]|beat-earlier|beat-later|preset-\d{1,4})$"
+# (CONTROL_KEYS, plus REMOTE_KEY_PATTERN: preset-<n> jumps to a milkdrop preset,
+# preset-next/prev/hold/auto, and top-same/tempo/<n> for bpm mode's top screen),
+# which is what the display page's state machine understands, plus the two bpm
+# calibration nudges the agent forwards to the bpm agent instead of its log.
+DISPLAY_KEY_PATTERN = (
+    r"^(tab|escape|backspace|next|prev|b|[1-9]|beat-earlier|beat-later"
+    r"|preset-(\d{1,4}|next|prev|hold|auto)|top-(same|tempo|[1-9]))$"
+)
 DisplayKey = Annotated[str, Field(pattern=DISPLAY_KEY_PATTERN)]
 
 # one remote button sends at most a couple of keys (e.g. escape then a shortcut)

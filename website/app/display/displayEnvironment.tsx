@@ -19,8 +19,8 @@ export interface DisplayEnvironment {
   fetchSurfConditions: (camId: SurfCamId) => Promise<AgentResult<SurfConditions>>;
   /** What the monitor shows during a cam slot. Rendered keyed by cam. */
   SurfCamPanel: ComponentType<{ camId: SurfCamId }>;
-  /** Tells the remote which milkdrop preset is playing (null when milkdrop closes). */
-  reportPlayingPreset: (name: string | null) => void;
+  /** Tells the remote which milkdrop preset is playing on a screen (null when milkdrop closes there). */
+  reportPlayingPreset: (name: string | null, screen: "primary" | "secondary") => void;
 }
 
 /** The real thing: the agents on displaytop. */

@@ -11,7 +11,7 @@ import {
   stepTarget,
   surfCamSlotId,
 } from "../display/displayConfig";
-import type { ControlState } from "../display/kioskControl";
+import { topViewKey, type ControlState } from "../display/kioskControl";
 import { SURF_CAMS, type SurfCamId } from "../display/surfCams";
 import { CONSOLE_SECTIONS, sectionForMode, type SectionId } from "./consoleSections";
 import { LIVE_CAM_PAGES } from "./simSurf";
@@ -251,7 +251,7 @@ function SurfControls({
 }
 
 /**
- * The bpm visualizer's controls: which view, stepping, the sound and the beat calibration.
+ * The bpm visualizer's controls: which view on each screen, stepping, the sound and the beat calibration.
  * @param props.state - Control state.
  * @param props.nowMs - The time now, null until mounted.
  * @param props.muted - Whether the simulated song is silenced.
@@ -272,16 +272,24 @@ function BpmControls({
   onToggleMute: () => void;
 }) {
   const heldView = state.mode.kind === "bpm" ? state.mode.heldView : null;
+  const top = state.mode.kind === "bpm" ? state.mode.top : null;
   const target = nowMs === null ? "view" : stepTarget(state, nowMs);
   return (
     <>
-      <ControlGroup title="views">
+      <ControlGroup title="monitor">
         <ControlButton label="cycle the views" hint="b" active={heldView === null} onPress={() => onKey("b")} />
         {BPM_VIEW_INFO.map((view, i) => (
           <ControlButton key={view.id} label={view.label} hint={String(i + 1)} active={heldView === i} onPress={() => onKey(String(i + 1))} />
         ))}
         <ControlButton label={`previous ${target}`} hint="[" onPress={() => onKey("prev")} />
         <ControlButton label={`next ${target}`} hint="]" onPress={() => onKey("next")} />
+      </ControlGroup>
+      <ControlGroup title="laptop screen">
+        <ControlButton label="same as the monitor" active={top === "same"} onPress={() => onKey(topViewKey("same"))} />
+        {BPM_VIEW_INFO.map((view, i) => (
+          <ControlButton key={view.id} label={view.label} active={top === i} onPress={() => onKey(topViewKey(i))} />
+        ))}
+        <ControlButton label="tempo" active={top === "tempo"} onPress={() => onKey(topViewKey("tempo"))} />
       </ControlGroup>
       <ControlGroup title="sound">
         <ControlButton label={muted ? "sound off" : "sound on"} active={!muted} onPress={onToggleMute} />

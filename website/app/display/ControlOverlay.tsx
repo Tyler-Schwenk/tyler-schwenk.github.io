@@ -5,7 +5,8 @@ import { isShortcutActive, type ControlState, type DisplayMode, type Shortcut } 
 /**
  * Keyboard-control overlay, drawn over whatever panel is showing: the
  * shortcut menu (while tab has it open) and a small indicator in the top
- * right whenever the screens aren't on the standard rotation. In bpm mode the
+ * right whenever the screens aren't on the standard rotation (except over bpm
+ * visuals; it only shows in bpm mode while the tempo readout's up). In bpm mode the
  * menu lists the bpm views and bpm mode's keys instead.
  * @param props.state - Current control state.
  * @param props.shortcuts - The shortcuts, in menu order.
@@ -42,11 +43,13 @@ const BPM_NAVIGATION_KEYS: MenuEntry[] = [
 /**
  * What the indicator says for a mode, if anything.
  * @param mode - Current display mode.
- * @returns Indicator text, or null on the standard rotation.
+ * @returns Indicator text, or null on the standard rotation and over bpm visuals.
  */
 function indicatorLabel(mode: DisplayMode): string | null {
   if (mode.kind === "hold-photo" || mode.kind === "hold-slot") return "held";
   if (mode.kind === "cam-rotation") return "surf cams only";
+  // a box in the corner of the visuals spoils them; the tempo readout has room for it
+  if (mode.kind === "bpm" && mode.top !== "tempo") return null;
   if (mode.kind === "bpm" && mode.preset.held) return "bpm, preset held";
   if (mode.kind === "bpm") return mode.heldView === null ? "bpm" : "bpm, held";
   return null;

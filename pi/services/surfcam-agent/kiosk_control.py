@@ -21,9 +21,13 @@ from typing import Optional
 # bpm visualizer)
 CONTROL_KEYS = {"tab", "escape", "backspace", "next", "prev", "b", *map(str, range(1, 10))}
 
-# the admin page's remote can also jump to a milkdrop preset: preset-<index into the
-# page's sorted preset list>. no physical key sends these
-PRESET_KEY_PATTERN = re.compile(r"^preset-\d{1,4}$")
+# the admin page's remote has keys no physical key sends: preset-<index into the page's
+# sorted preset list> jumps to a milkdrop preset, preset-next/prev/hold/auto work the
+# presets, and top-same/tempo/<view> picks what the top screen shows in bpm mode
+REMOTE_KEY_PATTERN = re.compile(r"^(preset-(\d{1,4}|next|prev|hold|auto)|top-(same|tempo|[1-9]))$")
+
+# the screens that can report a playing preset; the primary's wins when both run milkdrop
+PRESET_SCREENS = ("primary", "secondary")
 
 # a preset name longer than this isn't a preset name; it's cut so a bad report can't bloat pushes
 MAX_PRESET_NAME_CHARS = 200
@@ -37,8 +41,8 @@ LONG_POLL_TIMEOUT_S = 25
 
 
 def is_control_key(key: str) -> bool:
-    """whether the pages understand a key: one of CONTROL_KEYS, or a preset jump."""
-    return key in CONTROL_KEYS or PRESET_KEY_PATTERN.match(key) is not None
+    """whether the pages understand a key: one of CONTROL_KEYS, or one of the remote's."""
+    return key in CONTROL_KEYS or REMOTE_KEY_PATTERN.match(key) is not None
 
 
 def now_ms() -> int:
@@ -49,8 +53,8 @@ def now_ms() -> int:
 class ControlLog:
     """the key presses since the last reset, with a version that bumps on every change.
 
-    it also holds the milkdrop preset the page says is playing, which isn't part of
-    the log (the pages don't need it) but goes up to the admin page with it.
+    it also holds the milkdrop preset each screen's page says is playing, which isn't part
+    of the log (the pages don't need it) but goes up to the admin page with it.
 
     thread-safe: presses arrive on one request thread while pages wait on others.
     """
@@ -61,7 +65,7 @@ class ControlLog:
         self._version = 0
         self._session_ms = now_ms()
         self._events: list[dict] = []
-        self._preset: Optional[str] = None
+        self._presets: dict[str, Optional[str]] = dict.fromkeys(PRESET_SCREENS)
         # bumps on log changes and preset reports alike: what the remote push waits on
         self._push_version = 0
 
@@ -83,14 +87,15 @@ class ControlLog:
             self._push_version += 1
             self._changed.notify_all()
 
-    def set_preset(self, name: Optional[str]) -> None:
-        """records the milkdrop preset playing (None when milkdrop closes) for the remote.
+    def set_preset(self, name: Optional[str], screen: str) -> None:
+        """records the milkdrop preset playing on a screen (None when milkdrop closes there).
 
         args:
             name: the preset's name, as the page reported it.
+            screen: one of PRESET_SCREENS.
         """
         with self._changed:
-            self._preset = name[:MAX_PRESET_NAME_CHARS] if name else None
+            self._presets[screen] = name[:MAX_PRESET_NAME_CHARS] if name else None
             self._push_version += 1
             self._changed.notify_all()
 
@@ -136,6 +141,7 @@ class ControlLog:
                 "session_ms": self._session_ms,
                 "version": self._version,
                 "events": list(self._events),
-                "preset": self._preset,
+                # one name for the remote: the bottom screen's, else the top's
+                "preset": self._presets["primary"] or self._presets["secondary"],
                 "push_version": self._push_version,
             }

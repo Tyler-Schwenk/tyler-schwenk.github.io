@@ -10,15 +10,16 @@ import BpmVisualizer from "./BpmVisualizer";
 import { useBpmStream, type BpmStream } from "./bpmAgent";
 import { useDisplayEnvironment } from "./displayEnvironment";
 import { BPM_VIEW_INFO, type BpmViewInfo } from "./displayConfig";
-import type { PresetControl } from "./kioskControl";
+import { bpmTopViewIndex, type BpmTopView, type PresetControl } from "./kioskControl";
 
-/** What every bpm view gets. Views without presets just ignore `presets`. */
+/** What every bpm view gets. Views without presets just ignore `presets` (and most ignore `side`). */
 export interface BpmViewProps {
   stream: BpmStream;
   presets: PresetControl;
+  side: "primary" | "secondary";
 }
 
-/** One of the bpm mode's views on the primary screen: its info plus the component that draws it. */
+/** One of the bpm mode's views: its info plus the component that draws it. */
 export interface BpmView extends BpmViewInfo {
   component: ComponentType<BpmViewProps>;
 }
@@ -45,26 +46,33 @@ export const BPM_VIEWS: BpmView[] = BPM_VIEW_INFO.map((info) => ({
  * Display panel for bpm mode, shown only from its key (never in the main
  * rotation). Holding the agent's stream open is what keeps the mic recording,
  * so it records exactly while this is on screen. The primary screen shows the
- * current view, the other screen the tempo and the view's name. It's the same
- * component whichever view is up, so switching views keeps the stream (and
- * the tracker's lock) going.
+ * current view; the other screen shows what `top` says: the same view, a view
+ * of its own, or the tempo and the bottom view's name. It's the same component
+ * whichever view is up, so switching views keeps the stream (and the
+ * tracker's lock) going.
  * @param props.side - Which screen this is.
- * @param props.viewIndex - Index into BPM_VIEWS.
+ * @param props.bottomView - Index into BPM_VIEWS of the view on the primary screen.
+ * @param props.top - What the secondary screen shows.
  * @param props.presets - Preset stepping, for a view with presets.
  */
 export default function BpmPanel({
   side,
-  viewIndex,
+  bottomView,
+  top,
   presets,
 }: {
   side: "primary" | "secondary";
-  viewIndex: number;
+  bottomView: number;
+  top: BpmTopView;
   presets: PresetControl;
 }) {
-  const view = BPM_VIEWS[viewIndex] ?? BPM_VIEWS[0];
-  // only the screen drawing the view needs the waveform
+  const bottom = BPM_VIEWS[bottomView] ?? BPM_VIEWS[0];
+  const shownIndex = side === "primary" ? bottomView : bpmTopViewIndex(top, bottomView);
+  // null: the tempo readout
+  const view = shownIndex === null ? null : (BPM_VIEWS[shownIndex] ?? BPM_VIEWS[0]);
+  // only a screen drawing a view that needs the waveform asks for it
   const { connectBpm } = useDisplayEnvironment();
-  const stream = useBpmStream(connectBpm, { waveform: side === "primary" && (view.needsWaveform ?? false) });
+  const stream = useBpmStream(connectBpm, { waveform: view?.needsWaveform ?? false });
 
   if (stream.error) {
     return (
@@ -73,9 +81,9 @@ export default function BpmPanel({
       </div>
     );
   }
-  if (side === "secondary") {
-    return <BpmReadout stream={stream} viewLabel={view.label} calibrating={view.calibration ?? false} />;
+  if (!view) {
+    return <BpmReadout stream={stream} viewLabel={bottom.label} calibrating={bottom.calibration ?? false} />;
   }
   const View = view.component;
-  return <View stream={stream} presets={presets} />;
+  return <View stream={stream} presets={presets} side={side} />;
 }
