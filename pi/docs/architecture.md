@@ -105,6 +105,7 @@ architecture.
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
 - Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos
+- Connection pool: 5 kept open, no cap on extras (`app/database.py`). A request waiting for a connection deadlocks the server, since the wait blocks whatever would return one; a capped pool froze it when the display kiosk's screens refreshed every gallery at once
 - Storage:
   - Photos: /mnt/ssd/public-gallery
   - Videos: /mnt/ssd/videos
