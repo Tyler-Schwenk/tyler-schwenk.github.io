@@ -489,6 +489,19 @@ MAX_KILN_TEMP_C = 1500
 MAX_KILN_FAULT_STATUS = 255
 
 
+def as_utc(value: Optional[datetime]) -> Optional[datetime]:
+    """
+    Marks a naive UTC time from the kiln tables as UTC, so responses say so.
+
+    Args:
+        value: A naive UTC datetime, or None.
+
+    Returns:
+        Optional[datetime]: The same moment with its timezone set, or None.
+    """
+    return None if value is None else value.replace(tzinfo=timezone.utc)
+
+
 class KilnReadingIn(BaseModel):
     """One reading from the kiln logger. Carries its age, since the logger has no real clock."""
     seq: int = Field(ge=0)
@@ -523,4 +536,64 @@ class KilnReadingRead(BaseModel):
     @classmethod
     def mark_as_utc(cls, value: datetime) -> datetime:
         """The table stores naive UTC, so this says so in the response."""
-        return value.replace(tzinfo=timezone.utc)
+        return as_utc(value)
+
+
+class KilnFiringRead(BaseModel):
+    """A firing's summary. ended_at is null while it's in progress."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    started_at: datetime
+    ended_at: Optional[datetime] = None
+    last_reading_at: datetime
+    peak_c: float
+    peak_at: datetime
+
+    @field_validator("started_at", "ended_at", "last_reading_at", "peak_at")
+    @classmethod
+    def mark_as_utc(cls, value: Optional[datetime]) -> Optional[datetime]:
+        """The table stores naive UTC, so this says so in the response."""
+        return as_utc(value)
+
+
+class KilnCurvePoint(BaseModel):
+    """A point on a firing's curve. thermocouple_c is null when the probe had a fault."""
+    recorded_at: datetime
+    thermocouple_c: Optional[float] = None
+
+    @field_validator("recorded_at")
+    @classmethod
+    def mark_as_utc(cls, value: datetime) -> datetime:
+        """The table stores naive UTC, so this says so in the response."""
+        return as_utc(value)
+
+
+class KilnFiringCurve(BaseModel):
+    """A firing and its curve. bucket_s is how much time each point averages over."""
+    firing: KilnFiringRead
+    bucket_s: int
+    points: list[KilnCurvePoint]
+
+
+class KilnStatus(BaseModel):
+    """
+    The kiln page's live readout.
+
+    Temperature and rates are null while the logger's offline or the probe has a fault.
+    The rates are degrees C per hour, negative when cooling, and null until there's data
+    from that far back.
+    """
+    online: bool
+    last_reading_at: Optional[datetime] = None
+    thermocouple_c: Optional[float] = None
+    fault_status: Optional[int] = None
+    rise_30m_c_per_h: Optional[float] = None
+    rise_60m_c_per_h: Optional[float] = None
+    firing: Optional[KilnFiringRead] = None
+
+    @field_validator("last_reading_at")
+    @classmethod
+    def mark_as_utc(cls, value: Optional[datetime]) -> Optional[datetime]:
+        """The table stores naive UTC, so this says so in the response."""
+        return as_utc(value)

@@ -3,7 +3,7 @@ Website Backend API - Main application entry point.
 
 Backend API providing forum (Public Square), photo gallery, and recipe box
 (The Kitchen) services, plus the relay that lets the admin page remote
-control the display kiosk, and storage for the kiln logger's readings.
+control the display kiosk, and the kiln logger's readings and firings.
 """
 
 from fastapi import FastAPI

@@ -427,3 +427,28 @@ class KilnReading(Base):
     thermocouple_c = Column(Float, nullable=True)
     cold_junction_c = Column(Float, nullable=False)
     fault_status = Column(Integer, nullable=False)
+
+
+class KilnFiring(Base):
+    """
+    KilnFiring model: one firing, as a time range plus a summary.
+
+    Detected automatically from readings (see app/kiln_firings.py). The curve itself comes
+    from the kiln_readings in this time range. All times are naive UTC.
+
+    Attributes:
+        id: Unique identifier
+        started_at: The first reading above the start temperature
+        ended_at: When it finished, null while in progress
+        last_reading_at: The newest reading with a temperature so far
+        peak_c: The hottest reading
+        peak_at: When that was
+    """
+    __tablename__ = "kiln_firings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    started_at = Column(DateTime, nullable=False, index=True)
+    ended_at = Column(DateTime, nullable=True, index=True)
+    last_reading_at = Column(DateTime, nullable=False)
+    peak_c = Column(Float, nullable=False)
+    peak_at = Column(DateTime, nullable=False)

@@ -448,3 +448,144 @@ body {
   .world-float { animation: none; }
   .world-lift { transition: none; }
 }
+
+/* kiln page (/kiln): quiet ceramics catalog look, see website/docs/KILN.md */
+.kiln-theme {
+  --kiln-surface: #ffffff;
+  --kiln-ink: #111111;
+  --kiln-ink-muted: #666666;
+  --kiln-hairline: #e6e6e6;
+  --kiln-control: #f1f1f1;
+  --kiln-tile-top: #a5a4aa;
+  --kiln-tile-bottom: #d9d8dc;
+  --kiln-clay: #a8502a;
+  --kiln-live: #2f7d4f;
+  --kiln-fault: #b3261e;
+  --kiln-gutter: clamp(16px, 2.6vw, 52px);
+  --kiln-radius: 12px;
+  min-height: 100vh;
+  background: var(--kiln-surface);
+  color: var(--kiln-ink);
+  font-family: var(--font-kiln-text), system-ui, sans-serif;
+}
+.kiln-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 26px var(--kiln-gutter);
+}
+.kiln-wordmark { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
+.kiln-nav { display: flex; gap: 26px; font-size: 17px; color: var(--kiln-ink-muted); }
+.kiln-nav a:hover, .kiln-nav-current { color: var(--kiln-ink); }
+.kiln-unit { justify-self: end; display: flex; gap: 4px; }
+.kiln-unit button {
+  min-width: 40px;
+  height: 36px;
+  border-radius: 6px;
+  font-size: 15px;
+  color: var(--kiln-ink-muted);
+  cursor: pointer;
+}
+.kiln-unit button[aria-pressed="true"] { background: var(--kiln-control); color: var(--kiln-ink); }
+.kiln-main { padding: 0 var(--kiln-gutter) 80px; }
+.kiln-title {
+  font-family: var(--font-kiln-display), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(64px, 7vw, 104px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-top: clamp(16px, 3vw, 44px);
+}
+.kiln-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 16px;
+  color: var(--kiln-ink-muted);
+}
+.kiln-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--kiln-ink-muted); flex: none; }
+.kiln-status-live { background: var(--kiln-live); }
+.kiln-status-fault { background: var(--kiln-fault); }
+.kiln-back { color: var(--kiln-ink); text-decoration: underline; text-underline-offset: 3px; }
+.kiln-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 28px clamp(32px, 5vw, 80px);
+  margin-top: clamp(36px, 5vw, 72px);
+}
+.kiln-stat-label { font-size: 16px; color: var(--kiln-ink-muted); }
+.kiln-stat-value {
+  margin-top: 4px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.kiln-stat-hero { flex-basis: 100%; }
+.kiln-stat-hero .kiln-stat-value {
+  font-family: var(--font-kiln-display), Georgia, serif;
+  font-size: clamp(72px, 9vw, 136px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+.kiln-section { margin-top: clamp(40px, 5vw, 72px); scroll-margin-top: 24px; }
+.kiln-section-title { display: flex; align-items: baseline; gap: 12px; font-size: 18px; font-weight: 500; }
+.kiln-section-note { font-size: 16px; font-weight: 400; color: var(--kiln-ink-muted); }
+.kiln-chart { position: relative; margin-top: 18px; }
+.kiln-chart svg { display: block; }
+.kiln-chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  border-radius: var(--kiln-radius);
+  background: var(--kiln-control);
+}
+.kiln-chart-empty, .kiln-empty { font-size: 16px; color: var(--kiln-ink-muted); text-align: center; padding: 0 16px; }
+.kiln-empty { text-align: left; padding: 0; margin-top: 14px; }
+.kiln-grid { stroke: var(--kiln-hairline); stroke-width: 1; }
+.kiln-axis { fill: var(--kiln-ink-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.kiln-line { fill: none; stroke: var(--kiln-clay); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.kiln-area { fill: var(--kiln-clay); opacity: 0.1; }
+.kiln-dot { fill: var(--kiln-clay); stroke: var(--kiln-surface); stroke-width: 2; }
+.kiln-crosshair { stroke: var(--kiln-ink-muted); stroke-width: 1; }
+.kiln-tooltip {
+  position: absolute;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--kiln-surface);
+  border: 1px solid var(--kiln-hairline);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.08);
+  pointer-events: none;
+}
+.kiln-tooltip-value { font-size: 17px; font-variant-numeric: tabular-nums; }
+.kiln-tooltip-time { margin-top: 2px; font-size: 13px; color: var(--kiln-ink-muted); }
+.kiln-table { margin-top: 14px; font-size: 15px; color: var(--kiln-ink-muted); }
+.kiln-table summary { cursor: pointer; width: fit-content; }
+.kiln-table table { margin-top: 12px; border-collapse: collapse; color: var(--kiln-ink); font-variant-numeric: tabular-nums; }
+.kiln-table th { text-align: left; font-weight: 400; color: var(--kiln-ink-muted); }
+.kiln-table th, .kiln-table td { padding: 6px 32px 6px 0; border-bottom: 1px solid var(--kiln-hairline); }
+.kiln-grid-header { display: flex; align-items: baseline; justify-content: space-between; }
+.kiln-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 44%), 1fr));
+  gap: 40px 20px;
+  margin-top: 24px;
+}
+.kiln-card-tile {
+  aspect-ratio: 1;
+  border-radius: var(--kiln-radius);
+  background: linear-gradient(to bottom, var(--kiln-tile-top), var(--kiln-tile-bottom));
+  overflow: hidden;
+}
+.kiln-card-tile svg { display: block; width: 100%; height: 100%; }
+.kiln-card-line { fill: none; stroke: var(--kiln-clay); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.kiln-card-text { padding: 18px 16px 0; font-size: 17px; line-height: 1.55; }
+.kiln-card:hover .kiln-card-text { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 640px) {
+  .kiln-header { grid-template-columns: 1fr auto; }
+  .kiln-nav { grid-row: 2; grid-column: 1 / -1; gap: 20px; font-size: 16px; }
+  .kiln-card-text { padding: 12px 4px 0; font-size: 15px; }
+}

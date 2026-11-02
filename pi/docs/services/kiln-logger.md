@@ -8,8 +8,8 @@ Plug it in and it starts logging by itself.
 Type K probe -> MAX31856 amp -> castpi (kiln-logger.service) -> Wi-Fi -> fart-pi backend (SQLite)
 ```
 
-The reads are for a future kiln console on the website (live temperature, a graph over
-time, rate of climb). That page doesn't exist yet.
+The readings end up on the public kiln page, `tyler-schwenk.com/kiln` (see
+[`website/docs/KILN.md`](../../../website/docs/KILN.md)).
 
 ## Hardware
 
@@ -67,10 +67,29 @@ pulling the plug can't corrupt it.
 
 ## Data
 
-Readings go in the `kiln_readings` table in the backend's SQLite database, one row per
-reading, 17,280 rows per day of logging. See
-[the API docs](../api/website-backend-api.md#kiln) for the endpoints. Storing needs the
-`KILN_TOKEN` shared secret, and reading needs an admin login.
+Everything's in the backend's SQLite database, and nothing gets deleted:
+
+- **`kiln_readings`**: every raw reading, one row each, 17,280 rows per day of logging. This is the
+  permanent record. Graphs are drawn from it, so there are no saved images, and later analysis can
+  use the full data
+- **`kiln_firings`**: one row per firing, a time range plus its peak
+
+### Firing detection
+
+`app/kiln_firings.py` works out firings as readings arrive, so nothing needs starting or stopping:
+
+- **Starts** at the first reading at or above 65 C. Hot readings from the 12 hours before that count too
+- **Ends** at the first reading below 50 C. The gap between the two means hovering around one
+  temperature can't flip it on and off
+- **Also ends** when the next reading is more than 12 hours later, at the last reading before the
+  silence. That way, a logger left unplugged during cooldown still closes its firing
+- Faults don't start or end anything, and neither does the logger rebooting
+
+A firing's still in progress until one of those happens, so one that's cooling shows as in progress
+until it's below 50 C.
+
+Storing readings needs the `KILN_TOKEN` shared secret, and raw readings need an admin login. Status
+and firings are public. See [the API docs](../api/website-backend-api.md#kiln).
 
 ## Setup
 

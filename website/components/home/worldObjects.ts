@@ -63,6 +63,7 @@ export const LUCKY_ROUTES = [
   "/sd-workspaces",
   "/projects/ribbit-radar",
   "/solar",
+  "/kiln",
   "/console",
   "/mallard",
   "/projects/trade-routes",
@@ -120,6 +121,10 @@ export const WORLD_OBJECTS: WorldObject[] = [
     // the sprite is the house roof, so it's placed from the roof footprint the generator measured
     id: "solar", label: "SOLAR SETUP", href: "/solar", iconSrc: "/images/8bit/solar.png", size: 1, noShadow: true,
     desktop: worldMeta.layouts.desktop.roof, mobile: worldMeta.layouts.mobile.roof,
+  },
+  {
+    id: "kiln", label: "THE KILN", href: "/kiln", iconSrc: "/images/8bit/kiln.png", size: 1,
+    desktop: { x: 372, y: 342, size: 0.85 }, mobile: { x: 292, y: 548, size: 0.9 },
   },
   {
     id: "console", label: "THE CONSOLE", href: "/console", iconSrc: "/images/8bit/console.png", size: 0.8,

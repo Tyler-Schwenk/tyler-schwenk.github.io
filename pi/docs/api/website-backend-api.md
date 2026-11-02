@@ -959,7 +959,8 @@ Kiosk only. The surfcam agent sends its whole key log whenever it changes, and e
 ## Kiln
 
 Temperature readings from the kiln logger on castpi (see
-[`pi/docs/services/kiln-logger.md`](../services/kiln-logger.md)).
+[`pi/docs/services/kiln-logger.md`](../services/kiln-logger.md)), and what the public kiln page
+reads (see [`website/docs/KILN.md`](../../../website/docs/KILN.md)).
 
 ### POST `/kiln/readings`
 
@@ -991,18 +992,56 @@ wrong, 503 if `KILN_TOKEN` isn't set.
 
 **Response:** `{ "stored": 1, "duplicates": 0 }`
 
-### GET `/kiln/latest`
+### GET `/kiln/status`
 
-The newest reading. **Auth:** admin JWT. 404 if nothing's been logged yet.
+The live readout. **Auth:** none. Rate limited per IP.
 
 ```json
-{ "recorded_at": "2026-11-02T16:16:16Z", "thermocouple_c": 190.5, "cold_junction_c": 20.1, "fault_status": 0 }
+{
+  "online": true,
+  "last_reading_at": "2026-11-02T16:16:16Z",
+  "thermocouple_c": 190.5,
+  "fault_status": 0,
+  "rise_30m_c_per_h": 98.4,
+  "rise_60m_c_per_h": 101.2,
+  "firing": { "id": 1, "started_at": "...", "ended_at": null, "last_reading_at": "...", "peak_c": 190.5, "peak_at": "..." }
+}
 ```
+
+- `online`: there's been a reading in the last 60 s
+- `thermocouple_c` and the rates: null while offline or while the probe has a fault
+- `rise_*_c_per_h`: degrees C per hour over that window, negative when cooling, null until there's
+  data from that far back
+- `firing`: the firing in progress, or null
+
+### GET `/kiln/firings`
+
+Firing summaries, newest first, including one in progress. **Auth:** none. Rate limited per IP.
+
+**Query parameters:** `limit` (optional), 1 to 200, default 24.
+
+### GET `/kiln/firings/{id}/curve`
+
+One firing and its temperature curve, oldest first. **Auth:** none. Rate limited per IP. 404 if
+there's no firing with that id.
+
+**Query parameters:** `max_points` (optional), 10 to 3000, default 1500. Readings get averaged to fit.
+
+```json
+{
+  "firing": { "id": 1, "started_at": "...", "ended_at": "...", "last_reading_at": "...", "peak_c": 1285.2, "peak_at": "..." },
+  "bucket_s": 60,
+  "points": [{ "recorded_at": "2026-11-02T16:16:16Z", "thermocouple_c": 190.5 }]
+}
+```
+
+`bucket_s` is how much time each point covers, so a bigger jump between points is a hole in the
+data. A point's temperature is null when every reading in it had a fault.
 
 ### GET `/kiln/readings`
 
-The newest readings as a list, oldest first, in the same format as `/kiln/latest`.
-**Auth:** admin JWT.
+The newest raw readings as a list, oldest first, each with `recorded_at`, `thermocouple_c`,
+`cold_junction_c` and `fault_status`. **Auth:** admin JWT.
 
 **Query parameters:**
 
