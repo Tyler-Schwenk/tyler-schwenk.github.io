@@ -18,6 +18,9 @@ const TOOLTIP_OFFSET_PX = 14;
 const END_DOT_RADIUS_PX = 4;
 /** a jump past this many buckets between points is a hole in the data, not a slope. */
 const GAP_BUCKETS = 3;
+/** the shortest jump that counts as a hole. on a short firing a bucket is shorter than the
+ * logger's 5 s between readings, so going by buckets alone would break the line at every point. */
+const MIN_GAP_MS = 30_000;
 /** how many rows the table view shows, so a long firing stays readable. */
 const TABLE_ROWS = 24;
 const NICE_STEP_MULTIPLES = [1, 2, 2.5, 5, 10];
@@ -104,7 +107,7 @@ function formatTick(tickMs: number, stepMs: number): string {
  * @returns {ChartPoint[][]} the runs to draw as separate lines.
  */
 function splitIntoRuns(points: ChartPoint[], bucketS: number): ChartPoint[][] {
-  const maxJumpMs = bucketS * GAP_BUCKETS * 1000;
+  const maxJumpMs = Math.max(bucketS * GAP_BUCKETS * 1000, MIN_GAP_MS);
   const runs: ChartPoint[][] = [];
   let run: ChartPoint[] = [];
   for (const point of points) {
