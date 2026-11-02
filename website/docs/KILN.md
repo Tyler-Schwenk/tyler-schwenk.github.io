@@ -34,9 +34,8 @@ they're live, so an old number never looks current.
 
 ## Data
 
-All temperatures arrive in Celsius and get converted for display. The °F/°C choice is saved in
-`localStorage`, defaulting to °F. The rates are differences, so converting them skips the 32
-degree offset.
+All temperatures arrive in Celsius and the page shows them in Fahrenheit. The rates are
+differences, so converting them skips the 32 degree offset.
 
 | What | How often | Endpoint |
 |---|---|---|

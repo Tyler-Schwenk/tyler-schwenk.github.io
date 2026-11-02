@@ -4,6 +4,10 @@ Kiln firings -- works out where firings start and end, and the numbers the kiln 
 Firings are detected from the temperature as readings arrive, so nobody has to press
 anything. A firing is just a time range plus a summary (the KilnFiring table). Its curve
 always comes from the raw readings, which are kept forever.
+
+A firing takes about a day to heat and up to a day to cool, the probe usually gets pulled
+around 400 F, and the next firing is at least a few days later. So time is the strongest
+signal: hot readings within FIRING_WINDOW_S of each other are always the same firing.
 """
 
 import math
@@ -15,13 +19,29 @@ from sqlalchemy.orm import Session
 
 from app.models import KilnFiring, KilnReading
 
-# a firing starts above the first and ends below the second. they're apart so a kiln
-# hovering near one temperature can't flip between firing and not firing
-FIRING_START_C = 65
-FIRING_END_C = 50
-# no readings for this long means the old firing is over, whatever the last temp was. a
-# logger outage mid-firing is hours at most, and a firing's cooldown has readings throughout
-FIRING_MAX_GAP_S = 12 * 60 * 60
+
+def fahrenheit_to_celsius(temp_f: float) -> float:
+    """
+    Converts to the Celsius the kiln tables store.
+
+    Args:
+        temp_f: Temperature in Fahrenheit.
+
+    Returns:
+        float: The temperature in Celsius.
+    """
+    return (temp_f - 32) / 1.8
+
+
+# a firing starts above the first. a probe still in the kiln at the end drops below the
+# second. they're apart so a kiln hovering near one temperature can't flip back and forth
+FIRING_START_C = fahrenheit_to_celsius(150)
+FIRING_END_C = fahrenheit_to_celsius(120)
+# hot readings this close together are one firing, even if it's been marked finished
+FIRING_WINDOW_S = 48 * 60 * 60
+# this long without a temperature means the probe's been pulled, so the firing finishes at
+# its last real reading. if it was only a long outage, the next hot reading picks it back up
+FIRING_IDLE_S = 6 * 60 * 60
 
 # past this long without a reading, the logger counts as offline
 LOGGER_ONLINE_WINDOW_S = 60
@@ -57,10 +77,10 @@ def _open_firing(db: Session, recorded_at: datetime) -> KilnFiring:
     Returns:
         KilnFiring: The new firing, with its summary filled in.
     """
-    lookback_start = recorded_at - timedelta(seconds=FIRING_MAX_GAP_S)
-    last_end = db.query(func.max(KilnFiring.ended_at)).scalar()
-    if last_end is not None:
-        lookback_start = max(lookback_start, last_end)
+    lookback_start = recorded_at - timedelta(seconds=FIRING_WINDOW_S)
+    last_reading = db.query(func.max(KilnFiring.last_reading_at)).scalar()
+    if last_reading is not None:
+        lookback_start = max(lookback_start, last_reading)
     hot_readings = db.query(KilnReading).filter(
         KilnReading.thermocouple_c >= FIRING_START_C,
         KilnReading.recorded_at > lookback_start,
@@ -78,6 +98,23 @@ def _open_firing(db: Session, recorded_at: datetime) -> KilnFiring:
     return firing
 
 
+def _apply_reading(firing: KilnFiring, recorded_at: datetime, temp_c: float) -> None:
+    """
+    Adds a reading to a firing that's in progress, finishing it if the kiln's cold.
+
+    Args:
+        firing: The firing.
+        recorded_at: When the reading was taken.
+        temp_c: The temperature.
+    """
+    firing.last_reading_at = recorded_at
+    if temp_c > firing.peak_c:
+        firing.peak_c = temp_c
+        firing.peak_at = recorded_at
+    if temp_c < FIRING_END_C:
+        firing.ended_at = recorded_at
+
+
 def track_firings(db: Session, readings: list[tuple[datetime, Optional[float]]]) -> None:
     """
     Updates firings for newly stored readings. The caller commits.
@@ -87,28 +124,39 @@ def track_firings(db: Session, readings: list[tuple[datetime, Optional[float]]])
         readings: (recorded_at, thermocouple_c) of each new reading. Already flushed to
             the database, since starting a firing looks at them.
     """
-    firing = db.query(KilnFiring).filter(KilnFiring.ended_at.is_(None)).first()
+    firing = db.query(KilnFiring).order_by(KilnFiring.started_at.desc()).first()
     for recorded_at, temp_c in sorted(readings, key=lambda reading: reading[0]):
         # faults mean no temperature, and don't say anything about the firing either way
         if temp_c is None:
             continue
-        if firing is not None and recorded_at - firing.last_reading_at > timedelta(seconds=FIRING_MAX_GAP_S):
+        in_window = firing is not None and recorded_at - firing.last_reading_at <= timedelta(seconds=FIRING_WINDOW_S)
+        if firing is not None and firing.ended_at is None and not in_window:
             firing.ended_at = firing.last_reading_at
+        if temp_c >= FIRING_START_C and in_window and firing.ended_at is not None:
+            firing.ended_at = None
+        if in_window and firing.ended_at is None:
+            _apply_reading(firing, recorded_at, temp_c)
+        elif temp_c >= FIRING_START_C and not in_window:
             db.flush()
-            firing = None
-        if firing is None:
-            if temp_c >= FIRING_START_C:
-                firing = _open_firing(db, recorded_at)
-                db.flush()
-            continue
-        firing.last_reading_at = recorded_at
-        if temp_c > firing.peak_c:
-            firing.peak_c = temp_c
-            firing.peak_at = recorded_at
-        if temp_c < FIRING_END_C:
-            firing.ended_at = recorded_at
+            firing = _open_firing(db, recorded_at)
             db.flush()
-            firing = None
+
+
+def close_idle_firings(db: Session) -> None:
+    """
+    Finishes a firing that hasn't had a temperature in a while, and commits.
+
+    Pulling the probe leaves no cold reading to end the firing on, and the logger may not
+    be sending anything at all, so this runs when the firing is next looked at too.
+
+    Args:
+        db: Database session.
+    """
+    idle_since = utc_now_naive() - timedelta(seconds=FIRING_IDLE_S)
+    firing = db.query(KilnFiring).filter(KilnFiring.ended_at.is_(None), KilnFiring.last_reading_at < idle_since).first()
+    if firing is not None:
+        firing.ended_at = firing.last_reading_at
+        db.commit()
 
 
 def _rise_rate_c_per_h(db: Session, latest: KilnReading, window_s: int) -> Optional[float]:
@@ -148,6 +196,7 @@ def get_status(db: Session) -> dict:
         dict: Matches schemas.KilnStatus. Temperature and rates are None while the logger
             is offline or the probe has a fault, rather than showing old numbers as current.
     """
+    close_idle_firings(db)
     latest = db.query(KilnReading).order_by(KilnReading.recorded_at.desc()).first()
     firing = db.query(KilnFiring).filter(KilnFiring.ended_at.is_(None)).first()
     if latest is None:

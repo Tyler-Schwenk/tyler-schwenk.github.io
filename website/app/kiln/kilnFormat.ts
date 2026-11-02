@@ -1,6 +1,3 @@
-/** which unit the page shows. everything's stored in celsius. */
-export type TempUnit = "F" | "C";
-
 const FAHRENHEIT_PER_CELSIUS = 1.8;
 const FAHRENHEIT_OFFSET = 32;
 const MS_PER_MINUTE = 60_000;
@@ -10,36 +7,32 @@ const MINUTES_PER_DAY = 1440;
 export const NO_VALUE = "--";
 
 /**
- * converts a temperature to the unit being shown.
+ * converts a temperature for display. the backend stores celsius, the page shows fahrenheit.
  *
  * @param {number} tempC - temperature in celsius.
- * @param {TempUnit} unit - the unit to convert to.
- * @returns {number} the temperature in that unit.
+ * @returns {number} the temperature in fahrenheit.
  */
-export const toUnit = (tempC: number, unit: TempUnit): number =>
-  unit === "F" ? tempC * FAHRENHEIT_PER_CELSIUS + FAHRENHEIT_OFFSET : tempC;
+export const toFahrenheit = (tempC: number): number => tempC * FAHRENHEIT_PER_CELSIUS + FAHRENHEIT_OFFSET;
 
 /**
  * formats a temperature, like "2,345 °F".
  *
  * @param {number | null} tempC - temperature in celsius, or null for no value.
- * @param {TempUnit} unit - the unit to show.
  * @returns {string} the formatted temperature.
  */
-export const formatTemp = (tempC: number | null, unit: TempUnit): string =>
-  tempC === null ? NO_VALUE : `${Math.round(toUnit(tempC, unit)).toLocaleString()} °${unit}`;
+export const formatTemp = (tempC: number | null): string =>
+  tempC === null ? NO_VALUE : `${Math.round(toFahrenheit(tempC)).toLocaleString()} °F`;
 
 /**
  * formats a rate of rise, like "+212 °F/hr". rates are differences, so no fahrenheit offset.
  *
  * @param {number | null} rateC - degrees c per hour, or null for no value.
- * @param {TempUnit} unit - the unit to show.
  * @returns {string} the formatted rate, signed.
  */
-export const formatRate = (rateC: number | null, unit: TempUnit): string => {
+export const formatRate = (rateC: number | null): string => {
   if (rateC === null) return NO_VALUE;
-  const rate = Math.round(unit === "F" ? rateC * FAHRENHEIT_PER_CELSIUS : rateC);
-  return `${rate > 0 ? "+" : ""}${rate.toLocaleString()} °${unit}/hr`;
+  const rate = Math.round(rateC * FAHRENHEIT_PER_CELSIUS);
+  return `${rate > 0 ? "+" : ""}${rate.toLocaleString()} °F/hr`;
 };
 
 /**

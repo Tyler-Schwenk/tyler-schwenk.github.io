@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KilnCurvePoint } from "@/app/kiln/kilnApi";
-import { formatDateTime, formatTemp, toUnit, type TempUnit } from "@/app/kiln/kilnFormat";
+import { formatDateTime, formatTemp, toFahrenheit } from "@/app/kiln/kilnFormat";
 
 const HEIGHT_PX = 460;
 const HEIGHT_SMALL_PX = 300;
@@ -126,18 +126,9 @@ function splitIntoRuns(points: ChartPoint[], bucketS: number): ChartPoint[][] {
  * @param {object} props - component props.
  * @param {KilnCurvePoint[]} props.points - the curve, oldest first.
  * @param {number} props.bucketS - how much time each point covers.
- * @param {TempUnit} props.unit - the unit to show.
  * @returns {JSX.Element} the chart.
  */
-export default function TemperatureChart({
-  points,
-  bucketS,
-  unit,
-}: {
-  points: KilnCurvePoint[];
-  bucketS: number;
-  unit: TempUnit;
-}) {
+export default function TemperatureChart({ points, bucketS }: { points: KilnCurvePoint[]; bucketS: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [widthPx, setWidthPx] = useState(0);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -155,9 +146,9 @@ export default function TemperatureChart({
       points.map((point) => ({
         timeMs: new Date(point.recorded_at).getTime(),
         tempC: point.thermocouple_c,
-        value: point.thermocouple_c === null ? null : toUnit(point.thermocouple_c, unit),
+        value: point.thermocouple_c === null ? null : toFahrenheit(point.thermocouple_c),
       })),
-    [points, unit],
+    [points],
   );
 
   const known = chartPoints.filter((point) => point.value !== null);
@@ -211,7 +202,7 @@ export default function TemperatureChart({
             width={widthPx}
             height={heightPx}
             role="img"
-            aria-label={`Kiln temperature over time, ending at ${formatTemp(lastKnown.tempC, unit)}. The same data is in the table below.`}
+            aria-label={`Kiln temperature over time, ending at ${formatTemp(lastKnown.tempC)}. The same data is in the table below.`}
             onPointerMove={handlePointerMove}
             onPointerLeave={() => setHoverIndex(null)}
             style={{ touchAction: "pan-y" }}
@@ -261,7 +252,7 @@ export default function TemperatureChart({
               width: TOOLTIP_WIDTH_PX,
             }}
           >
-            <div className="kiln-tooltip-value">{hovered.tempC === null ? "Probe fault" : formatTemp(hovered.tempC, unit)}</div>
+            <div className="kiln-tooltip-value">{hovered.tempC === null ? "Probe fault" : formatTemp(hovered.tempC)}</div>
             <div className="kiln-tooltip-time">{formatDateTime(hovered.timeMs)}</div>
           </div>
         )}
@@ -283,7 +274,7 @@ export default function TemperatureChart({
                 .map((point) => (
                   <tr key={point.timeMs}>
                     <td>{formatDateTime(point.timeMs)}</td>
-                    <td>{formatTemp(point.tempC, unit)}</td>
+                    <td>{formatTemp(point.tempC)}</td>
                   </tr>
                 ))}
             </tbody>

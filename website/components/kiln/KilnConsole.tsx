@@ -19,7 +19,6 @@ import {
   formatRate,
   formatTemp,
   NO_VALUE,
-  type TempUnit,
 } from "@/app/kiln/kilnFormat";
 import FiringCard from "./FiringCard";
 import TemperatureChart from "./TemperatureChart";
@@ -28,7 +27,6 @@ import TemperatureChart from "./TemperatureChart";
 const STATUS_POLL_MS = 10_000;
 const CURVE_POLL_MS = 30_000;
 const FIRINGS_POLL_MS = 60_000;
-const UNIT_STORAGE_KEY = "kiln-unit";
 /** the fault register's bit for no thermocouple connected. */
 const FAULT_OPEN_CIRCUIT = 0x01;
 
@@ -120,36 +118,12 @@ export default function KilnConsole() {
   const firingParam = useSearchParams().get("firing");
   const selectedId = firingParam && /^\d+$/.test(firingParam) ? Number(firingParam) : null;
 
-  const [unit, setUnit] = useState<TempUnit>("F");
   const [status, setStatus] = useState<KilnStatus | null>(null);
   const [unreachable, setUnreachable] = useState(false);
   const [firings, setFirings] = useState<KilnFiring[]>([]);
   const [curve, setCurve] = useState<KilnFiringCurve | null>(null);
   const [curveMissing, setCurveMissing] = useState(false);
   const [nowMs, setNowMs] = useState(0);
-
-  // read after mount so the static html doesn't depend on the viewer's storage
-  useEffect(() => {
-    try {
-      if (window.localStorage.getItem(UNIT_STORAGE_KEY) === "C") setUnit("C");
-    } catch (error) {
-      console.warn("couldn't read the saved temperature unit:", error);
-    }
-  }, []);
-
-  /**
-   * switches unit and remembers it for next time.
-   *
-   * @param {TempUnit} next - the unit to show.
-   */
-  const chooseUnit = (next: TempUnit) => {
-    setUnit(next);
-    try {
-      window.localStorage.setItem(UNIT_STORAGE_KEY, next);
-    } catch (error) {
-      console.warn("couldn't save the temperature unit:", error);
-    }
-  };
 
   usePolling(
     () => {
@@ -222,13 +196,6 @@ export default function KilnConsole() {
           </Link>
           <a href="#past-firings">Past firings</a>
         </nav>
-        <div className="kiln-unit" role="group" aria-label="Temperature unit">
-          {(["F", "C"] as const).map((option) => (
-            <button key={option} type="button" onClick={() => chooseUnit(option)} aria-pressed={unit === option}>
-              °{option}
-            </button>
-          ))}
-        </div>
       </header>
 
       <main className="kiln-main">
@@ -239,12 +206,12 @@ export default function KilnConsole() {
             <div className="kiln-stats">
               <div className="kiln-stat kiln-stat-hero">
                 <div className="kiln-stat-label">Current temperature</div>
-                <div className="kiln-stat-value">{formatTemp(status?.thermocouple_c ?? null, unit)}</div>
+                <div className="kiln-stat-value">{formatTemp(status?.thermocouple_c ?? null)}</div>
               </div>
-              <Stat label="Rise, last 30 min" value={formatRate(status?.rise_30m_c_per_h ?? null, unit)} />
-              <Stat label="Rise, last hour" value={formatRate(status?.rise_60m_c_per_h ?? null, unit)} />
+              <Stat label="Rise, last 30 min" value={formatRate(status?.rise_30m_c_per_h ?? null)} />
+              <Stat label="Rise, last hour" value={formatRate(status?.rise_60m_c_per_h ?? null)} />
               <Stat label="Firing time" value={elapsedMs === null ? NO_VALUE : formatDuration(elapsedMs)} />
-              <Stat label="Peak" value={formatTemp(status?.firing?.peak_c ?? null, unit)} />
+              <Stat label="Peak" value={formatTemp(status?.firing?.peak_c ?? null)} />
             </div>
           </>
         ) : (
@@ -257,7 +224,7 @@ export default function KilnConsole() {
             </p>
             {curveMissing && !shownCurve && <p className="kiln-status">Couldn&apos;t find that firing.</p>}
             <div className="kiln-stats">
-              <Stat label="Peak" value={formatTemp(shownFiring?.peak_c ?? null, unit)} />
+              <Stat label="Peak" value={formatTemp(shownFiring?.peak_c ?? null)} />
               <Stat label="Firing time" value={elapsedMs === null ? NO_VALUE : formatDuration(elapsedMs)} />
               <Stat label="Started" value={shownFiring ? formatDateTime(shownFiring.started_at) : NO_VALUE} />
               <Stat
@@ -271,10 +238,10 @@ export default function KilnConsole() {
         <section className="kiln-section" aria-label="Temperature over time">
           <h2 className="kiln-section-title">
             {isLiveView ? "This firing" : "Temperature over time"}
-            <span className="kiln-section-note">°{unit}</span>
+            <span className="kiln-section-note">°F</span>
           </h2>
           {shownCurve ? (
-            <TemperatureChart points={shownCurve.points} bucketS={shownCurve.bucket_s} unit={unit} />
+            <TemperatureChart points={shownCurve.points} bucketS={shownCurve.bucket_s} />
           ) : (
             <div className="kiln-chart kiln-chart-placeholder">
               <p className="kiln-chart-empty">
@@ -298,7 +265,7 @@ export default function KilnConsole() {
           ) : (
             <div className="kiln-cards">
               {pastFirings.map((firing) => (
-                <FiringCard key={firing.id} firing={firing} unit={unit} />
+                <FiringCard key={firing.id} firing={firing} />
               ))}
             </div>
           )}

@@ -76,17 +76,20 @@ Everything's in the backend's SQLite database, and nothing gets deleted:
 
 ### Firing detection
 
-`app/kiln_firings.py` works out firings as readings arrive, so nothing needs starting or stopping:
+`app/kiln_firings.py` works out firings as readings arrive, so nothing needs starting or stopping.
+A firing takes about a day to heat and up to a day to cool, the probe usually gets pulled around
+400 F, and the next firing is at least a few days later, so time is the main signal:
 
-- **Starts** at the first reading at or above 65 C. Hot readings from the 12 hours before that count too
-- **Ends** at the first reading below 50 C. The gap between the two means hovering around one
-  temperature can't flip it on and off
-- **Also ends** when the next reading is more than 12 hours later, at the last reading before the
-  silence. That way, a logger left unplugged during cooldown still closes its firing
+- **Starts** at the first reading at or above 150 F. Hot readings from the 48 hours before that count too
+- **Same firing** for any reading within 48 hours of its last one. A hot reading (150 F or more) in
+  that window reopens a firing marked finished, so a re-plugged probe or a long outage doesn't split it
+- **Finishes after 6 hours with no temperature**, at its last real reading. That covers the normal
+  ending, the probe getting pulled during cooldown, and needs no cold reading
+- **Also finishes** at the first reading below 120 F, if the probe stays in all the way down
+- **New firing** needs a reading at or above 150 F, more than 48 hours after the last firing's last reading
 - Faults don't start or end anything, and neither does the logger rebooting
 
-A firing's still in progress until one of those happens, so one that's cooling shows as in progress
-until it's below 50 C.
+So after the probe's pulled, the page shows that firing as in progress for up to 6 more hours.
 
 Storing readings needs the `KILN_TOKEN` shared secret, and raw readings need an admin login. Status
 and firings are public. See [the API docs](../api/website-backend-api.md#kiln).

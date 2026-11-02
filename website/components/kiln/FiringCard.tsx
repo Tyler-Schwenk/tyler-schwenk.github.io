@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchKilnCurve, type KilnFiring } from "@/app/kiln/kilnApi";
-import { formatDate, formatDuration, formatTemp, type TempUnit } from "@/app/kiln/kilnFormat";
+import { formatDate, formatDuration, formatTemp } from "@/app/kiln/kilnFormat";
 
 const THUMBNAIL_POINTS = 80;
 const THUMBNAIL_WIDTH = 100;
@@ -39,10 +39,9 @@ function thumbnailPath(temps: Array<number | null>): string {
  *
  * @param {object} props - component props.
  * @param {KilnFiring} props.firing - the firing.
- * @param {TempUnit} props.unit - the unit to show.
  * @returns {JSX.Element} the card.
  */
-export default function FiringCard({ firing, unit }: { firing: KilnFiring; unit: TempUnit }) {
+export default function FiringCard({ firing }: { firing: KilnFiring }) {
   const [path, setPath] = useState("");
 
   useEffect(() => {
@@ -71,7 +70,7 @@ export default function FiringCard({ firing, unit }: { firing: KilnFiring; unit:
       <div className="kiln-card-text">
         <div>{formatDate(firing.started_at)}</div>
         <div>
-          {formatTemp(firing.peak_c, unit)} peak, {formatDuration(durationMs)}
+          {formatTemp(firing.peak_c)} peak, {formatDuration(durationMs)}
         </div>
       </div>
     </Link>

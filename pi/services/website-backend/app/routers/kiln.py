@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.dependencies import require_admin
-from app.kiln_firings import get_curve, get_status, track_firings, utc_now_naive
+from app.kiln_firings import close_idle_firings, get_curve, get_status, track_firings, utc_now_naive
 from app.models import KilnFiring, KilnReading
 from app.rate_limit import limiter
 from app.schemas import (
@@ -162,6 +162,7 @@ def list_firings(
     Returns:
         list[KilnFiringRead]: Firing summaries.
     """
+    close_idle_firings(db)
     return db.query(KilnFiring).order_by(KilnFiring.started_at.desc()).limit(limit).all()
 
 
