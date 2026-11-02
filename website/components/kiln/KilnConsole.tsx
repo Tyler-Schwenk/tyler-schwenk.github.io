@@ -21,6 +21,7 @@ import {
   formatTemp,
   NO_VALUE,
 } from "@/app/kiln/kilnFormat";
+import Navigation from "@/components/Navigation";
 import FiringCard from "./FiringCard";
 import TemperatureChart from "./TemperatureChart";
 
@@ -219,11 +220,7 @@ export default function KilnConsole() {
 
   return (
     <div className="kiln-theme">
-      <header className="kiln-header">
-        <Link href="/kiln" className="kiln-wordmark">
-          The Kiln
-        </Link>
-      </header>
+      <Navigation />
 
       <main className="kiln-main">
         {isLiveView ? (

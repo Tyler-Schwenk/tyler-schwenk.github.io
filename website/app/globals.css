@@ -468,11 +468,8 @@ body {
   color: var(--kiln-ink);
   font-family: var(--font-kiln-text), system-ui, sans-serif;
 }
-.kiln-header {
-  padding: 26px var(--kiln-gutter);
-}
-.kiln-wordmark { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
-.kiln-main { padding: 0 var(--kiln-gutter) 80px; }
+/* leaves room for the frog home button, which floats over the top left corner */
+.kiln-main { padding: 72px var(--kiln-gutter) 80px; }
 .kiln-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
