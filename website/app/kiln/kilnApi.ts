@@ -17,7 +17,7 @@ export type KilnStatus = {
   last_reading_at: string | null;
   thermocouple_c: number | null;
   fault_status: number | null;
-  /** degrees c per hour, negative when cooling, null until there's data from that far back. */
+  /** degrees c per hour, negative when cooling, null with under a third of the window's data. */
   rise_30m_c_per_h: number | null;
   rise_60m_c_per_h: number | null;
   firing: KilnFiring | null;

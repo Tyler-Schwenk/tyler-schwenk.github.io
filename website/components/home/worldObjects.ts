@@ -39,6 +39,8 @@ export type WorldObject = {
   lucky?: boolean;
   /** sprite. without one it's an invisible hotspot over the painted backdrop (the cave). */
   iconSrc?: string;
+  /** sprite to show instead while the kiln's firing. */
+  firingIconSrc?: string;
   /** multiplier on the depth-based size, for things that are small/big in real life. */
   size: number;
   /** bobs in the air with no ground shadow. */
@@ -123,7 +125,8 @@ export const WORLD_OBJECTS: WorldObject[] = [
     desktop: worldMeta.layouts.desktop.roof, mobile: worldMeta.layouts.mobile.roof,
   },
   {
-    id: "kiln", label: "THE KILN", href: "/kiln", iconSrc: "/images/8bit/kiln.png", size: 1,
+    id: "kiln", label: "THE KILN", href: "/kiln", iconSrc: "/images/8bit/kiln-idle.png",
+    firingIconSrc: "/images/8bit/kiln-firing.png", size: 1,
     desktop: { x: 372, y: 342, size: 0.85 }, mobile: { x: 292, y: 548, size: 0.9 },
   },
   {
@@ -163,3 +166,13 @@ export const WORLD_OBJECTS: WorldObject[] = [
     desktop: { x: 614, y: 118, scale: 1 }, mobile: { x: 300, y: 168, scale: 1, size: 0.45 },
   },
 ];
+
+/**
+ * picks which sprite an object shows right now.
+ *
+ * @param {WorldObject} obj - the object.
+ * @param {boolean} kilnFiring - whether the kiln's firing.
+ * @returns {string | undefined} the sprite's url, undefined for an invisible hotspot.
+ */
+export const currentIconSrc = (obj: WorldObject, kilnFiring: boolean): string | undefined =>
+  kilnFiring && obj.firingIconSrc ? obj.firingIconSrc : obj.iconSrc;

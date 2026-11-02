@@ -4,8 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type CSSProperties } from "react";
+import { useKilnFiring } from "@/lib/useKilnFiring";
 import worldMeta from "./world.generated.json";
-import { WORLD_OBJECTS, pickLuckyRoute, type LayoutName, type WorldObject } from "./worldObjects";
+import { WORLD_OBJECTS, currentIconSrc, pickLuckyRoute, type LayoutName, type WorldObject } from "./worldObjects";
 
 /** how sprites scale with depth in each layout. */
 type DepthTuning = {
@@ -106,6 +107,7 @@ export default function HomeWorld() {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const lastPointerType = useRef("mouse");
+  const kilnFiring = useKilnFiring();
   const { desktop, mobile } = worldMeta.layouts;
 
   /**
@@ -158,6 +160,7 @@ export default function HomeWorld() {
         <WorldObjectLink
           key={obj.id}
           obj={obj}
+          kilnFiring={kilnFiring}
           selected={selectedId === obj.id}
           onPointerDown={(event) => {
             lastPointerType.current = event.pointerType;
@@ -179,6 +182,7 @@ export default function HomeWorld() {
  *
  * @param {object} props - component props.
  * @param {WorldObject} props.obj - what to draw and where it goes.
+ * @param {boolean} props.kilnFiring - whether the kiln's firing, which picks its sprite.
  * @param {boolean} props.selected - lit up from a first touch tap.
  * @param {Function} props.onPointerDown - records the pointer type for tap-to-select.
  * @param {Function} props.onKeyDown - marks keyboard use so enter goes straight through.
@@ -187,12 +191,14 @@ export default function HomeWorld() {
  */
 function WorldObjectLink({
   obj,
+  kilnFiring,
   selected,
   onPointerDown,
   onKeyDown,
   onClick,
 }: {
   obj: WorldObject;
+  kilnFiring: boolean;
   selected: boolean;
   onPointerDown: (event: React.PointerEvent) => void;
   onKeyDown: () => void;
@@ -208,7 +214,7 @@ function WorldObjectLink({
     onKeyDown,
     onClick,
   };
-  const body = <WorldObjectBody obj={obj} />;
+  const body = <WorldObjectBody obj={obj} iconSrc={currentIconSrc(obj, kilnFiring)} />;
 
   if (obj.lucky) {
     return (
@@ -236,23 +242,24 @@ function WorldObjectLink({
  *
  * @param {object} props - component props.
  * @param {WorldObject} props.obj - the object to draw.
+ * @param {string} [props.iconSrc] - the sprite to show. without one it's an invisible hotspot.
  * @returns {JSX.Element} shadow + sprite/hotspot + name tag.
  */
-function WorldObjectBody({ obj }: { obj: WorldObject }) {
+function WorldObjectBody({ obj, iconSrc }: { obj: WorldObject; iconSrc?: string }) {
   // pull the art down past its transparent padding so its feet land on the spot
-  const footPad = obj.iconSrc ? (FOOT_PADS[obj.iconSrc] ?? 0) : 0;
+  const footPad = iconSrc ? (FOOT_PADS[iconSrc] ?? 0) : 0;
 
   return (
     <>
-      {!obj.floating && !obj.noShadow && obj.iconSrc && (
+      {!obj.floating && !obj.noShadow && iconSrc && (
         <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3/4 aspect-[4/1] rounded-[50%] bg-black/25 pointer-events-none" />
       )}
 
       <span className="world-lift block">
         <span className={`block ${obj.floating ? "world-float" : ""}`}>
-          {obj.iconSrc ? (
+          {iconSrc ? (
             <Image
-              src={obj.iconSrc}
+              src={iconSrc}
               alt=""
               width={SPRITE_SOURCE_PX}
               height={SPRITE_SOURCE_PX}

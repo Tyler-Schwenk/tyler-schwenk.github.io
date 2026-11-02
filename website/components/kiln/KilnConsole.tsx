@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -29,6 +30,9 @@ const CURVE_POLL_MS = 30_000;
 const FIRINGS_POLL_MS = 60_000;
 /** the fault register's bit for no thermocouple connected. */
 const FAULT_OPEN_CIRCUIT = 0x01;
+/** the kiln art's real size. both images share it, so swapping them doesn't move the kiln. */
+const KILN_ART_WIDTH_PX = 672;
+const KILN_ART_HEIGHT_PX = 979;
 
 /**
  * runs something now and on an interval, skipping ticks while the tab's hidden.
@@ -200,9 +204,22 @@ export default function KilnConsole() {
 
       <main className="kiln-main">
         {isLiveView ? (
-          <>
-            <h1 className="kiln-title">Kiln</h1>
-            <StatusLine status={status} unreachable={unreachable} nowMs={nowMs} />
+          <div className="kiln-hero">
+            <div className="kiln-hero-head">
+              <h1 className="kiln-title">Kiln</h1>
+              <StatusLine status={status} unreachable={unreachable} nowMs={nowMs} />
+            </div>
+            {/* waits for the status, so a firing kiln doesn't flash idle first */}
+            <div className="kiln-art">
+              {status && (
+                <Image
+                  src={status.firing ? "/images/kiln/kiln-firing.png" : "/images/kiln/kiln-idle.png"}
+                  alt={status.firing ? "The kiln firing, with flames and smoke" : "The kiln, cold and idle"}
+                  width={KILN_ART_WIDTH_PX}
+                  height={KILN_ART_HEIGHT_PX}
+                />
+              )}
+            </div>
             <div className="kiln-stats">
               <div className="kiln-stat kiln-stat-hero">
                 <div className="kiln-stat-label">Current temperature</div>
@@ -213,7 +230,7 @@ export default function KilnConsole() {
               <Stat label="Firing time" value={elapsedMs === null ? NO_VALUE : formatDuration(elapsedMs)} />
               <Stat label="Peak" value={formatTemp(status?.firing?.peak_c ?? null)} />
             </div>
-          </>
+          </div>
         ) : (
           <>
             <h1 className="kiln-title">{shownFiring ? formatDate(shownFiring.started_at) : "Firing"}</h1>

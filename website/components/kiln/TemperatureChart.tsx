@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KilnCurvePoint } from "@/app/kiln/kilnApi";
-import { formatDateTime, formatTemp, toFahrenheit } from "@/app/kiln/kilnFormat";
+import { formatDateTime, formatRate, formatTemp, toFahrenheit } from "@/app/kiln/kilnFormat";
 
 const HEIGHT_PX = 460;
 const HEIGHT_SMALL_PX = 300;
@@ -24,6 +24,10 @@ const MIN_GAP_MS = 30_000;
 /** how many rows the table view shows, so a long firing stays readable. */
 const TABLE_ROWS = 24;
 const NICE_STEP_MULTIPLES = [1, 2, 2.5, 5, 10];
+/** how far either side of a point the hover box's rate looks. readings 5 s apart are mostly noise. */
+const RATE_HALF_WINDOW_MS = 10 * 60_000;
+/** less data than this, right after a gap or at the very start, is too little to call a rate. */
+const RATE_MIN_SPAN_MS = 2 * 60_000;
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -123,8 +127,27 @@ function splitIntoRuns(points: ChartPoint[], bucketS: number): ChartPoint[][] {
 }
 
 /**
+ * works out how fast the temperature was changing around one point. it stays inside the point's
+ * unbroken run, so a rate never reaches across a gap in the data.
+ *
+ * @param {ChartPoint[][]} runs - the curve's connected runs.
+ * @param {ChartPoint} point - the point.
+ * @returns {number | null} degrees c per hour, or null if there's too little data around it.
+ */
+function rateAround(runs: ChartPoint[][], point: ChartPoint): number | null {
+  const run = runs.find((candidate) => candidate.includes(point));
+  if (!run) return null;
+  const nearby = run.filter((other) => Math.abs(other.timeMs - point.timeMs) <= RATE_HALF_WINDOW_MS);
+  const first = nearby[0];
+  const last = nearby[nearby.length - 1];
+  const spanMs = last.timeMs - first.timeMs;
+  if (spanMs < RATE_MIN_SPAN_MS) return null;
+  return (((last.tempC as number) - (first.tempC as number)) * HOUR_MS) / spanMs;
+}
+
+/**
  * a firing's temperature over time, as a line filling its container's width. hovering shows
- * a crosshair and the reading at that time, and a table view sits underneath.
+ * a crosshair with the reading and rate of rise at that time, and a table view sits underneath.
  *
  * @param {object} props - component props.
  * @param {KilnCurvePoint[]} props.points - the curve, oldest first.
@@ -256,6 +279,7 @@ export default function TemperatureChart({ points, bucketS }: { points: KilnCurv
             }}
           >
             <div className="kiln-tooltip-value">{hovered.tempC === null ? "Probe fault" : formatTemp(hovered.tempC)}</div>
+            {hovered.tempC !== null && <div className="kiln-tooltip-rate">{formatRate(rateAround(runs, hovered))}</div>}
             <div className="kiln-tooltip-time">{formatDateTime(hovered.timeMs)}</div>
           </div>
         )}

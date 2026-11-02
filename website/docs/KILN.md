@@ -1,7 +1,9 @@
 # Kiln Page
 
 `/kiln` is the public console for the kiln: current temperature, rate of rise, the current
-firing's curve, and every past firing. The home page links to it with the kiln sprite.
+firing's curve, and every past firing. The home page links to it with the kiln sprite. The
+sprite and the art on this page both show flames and smoke while a firing's in progress, and a cold
+kiln otherwise.
 
 The readings come from a thermocouple logger on castpi, through the website backend on
 fart-pi. See [`pi/docs/services/kiln-logger.md`](../../pi/docs/services/kiln-logger.md) for that
@@ -18,7 +20,9 @@ side, and [the API docs](../../pi/docs/api/website-backend-api.md#kiln) for the 
 | `components/kiln/TemperatureChart.tsx` | Full-width SVG line chart, with crosshair, tooltip and table view |
 | `components/kiln/FiringCard.tsx` | A past firing's tile in the grid |
 | `app/globals.css` (`.kiln-*` rules) | The page's theme tokens and styles |
-| `public/images/8bit/kiln.png` | The home page sprite |
+| `lib/useKilnFiring.ts` | Checks once whether a firing's in progress, for the home page sprite |
+| `public/images/kiln/kiln-idle.png`, `kiln-firing.png` | The kiln art on this page |
+| `public/images/8bit/kiln-idle.png`, `kiln-firing.png` | The same art shrunk for the home page |
 
 ## Views
 
@@ -50,10 +54,19 @@ draw as a short one.
 
 ## Chart
 
-Hand-written SVG, sized to its container with a `ResizeObserver`, with no chart library. It has one
+Hand-written SVG, sized to its container with a `ResizeObserver`, with no chart library. Hovering
+shows the temperature, the time, and the rate of rise there, measured 10 minutes either side of the
+point without crossing a gap, and shown as `--` with under 2 minutes of data around it. It has one
 series, so the section title names it and there's no legend. The line breaks wherever the probe had
 a fault or there's a hole in the data, rather than drawing a slope across it. "View as table" shows
 up to 24 evenly spaced readings for anyone who can't use the chart.
+
+## Kiln art
+
+Both images have the same canvas, with the kiln in the same spot, so swapping them doesn't move
+it. The idle image has empty space at the top, where the firing one has its smoke. The page follows
+`status.firing`, so the kiln keeps showing as firing for up to 6 hours after the probe's pulled,
+until the backend marks that firing finished.
 
 ## Theme
 

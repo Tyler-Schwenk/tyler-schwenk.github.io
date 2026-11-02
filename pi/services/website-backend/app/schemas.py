@@ -581,8 +581,9 @@ class KilnStatus(BaseModel):
     The kiln page's live readout.
 
     Temperature and rates are null while the logger's offline or the probe has a fault.
-    The rates are degrees C per hour, negative when cooling, and null until there's data
-    from that far back.
+    The rates are degrees C per hour, negative when cooling. With no reading at the start
+    of a rate's window, it uses what's inside the window, and it's null if that's under
+    a third of the window.
     """
     online: bool
     last_reading_at: Optional[datetime] = None

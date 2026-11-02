@@ -1010,8 +1010,9 @@ The live readout. **Auth:** none. Rate limited per IP.
 
 - `online`: there's been a reading in the last 60 s
 - `thermocouple_c` and the rates: null while offline or while the probe has a fault
-- `rise_*_c_per_h`: degrees C per hour over that window, negative when cooling, null until there's
-  data from that far back
+- `rise_*_c_per_h`: degrees C per hour over that window, negative when cooling. With no reading at
+  the start of the window, like when the probe was out then, it uses what's inside the window. Null
+  if that covers under a third of the window
 - `firing`: the firing in progress, or null
 
 ### GET `/kiln/firings`

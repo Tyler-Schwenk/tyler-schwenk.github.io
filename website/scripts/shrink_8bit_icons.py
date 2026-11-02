@@ -21,8 +21,9 @@ ICON_DIR = Path(__file__).resolve().parent.parent / "public" / "images" / "8bit"
 ICON_MAX_EDGE_PX = 112
 
 # sprites the home page world draws much bigger than an icon. solar.png is the
-# whole house roof there, up to ~450px wide on a big desktop
-MAX_EDGE_OVERRIDES_PX = {"solar.png": 480}
+# whole house roof there, up to ~450px wide on a big desktop. the kilns are tall to fit
+# the smoke, so their long edge is their height, which leaves them 112px wide
+MAX_EDGE_OVERRIDES_PX = {"solar.png": 480, "kiln-idle.png": 164, "kiln-firing.png": 164}
 
 
 def shrink_icon(path: Path) -> tuple[int, int] | None:

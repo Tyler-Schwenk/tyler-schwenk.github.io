@@ -47,9 +47,11 @@ FIRING_IDLE_S = 6 * 60 * 60
 LOGGER_ONLINE_WINDOW_S = 60
 RATE_WINDOW_30M_S = 30 * 60
 RATE_WINDOW_60M_S = 60 * 60
-# how far the older reading can be from the window's start. past this, there's a gap in
-# the data there and the rate would be a guess
+# how far a reading can be before the window's start and still count as its start
 RATE_MAX_SKEW_S = 5 * 60
+# with no reading at the window's start, like when the probe was out then, the rate comes from
+# whatever's inside the window, if that covers at least this much of it
+RATE_MIN_WINDOW_FRACTION = 1 / 3
 SECONDS_PER_HOUR = 3600
 
 
@@ -169,19 +171,25 @@ def _rise_rate_c_per_h(db: Session, latest: KilnReading, window_s: int) -> Optio
         window_s: How far back to compare against.
 
     Returns:
-        Optional[float]: Degrees C per hour, negative when cooling. None if there's no
-            reading from around the start of the window.
+        Optional[float]: Degrees C per hour, negative when cooling. None if there's too
+            little data in the window to go on.
     """
     window_start = latest.recorded_at - timedelta(seconds=window_s)
+    has_temp = db.query(KilnReading).filter(KilnReading.thermocouple_c.isnot(None))
     older = (
-        db.query(KilnReading)
-        .filter(KilnReading.recorded_at <= window_start, KilnReading.thermocouple_c.isnot(None))
+        has_temp.filter(KilnReading.recorded_at <= window_start)
         .order_by(KilnReading.recorded_at.desc())
         .first()
     )
     if older is None or (window_start - older.recorded_at).total_seconds() > RATE_MAX_SKEW_S:
-        return None
+        older = (
+            has_temp.filter(KilnReading.recorded_at > window_start)
+            .order_by(KilnReading.recorded_at)
+            .first()
+        )
     elapsed_s = (latest.recorded_at - older.recorded_at).total_seconds()
+    if elapsed_s < window_s * RATE_MIN_WINDOW_FRACTION:
+        return None
     return round((latest.thermocouple_c - older.thermocouple_c) * SECONDS_PER_HOUR / elapsed_s, 1)
 
 

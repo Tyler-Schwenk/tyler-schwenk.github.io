@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { WORLD_OBJECTS, pickLuckyRoute, type WorldObject } from "./worldObjects";
+import { useKilnFiring } from "@/lib/useKilnFiring";
+import { WORLD_OBJECTS, currentIconSrc, pickLuckyRoute, type WorldObject } from "./worldObjects";
 
 const MENU_ICON_PX = 48;
 
@@ -14,6 +15,8 @@ const MENU_ICON_PX = 48;
  * @returns {JSX.Element} the menu screen.
  */
 export default function MainMenuList() {
+  const kilnFiring = useKilnFiring();
+
   return (
     <div className="bg-[#3850A0] border-4 border-black p-6 relative flex flex-col min-h-[80vh] max-h-[90vh] shadow-2xl">
       {/* scanlines */}
@@ -37,7 +40,7 @@ export default function MainMenuList() {
               </p>
             </div>
             {WORLD_OBJECTS.map((obj) => (
-              <MenuOption key={obj.id} obj={obj} />
+              <MenuOption key={obj.id} obj={obj} iconSrc={currentIconSrc(obj, kilnFiring)} />
             ))}
           </div>
         </div>
@@ -57,11 +60,12 @@ export default function MainMenuList() {
  *
  * @param {object} props - component props.
  * @param {WorldObject} props.obj - the object this row stands for.
+ * @param {string} [props.iconSrc] - the icon to show right now.
  * @returns {JSX.Element} the clickable row.
  */
-function MenuOption({ obj }: { obj: WorldObject }) {
+function MenuOption({ obj, iconSrc }: { obj: WorldObject; iconSrc?: string }) {
   const router = useRouter();
-  const row = <MenuRow iconSrc={obj.iconSrc}>{obj.label}</MenuRow>;
+  const row = <MenuRow iconSrc={iconSrc}>{obj.label}</MenuRow>;
 
   if (obj.lucky) {
     return (
@@ -93,7 +97,7 @@ function MenuRow({ iconSrc, children }: { iconSrc?: string; children: React.Reac
     <div className="group border-2 border-black bg-[#2840A0] p-3 hover:bg-[#F8D030] hover:text-[#3850A0] transition-all cursor-pointer flex items-center gap-3 shadow-md">
       {iconSrc && (
         <div className="w-12 h-12 relative flex-shrink-0 group-hover:animate-bounce">
-          <Image src={iconSrc} alt="" width={MENU_ICON_PX} height={MENU_ICON_PX} className="pixelated" />
+          <Image src={iconSrc} alt="" width={MENU_ICON_PX} height={MENU_ICON_PX} className="pixelated object-contain" />
         </div>
       )}
       <span className="pixel-font text-sm flex-1 text-white group-hover:text-[#3850A0] drop-shadow-[1px_1px_0_rgba(0,0,0,0.8)]">
