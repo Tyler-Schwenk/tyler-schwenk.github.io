@@ -469,15 +469,9 @@ body {
   font-family: var(--font-kiln-text), system-ui, sans-serif;
 }
 .kiln-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 16px;
   padding: 26px var(--kiln-gutter);
 }
 .kiln-wordmark { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; }
-.kiln-nav { display: flex; gap: 26px; font-size: 17px; color: var(--kiln-ink-muted); }
-.kiln-nav a:hover, .kiln-nav-current { color: var(--kiln-ink); }
 .kiln-main { padding: 0 var(--kiln-gutter) 80px; }
 .kiln-hero {
   display: grid;
@@ -542,7 +536,7 @@ body {
   line-height: 1.05;
   letter-spacing: 0;
 }
-.kiln-section { margin-top: clamp(40px, 5vw, 72px); scroll-margin-top: 24px; }
+.kiln-section { margin-top: clamp(40px, 5vw, 72px); }
 .kiln-section-title { display: flex; align-items: baseline; gap: 12px; font-size: 18px; font-weight: 500; }
 .kiln-section-note { font-size: 16px; font-weight: 400; color: var(--kiln-ink-muted); }
 .kiln-chart { position: relative; margin-top: 18px; }
@@ -600,7 +594,5 @@ body {
 @media (max-width: 640px) {
   .kiln-hero { grid-template-areas: "head art" "about about" "stats stats"; grid-template-rows: auto auto auto; column-gap: 8px; }
   .kiln-art { width: 112px; }
-  .kiln-header { grid-template-columns: 1fr; }
-  .kiln-nav { gap: 20px; font-size: 16px; }
   .kiln-card-text { padding: 12px 4px 0; font-size: 15px; }
 }

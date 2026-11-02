@@ -223,13 +223,6 @@ export default function KilnConsole() {
         <Link href="/kiln" className="kiln-wordmark">
           The Kiln
         </Link>
-        <nav className="kiln-nav" aria-label="Page">
-          <Link href="/">Home</Link>
-          <Link href="/kiln" className={isLiveView ? "kiln-nav-current" : undefined}>
-            Live
-          </Link>
-          <a href="#past-firings">Past firings</a>
-        </nav>
       </header>
 
       <main className="kiln-main">
@@ -301,7 +294,7 @@ export default function KilnConsole() {
           )}
         </section>
 
-        <section id="past-firings" className="kiln-section" aria-label="Past firings">
+        <section className="kiln-section" aria-label="Past firings">
           <div className="kiln-grid-header">
             <h2 className="kiln-section-title">Past firings</h2>
             <span className="kiln-section-note">
