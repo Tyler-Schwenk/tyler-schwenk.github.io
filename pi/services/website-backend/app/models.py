@@ -2,10 +2,10 @@
 SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
-galleries, photos, and recipes.
+galleries, photos, recipes, and kiln readings.
 """
 
-from sqlalchemy import Boolean, Column, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Boolean, Column, Float, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -399,3 +399,31 @@ class RecipePhoto(Base):
 
     # Relationships
     recipe = relationship("Recipe", back_populates="photos")
+
+
+class KilnReading(Base):
+    """
+    KilnReading model: one temperature reading from the kiln logger on castpi.
+
+    boot_id + seq identify a reading, so a retried batch can't store it twice.
+
+    Attributes:
+        id: Unique identifier
+        boot_id: The logger Pi's boot id when it took the reading
+        seq: The reading's number within that boot
+        recorded_at: When it was taken, naive UTC, worked out by the backend from the
+            reading's age because the logger Pi has no real-time clock
+        thermocouple_c: Kiln temperature, null when the amp reports a fault
+        cold_junction_c: The amp's own temperature
+        fault_status: The amp's raw fault register, 0 means no fault
+    """
+    __tablename__ = "kiln_readings"
+    __table_args__ = (UniqueConstraint("boot_id", "seq", name="uq_kiln_readings_boot_seq"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    boot_id = Column(String(36), nullable=False)
+    seq = Column(Integer, nullable=False)
+    recorded_at = Column(DateTime, nullable=False, index=True)
+    thermocouple_c = Column(Float, nullable=True)
+    cold_junction_c = Column(Float, nullable=False)
+    fault_status = Column(Integer, nullable=False)

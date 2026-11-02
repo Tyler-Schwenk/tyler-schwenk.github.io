@@ -19,6 +19,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Cloudflare Tunnel**](services/cloudflare-tunnel.md) - Public API access
 - [**Display Kiosk**](services/display-kiosk.md) - Always-on monitor (displaytop) showing the `/display` rotation
 - [**Cast Receiver**](services/cast-receiver.md) - AirPlay screen mirroring for the opium den TV (castpi, Pi 3B+)
+- [**Kiln Logger**](services/kiln-logger.md) - Kiln temperature logging from castpi to fart-pi
 - [**Trash Reminder**](services/trash-reminder.md) - Thursday trash reminders in Matt's voice, and the display kiosk takeover
 
 ### For Tyler
@@ -34,6 +35,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - External SSD for media storage
 - Display Kiosk (hostname: displaytop) - separate Surface Laptop 3 driving an always-on pair of screens
 - Cast Receiver (hostname: castpi) - separate Pi 3B+ behind the opium den TV, an AirPlay receiver for iPhones
+- Kiln Logger - castpi reads the kiln's thermocouple and sends readings to the website backend
 
 **What's planned:**
 - Immich photo management

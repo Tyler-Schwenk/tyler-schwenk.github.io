@@ -956,6 +956,61 @@ Kiosk only. The surfcam agent sends its whole key log whenever it changes, and e
 
 **Response:** `204 No Content`
 
+## Kiln
+
+Temperature readings from the kiln logger on castpi (see
+[`pi/docs/services/kiln-logger.md`](../services/kiln-logger.md)).
+
+### POST `/kiln/readings`
+
+Stores a batch of readings. Safe to retry: a reading that's already stored is skipped. The
+logger's Pi has no real-time clock, so each reading sends its age, and `recorded_at` is
+worked out on arrival.
+
+**Auth:** `X-Kiln-Token` header, matching `KILN_TOKEN` in the backend's `.env`. 401 if it's
+wrong, 503 if `KILN_TOKEN` isn't set.
+
+**Body:**
+
+```json
+{
+  "boot_id": "11111111-2222-3333-4444-555555555555",
+  "readings": [
+    { "seq": 0, "age_s": 5.0, "thermocouple_c": 190.5, "cold_junction_c": 20.1, "fault_status": 0 }
+  ]
+}
+```
+
+- `boot_id`: the logger's boot id, 36 characters
+- `readings`: 1 to 500 readings
+- `seq`: the reading's number within that boot
+- `age_s`: seconds since the reading was taken
+- `thermocouple_c`: kiln temperature, null when the amp reports a fault
+- `cold_junction_c`: the amp's own temperature
+- `fault_status`: the amp's raw fault register (0 to 255), 0 means no fault
+
+**Response:** `{ "stored": 1, "duplicates": 0 }`
+
+### GET `/kiln/latest`
+
+The newest reading. **Auth:** admin JWT. 404 if nothing's been logged yet.
+
+```json
+{ "recorded_at": "2026-11-02T16:16:16Z", "thermocouple_c": 190.5, "cold_junction_c": 20.1, "fault_status": 0 }
+```
+
+### GET `/kiln/readings`
+
+The newest readings as a list, oldest first, in the same format as `/kiln/latest`.
+**Auth:** admin JWT.
+
+**Query parameters:**
+
+- `since` (optional): only readings after this ISO 8601 time. Without a timezone it's taken as UTC
+- `limit` (optional): the most readings to return, 1 to 20000, default 1000
+
+---
+
 ## System Endpoints
 
 ### Health Check

@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # on displaytop (see pi/docs/services/display-kiosk.md).
     KIOSK_TOKEN: str = ""
 
+    # Kiln logger -- shared secret the logger on castpi sends (X-Kiln-Token) to
+    # store readings. Empty turns that endpoint off. Generate with
+    # `openssl rand -hex 32`; the same value goes in /etc/kiln-logger/token on
+    # castpi (see pi/docs/services/kiln-logger.md).
+    KILN_TOKEN: str = ""
+
     # CORS
     CORS_ORIGINS: str = ""
     

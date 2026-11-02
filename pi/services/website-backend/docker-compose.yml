@@ -12,6 +12,7 @@ services:
       - IP_HASH_SALT=${IP_HASH_SALT}
       - CORS_ORIGINS=${CORS_ORIGINS}
       - KIOSK_TOKEN=${KIOSK_TOKEN:-}
+      - KILN_TOKEN=${KILN_TOKEN:-}
       - API_TITLE=Website Backend API
       - API_VERSION=1.0.0
     volumes:

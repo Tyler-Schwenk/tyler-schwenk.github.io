@@ -12,6 +12,9 @@ It gets unplugged a lot, so it's built for that. Pulling the power at any moment
 and it comes back on its own when power returns. It also notices when the TV's HDMI
 cable is plugged in or swapped, in any order.
 
+This Pi also runs the [kiln logger](kiln-logger.md), which needs no screen. While it's next
+to the kiln, there's no TV to cast to, and the AirPlay services just wait for a screen.
+
 ## Hardware
 
 - **Device**: Raspberry Pi 3 Model B+ (1 GB RAM), hostname `castpi`. This is the same

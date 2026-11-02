@@ -6,7 +6,7 @@ galleries, and photos with comprehensive validation rules.
 """
 
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Optional, Literal
 import re
 
@@ -477,3 +477,50 @@ class DisplayCommandBatch(BaseModel):
     """The agent's long-poll answer: commands to run, and the cursor to send next."""
     cursor: int
     commands: list[DisplayCommand]
+
+
+# Kiln Schemas
+# most readings the logger sends at once. matches MAX_BATCH_SIZE in kiln_logger.py
+MAX_KILN_BATCH_SIZE = 500
+BOOT_ID_LENGTH = 36
+# type k's range is about -270 to 1372 c, so anything outside these isn't a real reading
+MIN_KILN_TEMP_C = -273.15
+MAX_KILN_TEMP_C = 1500
+MAX_KILN_FAULT_STATUS = 255
+
+
+class KilnReadingIn(BaseModel):
+    """One reading from the kiln logger. Carries its age, since the logger has no real clock."""
+    seq: int = Field(ge=0)
+    age_s: float = Field(ge=0)
+    thermocouple_c: Optional[float] = Field(default=None, ge=MIN_KILN_TEMP_C, le=MAX_KILN_TEMP_C)
+    cold_junction_c: float = Field(ge=MIN_KILN_TEMP_C, le=MAX_KILN_TEMP_C)
+    fault_status: int = Field(ge=0, le=MAX_KILN_FAULT_STATUS)
+
+
+class KilnReadingBatch(BaseModel):
+    """A batch of readings from one boot of the kiln logger."""
+    boot_id: str = Field(min_length=BOOT_ID_LENGTH, max_length=BOOT_ID_LENGTH)
+    readings: list[KilnReadingIn] = Field(min_length=1, max_length=MAX_KILN_BATCH_SIZE)
+
+
+class KilnBatchResult(BaseModel):
+    """How a batch went: readings newly stored, and ones already stored by an earlier try."""
+    stored: int
+    duplicates: int
+
+
+class KilnReadingRead(BaseModel):
+    """A stored kiln reading. thermocouple_c is null when the amp reported a fault."""
+    model_config = ConfigDict(from_attributes=True)
+
+    recorded_at: datetime
+    thermocouple_c: Optional[float] = None
+    cold_junction_c: float
+    fault_status: int
+
+    @field_validator("recorded_at")
+    @classmethod
+    def mark_as_utc(cls, value: datetime) -> datetime:
+        """The table stores naive UTC, so this says so in the response."""
+        return value.replace(tzinfo=timezone.utc)
