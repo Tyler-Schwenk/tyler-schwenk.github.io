@@ -26,7 +26,8 @@ side, and [the API docs](../../pi/docs/api/website-backend-api.md#kiln) for the 
 
 ## Views
 
-- **`/kiln`**: the live view. Status line, current temperature, rise over the last 30 minutes and
+- **`/kiln`**: the live view. Status line, a "What's this?" dropdown saying who it's for and how the
+  readings get here, current temperature, rise over the last 30 minutes and
   hour, firing time, peak, and the current firing's curve
 - **`/kiln?firing=<id>`**: one firing, with its peak, duration, start and finish. It's a query
   parameter rather than a path because a static export can't generate pages for firings that

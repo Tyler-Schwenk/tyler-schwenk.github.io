@@ -482,11 +482,17 @@ body {
 .kiln-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "head art" "stats art";
-  grid-template-rows: auto 1fr;
+  grid-template-areas: "head art" "about art" "stats art";
+  grid-template-rows: auto auto 1fr;
   column-gap: 24px;
 }
 .kiln-hero-head { grid-area: head; }
+.kiln-about { grid-area: about; margin-top: 14px; font-size: 16px; color: var(--kiln-ink-muted); }
+.kiln-about summary { cursor: pointer; width: fit-content; }
+.kiln-about summary:hover { color: var(--kiln-ink); }
+.kiln-about-body { max-width: 62ch; margin-top: 10px; color: var(--kiln-ink); line-height: 1.55; }
+.kiln-about-body p + p { margin-top: 10px; }
+.kiln-about-body a { text-decoration: underline; text-underline-offset: 3px; }
 .kiln-hero .kiln-stats { grid-area: stats; align-self: end; }
 .kiln-art {
   grid-area: art;
@@ -592,7 +598,7 @@ body {
 .kiln-card-text { padding: 18px 16px 0; font-size: 17px; line-height: 1.55; }
 .kiln-card:hover .kiln-card-text { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 640px) {
-  .kiln-hero { grid-template-areas: "head art" "stats stats"; grid-template-rows: auto auto; column-gap: 8px; }
+  .kiln-hero { grid-template-areas: "head art" "about about" "stats stats"; grid-template-rows: auto auto auto; column-gap: 8px; }
   .kiln-art { width: 112px; }
   .kiln-header { grid-template-columns: 1fr; }
   .kiln-nav { gap: 20px; font-size: 16px; }

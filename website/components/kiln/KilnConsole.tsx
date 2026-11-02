@@ -33,6 +33,7 @@ const FAULT_OPEN_CIRCUIT = 0x01;
 /** the kiln art's real size. both images share it, so swapping them doesn't move the kiln. */
 const KILN_ART_WIDTH_PX = 672;
 const KILN_ART_HEIGHT_PX = 979;
+const JUDE_INSTAGRAM_URL = "https://www.instagram.com/judecastilloceramics/";
 
 /**
  * runs something now and on an interval, skipping ticks while the tab's hidden.
@@ -109,6 +110,35 @@ function StatusLine({
       <span className={`kiln-status-dot kiln-status-${tone}`} aria-hidden="true" />
       {text}
     </p>
+  );
+}
+
+/**
+ * the "what's this?" dropdown explaining who the page is for and how the readings get here.
+ *
+ * @returns {JSX.Element} the dropdown, closed to start.
+ */
+function AboutKiln() {
+  return (
+    <details className="kiln-about">
+      <summary>What&apos;s this?</summary>
+      <div className="kiln-about-body">
+        <p>
+          I made this for my roommate,{" "}
+          <a href={JUDE_INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+            Jude Castillo
+          </a>
+          , so you can follow along with his kiln firings live.
+        </p>
+        <p>
+          A temperature probe in the kiln plugs into a MAX31856 breakout board, which turns the probe&apos;s
+          signal into a temperature. A Raspberry Pi reads that every 5 seconds and streams it over Wi-Fi to
+          fart-pi, my home server. fart-pi stores every reading, works out when each firing starts and ends,
+          and calculates how fast the temperature&apos;s rising. This page pulls that data from fart-pi and
+          shows it here.
+        </p>
+      </div>
+    </details>
   );
 }
 
@@ -209,6 +239,7 @@ export default function KilnConsole() {
               <h1 className="kiln-title">Kiln</h1>
               <StatusLine status={status} unreachable={unreachable} nowMs={nowMs} />
             </div>
+            <AboutKiln />
             {/* waits for the status, so a firing kiln doesn't flash idle first */}
             <div className="kiln-art">
               {status && (
