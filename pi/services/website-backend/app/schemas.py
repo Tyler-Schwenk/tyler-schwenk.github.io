@@ -425,6 +425,14 @@ MAX_KIOSK_LOG_EVENTS = 1000
 MAX_PRESET_NAME_LENGTH = 200
 
 
+class EntranceStatus(BaseModel):
+    """Where the entrance song is. All times are ms from the start of the song."""
+    playing: bool
+    position_ms: int
+    drop_at_ms: int
+    duration_ms: int
+
+
 class DisplayKeysRequest(BaseModel):
     """One remote press: keys the kiosk applies in order, as one change."""
     keys: list[DisplayKey] = Field(..., min_length=1, max_length=MAX_KEYS_PER_PRESS)

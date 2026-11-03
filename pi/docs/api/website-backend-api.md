@@ -12,6 +12,7 @@ Backend API for tyler-schwenk.com providing:
 - **Recipes (The Kitchen)**: Anonymous, rate-limited recipe submission with tags and photos; admin-only edit/delete
 - **Mallard Count**: Server-side proxy for the external mallard counter API (sidesteps that API's missing CORS headers)
 - **Display Control**: In-memory relay between the admin page's remote and the display kiosk's surfcam agent
+- **Entrance Song**: Plays an intro song on the big speakers from the admin page
 
 **Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, and recipe features.
 
@@ -1048,6 +1049,30 @@ The newest raw readings as a list, oldest first, each with `recorded_at`, `therm
 
 - `since` (optional): only readings after this ISO 8601 time. Without a timezone it's taken as UTC
 - `limit` (optional): the most readings to return, 1 to 20000, default 1000
+
+---
+
+## Entrance Song
+
+Plays the entrance song on the big speakers, through the speaker agent on displaytop. See `pi/docs/services/entrance-song.md`. **Auth:** admin JWT on all of them. Each one answers with the song's status:
+
+```json
+{"playing": true, "position_ms": 12345, "drop_at_ms": 58000, "duration_ms": 84000}
+```
+
+`position_ms` is how far into the song it is, 0 when nothing's playing. All three answer `503` if the speaker agent can't be reached.
+
+### GET `/entrance/status`
+
+The song's status.
+
+### POST `/entrance/start`
+
+Starts the song, or does nothing if it's already playing. **Errors:** `409` if another service is using the speakers, `503` if the rendered wav is missing or the speaker agent can't play it.
+
+### POST `/entrance/stop`
+
+Cuts the song off. Does nothing if it isn't playing.
 
 ---
 

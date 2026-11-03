@@ -1,0 +1,16 @@
+[Unit]
+Description=Speaker Agent
+After=sound.target network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/tyler/speaker-agent/speaker_agent.py
+WorkingDirectory=/home/tyler/speaker-agent
+Restart=always
+RestartSec=5
+User=tyler
+# so logs show up in journalctl right away
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

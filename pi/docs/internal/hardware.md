@@ -199,7 +199,7 @@ Full map of physical pins in use. Check here before wiring anything new.
 
 **Stereo audio** (2x Adafruit MAX98357A I2S amp + 8 ohm 5W speakers)
 - Bus: I2S
-- Service: trash-reminder (systemd)
+- Not used by any service now: all sound plays on the big speakers on displaytop (`pi/docs/services/speaker-agent.md`). `pi/scripts/button_audio_test.py` still tests these amps
 - Both amps share all three I2S signal lines in parallel
 
 | Pi physical pin | Pi GPIO | Amp pin | Notes |

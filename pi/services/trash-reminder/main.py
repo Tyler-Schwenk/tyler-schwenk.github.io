@@ -1,8 +1,8 @@
 """
 Trash reminder service.
 
-Runs on fart-pi as a systemd service. Plays audio reminders through I2S
-speakers to remind roommates to take out the trash every Thursday at 5 PM.
+Runs on fart-pi as a systemd service. Plays audio reminders on the big speakers,
+through the speaker agent on displaytop, to remind roommates to take out the trash every Thursday at 5 PM.
 Escalates every 10 minutes with increasingly obnoxious clips until someone
 hits the button or 11 PM arrives.
 
@@ -27,7 +27,7 @@ Copy them to the Pi with scp — they're not in git (binary files).
 import json
 import logging
 import random
-import subprocess
+import sys
 import threading
 import time
 from datetime import date, datetime
@@ -37,6 +37,11 @@ from signal import pause
 
 from gpiozero import Button
 from gpiozero.pins.lgpio import LGPIOFactory
+
+# shared with the other services on fart-pi: it's a plain folder in the repo, not a package
+sys.path.insert(0, str(Path(__file__).parent.parent / "speaker-agent"))
+
+from speaker_client import SpeakerAgentError, SpeakersBusyError, play_clip, stop_clip
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,9 +55,6 @@ logger = logging.getLogger(__name__)
 
 # GPIO pin (BCM numbering) for the confirmation button
 BUTTON_PIN = 17
-
-# ALSA device for I2S amps — card 2 on fart-pi (verify with `aplay -l`)
-ALSA_DEVICE = "plughw:2,0"
 
 # debounce window (s) — prevents double-fires on a single press
 BUTTON_DEBOUNCE_S = 0.2
@@ -73,6 +75,12 @@ API_CONFIRM_PATH = "/confirm"
 SERVICE_DIR = Path(__file__).parent
 AUDIO_DIR = SERVICE_DIR / "audio"
 STATE_FILE = SERVICE_DIR / "trash_state.json"
+
+
+# ---- audio ----
+
+# who the speaker agent thinks this is, so we can only stop our own clips
+SPEAKER_OWNER = "trash-reminder"
 
 
 # ---- audio clips ----
@@ -114,10 +122,6 @@ _state_lock = threading.Lock()
 # epoch ms of the last confirmation (button or kiosk), so the kiosk can show its thanks
 # screen whichever one did it. memory only: after a restart there's nothing to thank
 _confirmed_at_ms: int | None = None
-
-# tracked so we can kill it when the button is pressed mid-playback
-_current_proc: subprocess.Popen | None = None
-_proc_lock = threading.Lock()
 
 # alternates between hey_guys and i_love_you on idle button presses
 _idle_clip_index = 0
@@ -210,43 +214,39 @@ def _already_confirmed_this_week() -> bool:
 def _play_one(filename: str) -> None:
     """Play a single WAV file, blocking until done.
 
-    Stores the subprocess handle so stop_playback() can kill it mid-clip.
+    stop_playback() cuts it off mid-clip. A clip that can't play is logged and skipped, so
+    a reminder sequence carries on with the next one.
 
     Args:
         filename: Clip filename within AUDIO_DIR (not a full path).
 
     Side effects:
-        Blocks. Updates _current_proc.
+        Blocks. Plays audio on the big speakers.
     """
-    global _current_proc
     path = AUDIO_DIR / filename
     if not path.exists():
         logger.error("Clip not found: %s — copy it to the audio/ directory", path)
         return
 
     logger.info("Playing %s", filename)
-    with _proc_lock:
-        _current_proc = subprocess.Popen(["aplay", "-D", ALSA_DEVICE, str(path)])
-
-    returncode = _current_proc.wait()
-
-    with _proc_lock:
-        _current_proc = None
-
-    # -15 = SIGTERM (killed intentionally by stop_playback), not an error
-    if returncode not in (0, -15):
-        logger.error("aplay exited %d for %s", returncode, filename)
+    try:
+        play_clip(path, SPEAKER_OWNER)
+    except SpeakersBusyError as exc:
+        logger.error("Skipped %s: %s", filename, exc)
+    except SpeakerAgentError as exc:
+        logger.error("Couldn't play %s: %s", filename, exc)
 
 
 def stop_playback() -> None:
     """Kill any currently playing audio clip immediately.
 
     Side effects:
-        Terminates _current_proc if it's still running.
+        Tells the speaker agent to stop our clip, if one's playing.
     """
-    with _proc_lock:
-        if _current_proc and _current_proc.poll() is None:
-            _current_proc.terminate()
+    try:
+        stop_clip(SPEAKER_OWNER)
+    except SpeakerAgentError as exc:
+        logger.error("Couldn't stop playback: %s", exc)
 
 
 def play_sequence(*filenames: str, only_while: str | None = None) -> None:

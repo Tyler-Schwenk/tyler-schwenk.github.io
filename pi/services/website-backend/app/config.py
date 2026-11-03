@@ -58,6 +58,13 @@ class Settings(BaseSettings):
     # Recipe Photo Storage
     RECIPE_PHOTOS_DIR: str = "/app/recipe_photos"
 
+    # Entrance song: its mp3 and rendered wav (see pi/docs/services/entrance-song.md)
+    ENTRANCE_DIR: str = "/app/entrance"
+
+    # Speaker agent on displaytop, which plays everything on the big speakers
+    # (see pi/docs/services/speaker-agent.md)
+    SPEAKER_AGENT_URL: str = "http://192.168.1.192:8771"
+
     # Pac-Tyler data (written by pac-tyler-updater, mounted as a volume)
     PAC_TYLER_DATA_DIR: str = "/app/pac-tyler"
     

@@ -22,6 +22,7 @@ services:
       - ${MEDIA_ROOT:-/mnt/ssd}/public-gallery:/app/photos
       - ${MEDIA_ROOT:-/mnt/ssd}/videos:/app/videos
       - ${MEDIA_ROOT:-/mnt/ssd}/recipe-photos:/app/recipe_photos
+      - ${MEDIA_ROOT:-/mnt/ssd}/entrance:/app/entrance
       - /home/tyler/pac-tyler-data:/app/pac-tyler:ro
     restart: unless-stopped
     healthcheck:

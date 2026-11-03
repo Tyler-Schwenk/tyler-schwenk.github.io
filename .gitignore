@@ -2,6 +2,9 @@
 # Tyler Schwenk Portfolio - Git Ignore File
 # ============================================================
 
+# copyrighted audio dropped here on its way to fart-pi, the repo is public
+input/*.mp3
+
 # ============================================================
 # OPERATING SYSTEM FILES
 # ============================================================

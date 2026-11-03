@@ -97,6 +97,22 @@ export function jsonBody(method: string, body: unknown): RequestInit {
 }
 
 /**
+ * Waits, unless aborted first.
+ * @param ms - How long.
+ * @param signal - Cuts the wait short.
+ * @returns Resolves when the time is up or the signal fires.
+ */
+export function delay(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
+/**
  * The message to show for a caught error.
  * @param err - Whatever was thrown.
  * @returns Its message, or a generic one for something unexpected.

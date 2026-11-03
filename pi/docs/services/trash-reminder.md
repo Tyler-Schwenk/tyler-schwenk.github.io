@@ -1,7 +1,7 @@
 # Trash Reminder
 
 Reminds the house to take the trash out every Thursday evening, in Matt's voice, through
-fart-pi's speakers, and takes over the display kiosk's screens (displaytop) until someone
+the big speakers (the [speaker agent](speaker-agent.md) on displaytop), and takes over the display kiosk's screens (displaytop) until someone
 says it's done. Code: `pi/services/trash-reminder/main.py` (fart-pi) and
 `pi/services/surfcam-agent/trash_alert.py` plus `website/app/display/TrashPanel.tsx`
 (the kiosk side).
@@ -18,9 +18,10 @@ says it's done. Code: `pi/services/trash-reminder/main.py` (fart-pi) and
   in `trash_state.json` so a restart doesn't start them again
 - Outside trash time the button plays `hey_guys` and `i_love_you` alternately
 
-Hardware (GPIO 17 button, I2S amps on ALSA `plughw:2,0`) is in
-`pi/docs/internal/hardware.md`. The clips live in `pi/services/trash-reminder/audio/`
-on fart-pi, not in git; copy them over with `scp`.
+The GPIO 17 button is in `pi/docs/internal/hardware.md`. The clips live in
+`pi/services/trash-reminder/audio/` on fart-pi, not in git; copy them over with `scp`. They
+upload to the speaker agent by themselves the first time they play. If displaytop's off or
+the speakers are busy the clip is logged and skipped, and the reminder carries on.
 
 ## HTTP API
 

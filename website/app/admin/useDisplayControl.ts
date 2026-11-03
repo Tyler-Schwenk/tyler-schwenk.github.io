@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { replayControl, type ControlLog, type ControlState } from "@/app/display/kioskControl";
 import { CONTROL_CONFIG } from "@/app/display/displayConfig";
-import { AdminRequestError, adminRequest, errorMessage, jsonBody, useAdminFetch, type AdminFetch } from "./adminApi";
+import { AdminRequestError, adminRequest, delay, errorMessage, jsonBody, useAdminFetch, type AdminFetch } from "./adminApi";
 
 /** What GET /display-control/state answers (see pi/docs/api/website-backend-api.md). */
 interface KioskStateResponse {
@@ -37,22 +37,6 @@ export interface DisplayControl {
 
 // after a failed long-poll (backend restarting, phone offline) wait this long before retrying
 const STATE_RETRY_DELAY_MS = 3_000;
-
-/**
- * Waits, unless aborted first.
- * @param ms - How long.
- * @param signal - Cuts the wait short.
- * @returns Resolves when the time is up or the signal fires.
- */
-function delay(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
-      clearTimeout(timer);
-      resolve();
-    });
-  });
-}
 
 /**
  * Long-polls the kiosk's state until aborted (or the login expires), reporting

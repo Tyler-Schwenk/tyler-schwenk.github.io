@@ -5,18 +5,19 @@ import Link from "next/link";
 import { useAdminAuth } from "@/lib/useAdminAuth";
 import { AdminFetchContext, createAdminFetch } from "./adminApi";
 import DisplayTab from "./DisplayTab";
+import EntranceTab from "./EntranceTab";
 import GalleriesTab from "./GalleriesTab";
 import UploadTab from "./UploadTab";
 import RsvpsTab from "./RsvpsTab";
 import PublicSquareTab from "./PublicSquareTab";
 import LoginScreen from "./LoginScreen";
-import { ChatIcon, ListIcon, MonitorIcon, PhotosIcon, UploadIcon } from "./icons";
+import { ChatIcon, ListIcon, MonitorIcon, MusicIcon, PhotosIcon, UploadIcon } from "./icons";
 import { Button } from "./ui";
 
 /**
  * The admin page (/admin): one login, then tabs for the display kiosk's
- * remote, galleries, uploads, RSVPs and Public Square moderation. Built for a
- * phone first: tabs sit in a bar along the bottom on small screens and move
+ * remote, the entrance song, galleries, uploads, RSVPs and Public Square
+ * moderation. Built for a phone first: tabs sit in a bar along the bottom on small screens and move
  * up into the header on a laptop. The open tab lives in the url hash
  * (/admin#galleries), so a tab can be bookmarked and the back button steps
  * between tabs. See website/docs/ADMIN.md.
@@ -38,6 +39,7 @@ interface AdminTab {
 // the first tab is where /admin opens
 const TABS: AdminTab[] = [
   { id: "display", label: "Display", title: "Display remote", Icon: MonitorIcon, Content: DisplayTab },
+  { id: "entrance", label: "Entrance", title: "Entrance", Icon: MusicIcon, Content: EntranceTab },
   { id: "galleries", label: "Galleries", title: "Galleries", Icon: PhotosIcon, Content: GalleriesTab },
   { id: "upload", label: "Upload", title: "Upload", Icon: UploadIcon, Content: UploadTab },
   { id: "rsvps", label: "RSVPs", title: "RSVPs", Icon: ListIcon, Content: RsvpsTab },
@@ -92,7 +94,7 @@ function TabLink({ tab, active, place }: { tab: AdminTab; active: boolean; place
     <a
       href={`#${tab.id}`}
       aria-current={active ? "page" : undefined}
-      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+      className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
         active ? "bg-slate-800 text-orange-400" : "text-slate-400 hover:bg-slate-900 hover:text-slate-100"
       }`}
     >
@@ -128,7 +130,7 @@ export default function AdminPage() {
               Admin
             </Link>
             <span className="truncate text-sm text-slate-400 md:hidden">{current.title}</span>
-            <nav className="hidden flex-1 gap-1 md:flex">
+            <nav className="hidden min-w-0 flex-1 gap-1 overflow-x-auto md:flex">
               {TABS.map((tab) => (
                 <TabLink key={tab.id} tab={tab} active={tab === current} place="header" />
               ))}
@@ -144,7 +146,7 @@ export default function AdminPage() {
         </main>
 
         <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-          <div className="grid grid-cols-5">
+          <div className="grid grid-cols-6">
             {TABS.map((tab) => (
               <TabLink key={tab.id} tab={tab} active={tab === current} place="bar" />
             ))}

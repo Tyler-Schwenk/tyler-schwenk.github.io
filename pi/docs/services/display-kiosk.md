@@ -14,6 +14,9 @@ by a dedicated laptop running kiosk browsers pointed at
 - **Screens**: its built-in 2256x1504 panel plus an external monitor on the USB-C port
   through a USB-C to HDMI adapter. Physically the open laptop sits on top with the
   monitor underneath it, and the laptop's own keyboard stays reachable
+- **Speakers**: the big powered speakers plug into the laptop's own 3.5mm headphone jack, and
+  the speaker agent plays all the house's audio through them
+  (`pi/docs/services/speaker-agent.md`)
 - **Mic**: a USB mic (TI PCM2902, "USB PnP Sound Device") plugged into the USB-C
   adapter's hub alongside the HDMI output, for the BPM visualizer
   (`pi/services/bpm-agent/README.md`). The bpm agent finds it by name, so the ALSA card
@@ -193,8 +196,8 @@ Set by `setup-displaytop.sh`, so a rebuild gets them automatically:
 - **Unattended security updates**, including Google Chrome's own repo
   (`/etc/apt/apt.conf.d/52kiosk-unattended`). When an update needs a reboot it happens at
   03:00, inside the overnight sleep window, and the kiosk stays asleep until 06:00
-- **No firewall on purpose.** The only listening ports are SSH (key-only) and the two
-  agents on `127.0.0.1` (surfcam 8765, bpm 8766), and the router doesn't forward anything to the laptop. A LAN-only
+- **No firewall on purpose.** The only listening ports are SSH (key-only), the two
+  agents on `127.0.0.1` (surfcam 8765, bpm 8766) and the speaker agent on the LAN (8771), and the router doesn't forward anything to the laptop. A LAN-only
   firewall rule would lock you out of SSH after a move to a different subnet
 - **Unused services masked**: ModemManager, multipathd, packagekit. The journal is capped
   at 200 MB
@@ -366,6 +369,7 @@ panel should show the cam with the info bar across the top within a few rotation
 | `pi/services/display-kiosk/kiosk-run.sh` | Becomes `~/kiosk-run.sh`: screens, browsers, agents, overnight sleep |
 | `pi/services/surfcam-agent/` | The surf cam player agent, its info overlay, keyboard control, the remote control relay and the trash night relay (own README) |
 | `pi/services/bpm-agent/` | Mic beat tracker for the BPM visualizer (own README) |
+| `pi/services/speaker-agent/` | Plays the house's audio on the big speakers (`pi/docs/services/speaker-agent.md`) |
 | `website/app/display/` | The page the browsers show (see `website/docs/DISPLAY.md`) |
 | On the laptop only | `/etc/netplan/50-cloud-init.yaml` (Wi-Fi), `/etc/sudoers.d/tyler-nopasswd`, `~/.ssh/authorized_keys`, `~/surfcam-agent/kiosk-token` (remote control secret) |
 

@@ -4,7 +4,7 @@
 #
 # from the repo root on a machine that can ssh in (-t lets sudo ask for the password the
 # first time; after this run sudo is passwordless):
-#   scp -r pi/services/display-kiosk pi/services/surfcam-agent pi/services/bpm-agent tyler@<displaytop>:~/setup/
+#   scp -r pi/services/display-kiosk pi/services/surfcam-agent pi/services/bpm-agent pi/services/speaker-agent tyler@<displaytop>:~/setup/
 #   ssh -t tyler@<displaytop> "sudo ~/setup/display-kiosk/setup-displaytop.sh"
 #
 # see pi/docs/services/display-kiosk.md for what each piece does.
@@ -23,6 +23,7 @@ AGENT_CONTROL_URL="http://127.0.0.1:8765/control/keys"
 BPM_AGENT_SRC_DIR="$SCRIPT_DIR/../bpm-agent"
 BPM_AGENT_FILES=(bpm_agent.py beat_tracker.py)
 BPM_OFFSET_URL="http://127.0.0.1:8766/offset"
+SPEAKER_AGENT_SRC_DIR="$SCRIPT_DIR/../speaker-agent"
 
 # keyboard control: x keysym -> key name the agent and the display page understand
 # (see pi/services/surfcam-agent/kiosk_control.py). xbindkeys grabs these system-wide, so
@@ -54,7 +55,11 @@ if [ ! -f "$AGENT_SRC_DIR/${AGENT_FILES[0]}" ]; then
   exit 1
 fi
 if [ ! -f "$BPM_AGENT_SRC_DIR/${BPM_AGENT_FILES[0]}" ]; then
-  echo "can't find $BPM_AGENT_SRC_DIR/${BPM_AGENT_FILES[0]}. copy display-kiosk/, surfcam-agent/ and bpm-agent/ into the same folder first (see header)." >&2
+  echo "can't find $BPM_AGENT_SRC_DIR/${BPM_AGENT_FILES[0]}. copy display-kiosk/, surfcam-agent/, bpm-agent/ and speaker-agent/ into the same folder first (see header)." >&2
+  exit 1
+fi
+if [ ! -f "$SPEAKER_AGENT_SRC_DIR/install.sh" ]; then
+  echo "can't find $SPEAKER_AGENT_SRC_DIR/install.sh. copy display-kiosk/, surfcam-agent/, bpm-agent/ and speaker-agent/ into the same folder first (see header)." >&2
   exit 1
 fi
 
@@ -75,7 +80,7 @@ visudo -cf "$sudoers_file.tmp" >/dev/null
 install -m 440 "$sudoers_file.tmp" "$sudoers_file"
 rm -f "$sudoers_file.tmp"
 
-echo "== audio group for $KIOSK_USER (the bpm agent records the usb mic)"
+echo "== audio group for $KIOSK_USER (the bpm agent records the usb mic, the speaker agent plays)"
 usermod -aG audio "$KIOSK_USER"
 
 echo "== timezone (the overnight sleep window uses local time)"
@@ -154,6 +159,9 @@ fi
 for agent_file in "${BPM_AGENT_FILES[@]}"; do
   install_user_file 755 "$BPM_AGENT_SRC_DIR/$agent_file" "$KIOSK_HOME/bpm-agent/$agent_file"
 done
+
+echo "== speaker agent (plays the house's audio on the big speakers)"
+bash "$SPEAKER_AGENT_SRC_DIR/install.sh"
 
 echo "== laptop: never suspend, ignore the lid (it runs open and plugged in; closing it changes nothing)"
 install -d /etc/systemd/logind.conf.d
