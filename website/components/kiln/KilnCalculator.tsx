@@ -1,0 +1,327 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { fetchKilnCurve, type KilnCurvePoint } from "@/app/kiln/kilnApi";
+import { toChartPoints, type ChartPoint } from "@/app/kiln/kilnCurve";
+import {
+  buildForecast,
+  estimateTemp,
+  estimateTime,
+  MAX_TARGET_F,
+  MIN_TARGET_F,
+  noEstimateReason,
+  referenceHours,
+  type KilnForecast,
+  type KilnPhase,
+} from "@/app/kiln/kilnForecast";
+import { formatDateTime, formatDuration, toFahrenheit } from "@/app/kiln/kilnFormat";
+
+const MS_PER_HOUR = 3_600_000;
+const MIN_HOURS_AHEAD = 0.25;
+const MAX_HOURS_AHEAD = 72;
+const DEFAULT_HOURS_AHEAD = 2;
+const HOURS_AHEAD_STEP = 0.5;
+const TEMP_STEP_F = 25;
+const HOUR_PRESETS = [1, 2, 4, 8];
+/** where people usually want to know about: the probe gets pulled around 400, then opening up. */
+const COOLING_PRESETS_F = [800, 600, 400, 300, 200];
+/** 2,345 f is cone 10. */
+const HEATING_PRESETS_F = [1000, 1500, 2000, 2200, 2345];
+const DEFAULT_TARGET_F: Record<KilnPhase, number> = { cooling: 400, heating: 2345, holding: 400 };
+const PHASE_LABELS: Record<KilnPhase, string> = {
+  cooling: "Cooling",
+  heating: "Heating",
+  holding: "Holding steady",
+};
+
+const formatF = (tempF: number): string => `${Math.round(tempF).toLocaleString()} °F`;
+
+/**
+ * parses what's typed in a number box, keeping it inside a range.
+ *
+ * @param {string} text - what's in the box.
+ * @param {number} min - lowest allowed value.
+ * @param {number} max - highest allowed value.
+ * @returns {number | null} the number, or null if it's empty or out of range.
+ */
+function parseInRange(text: string, min: number, max: number): number | null {
+  const value = Number(text);
+  if (text.trim() === "" || !Number.isFinite(value) || value < min || value > max) return null;
+  return value;
+}
+
+/**
+ * row of quick-pick buttons for a number box.
+ *
+ * @param {object} props - component props.
+ * @param {number[]} props.values - the values to offer.
+ * @param {string} props.selected - what's in the box right now.
+ * @param {(value: number) => string} props.format - how to label a value.
+ * @param {(value: number) => void} props.onPick - called with the picked value.
+ * @returns {JSX.Element} the buttons.
+ */
+function Presets({
+  values,
+  selected,
+  format,
+  onPick,
+}: {
+  values: number[];
+  selected: string;
+  format: (value: number) => string;
+  onPick: (value: number) => void;
+}) {
+  return (
+    <div className="kiln-chips">
+      {values.map((value) => (
+        <button key={value} type="button" aria-pressed={selected === String(value)} onClick={() => onPick(value)}>
+          {format(value)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * the "when will it reach this temperature?" card.
+ *
+ * @param {object} props - component props.
+ * @param {KilnForecast} props.forecast - the current trend.
+ * @param {number} props.nowMs - when the current temperature was read.
+ * @param {ChartPoint[] | null} props.referencePoints - the last finished firing's curve, if any.
+ * @returns {JSX.Element} the card.
+ */
+function TimeCard({
+  forecast,
+  nowMs,
+  referencePoints,
+}: {
+  forecast: KilnForecast;
+  nowMs: number;
+  referencePoints: ChartPoint[] | null;
+}) {
+  const [typed, setTyped] = useState<string | null>(null);
+  // follows the phase until someone's picked their own, so it flips to a useful temp by itself
+  const text = typed ?? String(DEFAULT_TARGET_F[forecast.phase]);
+  const targetF = parseInRange(text, MIN_TARGET_F, MAX_TARGET_F);
+  const isCooling = forecast.phase === "cooling";
+  const presets = (isCooling ? COOLING_PRESETS_F : HEATING_PRESETS_F).filter((preset) =>
+    isCooling ? preset < forecast.tempF : preset > forecast.tempF,
+  );
+  const estimate = targetF === null ? null : estimateTime(forecast, targetF);
+  const reason = targetF === null ? null : noEstimateReason(forecast, targetF);
+  const reference =
+    estimate && referencePoints && targetF !== null
+      ? referenceHours(referencePoints, forecast.phase, forecast.tempF, targetF)
+      : null;
+
+  let message = `Enter a temperature from ${MIN_TARGET_F} to ${MAX_TARGET_F.toLocaleString()} °F.`;
+  if (reason === "holding") message = "It's holding steady, so there's no trend to go on.";
+  if (reason === "passed") message = isCooling ? "It's already below that." : "It's already past that.";
+
+  return (
+    <div className="kiln-calc-card">
+      <label className="kiln-calc-question" htmlFor="kiln-target-temp">
+        When will it reach
+      </label>
+      <div className="kiln-calc-input">
+        <input
+          id="kiln-target-temp"
+          type="number"
+          inputMode="numeric"
+          min={MIN_TARGET_F}
+          max={MAX_TARGET_F}
+          step={TEMP_STEP_F}
+          value={text}
+          onChange={(event) => setTyped(event.target.value)}
+        />
+        <span>°F</span>
+      </div>
+      <Presets values={presets} selected={text} format={(value) => value.toLocaleString()} onPick={(value) => setTyped(String(value))} />
+      <div className="kiln-calc-answer" aria-live="polite">
+        {estimate ? (
+          <>
+            <div className="kiln-calc-result">About {formatDuration(estimate.hours * MS_PER_HOUR)}</div>
+            <p>Around {formatDateTime(nowMs + estimate.hours * MS_PER_HOUR)}</p>
+            <p className="kiln-calc-range">
+              Likely {formatDuration(estimate.lowHours * MS_PER_HOUR)} to {formatDuration(estimate.highHours * MS_PER_HOUR)}
+            </p>
+            {reference !== null && (
+              <p className="kiln-calc-range">The same change took {formatDuration(reference * MS_PER_HOUR)} last firing</p>
+            )}
+          </>
+        ) : (
+          <p className="kiln-calc-range">{message}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * the "how hot will it be in a while?" card.
+ *
+ * @param {object} props - component props.
+ * @param {KilnForecast} props.forecast - the current trend.
+ * @param {number} props.nowMs - when the current temperature was read.
+ * @returns {JSX.Element} the card.
+ */
+function TempCard({ forecast, nowMs }: { forecast: KilnForecast; nowMs: number }) {
+  const [text, setText] = useState(String(DEFAULT_HOURS_AHEAD));
+  const hours = parseInRange(text, MIN_HOURS_AHEAD, MAX_HOURS_AHEAD);
+  const estimate = hours === null ? null : estimateTemp(forecast, hours);
+  // a straight line keeps climbing forever, past anything a kiln can do
+  const isOffTheTop = estimate !== null && estimate.tempF > MAX_TARGET_F;
+
+  let message = `Enter between ${MIN_HOURS_AHEAD} and ${MAX_HOURS_AHEAD} hours.`;
+  if (forecast.phase === "holding") message = "It's holding steady, so there's no trend to go on.";
+  if (isOffTheTop) message = `That's past ${MAX_TARGET_F.toLocaleString()} °F if it kept this pace, so it's too far out to say.`;
+
+  return (
+    <div className="kiln-calc-card">
+      <label className="kiln-calc-question" htmlFor="kiln-hours-ahead">
+        How hot will it be in
+      </label>
+      <div className="kiln-calc-input">
+        <input
+          id="kiln-hours-ahead"
+          type="number"
+          inputMode="decimal"
+          min={MIN_HOURS_AHEAD}
+          max={MAX_HOURS_AHEAD}
+          step={HOURS_AHEAD_STEP}
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+        />
+        <span>hours</span>
+      </div>
+      <Presets values={HOUR_PRESETS} selected={text} format={(value) => `${value} hr`} onPick={(value) => setText(String(value))} />
+      <div className="kiln-calc-answer" aria-live="polite">
+        {estimate && hours !== null && !isOffTheTop ? (
+          <>
+            <div className="kiln-calc-result">About {formatF(estimate.tempF)}</div>
+            <p>At {formatDateTime(nowMs + hours * MS_PER_HOUR)}</p>
+            <p className="kiln-calc-range">
+              Likely {formatF(estimate.lowF)} to {formatF(Math.min(estimate.highF, MAX_TARGET_F))}
+            </p>
+          </>
+        ) : (
+          <p className="kiln-calc-range">{message}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * says how the estimates are made, which depends on the phase.
+ *
+ * @param {object} props - component props.
+ * @param {KilnForecast} props.forecast - the current trend.
+ * @returns {JSX.Element} the note.
+ */
+function ForecastNote({ forecast }: { forecast: KilnForecast }) {
+  if (forecast.settling) {
+    return (
+      <p className="kiln-calc-note">
+        Cooling only just started, and the rate jumps around for the first couple of hours. Until it settles, this uses how
+        the first firing cooled instead of the last hour, so it&apos;s extra rough.
+      </p>
+    );
+  }
+  if (forecast.phase === "cooling") {
+    return (
+      <p className="kiln-calc-note">
+        Cooling slows down as the kiln gets closer to room temperature, and the estimate allows for that. Tested against the
+        first firing&apos;s cooldown, this was usually within about 10%, but that&apos;s only one firing so far.
+      </p>
+    );
+  }
+  if (forecast.phase === "heating") {
+    return (
+      <p className="kiln-calc-note">
+        This assumes the last hour&apos;s pace holds. Heating depends on how the burner&apos;s set, and it usually slows down near
+        the top, so treat it as a rough guide.
+      </p>
+    );
+  }
+  return <p className="kiln-calc-note">Estimates come back once the temperature starts moving again.</p>;
+}
+
+/**
+ * calculator for how long until a temperature, and how hot it'll be later, from the current trend.
+ * works during heating and cooling. compares against the last finished firing when there is one.
+ *
+ * @param {object} props - component props.
+ * @param {KilnCurvePoint[]} props.points - the live firing's curve, oldest first.
+ * @param {number | null} props.tempC - the current temperature, null while it isn't live.
+ * @param {string | null} props.lastReadingAt - when that temperature was read.
+ * @param {string} props.peakAt - when the live firing peaked.
+ * @param {number | null} props.referenceFiringId - the last finished firing, if there is one.
+ * @returns {JSX.Element} the calculator.
+ */
+export default function KilnCalculator({
+  points,
+  tempC,
+  lastReadingAt,
+  peakAt,
+  referenceFiringId,
+}: {
+  points: KilnCurvePoint[];
+  tempC: number | null;
+  lastReadingAt: string | null;
+  peakAt: string;
+  referenceFiringId: number | null;
+}) {
+  const [referencePoints, setReferencePoints] = useState<ChartPoint[] | null>(null);
+
+  useEffect(() => {
+    if (referenceFiringId === null) return;
+    let cancelled = false;
+    fetchKilnCurve(referenceFiringId)
+      .then((curve) => {
+        if (!cancelled) setReferencePoints(toChartPoints(curve.points));
+      })
+      // the estimates work fine without the comparison
+      .catch((error) => console.warn(`couldn't load firing ${referenceFiringId} to compare against:`, error));
+    return () => {
+      cancelled = true;
+    };
+  }, [referenceFiringId]);
+
+  const chartPoints = useMemo(() => toChartPoints(points), [points]);
+  const nowMs = lastReadingAt ? new Date(lastReadingAt).getTime() : null;
+  const forecast =
+    tempC === null || nowMs === null
+      ? null
+      : buildForecast(chartPoints, toFahrenheit(tempC), nowMs, new Date(peakAt).getTime());
+
+  return (
+    <section className="kiln-section" aria-label="Calculator">
+      <div className="kiln-grid-header">
+        <h2 className="kiln-section-title">Calculator</h2>
+        {forecast && (
+          <span className="kiln-section-note">
+            {PHASE_LABELS[forecast.phase]}
+            {forecast.phase !== "holding" && `, ${Math.abs(Math.round(forecast.rateFPerH)).toLocaleString()} °F/hr over the last hour`}
+          </span>
+        )}
+      </div>
+      {forecast && nowMs !== null ? (
+        <>
+          <div className="kiln-calc">
+            <TimeCard forecast={forecast} nowMs={nowMs} referencePoints={referencePoints} />
+            <TempCard forecast={forecast} nowMs={nowMs} />
+          </div>
+          <ForecastNote forecast={forecast} />
+        </>
+      ) : (
+        <p className="kiln-empty">
+          {tempC === null
+            ? "Estimates need a live temperature, so they'll be back once the probe is reading."
+            : "Estimates start once there's about 20 minutes of steady readings."}
+        </p>
+      )}
+    </section>
+  );
+}

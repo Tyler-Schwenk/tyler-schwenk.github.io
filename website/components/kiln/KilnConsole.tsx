@@ -23,6 +23,8 @@ import {
 } from "@/app/kiln/kilnFormat";
 import Navigation from "@/components/Navigation";
 import FiringCard from "./FiringCard";
+import KilnCalculator from "./KilnCalculator";
+import ReadingsTable from "./ReadingsTable";
 import TemperatureChart from "./TemperatureChart";
 
 /** matches the logger's 5 s readings, with a little slack. */
@@ -279,7 +281,10 @@ export default function KilnConsole() {
             <span className="kiln-section-note">°F</span>
           </h2>
           {shownCurve ? (
-            <TemperatureChart points={shownCurve.points} bucketS={shownCurve.bucket_s} />
+            <>
+              <TemperatureChart points={shownCurve.points} bucketS={shownCurve.bucket_s} />
+              <ReadingsTable points={shownCurve.points} bucketS={shownCurve.bucket_s} firingId={shownCurve.firing.id} />
+            </>
           ) : (
             <div className="kiln-chart kiln-chart-placeholder">
               <p className="kiln-chart-empty">
@@ -290,6 +295,16 @@ export default function KilnConsole() {
             </div>
           )}
         </section>
+
+        {isLiveView && shownCurve && status?.firing && (
+          <KilnCalculator
+            points={shownCurve.points}
+            tempC={status.thermocouple_c}
+            lastReadingAt={status.last_reading_at}
+            peakAt={status.firing.peak_at}
+            referenceFiringId={pastFirings[0]?.id ?? null}
+          />
+        )}
 
         <section className="kiln-section" aria-label="Past firings">
           <div className="kiln-grid-header">

@@ -16,8 +16,12 @@ side, and [the API docs](../../pi/docs/api/website-backend-api.md#kiln) for the 
 | `app/kiln/page.tsx` | Route and metadata. Wraps the console in the Suspense boundary `useSearchParams` needs |
 | `app/kiln/kilnApi.ts` | Types and fetchers for the public `/kiln` endpoints |
 | `app/kiln/kilnFormat.ts` | Unit conversion and number, rate and date formatting |
+| `app/kiln/kilnCurve.ts` | Turns a curve into chart points, finds gaps, and works out the rate at a point |
+| `app/kiln/kilnForecast.ts` | The calculator's predictions. No React, so they can be replayed against real data |
 | `components/kiln/KilnConsole.tsx` | Page layout, polling, live and past firing views |
-| `components/kiln/TemperatureChart.tsx` | Full-width SVG line chart, with crosshair, tooltip and table view |
+| `components/kiln/TemperatureChart.tsx` | Full-width SVG line chart, with crosshair and tooltip |
+| `components/kiln/ReadingsTable.tsx` | The readings as a table, with adjustable spacing, sorting and CSV download |
+| `components/kiln/KilnCalculator.tsx` | Estimates how long until a temperature, and how hot it'll be later |
 | `components/kiln/FiringCard.tsx` | A past firing's tile in the grid |
 | `app/globals.css` (`.kiln-*` rules) | The page's theme tokens and styles |
 | `lib/useKilnFiring.ts` | Checks once whether a firing's in progress, for the home page sprite |
@@ -59,8 +63,39 @@ Hand-written SVG, sized to its container with a `ResizeObserver`, with no chart 
 shows the temperature, the time, and the rate of rise there, measured 10 minutes either side of the
 point without crossing a gap, and shown as `--` with under 2 minutes of data around it. It has one
 series, so the section title names it and there's no legend. The line breaks wherever the probe had
-a fault or there's a hole in the data, rather than drawing a slope across it. "View as table" shows
-up to 24 evenly spaced readings for anyone who can't use the chart.
+a fault or there's a hole in the data, rather than drawing a slope across it.
+
+## Table
+
+"View as table" sits under the chart, closed to start. It has a row per 15 minutes, 30 minutes or
+hour on round clock times, with the time since the start, the temperature, and the rate at that point,
+newest first or oldest first. The peak always gets its own row, and an interval with only faults
+shows "Probe out". The header stays put while the table scrolls. "Download CSV" saves every point on
+the curve, up to 1,500 of them, rather than just the rows showing.
+
+## Calculator
+
+Sits between the chart and past firings, in the live view only, while a firing's in progress. It
+answers "when will it reach this temperature?" and "how hot will it be in this many hours?", each with
+a likely range. It needs a live temperature and at least 20 minutes of readings in the last hour.
+
+It works out the phase from the last hour's trend: heating, cooling, or holding steady under 15 °F/hr.
+
+- **Cooling**: an exponential curve toward 70 °F, using how fast that gap closed over the last hour,
+  because the rate is close to proportional to how far above room temperature the kiln is. Replaying
+  the first firing's cooldown, this was typically within 5%, where assuming the current rate would
+  hold was 30-40% too soon on anything hours out. The range shown is 15%
+- **Just after the peak**: for 2.5 hours the last hour is misleading, since the kiln lingers near the
+  top before it really starts dropping. So it uses a typical cooling constant of 0.16 per hour, from the
+  first firing, with a 30% range and a note saying it's extra rough
+- **Heating**: a straight line at the last hour's pace, typically within 25%, with a 30% range. It
+  depends on how the burner's set, and it usually slows down near the top, so the page calls it a rough
+  guide. The actual time landed in the range about two-thirds of the time
+
+All of those numbers come from one firing, and the 0.16 was measured on the same firing it was tested
+against, so re-check them as more firings come in. The logic has no React in it, so it can be replayed
+against any firing's curve. Once a firing has finished, the time estimate also shows how long the same
+change took in the most recent finished firing.
 
 ## Kiln art
 
