@@ -24,34 +24,65 @@ build time and shipped with the static site, so a new timelapse video still need
 | `website/app/garden/TimelapsePlayer.tsx` | Custom timelapse player (ruler scrubber, large date readout, day/frame stepping, speed, fullscreen, keyboard) |
 | `website/app/garden/timelapse-utils.ts` | Date lookups over the timestamps: date at a time, day number, month chapters, adjacent day, span + range, label splitting |
 | `website/app/garden/timelapse-timestamps.ts` | Auto-generated timestamp map (video seconds → calendar date) |
-| `scripts/timelapse/compile_timelapse.py` | Compiles the raw footage into one MP4 and regenerates the timestamps module |
+| `scripts/timelapse/compile_timelapse.py` | Pulls footage off the memory card into the archive, compiles it into one MP4, and regenerates the timestamps module |
 | `website/components/PhotoLightbox.tsx` | Shared fullscreen lightbox opened when a photograph is clicked |
 
 ### Data Flow
 
 ```
-compile_timelapse.py
-  ├── before/ JPEGs  → converted to 3s still clips (1920x1080, pillarboxed)
-  └── timelapse/ AVIs → concatenated as-is
-        ↓
-  garden-timelapse.mp4  (upload to Pi)
-  timelapse-timestamps.ts  (committed to repo)
-        ↓
-  garden page fetches video ID by slug from Pi, streams via /videos/{id}/stream
-  player polls currentTime each animation frame while playing → lookup in
-  TIMELAPSE_TIMESTAMPS → date + day number shown in the readout under the ruler
+memory card (FAT32)
+  | compile_timelapse.py --card     copies new clips, verifies each by SHA-256
+  v
+data/time lapse/raw/                permanent archive, append-only
+  | compile_timelapse.py
+  |   before/ JPEGs -> 2s still clips, pillarboxed to the camera's 1920x1080
+  |   raw/ clips    -> clips with no decodable frames are skipped, dusk noise is cut
+  |   all of it     -> one output frame per source frame, 1280x720, 30 fps
+  v
+garden-timelapse.mp4  (upload to Pi)
+timelapse-timestamps.ts  (committed to repo)
+  |
+  v
+garden page fetches video ID by slug from Pi, streams via /videos/{id}/stream
+player polls currentTime each animation frame while playing -> lookup in
+TIMELAPSE_TIMESTAMPS -> date + day number shown in the readout under the ruler
 ```
 
 ### Raw Data Location
 
+Everything lives next to the repo, outside of git:
+
 ```
-C:\Users\tyler\important\projects\WebDev\Tylers Website\data\time lapse\
-├── before/     JPEGs taken before the camera was set up (dates from EXIF)
-├── 1/          First memory card pull (Apr 13–28) — superseded by folder 2
-└── 2/          Second memory card pull (Apr 13–May 9) — complete dataset used by script
+Tylers Website/data/
+├── garden-timelapse.mp4     latest compiled video
+└── time lapse/
+    ├── before/              JPEGs from before the camera was set up
+    └── raw/                 every clip ever pulled
+        ├── 2026-04-13_134112_TLC00001.AVI
+        ├── ...
+        └── SHA256SUMS       checks out with `sha256sum -c SHA256SUMS`
 ```
 
-New card pulls go in a new numbered folder (`3/`, `4/`, etc.).
+Filenames are `<capture time>_<camera name>`, with the capture time being the camera's
+own clock. That prefix is the source of truth for a clip's date and order:
+
+- File mtimes aren't reliable. FAT32 stores local time with no zone and Windows converts
+  it using today's UTC offset, so the same file reads an hour different depending on
+  whether it's pulled during daylight time.
+- The camera can restart its `TLC00001` numbering on a formatted card. The prefix keeps
+  those clips from colliding with old ones and sorts them in the right place.
+
+Clips with no decodable frames stay in the archive but are skipped during compilation.
+Their headers still claim a normal length, so counting them would add a freeze to the
+video.
+
+Dusk noise gets cut at compile time too, the archive keeps every frame. The camera raises
+its gain as the light fades, which turns the last frames of the day into colored static
+while keeping them bright, so a brightness check misses them. That noise barely compresses
+though: daylight JPEG frames top out around 700 KB and dusk ones reach 1.4 MB. So the
+compile drops the unbroken run of frames at or above `NOISY_FRAME_MIN_BYTES` at the end of
+each clip, plus `DUSK_MARGIN_FRAMES` before it. Busy frames earlier in the day aren't
+touched. The cut moves earlier as the days get shorter, so day lengths in the video vary.
 
 ---
 
@@ -116,49 +147,59 @@ so other pages don't download them; they load once the garden page renders text 
 
 ## Adding New Footage
 
-Do this every time you pull the memory card.
+Do this every time you pull the memory card. The date labels are off between steps 2 and
+3, so do those two back to back.
 
-### 1. Copy card data to a new folder
-
-Copy the AVI files from the camera's memory card to a new numbered folder:
-```
-C:\Users\tyler\important\projects\WebDev\Tylers Website\data\time lapse\3\
-```
-
-### 2. Update the script
-
-Open `scripts/timelapse/compile_timelapse.py` and update `TIMELAPSE_DIR` to point to
-the newest complete folder (the one with all clips from the start through today):
-
-```python
-TIMELAPSE_DIR = Path(r"C:\Users\tyler\...\data\time lapse\3")
-```
-
-> Each new card pull should contain all days from the beginning, not just new ones.
-> Always use the most recent folder as `TIMELAPSE_DIR` — it replaces the old one entirely.
-
-### 3. Run the script
+### 1. Pull and compile
 
 ```
-python scripts/timelapse/compile_timelapse.py
+python scripts/timelapse/compile_timelapse.py --card D:\DCIM\100TLC3C
 ```
 
-This takes a few minutes. It outputs:
+Use whatever drive letter the card mounted as. This needs `ffmpeg` and `ffprobe` on PATH
+(`winget install Gyan.FFmpeg`). It's safe to re-run: clips already in the archive are just
+re-verified against the card.
+
+Add `--pull-only` to stop after the copy, or leave off `--card` to recompile from what's
+already archived. Check the "skipping" lines in the output: an occasional damaged clip is
+normal, a whole run of them isn't.
+
+Encoding takes a while and scales with the footage. If anything fails, the previous video
+and timestamps are left alone. The video is only replaced after its frame count matches
+what the timestamps expect.
+
+It outputs:
 - `data/garden-timelapse.mp4` — the new compiled video
 - `website/app/garden/timelapse-timestamps.ts` — updated with new date entries
 
-### 4. Replace the video on the Pi
+### 2. Replace the video on the Pi
 
-The existing video needs to be replaced since the timing has changed. Slugs must be
-unique, so the old `garden-timelapse` video has to be deleted before re-uploading —
-do both from the admin page's Upload tab:
+The video is well over Cloudflare's 100 MB request limit, so it can't go through
+`api.tyler-schwenk.com` or the admin page's Upload tab (the admin page talks to that same
+URL). Swap the file on the Pi's SSD over SSH instead, from the home network. The new file
+is checked and moved into place atomically, so the page never goes down and the video
+keeps its ID and thumbnail. The database row only needs its size and duration updated.
 
-1. Go to `https://tyler-schwenk.com/admin` → **Upload** tab → select **Video**
-2. Under "Existing Videos", find `garden-timelapse` and click the delete (trash) button
-3. Fill in the video fields (title: `Garden Timelapse`, slug: `garden-timelapse`) and
-   upload the new `garden-timelapse.mp4`
+Run from Git Bash in the `Tylers Website/data` folder:
 
-### 5. Deploy the website
+```bash
+PI=tyler@192.168.1.116
+VIDEOS=/mnt/ssd/videos
+LOCAL_HASH=$(sha256sum garden-timelapse.mp4 | cut -d' ' -f1)
+SIZE_BYTES=$(stat -c %s garden-timelapse.mp4)
+DURATION_S=$(ffprobe -v error -show_entries format=duration -of csv=p=0 garden-timelapse.mp4 | cut -d. -f1)
+
+scp garden-timelapse.mp4 "$PI:$VIDEOS/.garden-timelapse.new.mp4"
+ssh "$PI" "echo '$LOCAL_HASH  $VIDEOS/.garden-timelapse.new.mp4' | sha256sum -c - \
+  && chmod 644 $VIDEOS/.garden-timelapse.new.mp4 \
+  && mv -f $VIDEOS/.garden-timelapse.new.mp4 $VIDEOS/garden-timelapse.mp4 \
+  && docker exec website-backend-api python -c \"import sqlite3; db = sqlite3.connect('/app/data/website_backend.db'); db.execute('update videos set duration=$DURATION_S, file_size=$SIZE_BYTES where slug=\\\"garden-timelapse\\\"'); db.commit()\""
+```
+
+If the `garden-timelapse` video doesn't exist on the Pi yet (fresh database), upload it once
+to `http://192.168.1.116:8000/videos` instead, see `pi/docs/api/video-api-reference.md`.
+
+### 3. Deploy the website
 
 ```
 git add website/app/garden/timelapse-timestamps.ts
@@ -167,6 +208,12 @@ git push
 ```
 
 The GitHub Actions deploy will pick it up automatically.
+
+### 4. Clear the card when it's getting full
+
+The camera writes up to about 100 MB a day to a 16 GB card, so it needs clearing every few
+months. A finished pull means everything on the card at that moment is in the archive and
+checksummed. Pull once more right before formatting if the camera has kept recording.
 
 ---
 
@@ -188,18 +235,19 @@ $img.Dispose()
 
 ### Add the photo and update the script
 
-1. Copy the JPEG to `data/time lapse/before/` and name it sequentially (`4.jpg`, etc.)
-2. Add an entry to `BEFORE_PHOTO_DATES` in the script:
+1. Copy the JPEG to `data/time lapse/before/` and name it sequentially (`4.jpg`, etc.).
+   Photos play in filename order, so keep the names in date order.
+2. Add an entry to `BEFORE_PHOTO_DATES` in the script. The script stops with an error if
+   a photo has no entry.
    ```python
    BEFORE_PHOTO_DATES: dict[str, str] = {
        "1.jpg": "Mar 8, 2026",
        "2.jpg": "Apr 5, 2026",
        "3.jpg": "Apr 11, 2026",
-       "4.jpg": "Feb 20, 2026",  # add new entries here
+       "4.jpg": "Apr 12, 2026",  # add new entries here
    }
    ```
-   Keep filenames sorted by date for the correct visual order.
-3. Re-run the script and follow the deploy steps above.
+3. Re-run the script without `--card` and follow the publish steps above.
 
 ---
 
