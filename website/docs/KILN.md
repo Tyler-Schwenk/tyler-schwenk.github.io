@@ -90,11 +90,19 @@ constant is how the page tells the two apart. It reads the curve, not the time s
   would hold was 30-40% too soon on anything hours out
 - **Held up**: at or above 1,000 °F with a constant under 0.11. There's no telling when a hold ends, so
   the page shows limits, not estimates: "at least" this long and "no lower than" this temperature if
-  it's let drop now, using the typical constant from past firings. In the replay, the flip to full drop came 1.7
-  hours after the peak, at about 1,950 °F
+  it's let drop now, using the typical constant from past firings. In the replay, the flip to full drop came 1.4
+  hours after the peak, at about 2,090 °F
 - **Heating**: a straight line at the last hour's pace, typically within 25%, with a 30% range. It
   depends on how the burner's set, and it usually slows down near the top, so the page calls it a rough
   guide. The actual time landed in the range about two-thirds of the time
+
+**Pace changes**: an hour-long average is slow to notice Jude opening the vents, so the page also
+measures the last 15 minutes. If that and the hour disagree by a factor of 1.5 while it's cooling, it
+goes off the 15 minutes with a 30% range and labels it "Pace just changed". Overnight they stayed
+within 1.28. When the vents opened around 9:40 AM in the first firing, cooling sped up 5-8 times, and
+300 °F arrived at 10:00. By 9:45 the estimate said 10:15, and by 9:49 it said 10:00, where the hour
+alone was still saying 10:05 at 9:56. Slowing down uses the same check but hasn't been seen in real
+data yet. The check also spots a full drop's start sooner, about 22 minutes in that firing.
 
 **Outdoor temperature**: the kiln's outdoors, so it cools toward `outdoor_forecast_c` from
 `/kiln/status`, the average forecast for the next 12 hours. Without a forecast it assumes 70 °F and the
@@ -111,9 +119,11 @@ constant, and the median across firings replaces the built-in 0.16 for the held 
 firings disagree, the wider those limits get. Only the held up limits learn: a full drop is measured
 live, and the 0.11 and 1,000 °F cutoffs are fixed, so re-check those as more firings come in.
 
-**What it can't see**: nothing predicts someone opening the kiln or pulling the probe. In the first
-firing, the readings went from 451 to 370 °F in 15 minutes, against about 75 °F/hr before, reaching
-400 °F about half an hour ahead of the estimate made just before.
+**What it can't see**: it reacts to what Jude does, but can't know what he'll do next. Every number
+assumes things carry on as they are.
+
+A "How do these estimates work?" dropdown under the cards explains all this in plain language, so
+update it along with the logic.
 
 The logic has no React in it, so it can be replayed against any firing's curve. Once a firing has
 finished, the time estimate also shows how long the same change took in the most recent finished firing.

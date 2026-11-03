@@ -1,0 +1,4 @@
+[
+  {"name": "Sam", "macs": ["aa:bb:cc:dd:ee:01"]},
+  {"name": "Joaquin", "macs": ["aa:bb:cc:dd:ee:02", "aa:bb:cc:dd:ee:03"], "say_as": "Wah keen"}
+]

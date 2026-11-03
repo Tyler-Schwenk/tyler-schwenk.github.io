@@ -19,6 +19,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Cloudflare Tunnel**](services/cloudflare-tunnel.md) - Public API access
 - [**Display Kiosk**](services/display-kiosk.md) - Always-on monitor (displaytop) showing the `/display` rotation
 - [**Cast Receiver**](services/cast-receiver.md) - AirPlay screen mirroring for the opium den TV (castpi, Pi 3B+)
+- [**House Ghost**](services/house-ghost.md) - Scary voice greets roommates through the speakers when their phone joins the Wi-Fi
 - [**Speaker Agent**](services/speaker-agent.md) - Plays all the house's audio on the big speakers plugged into displaytop
 - [**Entrance Song**](services/entrance-song.md) - Admin page button that plays an intro song through the speakers, with a countdown to the drop
 - [**Kiln Logger**](services/kiln-logger.md) - Kiln temperature logging from castpi to fart-pi

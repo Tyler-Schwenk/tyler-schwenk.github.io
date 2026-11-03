@@ -24,6 +24,12 @@ const MS_PER_HOUR = 3_600_000;
 /** under this much recent data, a trend isn't worth much. */
 const MIN_WINDOW_MS = 20 * 60_000;
 const MIN_WINDOW_POINTS = 5;
+/** the short look that catches someone opening the vents, which the hour takes an hour to catch up on. */
+const PACE_CHECK_WINDOW_MS = 15 * 60_000;
+/** the pace has changed when the short look and the hour disagree by this factor. overnight they stayed within 1.28. */
+const PACE_CHANGE_RATIO = 1.5;
+/** right after a change, nobody knows how long the new pace will last. */
+const PACE_CHANGE_UNCERTAINTY = 0.3;
 /** what to assume for the outdoors when there's no forecast. */
 export const DEFAULT_OUTSIDE_F = 70;
 /** how far off the outdoor temp could be, from the forecast's error, wind, and the day's swing. */
@@ -65,6 +71,8 @@ export type KilnForecast = {
   uncertainty: number;
   /** high up and not in a full drop, so estimates only say what'd happen if it's let drop now. */
   heldUp: boolean;
+  /** cooling just sped up or slowed down, so this is going off the last few minutes, not the last hour. */
+  paceChanged: boolean;
 };
 
 /** a time estimate with its likely range, in hours. */
@@ -168,6 +176,21 @@ export function learnTypicalDrop(firings: ChartPoint[][]): TypicalDrop {
 }
 
 /**
+ * picks how far off an estimate could be, in the situation it's made in.
+ *
+ * @param {KilnPhase} phase - what the kiln's doing.
+ * @param {boolean} heldUp - whether it's being held up.
+ * @param {boolean} paceChanged - whether cooling just sped up or slowed down.
+ * @param {TypicalDrop} typicalDrop - what a full drop usually looks like.
+ * @returns {number} the uncertainty, as a share of the time.
+ */
+function pickUncertainty(phase: KilnPhase, heldUp: boolean, paceChanged: boolean, typicalDrop: TypicalDrop): number {
+  if (phase === "heating") return HEATING_UNCERTAINTY;
+  if (heldUp) return typicalDrop.uncertainty;
+  return paceChanged ? PACE_CHANGE_UNCERTAINTY : COOLING_UNCERTAINTY;
+}
+
+/**
  * works out the current trend from the last hour of a firing's curve.
  *
  * @param {ChartPoint[]} points - the firing's curve, oldest first.
@@ -190,7 +213,13 @@ export function buildForecast(
 
   const hoursAgo = (point: ChartPoint) => (point.timeMs - nowMs) / MS_PER_HOUR;
   const rateFPerH = slope(recent.map((point) => [hoursAgo(point), point.value as number]));
-  const measuredConstantPerH = measureCoolingConstant(recent, outsideF, nowMs) ?? 0;
+  const hourConstantPerH = measureCoolingConstant(recent, outsideF, nowMs) ?? 0;
+  const latest = recent.filter((point) => point.timeMs >= nowMs - PACE_CHECK_WINDOW_MS);
+  const latestConstantPerH = measureCoolingConstant(latest, outsideF, nowMs);
+  const paceRatio = latestConstantPerH !== null && latestConstantPerH > 0 && hourConstantPerH > 0 ? latestConstantPerH / hourConstantPerH : 1;
+  // a flat hold's short look is mostly noise, so this only applies once it's really cooling
+  const paceChanged = rateFPerH <= -HOLDING_RATE_F_PER_H && (paceRatio >= PACE_CHANGE_RATIO || paceRatio <= 1 / PACE_CHANGE_RATIO);
+  const measuredConstantPerH = paceChanged ? (latestConstantPerH as number) : hourConstantPerH;
 
   let phase: KilnPhase = "holding";
   if (rateFPerH >= HOLDING_RATE_F_PER_H) phase = "heating";
@@ -204,8 +233,9 @@ export function buildForecast(
     rateFPerH,
     coolingConstantPerH: heldUp ? typicalDrop.coolingConstantPerH : measuredConstantPerH,
     outsideF,
-    uncertainty: heldUp ? typicalDrop.uncertainty : phase === "heating" ? HEATING_UNCERTAINTY : COOLING_UNCERTAINTY,
+    uncertainty: pickUncertainty(phase, heldUp, paceChanged, typicalDrop),
     heldUp,
+    paceChanged: paceChanged && !heldUp,
   };
 }
 

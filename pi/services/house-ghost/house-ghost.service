@@ -1,0 +1,18 @@
+[Unit]
+Description=House Ghost
+After=sound.target network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/home/tyler/tyler-schwenk.github.io/pi/services/house-ghost/.venv/bin/python /home/tyler/tyler-schwenk.github.io/pi/services/house-ghost/main.py
+WorkingDirectory=/home/tyler/tyler-schwenk.github.io/pi/services/house-ghost
+Restart=always
+RestartSec=10
+User=tyler
+# arp-scan needs raw sockets, this gives it that without running as root
+AmbientCapabilities=CAP_NET_RAW
+# so logs show up in journalctl right away
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

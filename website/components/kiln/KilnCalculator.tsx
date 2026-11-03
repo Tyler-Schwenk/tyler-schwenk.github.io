@@ -41,6 +41,7 @@ const PHASE_LABELS: Record<KilnPhase, string> = {
   holding: "Holding steady",
 };
 const HELD_UP_COOLING_LABEL = "Cooling slowly, held up";
+const PACE_CHANGED_LABEL = "Pace just changed";
 
 const formatF = (tempF: number): string => `${Math.round(tempF).toLocaleString()} °F`;
 
@@ -110,12 +111,14 @@ function TimeCard({
 }) {
   const [typed, setTyped] = useState<string | null>(null);
   // follows the phase until someone's picked their own, so it flips to a useful temp by itself
-  const text = typed ?? String(DEFAULT_TARGET_F[forecast.phase]);
-  const targetF = parseInRange(text, MIN_TARGET_F, MAX_TARGET_F);
   const isCooling = forecast.phase !== "heating";
   const presets = (isCooling ? COOLING_PRESETS_F : HEATING_PRESETS_F).filter((preset) =>
     isCooling ? preset < forecast.tempF : preset > forecast.tempF,
   );
+  const defaultTargetF = DEFAULT_TARGET_F[forecast.phase];
+  // once it's past the usual target, the next one down is the useful question
+  const text = typed ?? String(isCooling && defaultTargetF >= forecast.tempF && presets.length > 0 ? presets[0] : defaultTargetF);
+  const targetF = parseInRange(text, MIN_TARGET_F, MAX_TARGET_F);
   const estimate = targetF === null ? null : estimateTime(forecast, targetF);
   const reason = targetF === null ? null : noEstimateReason(forecast, targetF);
   const reference =
@@ -270,6 +273,14 @@ function ForecastNote({
       </p>
     );
   }
+  if (forecast.paceChanged) {
+    return (
+      <p className="kiln-calc-note">
+        The pace just changed, maybe from the vents or the gas. For now this goes off the last 15 minutes instead of the last
+        hour, and assumes the new pace keeps up, so the range is wider. {outside}
+      </p>
+    );
+  }
   if (forecast.phase === "cooling") {
     return (
       <p className="kiln-calc-note">
@@ -288,6 +299,56 @@ function ForecastNote({
     );
   }
   return <p className="kiln-calc-note">Estimates come back once the temperature starts moving again.</p>;
+}
+
+/**
+ * the info bubble explaining how the estimates are made.
+ *
+ * @returns {JSX.Element} a dropdown, closed until someone opens it.
+ */
+function HowItWorks() {
+  return (
+    <details className="kiln-calc-info">
+      <summary>
+        <span className="kiln-calc-info-icon" aria-hidden="true">
+          i
+        </span>
+        How do these estimates work?
+      </summary>
+      <div className="kiln-calc-info-body">
+        <p>
+          <strong>Cooling.</strong> A kiln cools fastest when it&apos;s hottest. Each hour it closes about the same share of the
+          gap to the temperature outside, so it slows down as it goes. The page measures that share from the last hour of
+          readings and follows the curve forward.
+        </p>
+        <p>
+          <strong>Holding the heat up.</strong> Jude can keep some gas on before letting it fall. While it&apos;s falling slower
+          than a full drop, nobody can say when that&apos;ll end, so you get limits like &quot;at least 9 hours&quot; if it&apos;s let drop
+          right now. Real estimates start once the readings show the full drop.
+        </p>
+        <p>
+          <strong>Vents and gas changes.</strong> It also compares the last 15 minutes against the last hour. If they disagree a
+          lot, the pace has changed, so it goes off the last 15 minutes with a wider range. When the vents opened in the first
+          firing, its estimate for the next big step down was on target within about 10 minutes.
+        </p>
+        <p>
+          <strong>Heating.</strong> A straight line at the last hour&apos;s pace. It depends on how the burner&apos;s set, so it&apos;s
+          only a rough guide.
+        </p>
+        <p>
+          <strong>Weather.</strong> The kiln&apos;s outdoors, so it cools toward the San Diego forecast for the next 12 hours. That
+          hardly matters up high but matters a lot below about 300 °F, so ranges get wider there. Wind isn&apos;t included.
+        </p>
+        <p>
+          <strong>Past firings.</strong> Finished firings teach it how fast a full drop usually goes, which sets the limits above.
+        </p>
+        <p>
+          <strong>What it can&apos;t do.</strong> It can&apos;t know what Jude will do next. Every number assumes things carry on as they
+          are right now, and it&apos;s only been tested on one firing so far.
+        </p>
+      </div>
+    </details>
+  );
 }
 
 /**
@@ -349,7 +410,9 @@ export default function KilnCalculator({
   const outsideF = outdoorC === null ? DEFAULT_OUTSIDE_F : toFahrenheit(outdoorC);
   const forecast =
     tempC === null || nowMs === null ? null : buildForecast(chartPoints, toFahrenheit(tempC), nowMs, outsideF, typicalDrop);
-  const phaseLabel = forecast?.heldUp && forecast.phase === "cooling" ? HELD_UP_COOLING_LABEL : forecast && PHASE_LABELS[forecast.phase];
+  let phaseLabel = forecast ? PHASE_LABELS[forecast.phase] : null;
+  if (forecast?.heldUp && forecast.phase === "cooling") phaseLabel = HELD_UP_COOLING_LABEL;
+  if (forecast?.paceChanged) phaseLabel = PACE_CHANGED_LABEL;
 
   return (
     <section className="kiln-section" aria-label="Calculator">
@@ -369,6 +432,7 @@ export default function KilnCalculator({
             <TempCard forecast={forecast} nowMs={nowMs} />
           </div>
           <ForecastNote forecast={forecast} typicalDrop={typicalDrop} hasOutdoorForecast={outdoorC !== null} />
+          <HowItWorks />
         </>
       ) : (
         <p className="kiln-empty">
