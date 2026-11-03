@@ -1005,6 +1005,7 @@ The live readout. **Auth:** none. Rate limited per IP.
   "fault_status": 0,
   "rise_30m_c_per_h": 98.4,
   "rise_60m_c_per_h": 101.2,
+  "outdoor_forecast_c": 18.4,
   "firing": { "id": 1, "started_at": "...", "ended_at": null, "last_reading_at": "...", "peak_c": 190.5, "peak_at": "..." }
 }
 ```
@@ -1014,6 +1015,9 @@ The live readout. **Auth:** none. Rate limited per IP.
 - `rise_*_c_per_h`: degrees C per hour over that window, negative when cooling. With no reading at
   the start of the window, like when the probe was out then, it uses what's inside the window. Null
   if that covers under a third of the window
+- `outdoor_forecast_c`: the average Open-Meteo forecast for the next 12 hours at `KILN_WEATHER_LATITUDE`
+  and `KILN_WEATHER_LONGITUDE`, cached for 30 minutes. Null with no firing in progress, or when there's
+  been no successful fetch in 6 hours. A failed fetch doesn't fail the request
 - `firing`: the firing in progress, or null
 
 ### GET `/kiln/firings`

@@ -5,14 +5,17 @@ import { fetchKilnCurve, type KilnCurvePoint } from "@/app/kiln/kilnApi";
 import { toChartPoints, type ChartPoint } from "@/app/kiln/kilnCurve";
 import {
   buildForecast,
+  DEFAULT_OUTSIDE_F,
   estimateTemp,
   estimateTime,
+  learnTypicalDrop,
   MAX_TARGET_F,
   MIN_TARGET_F,
   noEstimateReason,
   referenceHours,
   type KilnForecast,
   type KilnPhase,
+  type TypicalDrop,
 } from "@/app/kiln/kilnForecast";
 import { formatDateTime, formatDuration, toFahrenheit } from "@/app/kiln/kilnFormat";
 
@@ -23,16 +26,21 @@ const DEFAULT_HOURS_AHEAD = 2;
 const HOURS_AHEAD_STEP = 0.5;
 const TEMP_STEP_F = 25;
 const HOUR_PRESETS = [1, 2, 4, 8];
+/** enough to see how firings vary, while the page stays quick to load. */
+const MAX_LEARNING_FIRINGS = 5;
+/** plenty for fitting a cooldown, and much lighter than a whole curve per firing. */
+const LEARNING_CURVE_POINTS = 500;
 /** where people usually want to know about: the probe gets pulled around 400, then opening up. */
 const COOLING_PRESETS_F = [800, 600, 400, 300, 200];
 /** 2,345 f is cone 10. */
 const HEATING_PRESETS_F = [1000, 1500, 2000, 2200, 2345];
 const DEFAULT_TARGET_F: Record<KilnPhase, number> = { cooling: 400, heating: 2345, holding: 400 };
 const PHASE_LABELS: Record<KilnPhase, string> = {
-  cooling: "Cooling",
+  cooling: "Full drop",
   heating: "Heating",
   holding: "Holding steady",
 };
+const HELD_UP_COOLING_LABEL = "Cooling slowly, held up";
 
 const formatF = (tempF: number): string => `${Math.round(tempF).toLocaleString()} °F`;
 
@@ -104,7 +112,7 @@ function TimeCard({
   // follows the phase until someone's picked their own, so it flips to a useful temp by itself
   const text = typed ?? String(DEFAULT_TARGET_F[forecast.phase]);
   const targetF = parseInRange(text, MIN_TARGET_F, MAX_TARGET_F);
-  const isCooling = forecast.phase === "cooling";
+  const isCooling = forecast.phase !== "heating";
   const presets = (isCooling ? COOLING_PRESETS_F : HEATING_PRESETS_F).filter((preset) =>
     isCooling ? preset < forecast.tempF : preset > forecast.tempF,
   );
@@ -118,6 +126,7 @@ function TimeCard({
   let message = `Enter a temperature from ${MIN_TARGET_F} to ${MAX_TARGET_F.toLocaleString()} °F.`;
   if (reason === "holding") message = "It's holding steady, so there's no trend to go on.";
   if (reason === "passed") message = isCooling ? "It's already below that." : "It's already past that.";
+  if (reason === "near-outside") message = "That's too close to the temperature outside to estimate.";
 
   return (
     <div className="kiln-calc-card">
@@ -139,7 +148,16 @@ function TimeCard({
       </div>
       <Presets values={presets} selected={text} format={(value) => value.toLocaleString()} onPick={(value) => setTyped(String(value))} />
       <div className="kiln-calc-answer" aria-live="polite">
-        {estimate ? (
+        {estimate && forecast.heldUp ? (
+          <>
+            <div className="kiln-calc-result">At least {formatDuration(estimate.lowHours * MS_PER_HOUR)}</div>
+            <p>No sooner than {formatDateTime(nowMs + estimate.lowHours * MS_PER_HOUR)}</p>
+            <p className="kiln-calc-range">If it&apos;s let drop now. Every hour it&apos;s held up pushes this back.</p>
+            {reference !== null && (
+              <p className="kiln-calc-range">The same change took {formatDuration(reference * MS_PER_HOUR)} last firing</p>
+            )}
+          </>
+        ) : estimate ? (
           <>
             <div className="kiln-calc-result">About {formatDuration(estimate.hours * MS_PER_HOUR)}</div>
             <p>Around {formatDateTime(nowMs + estimate.hours * MS_PER_HOUR)}</p>
@@ -197,7 +215,13 @@ function TempCard({ forecast, nowMs }: { forecast: KilnForecast; nowMs: number }
       </div>
       <Presets values={HOUR_PRESETS} selected={text} format={(value) => `${value} hr`} onPick={(value) => setText(String(value))} />
       <div className="kiln-calc-answer" aria-live="polite">
-        {estimate && hours !== null && !isOffTheTop ? (
+        {estimate && hours !== null && forecast.heldUp ? (
+          <>
+            <div className="kiln-calc-result">No lower than about {formatF(estimate.lowF)}</div>
+            <p>At {formatDateTime(nowMs + hours * MS_PER_HOUR)}</p>
+            <p className="kiln-calc-range">If it&apos;s let drop now. It&apos;ll be hotter if it&apos;s held up longer.</p>
+          </>
+        ) : estimate && hours !== null && !isOffTheTop ? (
           <>
             <div className="kiln-calc-result">About {formatF(estimate.tempF)}</div>
             <p>At {formatDateTime(nowMs + hours * MS_PER_HOUR)}</p>
@@ -218,22 +242,40 @@ function TempCard({ forecast, nowMs }: { forecast: KilnForecast; nowMs: number }
  *
  * @param {object} props - component props.
  * @param {KilnForecast} props.forecast - the current trend.
+ * @param {TypicalDrop} props.typicalDrop - what the held up limits are based on.
+ * @param {boolean} props.hasOutdoorForecast - whether the outdoor temp's a real forecast.
  * @returns {JSX.Element} the note.
  */
-function ForecastNote({ forecast }: { forecast: KilnForecast }) {
-  if (forecast.settling) {
+function ForecastNote({
+  forecast,
+  typicalDrop,
+  hasOutdoorForecast,
+}: {
+  forecast: KilnForecast;
+  typicalDrop: TypicalDrop;
+  hasOutdoorForecast: boolean;
+}) {
+  const outside = hasOutdoorForecast
+    ? `It's using the forecast of about ${formatF(forecast.outsideF)} outside.`
+    : `The forecast isn't available, so it's assuming ${formatF(forecast.outsideF)} outside.`;
+  let learnedFrom = "the first firing";
+  if (typicalDrop.firingCount === 1) learnedFrom = "the last firing";
+  if (typicalDrop.firingCount > 1) learnedFrom = `the last ${typicalDrop.firingCount} firings`;
+  if (forecast.heldUp) {
     return (
       <p className="kiln-calc-note">
-        Cooling only just started, and the rate jumps around for the first couple of hours. Until it settles, this uses how
-        the first firing cooled instead of the last hour, so it&apos;s extra rough.
+        It isn&apos;t falling as fast as a full drop, so it looks like the heat&apos;s being held up. There&apos;s no telling when
+        that ends, so these are limits based on how fast {learnedFrom} fell once let go. Real estimates start once the full drop
+        shows up in the readings.
       </p>
     );
   }
   if (forecast.phase === "cooling") {
     return (
       <p className="kiln-calc-note">
-        Cooling slows down as the kiln gets closer to room temperature, and the estimate allows for that. Tested against the
-        first firing&apos;s cooldown, this was usually within about 10%, but that&apos;s only one firing so far.
+        It looks like a full drop. Cooling slows down as the kiln gets closer to the temperature outside, and the estimate
+        allows for that. {outside} The weather matters most below about 300 °F, so ranges get wider down there. Tested against
+        the first firing&apos;s cooldown, this was usually within about 10%.
       </p>
     );
   }
@@ -256,45 +298,58 @@ function ForecastNote({ forecast }: { forecast: KilnForecast }) {
  * @param {KilnCurvePoint[]} props.points - the live firing's curve, oldest first.
  * @param {number | null} props.tempC - the current temperature, null while it isn't live.
  * @param {string | null} props.lastReadingAt - when that temperature was read.
- * @param {string} props.peakAt - when the live firing peaked.
- * @param {number | null} props.referenceFiringId - the last finished firing, if there is one.
+ * @param {number | null} props.outdoorC - the average outdoor forecast, if there is one.
+ * @param {number[]} props.pastFiringIds - finished firings, newest first. estimates learn from them.
  * @returns {JSX.Element} the calculator.
  */
 export default function KilnCalculator({
   points,
   tempC,
   lastReadingAt,
-  peakAt,
-  referenceFiringId,
+  outdoorC,
+  pastFiringIds,
 }: {
   points: KilnCurvePoint[];
   tempC: number | null;
   lastReadingAt: string | null;
-  peakAt: string;
-  referenceFiringId: number | null;
+  outdoorC: number | null;
+  pastFiringIds: number[];
 }) {
-  const [referencePoints, setReferencePoints] = useState<ChartPoint[] | null>(null);
+  const [pastCurves, setPastCurves] = useState<Array<ChartPoint[] | null>>([]);
+  // a new array comes in on every poll, so this is what tells the effect when they really changed
+  const learningIds = pastFiringIds.slice(0, MAX_LEARNING_FIRINGS).join(",");
 
   useEffect(() => {
-    if (referenceFiringId === null) return;
+    if (learningIds === "") return;
     let cancelled = false;
-    fetchKilnCurve(referenceFiringId)
-      .then((curve) => {
-        if (!cancelled) setReferencePoints(toChartPoints(curve.points));
-      })
-      // the estimates work fine without the comparison
-      .catch((error) => console.warn(`couldn't load firing ${referenceFiringId} to compare against:`, error));
+    // estimates work without past firings, so one failing just means less to go on
+    const load = (id: string) =>
+      fetchKilnCurve(Number(id), LEARNING_CURVE_POINTS)
+        .then((curve) => toChartPoints(curve.points))
+        .catch((error) => {
+          console.warn(`couldn't load firing ${id} to learn from, leaving it out:`, error);
+          return null;
+        });
+    Promise.all(learningIds.split(",").map(load)).then((curves) => {
+      if (!cancelled) setPastCurves(curves);
+    });
     return () => {
       cancelled = true;
     };
-  }, [referenceFiringId]);
+  }, [learningIds]);
+
+  const referencePoints = pastCurves[0] ?? null;
+  const typicalDrop = useMemo(
+    () => learnTypicalDrop(pastCurves.filter((curve): curve is ChartPoint[] => curve !== null)),
+    [pastCurves],
+  );
 
   const chartPoints = useMemo(() => toChartPoints(points), [points]);
   const nowMs = lastReadingAt ? new Date(lastReadingAt).getTime() : null;
+  const outsideF = outdoorC === null ? DEFAULT_OUTSIDE_F : toFahrenheit(outdoorC);
   const forecast =
-    tempC === null || nowMs === null
-      ? null
-      : buildForecast(chartPoints, toFahrenheit(tempC), nowMs, new Date(peakAt).getTime());
+    tempC === null || nowMs === null ? null : buildForecast(chartPoints, toFahrenheit(tempC), nowMs, outsideF, typicalDrop);
+  const phaseLabel = forecast?.heldUp && forecast.phase === "cooling" ? HELD_UP_COOLING_LABEL : forecast && PHASE_LABELS[forecast.phase];
 
   return (
     <section className="kiln-section" aria-label="Calculator">
@@ -302,7 +357,7 @@ export default function KilnCalculator({
         <h2 className="kiln-section-title">Calculator</h2>
         {forecast && (
           <span className="kiln-section-note">
-            {PHASE_LABELS[forecast.phase]}
+            {phaseLabel}
             {forecast.phase !== "holding" && `, ${Math.abs(Math.round(forecast.rateFPerH)).toLocaleString()} °F/hr over the last hour`}
           </span>
         )}
@@ -313,7 +368,7 @@ export default function KilnCalculator({
             <TimeCard forecast={forecast} nowMs={nowMs} referencePoints={referencePoints} />
             <TempCard forecast={forecast} nowMs={nowMs} />
           </div>
-          <ForecastNote forecast={forecast} />
+          <ForecastNote forecast={forecast} typicalDrop={typicalDrop} hasOutdoorForecast={outdoorC !== null} />
         </>
       ) : (
         <p className="kiln-empty">

@@ -20,6 +20,8 @@ export type KilnStatus = {
   /** degrees c per hour, negative when cooling, null with under a third of the window's data. */
   rise_30m_c_per_h: number | null;
   rise_60m_c_per_h: number | null;
+  /** average outdoor forecast for the next 12 hours. null with no firing or no recent forecast. */
+  outdoor_forecast_c: number | null;
   firing: KilnFiring | null;
 };
 

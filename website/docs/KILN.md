@@ -80,22 +80,43 @@ answers "when will it reach this temperature?" and "how hot will it be in this m
 a likely range. It needs a live temperature and at least 20 minutes of readings in the last hour.
 
 It works out the phase from the last hour's trend: heating, cooling, or holding steady under 15 °F/hr.
+Everything on the way down also uses the cooling constant, the share of the gap to the outdoor
+temperature that closes per hour. Firings aren't run the same way, since Jude can keep some gas on to hold the heat up, and that
+constant is how the page tells the two apart. It reads the curve, not the time since the peak.
 
-- **Cooling**: an exponential curve toward 70 °F, using how fast that gap closed over the last hour,
-  because the rate is close to proportional to how far above room temperature the kiln is. Replaying
-  the first firing's cooldown, this was typically within 5%, where assuming the current rate would
-  hold was 30-40% too soon on anything hours out. The range shown is 15%
-- **Just after the peak**: for 2.5 hours the last hour is misleading, since the kiln lingers near the
-  top before it really starts dropping. So it uses a typical cooling constant of 0.16 per hour, from the
-  first firing, with a 30% range and a note saying it's extra rough
+- **Full drop**: a constant of 0.11 per hour or more, or anything under 1,000 °F. An exponential curve
+  toward the outdoor temperature, using the constant from the last hour. Replaying the first firing, this was typically
+  within 6% with the actual time in the 15% range 97% of the time, where assuming the current rate
+  would hold was 30-40% too soon on anything hours out
+- **Held up**: at or above 1,000 °F with a constant under 0.11. There's no telling when a hold ends, so
+  the page shows limits, not estimates: "at least" this long and "no lower than" this temperature if
+  it's let drop now, using the typical constant from past firings. In the replay, the flip to full drop came 1.7
+  hours after the peak, at about 1,950 °F
 - **Heating**: a straight line at the last hour's pace, typically within 25%, with a 30% range. It
   depends on how the burner's set, and it usually slows down near the top, so the page calls it a rough
   guide. The actual time landed in the range about two-thirds of the time
 
-All of those numbers come from one firing, and the 0.16 was measured on the same firing it was tested
-against, so re-check them as more firings come in. The logic has no React in it, so it can be replayed
-against any firing's curve. Once a firing has finished, the time estimate also shows how long the same
-change took in the most recent finished firing.
+**Outdoor temperature**: the kiln's outdoors, so it cools toward `outdoor_forecast_c` from
+`/kiln/status`, the average forecast for the next 12 hours. Without a forecast it assumes 70 °F and the
+note says so. This barely matters above about 300 °F but a lot near the end: for 500 down to 100 °F,
+assuming 30 °F or 90 °F gave 13 or 24 hours rather than 17. So every cooling range also allows for the
+outdoor temperature being off by 10 °F, and targets within 10 °F of it get no estimate, since the
+curve never really arrives. Wind isn't modeled. The first firing's readings didn't get low enough to
+test any of this.
+
+**Learning from past firings**: the page loads up to the 5 newest finished firings. For each, it
+takes hour-long stretches after the peak, above 500 °F so the weather and opening the kiln don't skew
+them, and keeps the ones fast enough to be a full drop. The median across stretches is that firing's
+constant, and the median across firings replaces the built-in 0.16 for the held up limits. The more
+firings disagree, the wider those limits get. Only the held up limits learn: a full drop is measured
+live, and the 0.11 and 1,000 °F cutoffs are fixed, so re-check those as more firings come in.
+
+**What it can't see**: nothing predicts someone opening the kiln or pulling the probe. In the first
+firing, the readings went from 451 to 370 °F in 15 minutes, against about 75 °F/hr before, reaching
+400 °F about half an hour ahead of the estimate made just before.
+
+The logic has no React in it, so it can be replayed against any firing's curve. Once a firing has
+finished, the time estimate also shows how long the same change took in the most recent finished firing.
 
 ## Kiln art
 

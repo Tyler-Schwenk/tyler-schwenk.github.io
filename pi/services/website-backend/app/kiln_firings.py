@@ -17,6 +17,7 @@ from typing import Optional
 from sqlalchemy import Integer, cast, func
 from sqlalchemy.orm import Session
 
+from app.kiln_weather import get_outdoor_forecast_c
 from app.models import KilnFiring, KilnReading
 
 
@@ -207,8 +208,9 @@ def get_status(db: Session) -> dict:
     close_idle_firings(db)
     latest = db.query(KilnReading).order_by(KilnReading.recorded_at.desc()).first()
     firing = db.query(KilnFiring).filter(KilnFiring.ended_at.is_(None)).first()
+    outdoor_forecast_c = get_outdoor_forecast_c() if firing is not None else None
     if latest is None:
-        return {"online": False, "firing": firing}
+        return {"online": False, "firing": firing, "outdoor_forecast_c": outdoor_forecast_c}
     online = (utc_now_naive() - latest.recorded_at).total_seconds() <= LOGGER_ONLINE_WINDOW_S
     has_live_temp = online and latest.thermocouple_c is not None
     return {
@@ -218,6 +220,7 @@ def get_status(db: Session) -> dict:
         "fault_status": latest.fault_status,
         "rise_30m_c_per_h": _rise_rate_c_per_h(db, latest, RATE_WINDOW_30M_S) if has_live_temp else None,
         "rise_60m_c_per_h": _rise_rate_c_per_h(db, latest, RATE_WINDOW_60M_S) if has_live_temp else None,
+        "outdoor_forecast_c": outdoor_forecast_c,
         "firing": firing,
     }
 

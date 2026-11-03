@@ -591,7 +591,8 @@ class KilnStatus(BaseModel):
     Temperature and rates are null while the logger's offline or the probe has a fault.
     The rates are degrees C per hour, negative when cooling. With no reading at the start
     of a rate's window, it uses what's inside the window, and it's null if that's under
-    a third of the window.
+    a third of the window. outdoor_forecast_c is the average outdoor temperature forecast
+    for the next 12 hours. It's null with no firing in progress, or with no recent forecast.
     """
     online: bool
     last_reading_at: Optional[datetime] = None
@@ -599,6 +600,7 @@ class KilnStatus(BaseModel):
     fault_status: Optional[int] = None
     rise_30m_c_per_h: Optional[float] = None
     rise_60m_c_per_h: Optional[float] = None
+    outdoor_forecast_c: Optional[float] = None
     firing: Optional[KilnFiringRead] = None
 
     @field_validator("last_reading_at")

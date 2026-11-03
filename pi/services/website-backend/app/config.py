@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     # castpi (see pi/docs/services/kiln-logger.md).
     KILN_TOKEN: str = ""
 
+    # Where to get the outdoor forecast for the kiln's cooldown. City-level on purpose: it
+    # goes to an outside service, and a few miles doesn't change the temperature much.
+    KILN_WEATHER_LATITUDE: float = 32.8
+    KILN_WEATHER_LONGITUDE: float = -117.2
+
     # CORS
     CORS_ORIGINS: str = ""
     

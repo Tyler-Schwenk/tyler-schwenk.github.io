@@ -248,8 +248,8 @@ export default function KilnConsole() {
                 <div className="kiln-stat-label">Current temperature</div>
                 <div className="kiln-stat-value">{formatTemp(status?.thermocouple_c ?? null)}</div>
               </div>
-              <Stat label="Rise, last 30 min" value={formatRate(status?.rise_30m_c_per_h ?? null)} />
-              <Stat label="Rise, last hour" value={formatRate(status?.rise_60m_c_per_h ?? null)} />
+              <Stat label="Rate of Change, last 30 min" value={formatRate(status?.rise_30m_c_per_h ?? null)} />
+              <Stat label="Rate of Change, last hour" value={formatRate(status?.rise_60m_c_per_h ?? null)} />
               <Stat label="Firing time" value={elapsedMs === null ? NO_VALUE : formatDuration(elapsedMs)} />
               <Stat label="Peak" value={formatTemp(status?.firing?.peak_c ?? null)} />
             </div>
@@ -301,8 +301,8 @@ export default function KilnConsole() {
             points={shownCurve.points}
             tempC={status.thermocouple_c}
             lastReadingAt={status.last_reading_at}
-            peakAt={status.firing.peak_at}
-            referenceFiringId={pastFirings[0]?.id ?? null}
+            outdoorC={status.outdoor_forecast_c}
+            pastFiringIds={pastFirings.map((firing) => firing.id)}
           />
         )}
 
