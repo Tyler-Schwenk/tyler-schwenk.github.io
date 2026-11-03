@@ -26,7 +26,7 @@ const FAVORITE_TOMATO = {
   variety: "hybrid tomato",
   href: "https://www.burpee.com/tomato-shimmer-hybrid-prod500101.html",
   source: "burpee.com",
-  note: "Soooo good. and it held up really well to powdery mildew in the garden. And very bountiful",
+  note: "This was my favorite tomato variety, its soooo good. It gave so many tomatoes for such a long time, and they were all delicious. and it held up really well to powdery mildew in the garden. ",
 };
 
 const INSPIRATION_LINKS = [
