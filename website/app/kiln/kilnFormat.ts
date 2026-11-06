@@ -77,6 +77,15 @@ export const formatDate = (when: string | number): string =>
   new Date(when).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 
 /**
+ * formats a date without the year, like "Nov 2", for tight spots like chart legends.
+ *
+ * @param {string | number} when - an iso string or epoch ms.
+ * @returns {string} the formatted date, in the viewer's timezone.
+ */
+export const formatShortDate = (when: string | number): string =>
+  new Date(when).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+/**
  * formats a date and time, like "Nov 2, 8:07 AM".
  *
  * @param {string | number} when - an iso string or epoch ms.

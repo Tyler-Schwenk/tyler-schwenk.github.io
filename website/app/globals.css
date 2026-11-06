@@ -459,6 +459,10 @@ body {
   --kiln-tile-top: #a5a4aa;
   --kiln-tile-bottom: #d9d8dc;
   --kiln-clay: #a8502a;
+  /* past firings drawn over the main one. validated with clay against white for color vision deficiency */
+  --kiln-compare-1: #2a78d6;
+  --kiln-compare-2: #1baf7a;
+  --kiln-compare-3: #eda100;
   --kiln-live: #2f7d4f;
   --kiln-fault: #b3261e;
   --kiln-gutter: clamp(16px, 2.6vw, 52px);
@@ -550,9 +554,28 @@ body {
 .kiln-empty { text-align: left; padding: 0; margin-top: 14px; }
 .kiln-grid { stroke: var(--kiln-hairline); stroke-width: 1; }
 .kiln-axis { fill: var(--kiln-ink-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-.kiln-line { fill: none; stroke: var(--kiln-clay); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.kiln-series-main { --kiln-series: var(--kiln-clay); }
+.kiln-series-1 { --kiln-series: var(--kiln-compare-1); }
+.kiln-series-2 { --kiln-series: var(--kiln-compare-2); }
+.kiln-series-3 { --kiln-series: var(--kiln-compare-3); }
+.kiln-line { fill: none; stroke: var(--kiln-series, var(--kiln-clay)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .kiln-area { fill: var(--kiln-clay); opacity: 0.1; }
-.kiln-dot { fill: var(--kiln-clay); stroke: var(--kiln-surface); stroke-width: 2; }
+.kiln-dot { fill: var(--kiln-series, var(--kiln-clay)); stroke: var(--kiln-surface); stroke-width: 2; }
+.kiln-swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; background: var(--kiln-series); flex: none; }
+.kiln-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 14px; font-size: 14px; color: var(--kiln-ink); }
+.kiln-legend li { display: flex; align-items: center; gap: 8px; }
+.kiln-compare { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }
+.kiln-compare-label { font-size: 15px; color: var(--kiln-ink-muted); }
+.kiln-compare .kiln-chips button { display: inline-flex; align-items: center; gap: 8px; }
+.kiln-compare .kiln-chips button[aria-pressed="true"] {
+  background: var(--kiln-surface);
+  border-color: var(--kiln-ink);
+  color: var(--kiln-ink);
+}
+.kiln-compare .kiln-chips button:disabled { color: var(--kiln-ink-muted); cursor: not-allowed; }
+.kiln-compare .kiln-chips button:disabled:hover { border-color: var(--kiln-hairline); }
+.kiln-tooltip-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.kiln-tooltip-label { flex: 1; min-width: 0; color: var(--kiln-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kiln-crosshair { stroke: var(--kiln-ink-muted); stroke-width: 1; }
 .kiln-tooltip {
   position: absolute;

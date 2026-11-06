@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   fetchKilnCurve,
   fetchKilnFirings,
@@ -18,10 +18,12 @@ import {
   formatDateTime,
   formatDuration,
   formatRate,
+  formatShortDate,
   formatTemp,
   NO_VALUE,
 } from "@/app/kiln/kilnFormat";
 import Navigation from "@/components/Navigation";
+import CompareFirings, { useComparedFirings } from "./CompareFirings";
 import FiringCard from "./FiringCard";
 import KilnCalculator from "./KilnCalculator";
 import ReadingsTable from "./ReadingsTable";
@@ -220,6 +222,21 @@ export default function KilnConsole() {
   const pastFirings = firings.filter((firing) => firing.ended_at !== null && firing.id !== selectedId);
   const isLiveView = selectedId === null;
 
+  const comparable = firings.filter((firing) => firing.id !== shownFiringId);
+  const { slots, compared, toggle } = useComparedFirings(shownFiringId);
+  const comparisons = useMemo(
+    () =>
+      compared.map(({ slot, curve }) => ({
+        id: curve.firing.id,
+        label: formatShortDate(curve.firing.started_at),
+        slot,
+        points: curve.points,
+        bucketS: curve.bucket_s,
+      })),
+    [compared],
+  );
+  const mainLabel = isLiveView || !shownFiring ? "This firing" : formatShortDate(shownFiring.started_at);
+
   return (
     <div className="kiln-theme">
       <Navigation />
@@ -277,12 +294,20 @@ export default function KilnConsole() {
 
         <section className="kiln-section" aria-label="Temperature over time">
           <h2 className="kiln-section-title">
-            {isLiveView ? "This firing" : "Temperature over time"}
-            <span className="kiln-section-note">°F</span>
+            {isLiveView && comparisons.length === 0 ? "This firing" : "Temperature over time"}
+            <span className="kiln-section-note">{comparisons.length > 0 ? "°F, lined up by starting temperature" : "°F"}</span>
           </h2>
+          {shownCurve && comparable.length > 0 && (
+            <CompareFirings firings={comparable} slots={slots} shownFiringId={shownFiringId} onToggle={toggle} />
+          )}
           {shownCurve ? (
             <>
-              <TemperatureChart points={shownCurve.points} bucketS={shownCurve.bucket_s} />
+              <TemperatureChart
+                points={shownCurve.points}
+                bucketS={shownCurve.bucket_s}
+                label={mainLabel}
+                comparisons={comparisons}
+              />
               <ReadingsTable points={shownCurve.points} bucketS={shownCurve.bucket_s} firingId={shownCurve.firing.id} />
             </>
           ) : (

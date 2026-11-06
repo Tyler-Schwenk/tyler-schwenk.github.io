@@ -19,7 +19,8 @@ side, and [the API docs](../../pi/docs/api/website-backend-api.md#kiln) for the 
 | `app/kiln/kilnCurve.ts` | Turns a curve into chart points, finds gaps, and works out the rate at a point |
 | `app/kiln/kilnForecast.ts` | The calculator's predictions. No React, so they can be replayed against real data |
 | `components/kiln/KilnConsole.tsx` | Page layout, polling, live and past firing views |
-| `components/kiln/TemperatureChart.tsx` | Full-width SVG line chart, with crosshair and tooltip |
+| `components/kiln/TemperatureChart.tsx` | Full-width SVG line chart, with crosshair and tooltip, and comparison lines |
+| `components/kiln/CompareFirings.tsx` | The "Compare with" chips, and the hook that tracks and loads compared firings |
 | `components/kiln/ReadingsTable.tsx` | The readings as a table, with adjustable spacing, sorting and CSV download |
 | `components/kiln/KilnCalculator.tsx` | Estimates how long until a temperature, and how hot it'll be later |
 | `components/kiln/FiringCard.tsx` | A past firing's tile in the grid |
@@ -52,6 +53,7 @@ differences, so converting them skips the 32 degree offset.
 | Curve being shown | 30 s | `GET /kiln/firings/{id}/curve` |
 | Past firings list | 60 s | `GET /kiln/firings` |
 | A card's thumbnail | Once | `GET /kiln/firings/{id}/curve?max_points=80` |
+| A compared firing | Once, when first turned on | `GET /kiln/firings/{id}/curve?max_points=500` |
 
 Polling pauses while the tab's hidden. Graphs are always drawn from stored readings, so there are
 no saved images. A curve averages down to at most 1,500 points, so a long firing costs the same to
@@ -61,9 +63,31 @@ draw as a short one.
 
 Hand-written SVG, sized to its container with a `ResizeObserver`, with no chart library. Hovering
 shows the temperature, the time, and the rate of rise there, measured 10 minutes either side of the
-point without crossing a gap, and shown as `--` with under 2 minutes of data around it. It has one
-series, so the section title names it and there's no legend. The line breaks wherever the probe had
+point without crossing a gap, and shown as `--` with under 2 minutes of data around it. On its own it
+has one series, so the section title names it and there's no legend. The line breaks wherever the probe had
 a fault or there's a hole in the data, rather than drawing a slope across it.
+
+### Comparing firings
+
+A "Compare with" row of chips sits above the chart, one per other firing, in both views. Turning
+one on draws it over the main curve. Up to 3 at once, since more lines get hard to tell apart.
+
+- **Lined up by starting temperature**: logging can start partway into a firing, so start times
+  alone don't line firings up. With any comparison on, the firing whose first reading was coldest
+  starts at 0, and every other one starts at the moment that coldest one reached its first reading's
+  temperature, worked out between readings (`alignByStartTemp` in `kilnCurve.ts`). So one whose
+  logging began at 433 °F starts where the coldest one hit 433 °F. The x axis becomes time since the
+  coldest one started ("Start", "2 hr", ...), and the section note says so
+- **Colors**: the main firing keeps the clay line and its fill. Comparisons are lines only, in
+  `--kiln-compare-1` to `-3` (blue, aqua, yellow), validated with clay against white for color
+  vision deficiency. Aqua and yellow are under 3:1 contrast, so every series is also named in the
+  legend and the tooltip. A firing keeps its color until it's turned off, so turning others on or
+  off never repaints it
+- **Legend and tooltip**: a legend appears above the chart. The crosshair follows the pointer rather
+  than snapping to a reading, since firings have readings at different times, and the tooltip lists
+  each firing's temperature and rate at that point, or "No data" past its end or in a hole
+- The table and CSV stay the main firing's only. Compared curves are fetched once and kept for
+  the visit, since finished firings don't change. Selections aren't saved in the URL
 
 ## Table
 

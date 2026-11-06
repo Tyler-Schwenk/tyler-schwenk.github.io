@@ -29,6 +29,86 @@ export const toChartPoints = (points: KilnCurvePoint[]): ChartPoint[] =>
   }));
 
 /**
+ * works out the longest jump between points that's still a slope rather than a hole in the data.
+ *
+ * @param {number} bucketS - how much time each point covers.
+ * @returns {number} the jump in milliseconds.
+ */
+export const maxJumpMs = (bucketS: number): number => Math.max(bucketS * GAP_BUCKETS * 1000, MIN_GAP_MS);
+
+/**
+ * finds a curve's first reading with a temperature.
+ *
+ * @param {ChartPoint[]} points - the curve, oldest first.
+ * @returns {ChartPoint | null} that reading, or null if every point's a fault.
+ */
+const firstKnown = (points: ChartPoint[]): ChartPoint | null => points.find((point) => point.value !== null) ?? null;
+
+/**
+ * works out when a curve first reaches a temperature, between readings if it falls between them.
+ *
+ * @param {ChartPoint[]} points - the curve, oldest first.
+ * @param {number} value - the temperature, in fahrenheit.
+ * @returns {number | null} the time it got there, or null if it never did.
+ */
+function timeToReach(points: ChartPoint[], value: number): number | null {
+  let previous: ChartPoint | null = null;
+  for (const point of points) {
+    if (point.value === null) continue;
+    if (point.value >= value && previous) {
+      const fraction = (value - (previous.value as number)) / (point.value - (previous.value as number));
+      return previous.timeMs + fraction * (point.timeMs - previous.timeMs);
+    }
+    if (point.value >= value) return point.timeMs;
+    previous = point;
+  }
+  return null;
+}
+
+/**
+ * lines firings up by temperature on the way up. the one that started coldest begins at 0, and
+ * every other one begins when that coldest one reached its starting temperature. logging can
+ * start partway into a firing, so lining up by start time alone would put a firing that was
+ * already hot hours ahead.
+ *
+ * @param {ChartPoint[][]} curves - each firing's curve, oldest first.
+ * @returns {ChartPoint[][]} the same curves, with timeMs as time since the coldest one started.
+ */
+export function alignByStartTemp(curves: ChartPoint[][]): ChartPoint[][] {
+  const starts = curves.map(firstKnown);
+  const anchorIndex = starts.reduce<number>((best, start, index) => {
+    const bestStart = starts[best];
+    return start && (!bestStart || (start.value as number) < (bestStart.value as number)) ? index : best;
+  }, 0);
+  const anchorStart = starts[anchorIndex];
+  if (!anchorStart) return curves;
+  const anchor = curves[anchorIndex];
+  return curves.map((points, index) => {
+    const start = starts[index];
+    if (!start) return points;
+    const reachedMs = timeToReach(anchor, start.value as number) ?? anchorStart.timeMs;
+    const shiftMs = start.timeMs - (reachedMs - anchorStart.timeMs);
+    return points.map((point) => ({ ...point, timeMs: point.timeMs - shiftMs }));
+  });
+}
+
+/**
+ * finds the point closest in time, as long as it's not across a hole in the data.
+ *
+ * @param {ChartPoint[]} points - the curve.
+ * @param {number} timeMs - the time to look near.
+ * @param {number} withinMs - how far away a point can be and still count.
+ * @returns {ChartPoint | null} the nearest point, or null if none is close enough.
+ */
+export function nearestPoint(points: ChartPoint[], timeMs: number, withinMs: number): ChartPoint | null {
+  let nearest: ChartPoint | null = null;
+  for (const point of points) {
+    if (!nearest || Math.abs(point.timeMs - timeMs) < Math.abs(nearest.timeMs - timeMs)) nearest = point;
+  }
+  return nearest && Math.abs(nearest.timeMs - timeMs) <= withinMs ? nearest : null;
+}
+
+/**
  * splits a curve into runs of connected points, breaking at faults and holes in the data.
  *
  * @param {ChartPoint[]} points - the curve.
@@ -36,12 +116,12 @@ export const toChartPoints = (points: KilnCurvePoint[]): ChartPoint[] =>
  * @returns {ChartPoint[][]} the unbroken runs.
  */
 export function splitIntoRuns(points: ChartPoint[], bucketS: number): ChartPoint[][] {
-  const maxJumpMs = Math.max(bucketS * GAP_BUCKETS * 1000, MIN_GAP_MS);
+  const jumpMs = maxJumpMs(bucketS);
   const runs: ChartPoint[][] = [];
   let run: ChartPoint[] = [];
   for (const point of points) {
     const previous = run[run.length - 1];
-    if (point.value === null || (previous && point.timeMs - previous.timeMs > maxJumpMs)) {
+    if (point.value === null || (previous && point.timeMs - previous.timeMs > jumpMs)) {
       if (run.length > 0) runs.push(run);
       run = [];
     }
