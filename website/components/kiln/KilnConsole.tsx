@@ -237,6 +237,16 @@ export default function KilnConsole() {
   );
   const mainLabel = isLiveView || !shownFiring ? "This firing" : formatShortDate(shownFiring.started_at);
 
+  // from the first reading to the hottest. while it's live and still rising, the peak isn't final
+  const startTempC = shownCurve?.points.find((point) => point.thermocouple_c !== null)?.thermocouple_c ?? null;
+  const stillClimbing = isLiveView && (status?.rise_30m_c_per_h ?? 0) > 0;
+  const toPeakLabel = startTempC === null ? "Time to peak" : `Time to peak, from ${formatTemp(startTempC)}`;
+  let toPeakValue = NO_VALUE;
+  if (shownFiring && stillClimbing) toPeakValue = "Still climbing";
+  if (shownFiring && !stillClimbing) {
+    toPeakValue = formatDuration(new Date(shownFiring.peak_at).getTime() - new Date(shownFiring.started_at).getTime());
+  }
+
   return (
     <div className="kiln-theme">
       <Navigation />
@@ -269,6 +279,7 @@ export default function KilnConsole() {
               <Stat label="Rate of Change, last hour" value={formatRate(status?.rise_60m_c_per_h ?? null)} />
               <Stat label="Firing time" value={elapsedMs === null ? NO_VALUE : formatDuration(elapsedMs)} />
               <Stat label="Peak" value={formatTemp(status?.firing?.peak_c ?? null)} />
+              <Stat label={toPeakLabel} value={toPeakValue} />
             </div>
           </div>
         ) : (
@@ -283,7 +294,8 @@ export default function KilnConsole() {
             <div className="kiln-stats">
               <Stat label="Peak" value={formatTemp(shownFiring?.peak_c ?? null)} />
               <Stat label="Firing time" value={elapsedMs === null ? NO_VALUE : formatDuration(elapsedMs)} />
-              <Stat label="Started" value={shownFiring ? formatDateTime(shownFiring.started_at) : NO_VALUE} />
+              <Stat label={toPeakLabel} value={toPeakValue} />
+              <Stat label="Started"value={shownFiring ? formatDateTime(shownFiring.started_at) : NO_VALUE} />
               <Stat
                 label="Finished"
                 value={shownFiring?.ended_at ? formatDateTime(shownFiring.ended_at) : shownFiring ? "In progress" : NO_VALUE}

@@ -33,10 +33,14 @@ side, and [the API docs](../../pi/docs/api/website-backend-api.md#kiln) for the 
 
 - **`/kiln`**: the live view. Status line, a "What's this?" dropdown saying who it's for and how the
   readings get here, current temperature, rise over the last 30 minutes and
-  hour, firing time, peak, and the current firing's curve
-- **`/kiln?firing=<id>`**: one firing, with its peak, duration, start and finish. It's a query
+  hour, firing time, peak, time to peak, and the current firing's curve
+- **`/kiln?firing=<id>`**: one firing, with its peak, duration, time to peak, start and finish. It's a query
   parameter rather than a path because a static export can't generate pages for firings that
   don't exist yet
+
+**Time to peak** runs from the firing's first reading to its hottest one (`peak_at`), and its label
+gives the first reading's temperature, since logging can start partway up. In the live view it says
+"Still climbing" while the 30 minute rate is positive, because the peak isn't final yet.
 
 Both show the past firings grid. The status line separates live, no firing in progress, probe
 disconnected, logger offline, and backend unreachable. Temperature and rates show `--` unless
