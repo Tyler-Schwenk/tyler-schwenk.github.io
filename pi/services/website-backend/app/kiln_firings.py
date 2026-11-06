@@ -38,8 +38,9 @@ def fahrenheit_to_celsius(temp_f: float) -> float:
 # second. they're apart so a kiln hovering near one temperature can't flip back and forth
 FIRING_START_C = fahrenheit_to_celsius(150)
 FIRING_END_C = fahrenheit_to_celsius(120)
-# hot readings this close together are one firing, even if it's been marked finished
-FIRING_WINDOW_S = 48 * 60 * 60
+# hot readings this close together are one firing, even if it's been marked finished. a
+# longer gap than this means a new firing, since a firing never goes a day without data
+FIRING_WINDOW_S = 24 * 60 * 60
 # this long without a temperature means the probe's been pulled, so the firing finishes at
 # its last real reading. if it was only a long outage, the next hot reading picks it back up
 FIRING_IDLE_S = 6 * 60 * 60

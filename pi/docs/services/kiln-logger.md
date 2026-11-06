@@ -80,13 +80,13 @@ Everything's in the backend's SQLite database, and nothing gets deleted:
 A firing takes about a day to heat and up to a day to cool, the probe usually gets pulled around
 400 F, and the next firing is at least a few days later, so time is the main signal:
 
-- **Starts** at the first reading at or above 150 F. Hot readings from the 48 hours before that count too
-- **Same firing** for any reading within 48 hours of its last one. A hot reading (150 F or more) in
+- **Starts** at the first reading at or above 150 F. Hot readings from the 24 hours before that count too
+- **Same firing** for any reading within 24 hours of its last one. A hot reading (150 F or more) in
   that window reopens a firing marked finished, so a re-plugged probe or a long outage doesn't split it
 - **Finishes after 6 hours with no temperature**, at its last real reading. That covers the normal
   ending, the probe getting pulled during cooldown, and needs no cold reading
 - **Also finishes** at the first reading below 120 F, if the probe stays in all the way down
-- **New firing** needs a reading at or above 150 F, more than 48 hours after the last firing's last reading
+- **New firing** needs a reading at or above 150 F, more than 24 hours after the last firing's last reading
 - Faults don't start or end anything, and neither does the logger rebooting
 
 So after the probe's pulled, the page shows that firing as in progress for up to 6 more hours.
