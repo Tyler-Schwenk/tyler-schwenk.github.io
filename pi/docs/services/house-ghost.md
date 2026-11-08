@@ -8,8 +8,8 @@ A scary voice greets roommates by name through the big speakers (the
 Every 15 s, `main.py` runs `arp-scan` on `eth0` and compares the replies to the MAC addresses
 in `roommates.json`. Every other device on the network is ignored.
 
-A roommate gets a greeting when their device answers after being silent for at least 45
-minutes, unless any of these apply:
+A roommate gets a greeting when their device answers after being silent for at least 90
+minutes (`AWAY_BEFORE_GREET_S`), unless any of these apply:
 
 | Rule | Value | Constant in `main.py` |
 |---|---|---|
@@ -28,8 +28,10 @@ minutes, unless any of these apply:
 
 - A phone can join the network from the driveway, so a greeting can come before they're
   inside. Wi-Fi off or a dead phone means no greeting.
-- Sleeping phones stop answering for stretches. `AWAY_BEFORE_GREET_S` has to stay longer than
-  that or roommates get greeted while they're home.
+- Sleeping phones stop answering for stretches, sometimes close to an hour.
+  `AWAY_BEFORE_GREET_S` has to stay longer than that or roommates get greeted while they're
+  home, so trips shorter than 90 minutes don't get a greeting. Every arrival is logged with
+  how long they were gone (`is back after N min`), which is the way to tune it.
 - iPhones and Androids use a private MAC per network. It's usually stable, but iOS's "Rotating"
   Private Wi-Fi Address setting changes it. If someone stops getting greetings, recheck their
   MAC with `--scan`, and set that network to "Fixed" on their phone.

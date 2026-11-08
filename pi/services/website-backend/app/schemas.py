@@ -487,6 +487,49 @@ class DisplayCommandBatch(BaseModel):
     commands: list[DisplayCommand]
 
 
+# Presence Schemas
+# names come from people.json on fart-pi. these just keep a broken push from being huge
+MAX_PRESENCE_PEOPLE = 50
+MAX_PRESENCE_NAME_LENGTH = 50
+
+
+class PresencePersonIn(BaseModel):
+    """One person in the agent's snapshot. last_seen_ms is null until their phone answers."""
+    name: str = Field(..., min_length=1, max_length=MAX_PRESENCE_NAME_LENGTH)
+    last_seen_ms: Optional[int] = None
+
+
+class PresenceSnapshot(BaseModel):
+    """Everyone the presence agent watches, in the order its people.json lists them."""
+    people: list[PresencePersonIn] = Field(..., max_length=MAX_PRESENCE_PEOPLE)
+
+
+class PresencePerson(BaseModel):
+    """
+    One person on the admin page: when their phone last answered, when they last
+    arrived (null if the backend hasn't seen an arrival since it started), and if
+    they count as home.
+    """
+    name: str
+    last_seen_ms: Optional[int] = None
+    arrived_at_ms: Optional[int] = None
+    home: bool
+
+
+class PresenceState(BaseModel):
+    """
+    Who's home, for the admin page.
+
+    `now_ms` is the backend's clock, for working out how long ago someone was seen.
+    `away_after_ms` is how long a phone can be silent before its owner counts as away.
+    """
+    agent_online: bool
+    agent_seen_ms: Optional[int] = None
+    now_ms: int
+    away_after_ms: int
+    people: list[PresencePerson]
+
+
 # Kiln Schemas
 # most readings the logger sends at once. matches MAX_BATCH_SIZE in kiln_logger.py
 MAX_KILN_BATCH_SIZE = 500

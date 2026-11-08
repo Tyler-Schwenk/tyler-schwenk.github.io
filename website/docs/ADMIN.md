@@ -9,6 +9,7 @@
 |-----|------|--------------|
 | Display remote | `#display` | Remote control for the display kiosk (displaytop): what the screens show now, and buttons for the kiosk's keys |
 | Entrance | `#entrance` | Plays the entrance song on the big speakers, with a countdown to the drop (`pi/docs/services/entrance-song.md`) |
+| Home | `#home` | Who's home, from whose phone is on the Wi-Fi (`pi/docs/services/presence-agent.md`) |
 | Galleries | `#galleries` | Reorder, edit (name/slug/description/public), delete galleries; expand one to delete photos or add more; create a new gallery |
 | Upload | `#upload` | Photos into an existing or new gallery, or a video (with the existing videos list and delete) |
 | RSVPs | `#rsvps` | Event RSVPs grouped by event, with responses and a rough headcount (responders + friends); delete a response |
@@ -52,6 +53,7 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/useDisplayControl.ts` | Long-polls the kiosk's state and replays it; `sendKeys`, `playingPreset` |
 | `website/app/admin/PresetBrowser.tsx` | Searchable list of every milkdrop preset, to jump to one |
 | `website/app/admin/EntranceTab.tsx`, `useEntrance.ts` | The entrance song's button and countdown; polls the backend for the song's position and keeps the phone's screen on while it plays |
+| `website/app/admin/PresenceTab.tsx` | Who's home: each person, home or away, when they arrived ("x min ago" for 30 min, then the time) and when their phone was last seen. Reloads every 30 s |
 | `website/app/admin/GalleriesTab.tsx`, `GalleryCard.tsx` | Gallery list, reorder, new-gallery form; one gallery's card (edit form, photos panel) |
 | `website/app/admin/GalleryForms.tsx` | `GalleryFields` (name/slug/description, shared by create, edit and upload) and `UploadOutcome` |
 | `website/app/admin/galleryApi.ts` | `createGallery`, `uploadPhotos` (one file at a time, carrying on past failures), `ALL_GALLERIES_PATH` |
@@ -72,7 +74,7 @@ a 401 from any endpoint logs the page out and shows the login form. Tokens last 
 
 Write a component that loads what it needs with `useAdminData` (or `useAdminFetch` +
 `adminRequest` for writes), add it to `TABS` in `page.tsx` with a short label, a title and
-an icon from `icons.tsx`. The bottom bar is a six-column grid, so a seventh tab needs that
+an icon from `icons.tsx`. The bottom bar is a seven-column grid, so an eighth tab needs that
 changed too.
 
 ## Display Remote

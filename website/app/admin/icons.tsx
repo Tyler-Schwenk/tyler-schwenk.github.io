@@ -76,6 +76,17 @@ export function MusicIcon(props: { className?: string }) {
   );
 }
 
+/** A house, for who's home. */
+export function HouseIcon(props: { className?: string }) {
+  return (
+    <Icon {...props}>
+      <path d="M3 11l9-7 9 7" />
+      <path d="M5 10v10h14V10" />
+      <path d="M10 20v-6h4v6" />
+    </Icon>
+  );
+}
+
 /** A speech bubble, for the public square. */
 export function ChatIcon(props: { className?: string }) {
   return (

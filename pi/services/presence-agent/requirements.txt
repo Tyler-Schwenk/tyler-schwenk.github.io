@@ -1,0 +1,1 @@
+# stdlib only. the venv's just there so pi/scripts/deploy.sh knows how to restart it

@@ -13,9 +13,12 @@ services/trash-reminder/trash_state.json
 
 # house-ghost: roommates' device macs stay off the public repo, clips and voices are generated
 services/house-ghost/roommates.json
-services/house-ghost/device-notes.md
 services/house-ghost/audio/
 services/house-ghost/voices/
+
+# presence-agent: people's device macs stay off the public repo
+services/presence-agent/people.json
+services/presence-agent/device-notes.md
 
 # deploy.sh's per-service "last deployed commit" markers -- Pi-local state
 scripts/.deploy-state/

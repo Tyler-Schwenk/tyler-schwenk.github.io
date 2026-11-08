@@ -55,9 +55,9 @@ SCAN_LINE_PATTERN = re.compile(r"^(\d+\.\d+\.\d+\.\d+)[ \t]+([0-9a-f:]{17})[ \t]
 
 # ---- when to greet ----
 
-# sleeping phones go quiet for a while, so this has to be well past that or the ghost
-# greets someone who never left
-AWAY_BEFORE_GREET_S = 45 * 60
+# sleeping phones go quiet for a while (gaps near an hour have shown up), so this has to
+# be well past that or the ghost greets someone who never left
+AWAY_BEFORE_GREET_S = 90 * 60
 # wifi dropouts and quick errands shouldn't get a second greeting
 GREET_COOLDOWN_S = 4 * 60 * 60
 # a greeting stuck behind busy speakers gets dropped after this, it'd be weird that late

@@ -3,6 +3,26 @@
  * pi/docs/api/website-backend-api.md). Only the fields the page uses.
  */
 
+/** One person on the Home tab (GET /presence). */
+export interface PresencePerson {
+  name: string;
+  /** Epoch ms their phone last answered, null if not since the agent started. */
+  last_seen_ms: number | null;
+  /** Epoch ms their phone came back after being away, null if no arrival seen since the backend started. */
+  arrived_at_ms: number | null;
+  home: boolean;
+}
+
+/** Who's home (GET /presence). */
+export interface PresenceState {
+  agent_online: boolean;
+  /** The backend's clock, epoch ms. */
+  now_ms: number;
+  /** How long a phone can be silent before its owner counts as away. */
+  away_after_ms: number;
+  people: PresencePerson[];
+}
+
 export interface Gallery {
   id: number;
   name: string;

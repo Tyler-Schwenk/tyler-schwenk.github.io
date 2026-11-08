@@ -13,6 +13,7 @@ Backend API for tyler-schwenk.com providing:
 - **Mallard Count**: Server-side proxy for the external mallard counter API (sidesteps that API's missing CORS headers)
 - **Display Control**: In-memory relay between the admin page's remote and the display kiosk's surfcam agent
 - **Entrance Song**: Plays an intro song on the big speakers from the admin page
+- **Presence**: Who's home, pushed by the presence agent on fart-pi, for the admin page
 
 **Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, and recipe features.
 
@@ -1077,6 +1078,45 @@ Starts the song, or does nothing if it's already playing. **Errors:** `409` if a
 ### POST `/entrance/stop`
 
 Cuts the song off. Does nothing if it isn't playing.
+
+---
+
+## Presence
+
+Who's home, from whose phone is on the home Wi-Fi. The presence agent on fart-pi pushes, the admin page reads. Kept in memory only. See `pi/docs/services/presence-agent.md`.
+
+### GET `/presence`
+
+**Auth:** admin JWT.
+
+```json
+{
+  "agent_online": true,
+  "agent_seen_ms": 1794165683928,
+  "now_ms": 1794165683974,
+  "away_after_ms": 5400000,
+  "people": [
+    {"name": "Sam", "last_seen_ms": 1794165683903, "arrived_at_ms": 1794164100000, "home": true},
+    {"name": "Alex", "last_seen_ms": null, "arrived_at_ms": null, "home": false}
+  ]
+}
+```
+
+- `home`: their phone answered within `away_after_ms` (90 min) of `now_ms`
+- `last_seen_ms`: epoch ms, null if not seen since the backend started
+- `arrived_at_ms`: epoch ms their phone answered after at least `away_after_ms` of silence while the agent was pushing, null if no arrival seen since the backend started
+- `agent_online`: the agent pushed in the last 2 min. If not, the times are stale
+- `people` is empty until the agent's first push after a backend restart
+
+### PUT `/presence/agent`
+
+**Auth:** `X-Presence-Token` header, matching `PRESENCE_TOKEN` in the backend's `.env`. 401 if it's wrong, 503 if `PRESENCE_TOKEN` isn't set.
+
+Updates everyone's last-seen time and notes arrivals. A `null` keeps what the backend already had. Up to 50 people, names up to 50 characters. Answers `204`.
+
+```json
+{"people": [{"name": "Sam", "last_seen_ms": 1794165683903}, {"name": "Alex", "last_seen_ms": null}]}
+```
 
 ---
 

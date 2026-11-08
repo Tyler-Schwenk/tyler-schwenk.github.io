@@ -1,0 +1,18 @@
+[Unit]
+Description=Presence Agent
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+ExecStart=/home/tyler/tyler-schwenk.github.io/pi/services/presence-agent/.venv/bin/python /home/tyler/tyler-schwenk.github.io/pi/services/presence-agent/presence_agent.py
+WorkingDirectory=/home/tyler/tyler-schwenk.github.io/pi/services/presence-agent
+Restart=always
+RestartSec=10
+User=tyler
+# arp-scan needs raw sockets, this gives it that without running as root
+AmbientCapabilities=CAP_NET_RAW
+# so logs show up in journalctl right away
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
