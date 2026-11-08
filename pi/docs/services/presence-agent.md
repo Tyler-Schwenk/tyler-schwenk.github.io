@@ -18,8 +18,9 @@ phones on wifi -> arp-scan on fart-pi (presence-agent.service) -> PUT /presence/
   home if their phone answered in the last 90 min (`AWAY_AFTER_S`). If the agent hasn't pushed
   for 2 min, the page says it's out of date.
 - **Arrivals**: a phone answering after 90 min of silence is an arrival, stamped with the time
-  it was first seen, so it's accurate to about the 15 s scan interval. The page shows "arrived
-  4 min ago (3:42:10 PM)" for the last 30 min, then just the time. It only counts while the agent
+  it was first seen, so it's accurate to about the 15 s scan interval. The page shows "returned
+  4 min ago (3:42:10 PM)" for the last 30 min, then just the time, and "no return seen yet"
+  before the first one. It only counts while the agent
   has been pushing all along: after the agent or backend was down, a long gap could just be time
   nobody was looking. Trips under 90 min don't show as arrivals. A backend restart forgets past
   arrivals.

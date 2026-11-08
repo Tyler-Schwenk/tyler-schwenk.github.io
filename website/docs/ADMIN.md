@@ -53,7 +53,7 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/useDisplayControl.ts` | Long-polls the kiosk's state and replays it; `sendKeys`, `playingPreset` |
 | `website/app/admin/PresetBrowser.tsx` | Searchable list of every milkdrop preset, to jump to one |
 | `website/app/admin/EntranceTab.tsx`, `useEntrance.ts` | The entrance song's button and countdown; polls the backend for the song's position and keeps the phone's screen on while it plays |
-| `website/app/admin/PresenceTab.tsx` | Who's home: each person, home or away, when they arrived ("x min ago" for 30 min, then the time) and when their phone was last seen. Reloads every 30 s |
+| `website/app/admin/PresenceTab.tsx` | Who's home: each person, home or away, when they last returned home ("returned x min ago" for 30 min, then the time, or "no return seen yet") and when their phone was last seen. Reloads every 30 s |
 | `website/app/admin/GalleriesTab.tsx`, `GalleryCard.tsx` | Gallery list, reorder, new-gallery form; one gallery's card (edit form, photos panel) |
 | `website/app/admin/GalleryForms.tsx` | `GalleryFields` (name/slug/description, shared by create, edit and upload) and `UploadOutcome` |
 | `website/app/admin/galleryApi.ts` | `createGallery`, `uploadPhotos` (one file at a time, carrying on past failures), `ALL_GALLERIES_PATH` |

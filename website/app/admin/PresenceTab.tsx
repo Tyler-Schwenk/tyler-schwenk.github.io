@@ -20,21 +20,23 @@ const MS_PER_MIN = 60_000;
 const RECENT_ARRIVAL_MS = 30 * MS_PER_MIN;
 
 /**
- * When someone arrived, for timing the wifi against walking in the door.
- * @param arrivedAtMs - Epoch ms of the arrival.
+ * When someone last came home, for timing the wifi against walking in the door.
+ * @param arrivedAtMs - Epoch ms their phone came back, or null if no return's been seen.
  * @param nowMs - The backend's clock.
- * @returns Like "arrived 4 min ago (3:42:10 PM)", "arrived at 3:42 PM" or "arrived Sat 3:42 PM".
+ * @returns Like "returned 4 min ago (3:42:10 PM)", "returned at 3:42 PM", "returned Sat 3:42 PM"
+ *   or "no return seen yet".
  */
-function describeArrival(arrivedAtMs: number, nowMs: number): string {
+function describeReturn(arrivedAtMs: number | null, nowMs: number): string {
+  if (arrivedAtMs === null) return "no return seen yet";
   const arrivedAt = new Date(arrivedAtMs);
   if (nowMs - arrivedAtMs < RECENT_ARRIVAL_MS) {
     const exact = arrivedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
-    return `arrived ${formatElapsed(nowMs - arrivedAtMs)} ago (${exact})`;
+    return `returned ${formatElapsed(nowMs - arrivedAtMs)} ago (${exact})`;
   }
   const time = arrivedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const sameDay = arrivedAt.toDateString() === new Date(nowMs).toDateString();
-  if (sameDay) return `arrived at ${time}`;
-  return `arrived ${arrivedAt.toLocaleDateString([], { weekday: "short" })} ${time}`;
+  if (sameDay) return `returned at ${time}`;
+  return `returned ${arrivedAt.toLocaleDateString([], { weekday: "short" })} ${time}`;
 }
 
 /**
@@ -51,9 +53,9 @@ function PersonRow({ person, nowMs }: { person: PresencePerson; nowMs: number })
     <Card className="flex items-center gap-3 p-3">
       <div className="min-w-0 flex-1">
         <div className="font-semibold text-white">{person.name}</div>
-        {person.arrived_at_ms !== null && (
-          <div className="mt-0.5 text-sm text-slate-200">{describeArrival(person.arrived_at_ms, nowMs)}</div>
-        )}
+        <div className={`mt-0.5 text-sm ${person.arrived_at_ms === null ? "text-slate-500" : "text-slate-200"}`}>
+          {describeReturn(person.arrived_at_ms, nowMs)}
+        </div>
         <div className="mt-0.5 text-sm text-slate-400">{seen}</div>
       </div>
       <Badge tone={person.home ? "green" : "grey"}>{person.home ? "home" : "away"}</Badge>
@@ -100,8 +102,9 @@ export default function PresenceTab() {
       </div>
       <p className="mt-6 text-xs text-slate-500">
         Home means their phone answered on the wifi in the last {Math.round(awayAfterMs / MS_PER_MIN)} min.
-        Sleeping phones go quiet for a while, so leaving takes that long to show. Arriving means their phone
-        came back after being quiet that long, timed to within about 15 s.
+        Sleeping phones go quiet for a while, so leaving takes that long to show. Returned means their phone
+        came back after being quiet that long, timed to within about 15 s. Returns from before the backend last
+        restarted aren&apos;t known.
       </p>
     </div>
   );
