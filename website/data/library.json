@@ -93,6 +93,14 @@
   ],
   "read": [
     {
+      "id": "theo-of-golden",
+      "title": "Theo of Golden",
+      "author": "Allen Levi",
+      "rating": 5,
+      "dateRead": "2026-11-03",
+      "review": "Yeah, that was awesome. Made me feel really good about life and want to be a better person."
+    },
+    {
       "id": "brave-new-world",
       "title": "Brave New World",
       "author": "Aldous Huxley",
