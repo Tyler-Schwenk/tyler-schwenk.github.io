@@ -3,6 +3,8 @@
 import type { ReactElement } from "react";
 import PhotoPanel, { type PhotoHold } from "./PhotoPanel";
 import MallardPanel from "./MallardPanel";
+import FlyTotalPanel from "./FlyTotalPanel";
+import FlyKillCounter from "@/components/flies/FlyKillCounter";
 import BpmPanel, { BPM_VIEWS } from "./BpmPanel";
 import SurfConditionsPanel from "./SurfConditionsPanel";
 import { useDisplayEnvironment } from "./displayEnvironment";
@@ -17,6 +19,7 @@ import {
   type PresetControl,
 } from "./kioskControl";
 import {
+  FLIES_SLOT_ID,
   MALLARDS_SLOT_ID,
   PANEL_ROTATE_INTERVAL_MS,
   PHOTOS_SLOT_ID,
@@ -64,6 +67,9 @@ export interface RotationSlot {
 const PRIMARY_PHOTOS: DisplayPanel = { render: ({ photoHold }) => <PhotoPanel hold={photoHold} /> };
 const SECONDARY_PHOTOS: DisplayPanel = { render: ({ photoHold }) => <PhotoPanel staggered hold={photoHold} /> };
 const MALLARDS: DisplayPanel = { render: () => <MallardPanel /> };
+// the /flies scene (scoreboard and pile) below, just the total on top
+const FLY_SCENE: DisplayPanel = { render: () => <FlyKillCounter display /> };
+const FLY_TOTAL: DisplayPanel = { render: () => <FlyTotalPanel /> };
 
 // shown only from its key, never in the rotation. both sides render BpmPanel whichever view
 // is up, so it stays mounted (and keeps its stream) as the views change
@@ -117,6 +123,7 @@ function surfCamSlot(camId: SurfCamId): RotationSlot {
 const FIXED_SLOT_PANELS: Record<string, Pick<RotationSlot, "primary" | "secondary">> = {
   [PHOTOS_SLOT_ID]: { primary: PRIMARY_PHOTOS, secondary: SECONDARY_PHOTOS },
   [MALLARDS_SLOT_ID]: { primary: PRIMARY_PHOTOS, secondary: MALLARDS },
+  [FLIES_SLOT_ID]: { primary: FLY_SCENE, secondary: FLY_TOTAL },
 };
 
 /**

@@ -1,4 +1,4 @@
-import { CONTROL_CONFIG, MALLARDS_SLOT_ID, PHOTOS_SLOT_ID } from "../display/displayConfig";
+import { CONTROL_CONFIG, FLIES_SLOT_ID, MALLARDS_SLOT_ID, PHOTOS_SLOT_ID } from "../display/displayConfig";
 import { INITIAL_CONTROL_STATE, applyControlEvent, type ControlState, type DisplayMode } from "../display/kioskControl";
 
 /**
@@ -8,7 +8,7 @@ import { INITIAL_CONTROL_STATE, applyControlEvent, type ControlState, type Displ
  * pressed on the keyboard keep the panel in step.
  */
 
-export type SectionId = "overview" | "photos" | "mallards" | "surf" | "bpm";
+export type SectionId = "overview" | "photos" | "mallards" | "flies" | "surf" | "bpm";
 
 /** One section of the panel. */
 export interface ConsoleSection {
@@ -78,6 +78,15 @@ export const CONSOLE_SECTIONS: ConsoleSection[] = [
     enter: (atMs) => afterKey("2", atMs),
   },
   {
+    id: "flies",
+    label: "flies",
+    description: [
+      "The house fly kill count. The monitor shows the scoreboard from the fly page, with everyone's kills, over the pile of every fly we've killed. New kills drop onto the pile as they're logged.",
+      "The laptop screen shows just the total, a bit above center since the bottom of that screen is partly blocked.",
+    ],
+    enter: () => holdSlotState(FLIES_SLOT_ID),
+  },
+  {
     id: "surf",
     label: "surf cams",
     description: [
@@ -109,5 +118,6 @@ export function sectionForMode(mode: DisplayMode): SectionId {
   if (mode.kind === "bpm") return "bpm";
   if (mode.slotId === PHOTOS_SLOT_ID) return "photos";
   if (mode.slotId === MALLARDS_SLOT_ID) return "mallards";
+  if (mode.slotId === FLIES_SLOT_ID) return "flies";
   return "surf";
 }

@@ -10,9 +10,14 @@ import styles from "./flies.module.css";
  * the whole /flies page: the scoreboard on the wall and the pile of dead flies on
  * the floor. no login, anyone can add a kill for anyone.
  *
+ * the house display shows the same scene as a full-screen panel: no buttons, no
+ * error line (it just keeps the last tally and retries), sized for its screen.
+ *
+ * @param {object} props - component props.
+ * @param {boolean} [props.display] - render as the read-only /display panel.
  * @returns {JSX.Element} the page body.
  */
-export default function FlyKillCounter() {
+export default function FlyKillCounter({ display = false }: { display?: boolean }) {
   const { tally, error, addKill, removeKill } = useFlyKills();
   const killsFor = new Map(tally?.killers.map((entry) => [entry.killer, entry.kills]));
   const mostKills = tally ? Math.max(...tally.killers.map((entry) => entry.kills)) : 0;
@@ -21,7 +26,7 @@ export default function FlyKillCounter() {
   if (tally) headline = `${tally.total} ${tally.total === 1 ? "fly" : "flies"} down in the house`;
 
   return (
-    <main className={styles.room}>
+    <main className={display ? `${styles.room} ${styles.displayRoom}` : styles.room}>
       <section className={styles.wall}>
         <header className={styles.header}>
           <h1 className={styles.title}>Fly Kill Count</h1>
@@ -37,14 +42,14 @@ export default function FlyKillCounter() {
                 killer={killer}
                 kills={tally ? kills ?? 0 : null}
                 leading={mostKills > 0 && kills === mostKills}
-                onAdd={addKill}
-                onRemove={removeKill}
+                onAdd={display ? undefined : addKill}
+                onRemove={display ? undefined : removeKill}
               />
             );
           })}
         </ul>
 
-        {error && <p className={styles.error} role="status">{error}</p>}
+        {error && !display && <p className={styles.error} role="status">{error}</p>}
       </section>
 
       <section className={styles.floor} aria-label={tally ? `a pile of ${tally.total} dead flies` : "the fly pile"}>

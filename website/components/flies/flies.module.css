@@ -294,3 +294,112 @@
   height: 100%;
   user-select: none;
 }
+
+/* ---------- the house display (/display) ---------- */
+
+/*
+  the kiosk panels render at the screens' native resolution (2560x1440 below,
+  2256x1504 on top), and on the console page inside a warped box that size. viewport
+  units would measure the wrong thing there, so everything here is in px, and it
+  overrides the page's vw/svh sizes and phone breakpoints.
+*/
+.displayRoom {
+  --fly-w: 150px;
+
+  position: fixed;
+  inset: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.displayRoom .wall {
+  flex-shrink: 0;
+  padding: 72px 64px 64px;
+}
+
+.displayRoom .header {
+  margin-bottom: 44px;
+}
+
+.displayRoom .title {
+  font-size: 72px;
+}
+
+.displayRoom .headline {
+  font-size: 40px;
+  margin-top: 24px;
+}
+
+.displayRoom .board {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 48px;
+  max-width: 1900px;
+}
+
+.displayRoom .card {
+  padding: 36px 20px 28px;
+  border-width: 5px;
+  box-shadow: 8px 8px 0 var(--ink);
+}
+
+.displayRoom .cardLeading {
+  box-shadow: 8px 8px 0 var(--swat-dark);
+}
+
+.displayRoom .leaderTag {
+  top: -22px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border-width: 3px;
+}
+
+.displayRoom .cardName {
+  font-size: 36px;
+}
+
+.displayRoom .cardCount {
+  font-size: 128px;
+  margin: 36px 0 8px;
+}
+
+/* a pile taller than the floor climbs up over the wall rather than pushing the scoreboard off screen */
+.displayRoom .floor {
+  min-height: 0;
+  padding: 32px 64px 72px;
+}
+
+.displayRoom .pile {
+  max-width: 1500px;
+}
+
+/* the top screen: just the total, on the wall */
+.totalScreen {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 46px, var(--wall-seam) 46px 49px),
+    var(--wall);
+}
+
+.total {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  /* centered on its top edge; the panel sets top */
+  transform: translateY(-50%);
+}
+
+.totalCount {
+  font-family: var(--font-press-start), monospace;
+  font-size: 300px;
+  line-height: 1;
+  margin: 0;
+  animation: count-pop 260ms ease-out;
+}
+
+.totalLabel {
+  font-family: var(--font-press-start), monospace;
+  font-size: 48px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 40px 0 0;
+}

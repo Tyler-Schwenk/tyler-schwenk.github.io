@@ -22,6 +22,7 @@ export const PANEL_ROTATE_INTERVAL_MS = 45_000;
 
 export const PHOTOS_SLOT_ID = "photos";
 export const MALLARDS_SLOT_ID = "mallards";
+export const FLIES_SLOT_ID = "flies";
 const BPM_SHORTCUT_KEY = "b";
 
 /** One slot of the rotation, as named on the remote. Cam slots carry their cam. */
@@ -40,10 +41,11 @@ export function surfCamSlotId(camId: SurfCamId): string {
   return `surf-${camId}`;
 }
 
-/** The rotation, in order: photos, mallards, then each cam. */
+/** The rotation, in order: photos, mallards, flies, then each cam. */
 export const ROTATION_SLOTS: RotationSlotInfo[] = [
   { id: PHOTOS_SLOT_ID, label: "Photos" },
   { id: MALLARDS_SLOT_ID, label: "Mallard counter" },
+  { id: FLIES_SLOT_ID, label: "Fly kill count" },
   ...SURF_CAMS.map(({ id, label }) => ({ id: surfCamSlotId(id), label, camId: id })),
 ];
 
@@ -70,8 +72,11 @@ export const BPM_VIEW_INFO: BpmViewInfo[] = [
 ];
 
 // digit shortcuts: 1-3 fixed, then one per cam in rotation order (4 = the first cam, ...),
-// then b for bpm mode (where the digits pick bpm views instead, see kioskControl.ts)
+// then the fly kill count on the digit after the last cam (9 with five cams; the kiosk only
+// grabs 1-9, so a sixth cam needs this moved), then b for bpm mode (where the digits pick
+// bpm views instead, see kioskControl.ts)
 const FIRST_CAM_SHORTCUT_KEY = 4;
+const FLIES_SHORTCUT_KEY = String(FIRST_CAM_SHORTCUT_KEY + SURF_CAMS.length);
 
 /** The shortcut keys, in menu order. */
 export const SHORTCUTS: Shortcut[] = [
@@ -83,6 +88,7 @@ export const SHORTCUTS: Shortcut[] = [
     label,
     action: { kind: "hold-slot" as const, slotId: surfCamSlotId(id) },
   })),
+  { key: FLIES_SHORTCUT_KEY, label: "fly kill count", action: { kind: "hold-slot", slotId: FLIES_SLOT_ID } },
   { key: BPM_SHORTCUT_KEY, label: "bpm visualizer", action: { kind: "bpm" } },
 ];
 

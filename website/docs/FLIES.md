@@ -6,7 +6,8 @@ back. The bottom is the floor, with a pile of every fly the house has killed. No
 anyone can add a kill for anyone.
 
 The home page links to it with the dead fly sprite on the floor of the house, right of the rug.
-It's also in the "I'm feeling lucky" routes and the sitemap.
+It's also in the "I'm feeling lucky" routes and the sitemap, and in the house display's rotation
+(scoreboard and pile on the bottom screen, the total on top, see `DISPLAY.md`).
 
 The counts live in the website backend on fart-pi. See
 [the API docs](../../pi/docs/api/website-backend-api.md#fly-kills) for the endpoints.
@@ -19,8 +20,8 @@ The counts live in the website backend on fart-pi. See
 | `app/flies/flyKillsApi.ts` | The people (`FLY_KILLERS`, which has to match `FlyKiller` in the backend's `schemas.py`), types, and fetchers for `/fly-kills` |
 | `app/flies/flyPile.ts` | Lays out the pile. No React |
 | `lib/useFlyKills.ts` | Loads and polls the tally, and applies clicks straight away |
-| `components/flies/FlyKillCounter.tsx` | Page layout: wall, scoreboard, floor |
-| `components/flies/KillerCard.tsx` | One person's tile |
+| `components/flies/FlyKillCounter.tsx` | Page layout: wall, scoreboard, floor. `display` renders it read-only for `/display` |
+| `components/flies/KillerCard.tsx` | One person's tile. Without `onAdd`/`onRemove` it has no buttons |
 | `components/flies/FlyPile.tsx` | Draws the pile and drops new flies onto it |
 | `components/flies/flies.module.css` | All the styling |
 | `public/images/flies/dead-fly.png` | The pile's fly, 192px wide |

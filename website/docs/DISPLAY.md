@@ -29,6 +29,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/useClockSlot.ts` | Wall-clock slot hook shared by the rotation and the photo slideshow |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos (`staggered` changes half a beat later) |
 | `website/app/display/MallardPanel.tsx` | Current mallard count with a canvas-animated duck background |
+| `website/app/display/FlyTotalPanel.tsx` | The house's total fly kills, for the top screen (the bottom screen reuses `FlyKillCounter` from `/flies`, see "Fly Kill Count") |
 | `website/app/display/SurfCamPanel.tsx` | Live surf cam; asks the surfcam agent on displaytop to play it (see "Surf Cams") |
 | `website/app/display/SurfConditionsPanel.tsx` | Waves, wind (compass dials) and tide for a cam's spot, shown on the top screen while the cam plays below |
 | `website/app/display/TideGraph.tsx` | The tide chart on the conditions panel: predicted curve, measured line, now marker, highs/lows |
@@ -75,6 +76,7 @@ both screens show at the same time:
 |------|--------------------------|-------------------------|
 | photos | photos | photos, staggered |
 | mallards | photos (carries on) | mallard count |
+| flies | the `/flies` scoreboard and pile | total fly kills |
 | each of the five cams | the live cam | that spot's waves, wind and tide |
 
 Bpm mode is a slot too, but it's not in `ROTATION_SLOTS`: it only comes up from its key (`b`,
@@ -108,10 +110,11 @@ the menu first); tab just shows the list on the top screen.
 | `tab` | open/close the shortcut menu |
 | `1` | hold the photos: both screens stop on the photo they're showing |
 | `2` | hold the mallard counter |
+| `9` | hold the fly kill count (the digit after the last cam) |
 | `3` | rotate through the surf cams only (from the first) |
 | `4`-`8` | hold one cam (in `SURF_CAMS` order: PB, La Jolla Shores, Scripps, Scripps underwater, Moonlight) |
 | `b` | bpm mode, cycling through its views (keys inside it below) |
-| `]` / `[` | next / previous, and hold there: the next photo while photos are held, otherwise the next slot (photos, mallards, each cam) from wherever it was; backspace resumes the rotation |
+| `]` / `[` | next / previous, and hold there: the next photo while photos are held, otherwise the next slot (photos, mallards, flies, each cam) from wherever it was; backspace resumes the rotation |
 | `backspace` | back one step: closes the menu if it's open, else ends the hold or cam-only rotation |
 | `esc` | straight back to the standard display |
 
@@ -253,6 +256,21 @@ proxies `api.traderoutes.cards` server-side. That external API doesn't send CORS
 headers, so a direct browser fetch from `tyler-schwenk.com` is silently blocked —
 routing it through our own backend sidesteps the problem since server-to-server
 requests aren't subject to browser CORS rules.
+
+## Fly Kill Count
+
+The flies slot shows the house fly kill count (`website/docs/FLIES.md`). The bottom screen
+is the `/flies` scene itself, `<FlyKillCounter display />`: the scoreboard on the wall and
+the pile on the floor, with no buttons and no error line (it keeps the last tally and
+retries). The top screen is `FlyTotalPanel`, just the total on the same wall, centered at
+`TOTAL_CENTER_FROM_TOP_PCT` (40%) instead of the middle, since the bottom of the laptop
+screen is partly blocked. Both poll `GET /fly-kills` through `useFlyKills`, so a kill
+logged on a phone drops onto the pile within 15 s.
+
+The display styles (`.displayRoom` and below in `flies.module.css`) are all in px: the
+panels render at the screens' native resolution, and on the console page inside a box that
+size, where viewport units would measure the browser window instead. A pile taller than
+the floor climbs up over the wall rather than pushing the scoreboard off screen.
 
 ## Surf Cams
 
