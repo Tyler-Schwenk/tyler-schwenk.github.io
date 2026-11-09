@@ -14,8 +14,9 @@ Backend API for tyler-schwenk.com providing:
 - **Display Control**: In-memory relay between the admin page's remote and the display kiosk's surfcam agent
 - **Entrance Song**: Plays an intro song on the big speakers from the admin page
 - **Presence**: Who's home, pushed by the presence agent on fart-pi, for the admin page
+- **Fly Kills**: The house fly kill counter on `/flies`. No login, rate limited per IP
 
-**Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, and recipe features.
+**Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, recipe, kiln, and fly kill features.
 
 ## Pac-Tyler
 
@@ -1120,6 +1121,44 @@ Updates everyone's last-seen time and notes arrivals. A `null` keeps what the ba
 
 ---
 
+## Fly Kills
+
+The house fly kill counter on `/flies`. No auth: anyone can add a kill for anyone or take one back. Each kill is a row in `fly_kills` (`killer`, `killed_at`), so a count is a row count and taking one back deletes that person's newest row. See `website/docs/FLIES.md`.
+
+`{killer}` is one of `jude`, `dax`, `tyler`, `joel` (`FlyKiller` in `app/schemas.py`). Anything else is a `422`.
+
+All three endpoints answer with the tally, everyone in that order plus the total:
+
+```json
+{
+  "killers": [
+    {"killer": "jude", "kills": 24},
+    {"killer": "dax", "kills": 13},
+    {"killer": "tyler", "kills": 12},
+    {"killer": "joel", "kills": 0}
+  ],
+  "total": 49
+}
+```
+
+### GET `/fly-kills`
+
+Everyone's kills. `200`.
+
+### POST `/fly-kills/{killer}`
+
+Logs a kill for them. `201` with the new tally.
+
+**Rate limit:** 60 per minute and 1000 per day, per client IP, shared with the DELETE.
+
+### DELETE `/fly-kills/{killer}`
+
+Takes back their newest kill, for misclicks. `200` with the new tally, or `409` if their count is already zero.
+
+**Rate limit:** same as the POST.
+
+---
+
 ## System Endpoints
 
 ### Health Check
@@ -1472,6 +1511,7 @@ document.getElementById('photoInput').addEventListener('change', async (e) => {
 - **Vote (post or comment):** 60 requests/minute per IP
 - **Create Recipe:** 10 requests/hour per IP
 - **Add Recipe Photos:** 30 requests/hour per IP
+- **Add or take back a fly kill:** 60/minute and 1000/day per IP, both together
 
 All Public Square and Recipe limits are intentionally loose for a low-traffic personal site — tighten them in `pi/services/website-backend/app/routers/public_square.py` or `pi/services/website-backend/app/routers/recipes.py` only if abuse actually shows up.
 

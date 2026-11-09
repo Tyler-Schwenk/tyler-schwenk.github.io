@@ -4,7 +4,7 @@ Website Backend API - Main application entry point.
 Backend API providing forum (Public Square), photo gallery, and recipe box
 (The Kitchen) services, plus the relay that lets the admin page remote
 control the display kiosk, the kiln logger's readings and firings, the
-entrance song on the big speakers, and who's home.
+entrance song on the big speakers, who's home, and the house fly kill count.
 """
 
 from fastapi import FastAPI
@@ -18,7 +18,7 @@ from app.config import settings
 from app.database import init_db
 from app.rate_limit import limiter
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, entrance, presence
+from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, entrance, presence, fly_kills
 
 
 @asynccontextmanager
@@ -100,3 +100,4 @@ app.include_router(display_control.router)
 app.include_router(kiln.router)
 app.include_router(entrance.router)
 app.include_router(presence.router)
+app.include_router(fly_kills.router)

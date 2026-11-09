@@ -75,6 +75,7 @@ export const LUCKY_ROUTES = [
   "/projects/others",
   "/opium-den",
   "/pac-tyler",
+  "/flies",
 ];
 
 /**
@@ -152,6 +153,10 @@ export const WORLD_OBJECTS: WorldObject[] = [
   {
     id: "library", label: "THE LIBRARY", href: "/library", iconSrc: "/images/8bit/library.png", size: 0.8,
     desktop: { x: 568, y: 270 }, mobile: { x: 254, y: 820, size: 1.1 },
+  },
+  {
+    id: "flies", label: "FLY KILL COUNT", href: "/flies", iconSrc: "/images/8bit/fly.png", size: 0.35,
+    desktop: { x: 600, y: 334 }, mobile: { x: 310, y: 905, size: 0.45 },
   },
   {
     id: "round-table", label: "ROUND TABLE", href: "/public-square", iconSrc: "/images/8bit/round_table.png", size: 1.3,

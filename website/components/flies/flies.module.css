@@ -1,0 +1,296 @@
+/*
+  /flies: the inside of the house. a board-and-batten wall with the scoreboard on
+  it, and a plank floor in perspective with the pile of flies on it. the colors match
+  the cutaway house on the home page. it's a drawn scene, so it looks the same in
+  light and dark mode.
+*/
+
+.room {
+  --wall: #f4e6d2;
+  --wall-seam: #e6d3b8;
+  --baseboard: #8a5a33;
+  --baseboard-dark: #5e3b1f;
+  --plank: #b98552;
+  --plank-light: #c99561;
+  --plank-seam: #8c5d33;
+  --ink: #2b1d14;
+  --ink-soft: #6b5442;
+  --card: #fffaf0;
+  --swat: #c9473c;
+  --swat-dark: #8f2b23;
+  --gold: #e8b23a;
+  --error-bg: #fbe3df;
+
+  /* the fly sprite is 192 x 125 */
+  --fly-w: clamp(46px, 12vw, 84px);
+  --fly-h: calc(var(--fly-w) * 125 / 192);
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  background: var(--plank);
+  color: var(--ink);
+  /* falling flies drift sideways and mustn't make the page scroll */
+  overflow-x: clip;
+}
+
+/* ---------- wall ---------- */
+
+.wall {
+  position: relative;
+  padding: 72px 16px 22px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 46px, var(--wall-seam) 46px 49px),
+    var(--wall);
+  border-bottom: 14px solid var(--baseboard);
+  box-shadow: 0 4px 0 var(--baseboard-dark);
+}
+
+@media (min-width: 768px) {
+  .wall {
+    padding-top: 40px;
+  }
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-family: var(--font-press-start), monospace;
+  font-size: clamp(18px, 5vw, 32px);
+  line-height: 1.3;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.headline {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+  color: var(--ink-soft);
+  margin: 10px 0 0;
+}
+
+.error {
+  max-width: 720px;
+  margin: 16px auto 0;
+  padding: 10px 14px;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 14px;
+  background: var(--error-bg);
+  border: 2px solid var(--swat-dark);
+}
+
+/* ---------- scoreboard ---------- */
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .board {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 10px 12px;
+  background: var(--card);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.cardLeading {
+  border-color: var(--swat-dark);
+  box-shadow: 4px 4px 0 var(--swat-dark);
+}
+
+.leaderTag {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 6px;
+  white-space: nowrap;
+  font-family: var(--font-press-start), monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--gold);
+  border: 2px solid var(--ink);
+}
+
+.cardName {
+  font-family: var(--font-press-start), monospace;
+  font-size: 13px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.cardCount {
+  font-family: var(--font-press-start), monospace;
+  font-size: clamp(26px, 8vw, 40px);
+  line-height: 1;
+  margin: 12px 0;
+  animation: count-pop 260ms ease-out;
+}
+
+@keyframes count-pop {
+  from {
+    transform: scale(1.35);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.cardButtons {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.addButton,
+.removeButton {
+  min-height: 44px;
+  font-family: var(--font-press-start), monospace;
+  font-size: 14px;
+  border: 3px solid var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+}
+
+.addButton {
+  flex: 1;
+  color: #fff;
+  background: var(--swat);
+  box-shadow: 0 4px 0 var(--swat-dark);
+}
+
+.removeButton {
+  width: 44px;
+  flex-shrink: 0;
+  color: var(--ink);
+  background: var(--card);
+  box-shadow: 0 4px 0 var(--ink-soft);
+}
+
+.addButton:active:not(:disabled),
+.removeButton:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+.addButton:focus-visible,
+.removeButton:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.addButton:disabled,
+.removeButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .addButton:hover:not(:disabled) {
+    background: var(--swat-dark);
+  }
+}
+
+/* ---------- floor ---------- */
+
+.floor {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 38svh;
+  padding: 24px 16px 5svh;
+}
+
+/*
+  the planks are a tall plane tipped back toward the wall. the horizon (perspective
+  origin) sits just above the wall line, so the far planks squeeze up against the
+  baseboard and their seams all run toward one vanishing point.
+*/
+.planks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  perspective: 360px;
+  perspective-origin: 50% -25%;
+}
+
+.planks::before {
+  content: "";
+  position: absolute;
+  left: -250%;
+  right: -250%;
+  bottom: 0;
+  height: 800%;
+  transform: rotateX(76deg);
+  transform-origin: bottom center;
+  background:
+    repeating-linear-gradient(90deg, var(--plank) 0 54px, var(--plank-light) 54px 104px, var(--plank-seam) 104px 108px);
+}
+
+/* shade by the wall where light doesn't reach, and darken the near edge */
+.planks::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgb(40 20 8 / 0.45), transparent 30%, transparent 75%, rgb(40 20 8 / 0.25));
+}
+
+.pile {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  height: calc(var(--pile-height) * var(--fly-h));
+}
+
+.pileShadow {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--fly-h) * -0.25);
+  height: calc(var(--fly-h) * 0.9);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(30 14 4 / 0.5), transparent);
+  pointer-events: none;
+}
+
+.fly {
+  position: absolute;
+  bottom: calc(var(--fly-bottom) * var(--fly-h));
+  width: var(--fly-w);
+  height: var(--fly-h);
+  /* centered with a margin, not a transform, so the drop animation owns transform */
+  margin-left: calc(var(--fly-w) / -2);
+  pointer-events: none;
+}
+
+.flyImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}

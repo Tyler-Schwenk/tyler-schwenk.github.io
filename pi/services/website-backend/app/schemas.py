@@ -7,7 +7,7 @@ galleries, and photos with comprehensive validation rules.
 
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, field_validator
 from datetime import datetime, timezone
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Optional, Literal, get_args
 import re
 
 
@@ -191,6 +191,25 @@ class HealthCheck(BaseModel):
 class MallardCount(BaseModel):
     """Current mallard count, proxied from the external counter API."""
     count: int
+
+
+# Fly Kill Schemas
+
+# everyone in the house, in the order the page shows them
+FlyKiller = Literal["jude", "dax", "tyler", "joel"]
+FLY_KILLERS: tuple[str, ...] = get_args(FlyKiller)
+
+
+class FlyKillerCount(BaseModel):
+    """One person's fly kills."""
+    killer: FlyKiller
+    kills: int
+
+
+class FlyKillTally(BaseModel):
+    """Everyone's fly kills, in FLY_KILLERS order, plus the size of the pile."""
+    killers: list[FlyKillerCount]
+    total: int
 
 
 # Event RSVP Schemas

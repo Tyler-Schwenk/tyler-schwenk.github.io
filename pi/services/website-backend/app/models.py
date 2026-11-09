@@ -2,7 +2,7 @@
 SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
-galleries, photos, recipes, and kiln readings.
+galleries, photos, recipes, kiln readings, and the house fly kill count.
 """
 
 from sqlalchemy import Boolean, Column, Float, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
@@ -452,3 +452,22 @@ class KilnFiring(Base):
     last_reading_at = Column(DateTime, nullable=False)
     peak_c = Column(Float, nullable=False)
     peak_at = Column(DateTime, nullable=False)
+
+
+class FlyKill(Base):
+    """
+    FlyKill model: one fly someone in the house killed.
+
+    A person's count is how many rows they have, and taking one back deletes their
+    newest row, so the table doubles as a log of when each fly went down.
+
+    Attributes:
+        id: Unique identifier
+        killer: Who got it, one of FLY_KILLERS in schemas.py
+        killed_at: When it was logged
+    """
+    __tablename__ = "fly_kills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    killer = Column(String(32), nullable=False, index=True)
+    killed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

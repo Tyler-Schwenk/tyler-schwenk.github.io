@@ -98,13 +98,14 @@ architecture.
   - **Video Hosting**: Upload, streaming, automatic thumbnail generation (operational)
   - **Public Square**: Anonymous forum — posts, comments, upvote/downvote (operational)
   - **The Kitchen (Recipes)**: Public, rate-limited recipe submission (name/description/tags/photos, all optional) with search/tag-filter/random browsing; admin-only edit/delete (see `pi/docs/api/website-backend-api.md`)
+  - **Fly Kills**: The house fly kill counter on `/flies`, one `fly_kills` row per kill, no login, rate limited per IP
   - **Admin Panel**: `https://tyler-schwenk.com/admin` — gallery/photo/video management UI, Public Square moderation, and the display kiosk remote (relayed through `/display-control`, in memory, no database)
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:
   - Private: http://192.168.1.116:8000 (home LAN) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
-- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos
+- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos, kiln_readings, kiln_firings, fly_kills
 - Connection pool: 5 kept open, no cap on extras (`app/database.py`). A request waiting for a connection deadlocks the server, since the wait blocks whatever would return one; a capped pool froze it when the display kiosk's screens refreshed every gallery at once
 - Storage:
   - Photos: /mnt/ssd/public-gallery
