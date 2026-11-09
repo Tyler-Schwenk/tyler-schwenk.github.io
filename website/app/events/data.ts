@@ -56,6 +56,14 @@ export const EVENTS: EventEntry[] = [
       },
     ],
   },
+  {
+    slug: "disco",
+    title: "Disco December",
+    dateText: "December 12",
+    locationText: "TBA",
+    summary: "Details coming soon.",
+    type: "info",
+  },
   // Past — most recent first
   {
     slug: "techno",
