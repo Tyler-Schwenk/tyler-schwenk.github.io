@@ -2,6 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import BikeQuiver, { type Bike } from "@/components/BikeQuiver";
 import PageWrapper from "@/components/PageWrapper";
+import { ogCard, pageMetadata } from "@/lib/siteMetadata";
+
+export const metadata = pageMetadata({
+  title: "Biking",
+  description: "My bike quiver and why I think everyone should ride bikes",
+  path: "/biking",
+  image: ogCard("biking", "pixel art bike"),
+});
 
 const BIKES: Bike[] = [
   {

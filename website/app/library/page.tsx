@@ -1,14 +1,16 @@
-import type { Metadata } from "next";
 import Navigation from "@/components/Navigation";
 import BookCarousel from "@/components/library/BookCarousel";
 import ReadingEntry from "@/components/library/ReadingEntry";
 import styles from "@/components/library/library.module.css";
 import { OWNED_BOOKS, READ_BOOKS, getCoverSrc, getShelfBooks, groupByYearRead } from "./libraryData";
+import { ogCard, pageMetadata } from "@/lib/siteMetadata";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Library",
   description: "Books on my shelf to borrow or trade, and everything I've read with reviews",
-};
+  path: "/library",
+  image: ogCard("library", "pixel art bookshelf"),
+});
 
 /**
  * Counts things with the right plural, e.g. "1 book", "12 books".

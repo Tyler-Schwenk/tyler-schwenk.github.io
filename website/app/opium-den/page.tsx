@@ -1,5 +1,13 @@
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
+import { DEFAULT_PREVIEW_IMAGE, pageMetadata } from "@/lib/siteMetadata";
+
+export const metadata = pageMetadata({
+  title: "Opium Den",
+  description: "An open ended music project, trying to make a better alternative to Spotify",
+  path: "/opium-den",
+  image: DEFAULT_PREVIEW_IMAGE,
+});
 
 const NTS_RADIO_URL = "https://www.nts.live/";
 const TOMMY_DJ_SET_URL = "#";

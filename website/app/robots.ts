@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/siteMetadata";
 
 export const dynamic = "force-static";
 
-const SITE_URL = "https://tyler-schwenk.github.io";
 const USER_AGENT = "*";
 const ALLOW_ALL = "/";
 

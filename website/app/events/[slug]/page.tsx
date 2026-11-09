@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,6 +7,7 @@ import PageWrapper from "@/components/PageWrapper";
 import { EVENTS, EventEntry, getEventBySlug } from "../data";
 import EventFlierModal from "@/components/EventFlierModal";
 import EventRsvpForm from "@/components/EventRsvpForm";
+import { DEFAULT_PREVIEW_IMAGE, pageMetadata } from "@/lib/siteMetadata";
 
 /**
  * Generates static params for event detail pages.
@@ -14,6 +16,34 @@ import EventRsvpForm from "@/components/EventRsvpForm";
  */
 export function generateStaticParams(): { slug: string }[] {
   return EVENTS.map((event) => ({ slug: event.slug }));
+}
+
+/**
+ * sets the event's title and link preview: its flier if it has one, plus when and where.
+ *
+ * @param {object} props - route props.
+ * @param {Promise<{ slug: string }>} props.params - route parameters.
+ * @returns {Promise<Metadata>} the event page's metadata, or nothing for an unknown slug.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const event = getEventBySlug(slug);
+  if (!event) {
+    return {};
+  }
+
+  return pageMetadata({
+    title: event.title,
+    description: [event.dateText, event.locationText, event.summary].filter(Boolean).join(" | "),
+    path: `/events/${event.slug}`,
+    image: event.flierImage
+      ? { url: event.flierImage.src, alt: event.flierImage.alt }
+      : DEFAULT_PREVIEW_IMAGE,
+  });
 }
 
 /**

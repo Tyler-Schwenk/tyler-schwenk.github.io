@@ -1,6 +1,14 @@
 import GalleryModal from "@/components/GalleryModal";
 import PageWrapper from "@/components/PageWrapper";
 import { API_BASE, photoUrl, videoStreamUrl, videoThumbnailUrl } from "@/lib/api";
+import { ogCard, pageMetadata } from "@/lib/siteMetadata";
+
+export const metadata = pageMetadata({
+  title: "Gallery",
+  description: "Photos from trips and of the people I love",
+  path: "/gallery",
+  image: ogCard("gallery", "pixel art camera"),
+});
 
 // --- API types ---
 

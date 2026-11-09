@@ -3,6 +3,14 @@ import Link from "next/link";
 
 import PageWrapper from "@/components/PageWrapper";
 import { EVENTS, EventEntry } from "./data";
+import { ogCard, pageMetadata } from "@/lib/siteMetadata";
+
+export const metadata = pageMetadata({
+  title: "Upcoming Events",
+  description: "Parties, meetups, and fundraisers coming up, plus the ones that already happened",
+  path: "/events",
+  image: ogCard("events", "pixel art megaphone"),
+});
 
 const PAGE_TITLE = "Upcoming Events";
 const PAST_SECTION_TITLE = "Past Events";

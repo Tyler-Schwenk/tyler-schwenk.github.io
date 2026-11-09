@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/siteMetadata";
 
-const SITE_URL = "https://tyler-schwenk.com";
 const EVENT_TITLE = "Lavender Bay — Techno Renegade";
 const EVENT_DESCRIPTION =
   "Free entry techno renegade. July 17 at 7 PM, Mission Bay, San Diego. All proceeds to Al Otro Lado — immigrant rights & mutual aid.";

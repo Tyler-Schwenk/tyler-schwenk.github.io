@@ -1,11 +1,13 @@
 import Image from "next/image";
-import type { Metadata } from "next";
 import PageWrapper from "@/components/PageWrapper";
+import { ogCard, pageMetadata } from "@/lib/siteMetadata";
 
-export const metadata: Metadata = {
-  title: "Frog Work | Tyler Schwenk",
+export const metadata = pageMetadata({
+  title: "Frog Work",
   description: "What the heck am I doing with those frogs",
-};
+  path: "/projects/ribbit-radar",
+  image: ogCard("ribbit-radar", "pixel art frog"),
+});
 
 export default function RibbitRadar() {
   return (

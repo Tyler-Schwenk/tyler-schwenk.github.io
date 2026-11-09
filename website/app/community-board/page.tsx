@@ -1,18 +1,20 @@
 import type { CSSProperties } from "react";
-import type { Metadata } from "next";
 import Navigation from "@/components/Navigation";
 import BoardLabel from "@/components/community-board/BoardLabel";
 import BoardNote from "@/components/community-board/BoardNote";
 import styles from "@/components/community-board/communityBoard.module.css";
 import { COMMUNITY_BOARD_SECTIONS } from "@/data/communityBoardLinks";
+import { ogCard, pageMetadata } from "@/lib/siteMetadata";
 
 // widest a section cluster gets on desktop before its notes wrap to a new row
 const SECTION_MAX_COLUMNS = 3;
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: "Community Board",
   description: "Friends' websites, local orgs, and other corners of the web I like",
-};
+  path: "/community-board",
+  image: ogCard("community-board", "pixel art cork board covered in notes"),
+});
 
 /**
  * The community board: a framed cork board with links to friends' sites and

@@ -1,11 +1,13 @@
 import Image from "next/image";
-import type { Metadata } from "next";
 import PageWrapper from "@/components/PageWrapper";
+import { ogCard, pageMetadata } from "@/lib/siteMetadata";
 
-export const metadata: Metadata = {
-  title: "Trade Routes | Tyler Schwenk",
+export const metadata = pageMetadata({
+  title: "Trade Routes",
   description: "Peer-to-peer marketplace for collectible card trading with robust database and advanced filtering",
-};
+  path: "/projects/trade-routes",
+  image: ogCard("trade-routes", "pixel art goblin holding cards"),
+});
 
 export default function TradeRoutes() {
   return (

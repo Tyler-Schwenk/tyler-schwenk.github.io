@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, Instrument_Serif, Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { DEFAULT_PREVIEW_IMAGE, SITE_NAME, SITE_URL } from "@/lib/siteMetadata";
 
 // only Press Start 2P (the homepage/nav pixel font) is preloaded. everything
 // below is section-specific, and a root-layout preload would make every page
@@ -100,15 +101,10 @@ const plexMono = IBM_Plex_Mono({
   preload: false,
 });
 
-const SITE_NAME = "Tyler Schwenk";
-const SITE_URL = "https://tyler-schwenk.github.io";
 const DEFAULT_TITLE = "Tyler Schwenk - Personal Website";
 const TITLE_TEMPLATE = "%s | Tyler Schwenk";
 const DEFAULT_DESCRIPTION =
   "Lots of fun projects on here. Welcome to the small web";
-const OG_IMAGE_PATH = "/images/favicon/android-chrome-512x512.png";
-const OG_IMAGE_WIDTH = 512;
-const OG_IMAGE_HEIGHT = 512;
 const KEYWORDS = [
   "software developer",
   "full-stack",
@@ -139,20 +135,13 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: [
-      {
-        url: OG_IMAGE_PATH,
-        width: OG_IMAGE_WIDTH,
-        height: OG_IMAGE_HEIGHT,
-        alt: SITE_NAME,
-      },
-    ],
+    images: [DEFAULT_PREVIEW_IMAGE],
   },
   twitter: {
     card: "summary",
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: [OG_IMAGE_PATH],
+    images: [DEFAULT_PREVIEW_IMAGE.url],
   },
   robots: {
     index: true,
