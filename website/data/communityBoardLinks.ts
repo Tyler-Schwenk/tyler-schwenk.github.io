@@ -58,7 +58,7 @@ export const COMMUNITY_BOARD_SECTIONS: CommunityBoardSection[] = [
       {
         id: "tommy",
         name: "Tommy (DJ TommyPips)",
-        href: "https://soundcloud.com/byrdmp3/spectrum-techno-presents-live-from-the-techno-jungle-w-tommypips",
+        href: "https://soundcloud.com/tommypips",
         description: "He goes by Tracepoint now!!",
       },
       {
