@@ -295,8 +295,16 @@ Your Browser → 192.168.1.116:8000 → Website Backend API
 ```
 - Direct access when on home network
 - Fast (local speeds)
-- SSH and every private service port (8000, 8090, 2283) work this way, LAN only
-- Away from home, Raspberry Pi Connect is the only way to a shell (see `pi/docs/internal/hardware.md`)
+- SSH and every private service port (8000, 8090, 2283) work this way
+- Away from home, SSH over Tailscale (`ssh tyler@fart-pi.taila4ff35.ts.net`) from any device on our tailnet; Raspberry Pi Connect is the fallback (see `pi/docs/internal/hardware.md`)
+
+### Friends Access (via Tailscale)
+```
+Friend's machine → tailnet → Pi (tailscale0) → service
+```
+- fart-pi is on our own tailnet; friends get in when we share fart-pi with them, and they share their machines back
+- What shared-in friends can reach is set by our tailnet ACLs (`autogroup:shared`)
+- Runbook: `pi/docs/services/tailscale.md`
 
 ### Public Access (via Cloudflare Tunnel)
 ```
@@ -316,17 +324,17 @@ Visitor's Browser → Cloudflare Edge → Tunnel → Pi → Website Backend API
 
 ### Service Port Plan
 
-| Service | Port | Home LAN | Public Remote |
-|---------|------|----------|---------------|
-| Website Backend | 8000 | Yes | Via Tunnel |
-| Beszel | 8090 | Yes | No |
-| Immich | 2283 | Planned | No |
-| Samba | 445 | Planned | No |
+| Service | Port | Home LAN | Public Remote | Tailnet |
+|---------|------|----------|---------------|---------|
+| Website Backend | 8000 | Yes | Via Tunnel | Per ACLs |
+| Beszel | 8090 | Yes | No | Per ACLs |
+| Immich | 2283 | Planned | No | Per ACLs |
+| Samba | 445 | Planned | No | Per ACLs |
 
 ## Security Approach
 
 **Remote Access:**
-- Private access (SSH, Beszel, direct API) is home LAN only; Raspberry Pi Connect for a remote shell
+- Private access (SSH, Beszel, direct API) is home LAN, plus our tailnet and friends we've shared fart-pi with, as allowed by our tailnet ACLs; Raspberry Pi Connect for a remote shell
 - Public access via Cloudflare Tunnel — gallery/video reads are public; Public Square reads AND writes (post/comment/vote) are public and rate-limited per IP; admin-only writes (gallery/video management, Public Square moderation) require a JWT
 - No ports exposed directly to internet
 - No router port forwarding

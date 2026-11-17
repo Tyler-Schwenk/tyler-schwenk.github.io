@@ -57,14 +57,12 @@ More details: [docs/hardware.md](docs/hardware.md)
 pi/
 +-- services/                # Docker Compose configs for each service
 �   +-- website-backend/     # Forum + gallery API
-�   +-- netbird/             # VPN access (Bird Wide Web)
 �   +-- beszel/              # System monitoring
 �   +-- cloudflared/         # Cloudflare tunnel
 +-- docs/                    # Documentation
 �   +-- README.md            # Documentation index
 �   +-- architecture.md      # System architecture and planning
 �   +-- website-integration.md  # Frontend integration guide
-�   +-- BirdWideWeb.md       # NetBird topology
 �   +-- api/                 # API documentation
 �   +-- services/            # Service-specific docs
 �   +-- FORTYLER/            # Practical quick reference

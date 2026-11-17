@@ -225,19 +225,6 @@ curl http://localhost:8000/galleries/slug/summer-2026
 <img src="https://api.yoursite.com/galleries/photos/1/file">
 ```
 
-## Development
-### Step 4: Expose Publicly (Optional)
-
-Use Tailscale Funnel to make the API publicly accessible:
-
-```bash
-# Enable Funnel for port 8000
-docker exec tailscale tailscale funnel 8000
-
-# API will be available at:
-# https://fart-pi.your-tailnet.ts.net:8000
-```
-
 ## API Endpoints
 
 ### System

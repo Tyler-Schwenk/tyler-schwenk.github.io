@@ -7,7 +7,6 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 ### Planning & Architecture
 - [**Architecture Plan**](architecture.md) - System design, planned services, and deployment status
 - [**Website Integration**](website-integration.md) - How to integrate GitHub Pages frontend with Pi backend
-- [**Bird Wide Web**](BirdWideWeb.md) - NetBird network topology
 
 ### External Documentation
 - [**Website Backend API**](api/website-backend-api.md) - API documentation for frontend developers
@@ -17,6 +16,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Website Backend**](api/website-backend-api.md) - Public Square (forum) and photo gallery API
 - [**Beszel**](services/beszel.md) - System monitoring and health tracking
 - [**Cloudflare Tunnel**](services/cloudflare-tunnel.md) - Public API access
+- [**Tailscale**](services/tailscale.md) - Our tailnet, and sharing machines with friends' tailnets
 - [**Display Kiosk**](services/display-kiosk.md) - Always-on monitor (displaytop) showing the `/display` rotation
 - [**Cast Receiver**](services/cast-receiver.md) - AirPlay screen mirroring for the opium den TV (castpi, Pi 3B+)
 - [**House Ghost**](services/house-ghost.md) - Scary voice greets roommates through the speakers when their phone joins the Wi-Fi
@@ -103,12 +103,12 @@ docs/
 ├── README.md                      # This file
 ├── architecture.md                # System design and deployment status
 ├── website-integration.md         # Frontend integration guide
-├── BirdWideWeb.md                 # NetBird network topology
 ├── api/
 │   └── website-backend-api.md     # API documentation
 ├── services/
 │   ├── beszel.md                  # Monitoring setup
 │   ├── cloudflare-tunnel.md       # Public access setup
+│   ├── tailscale.md               # Tailnet + machine sharing with friends
 │   └── display-kiosk.md           # displaytop: always-on display kiosk setup
 ├── FORTYLER/
 │   ├── README.md                  # Quick reference index
