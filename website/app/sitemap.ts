@@ -19,6 +19,7 @@ const STATIC_ROUTES = [
   "/community-board",
   "/library",
   "/flies",
+  "/mic",
   "/opium-den",
   "/public-square",
   "/mallard",

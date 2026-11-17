@@ -4,12 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useKilnFiring } from "@/lib/useKilnFiring";
-import { WORLD_OBJECTS, currentIconSrc, pickLuckyRoute, type WorldObject } from "./worldObjects";
+import { MENU_ENTRIES, currentIconSrc, pickLuckyRoute, type MenuEntry } from "./worldObjects";
 
 const MENU_ICON_PX = 48;
 
 /**
- * the classic retro main menu -- a scrollable list of every world object.
+ * the classic retro main menu -- a scrollable list of every world object, plus
+ * the pages that don't have a spot in the world yet.
  * it's the home page's "list view" for anyone who'd rather not hunt around the world.
  *
  * @returns {JSX.Element} the menu screen.
@@ -39,7 +40,7 @@ export default function MainMenuList() {
                 ▼ SELECT OPTION ▼
               </p>
             </div>
-            {WORLD_OBJECTS.map((obj) => (
+            {MENU_ENTRIES.map((obj) => (
               <MenuOption key={obj.id} obj={obj} iconSrc={currentIconSrc(obj, kilnFiring)} />
             ))}
           </div>
@@ -59,11 +60,11 @@ export default function MainMenuList() {
  * one menu entry -- a link, a new-tab link, or the lucky dice button.
  *
  * @param {object} props - component props.
- * @param {WorldObject} props.obj - the object this row stands for.
+ * @param {MenuEntry} props.obj - the entry this row stands for.
  * @param {string} [props.iconSrc] - the icon to show right now.
  * @returns {JSX.Element} the clickable row.
  */
-function MenuOption({ obj, iconSrc }: { obj: WorldObject; iconSrc?: string }) {
+function MenuOption({ obj, iconSrc }: { obj: MenuEntry; iconSrc?: string }) {
   const router = useRouter();
   const row = <MenuRow iconSrc={iconSrc}>{obj.label}</MenuRow>;
 

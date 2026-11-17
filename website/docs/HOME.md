@@ -19,7 +19,7 @@ There are two scenes, each composed for its screen:
 | `app/page.tsx` | Page shell: world/list toggle, ADMIN link |
 | `components/home/worldObjects.ts` | Every clickable object: label, link, sprite, size, and a placement per layout. Also the "I'm feeling lucky" route list |
 | `components/home/HomeWorld.tsx` | Renders the world: backdrop, depth-scaled sprites, hover/tap behavior, per-layout depth tuning |
-| `components/home/MainMenuList.tsx` | The list view, built from the same `WORLD_OBJECTS` |
+| `components/home/MainMenuList.tsx` | The list view, built from `MENU_ENTRIES` (`WORLD_OBJECTS` plus `LIST_ONLY_ENTRIES`) |
 | `components/home/world.generated.json` | Generated. Layout sizes, horizons, backdrop urls, roof footprints, sprite foot pads |
 | `app/globals.css` (`.world-*` rules) | Layout switching, hover lift, yellow pixel outline, name tags, floating bob |
 | `scripts/generate_home_world.py` | Paints both backdrops and writes the json |
@@ -83,6 +83,13 @@ Object-level fields:
 - No `iconSrc` -- renders as an invisible square hotspot, outlined on hover (the cave).
 
 Array order is the list-view order.
+
+### List-only pages
+
+`LIST_ONLY_ENTRIES` holds pages that show up in the list view but not in the world, for a
+page that doesn't have a sprite yet. Entries only need `id`, `label` and `href`. The list
+view shows `MENU_ENTRIES`: every world object, then the list-only pages. Once a page has a
+sprite, move it into `WORLD_OBJECTS` with a size and placements.
 
 ### Foot pads
 

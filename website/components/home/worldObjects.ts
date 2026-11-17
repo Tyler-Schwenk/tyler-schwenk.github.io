@@ -25,8 +25,8 @@ export type Placement = {
   widthPx?: number;
 };
 
-/** one clickable thing in the world. */
-export type WorldObject = {
+/** one row in the list view: where it goes and what it shows. every world object is one of these. */
+export type MenuEntry = {
   /** stable key, also used for the hover/selection state. */
   id: string;
   /** shown in the hover tag and as the list-view row. */
@@ -37,10 +37,14 @@ export type WorldObject = {
   external?: boolean;
   /** picks a random LUCKY_ROUTES page instead of following href. */
   lucky?: boolean;
-  /** sprite. without one it's an invisible hotspot over the painted backdrop (the cave). */
+  /** sprite. without one it's an invisible hotspot in the world (the cave), and a label-only row in the list view. */
   iconSrc?: string;
   /** sprite to show instead while the kiln's firing. */
   firingIconSrc?: string;
+};
+
+/** one clickable thing in the world: a menu entry plus how and where it's drawn. */
+export type WorldObject = MenuEntry & {
   /** multiplier on the depth-based size, for things that are small/big in real life. */
   size: number;
   /** bobs in the air with no ground shadow. */
@@ -173,11 +177,22 @@ export const WORLD_OBJECTS: WorldObject[] = [
 ];
 
 /**
+ * pages that are only in the list view, not the pixel world. a page sits here
+ * while it's waiting on its sprite, then moves into WORLD_OBJECTS.
+ */
+export const LIST_ONLY_ENTRIES: MenuEntry[] = [
+  { id: "mic", label: "THE MILITARY-INDUSTRIAL COMPLEX", href: "/mic" },
+];
+
+/** every list-view row, in order: the world objects, then the list-only pages. */
+export const MENU_ENTRIES: MenuEntry[] = [...WORLD_OBJECTS, ...LIST_ONLY_ENTRIES];
+
+/**
  * picks which sprite an object shows right now.
  *
- * @param {WorldObject} obj - the object.
+ * @param {MenuEntry} obj - the object.
  * @param {boolean} kilnFiring - whether the kiln's firing.
  * @returns {string | undefined} the sprite's url, undefined for an invisible hotspot.
  */
-export const currentIconSrc = (obj: WorldObject, kilnFiring: boolean): string | undefined =>
+export const currentIconSrc = (obj: MenuEntry, kilnFiring: boolean): string | undefined =>
   kilnFiring && obj.firingIconSrc ? obj.firingIconSrc : obj.iconSrc;
