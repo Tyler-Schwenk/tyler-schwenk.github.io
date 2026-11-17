@@ -61,7 +61,7 @@ export const EVENTS: EventEntry[] = [
     title: "Disco December",
     dateText: "December 12",
     locationText: "TBA",
-    summary: "Details coming soon.",
+    summary: "If you are seeing this you are too early! check back in a few days for all the info",
     type: "info",
   },
   // Past — most recent first
