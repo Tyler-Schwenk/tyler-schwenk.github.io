@@ -67,6 +67,18 @@ export const COMMUNITY_BOARD_SECTIONS: CommunityBoardSection[] = [
         href: "https://pmc.ncbi.nlm.nih.gov/articles/PMC12871695/",
         description: "Her PhD paper. I dont get it",
       },
+      {
+        id: "dax",
+        name: "Dax",
+        href: "https://thepotshed.com/",
+        description: "Dax's Pottery Studio!",
+      },
+      {
+        id: "jude",
+        name: "Jude",
+        href: "https://judecastilloceramics.com/",
+        description: "Jude's pottery",
+      },
     ],
   },
   {
