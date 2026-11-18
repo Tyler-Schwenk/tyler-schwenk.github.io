@@ -1,11 +1,10 @@
 import type { CSSProperties } from "react";
 
-import { BOX_ROW_COUNT, DIAMOND_ROW_COUNT, FLOOR_LIGHT_COLORS } from "./constants";
+import { BOX_ROW_COUNT, FLOOR_LIGHT_COLORS } from "./constants";
 import styles from "./disco.module.css";
 
 /** the lit box runs along the row once per box chase cycle (see .box in the css) */
 const BOX_CHASE_CYCLE_MS = 1950;
-const DIAMOND_TWINKLE_STEP_MS = 200;
 
 const STAR_COUNT = 70;
 const STAR_SEED = 1212;
@@ -81,20 +80,6 @@ export function BoxRow() {
     <div className={styles.boxRow} aria-hidden="true">
       {Array.from({ length: BOX_ROW_COUNT }, (_, i) => (
         <span key={i} className={styles.box} style={{ animationDelay: `${i * stepMs}ms` }} />
-      ))}
-    </div>
-  );
-}
-
-/**
- * the row of teal diamonds from under the video's titles, twinkling in a wave.
- * @returns {JSX.Element} the diamond row.
- */
-export function DiamondRow() {
-  return (
-    <div className={styles.diamondRow} aria-hidden="true">
-      {Array.from({ length: DIAMOND_ROW_COUNT }, (_, i) => (
-        <span key={i} className={styles.diamond} style={{ animationDelay: `${i * DIAMOND_TWINKLE_STEP_MS}ms` }} />
       ))}
     </div>
   );

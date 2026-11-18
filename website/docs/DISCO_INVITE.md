@@ -62,7 +62,7 @@ The flier has two parts:
 1. **The poster** fills exactly the first screen, so one screenshot gets all the main
    info. A "more info" hint sits under it and scrolls down when tapped.
 2. **More info** below it: the longer details from `DISCO_MORE_INFO` in `constants.ts`
-   (an array, so add entries there), then the save and watch again buttons.
+   (an array of headings, each with an optional line of text, so add entries there), then the save and watch again buttons.
 
 **Fitting the screen**: `.flier` is the scroller and fills the visible viewport, so
 `.posterScreen` at `height: 100%` is one visible screen even with phone browser bars.
@@ -83,10 +83,9 @@ bursts. The grid in `.poster` places, top to bottom:
 |------|------|
 | `title` | Tilted title, one word per line, the first big and the rest indented, over racing stripes |
 | `boxes` | The box row on the left, with the disco ball at its right end. The ball's string runs up past the title to the frame's top edge (the poster clips it) |
-| `feat` / `attire` | Lineup over a circle on the left; on the right, the round dance floor clip with the dress code over its darkened lower half |
+| `feat` / `attire` | Lineup on the left, straight on the background with a dark halo round the words; on the right, the round dance floor clip with the dress code over a light shade on its lower half |
 | `facts` | Date, time and place, script labels with slab values, all left aligned |
 | `phones` | The no-phones stamp, tilted |
-| `diamonds` | A short diamond row as a corner flourish |
 
 - **Type**: Ultra (`--font-disco`) is the closest match to the video's fat ball-terminal
   slab serif, used for the title and values. Shrikhand (`--font-disco-script`) is the
@@ -99,7 +98,7 @@ bursts. The grid in `.poster` places, top to bottom:
 - **Colors** (`constants.ts`): letters cycle through the video's six-color palette.
   `DiscoText` gives each letter its own color, pops the letters in out of order, then
   chases the colors along the line. The title gets a hard lime drop shadow. Ornament lime, blue and teal are for
-  the box row and diamond row. The dance floor's pink, grout and tile light colors are their
+  the box row. The dance floor's pink, grout and tile light colors are their
   own constants (`FLOOR_*`), taken from the Snoopy floor. The night sky colors come from
   the video's space scene. All of these are set as CSS variables on the stage, so the
   stylesheet and the canvas card share one source.
@@ -116,8 +115,8 @@ bursts. The grid in `.poster` places, top to bottom:
   background star dots, are seeded, so the prerendered HTML matches the browser. It's dimmed
   to 60%, and the facts and stamp over it get a dark halo so they stay readable.
 - **Attire clip** (`AttireClip.tsx`): archival 70s dance floor footage in a lime-ringed
-  circle, three clips crossfaded into one silent loop. It's a little wider than its column,
-  spilling toward the featuring circle. Under reduced motion it's paused on its
+  circle, three clips crossfaded into one silent loop. It's wider than its column, spilling
+  left under the lineup; the lineup sits in front in case a long act name reaches it. Under reduced motion it's paused on its
   first frame.
 - **Address**: links to the person's own maps app (`useMapsUrl.ts`). Apple devices get an
   Apple Maps link, Android a `geo:` link that opens the default maps app, and everything
@@ -177,7 +176,7 @@ the time of the repeated frame.
 | `website/components/disco/cloudSeam.ts` | Canvas drawing for the parting |
 | `website/components/disco/DiscoFlier.tsx` | The flier and its save button |
 | `website/components/disco/DiscoText.tsx` | Per-letter colored text |
-| `website/components/disco/Ornaments.tsx` | Box row, diamond row, star dots, disco ball, dance floor, spotlights, sparkle bursts, no-phone icon |
+| `website/components/disco/Ornaments.tsx` | Box row, star dots, disco ball, dance floor, spotlights, sparkle bursts, no-phone icon |
 | `website/components/disco/AttireClip.tsx` | The round dance floor clip by the attire line |
 | `website/components/disco/saveFlierCard.ts` | Draws and shares or downloads the PNG |
 | `website/components/disco/useInviteDevice.ts` | Mobile and orientation detection |

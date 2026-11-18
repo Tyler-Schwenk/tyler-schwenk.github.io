@@ -68,7 +68,7 @@ export const FLOOR_PINK = "#e8318a";
 export const FLOOR_GROUT = "#6e0f45";
 export const FLOOR_LIGHT_COLORS = ["#ff3b3b", "#ff8a1f", "#ffd23a", "#2fb39a", "#6a3cf0"] as const;
 
-/** squares in the box ornament row and diamonds in the diamond row, same as the video */
+/** squares in the box ornament row, and diamonds in the saved card's diamond row, same as the video */
 export const BOX_ROW_COUNT = 13;
 export const DIAMOND_ROW_COUNT = 12;
 
@@ -86,13 +86,20 @@ export const DISCO_DETAILS = {
 /** the full address, for the maps link */
 export const DISCO_ADDRESS = `${DISCO_DETAILS.addressStreet}, ${DISCO_DETAILS.addressCity}`;
 
+/** one entry in the more info section: a heading, with a line under it if it needs one */
+export interface MoreInfoItem {
+  heading: string;
+  text?: string;
+}
+
 /**
  * the extra details below the poster, past the scroll. the poster holds what fits
  * in one screenshot; anything longer goes here.
  */
-export const DISCO_MORE_INFO = [
+export const DISCO_MORE_INFO: readonly MoreInfoItem[] = [
+  { heading: "BYOB" },
   {
     heading: "Coming from out of town?",
-    text: "Feel free to reach out to me and we\u2019ll make sure there\u2019s space for you to stay in the Opium Den.",
+    text: "Feel free to reach out to me and we’ll make sure there’s space for you to stay in the Opium Den.",
   },
-] as const;
+];

@@ -260,8 +260,7 @@
     "boxes    boxes"
     "feat     attire"
     "facts    facts"
-    "phones   phones"
-    "diamonds diamonds";
+    "phones   phones";
   align-content: space-evenly;
   column-gap: calc(3 * var(--u));
   width: min(100%, calc(var(--poster-height) * 0.78));
@@ -366,29 +365,21 @@
   gap: calc(2 * var(--u));
 }
 
-/* the circle's drawn behind the words rather than holding them, so the words
-   can run over its edge like the hand-lettered fliers */
+/* sits on the background with no box round it, so the words get a dark halo
+   to read over the spotlights. it's in front of the attire clip in case a long
+   act name runs over the clip's edge */
 .featuring {
   grid-area: feat;
-  align-self: center;
+  align-self: start;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: calc(5 * var(--u)) 0 calc(5 * var(--u)) calc(2 * var(--u));
+  padding-top: calc(4 * var(--u));
+  text-shadow: 0 0 10px var(--sky-top), 0 0 4px var(--sky-top);
 }
 
-.featuring::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 42%;
-  z-index: -1;
-  width: 104%;
-  aspect-ratio: 1;
-  border: 2px solid var(--c2);
-  border-radius: 50%;
-  background: rgba(28, 15, 69, 0.7);
-  transform: translate(-50%, -50%);
+.poster > .featuring {
+  z-index: 2;
 }
 
 .featuring .script {
@@ -441,12 +432,12 @@
   justify-content: flex-end;
 }
 
-/* the round dance floor clip with the attire line over its lower half. it's a
-   bit wider than its column, spilling toward the featuring circle */
+/* the round dance floor clip with the attire line over its lower half. it's
+   wider than its column, spilling left under the lineup */
 .attireFrame {
   position: relative;
   flex: none;
-  width: calc(47 * var(--u));
+  width: calc(54 * var(--u));
   aspect-ratio: 1;
   border: 3px solid var(--ornament-lime);
   border-radius: 50%;
@@ -467,8 +458,10 @@
   position: absolute;
   inset: auto 0 0;
   padding: calc(9 * var(--u)) calc(7 * var(--u)) calc(7 * var(--u));
-  background: linear-gradient(180deg, transparent, rgba(11, 13, 63, 0.88) 45%);
+  background: linear-gradient(180deg, transparent, rgba(11, 13, 63, 0.44) 45%);
   text-align: center;
+  /* the backing is light so the clip shows through, so the words carry their own shadow */
+  text-shadow: 0 1px 2px var(--sky-top), 0 0 8px var(--sky-top);
 }
 
 .attireCaption .script {
@@ -566,16 +559,6 @@
   stroke: var(--c3);
   stroke-width: 4;
   stroke-linecap: round;
-}
-
-.diamondSlot {
-  grid-area: diamonds;
-  justify-self: start;
-}
-
-/* the diamond row is short here, just a flourish in the corner */
-.diamondSlot .diamond:nth-child(n + 6) {
-  display: none;
 }
 
 .posterDecor {
@@ -793,8 +776,7 @@
 
 /* sized in the poster's design unit (--u). the box row under the poster gets its own */
 
-.boxRow,
-.diamondRow {
+.boxRow {
   display: flex;
   justify-content: center;
   gap: calc(1 * var(--u));
@@ -815,16 +797,6 @@
   0%, 100% { filter: brightness(0.75); }
   8% { filter: brightness(1.8) drop-shadow(0 0 6px var(--ornament-lime)); }
   20% { filter: brightness(0.75); }
-}
-
-.diamond {
-  width: calc(2.8 * var(--u));
-  aspect-ratio: 1;
-  margin: 0 var(--u);
-  border: 2px solid var(--ornament-teal);
-  box-shadow: inset 0 0 0 2px var(--ornament-lime);
-  transform: rotate(45deg);
-  animation: twinkle 2.4s ease-in-out infinite;
 }
 
 /* ---------- the disco ball ---------- */
@@ -922,7 +894,6 @@
 @media (prefers-reduced-motion: reduce) {
   .letter,
   .box,
-  .diamond,
   .star,
   .beams,
   .ballTiles,

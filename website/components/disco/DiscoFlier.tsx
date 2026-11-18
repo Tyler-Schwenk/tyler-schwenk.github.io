@@ -7,7 +7,6 @@ import { DISCO_ADDRESS, DISCO_DETAILS, DISCO_MORE_INFO } from "./constants";
 import DiscoText from "./DiscoText";
 import {
   BoxRow,
-  DiamondRow,
   DiscoBall,
   NoPhoneIcon,
   DanceFloor,
@@ -185,10 +184,6 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
             <NoPhoneIcon />
             <span>{DISCO_DETAILS.phones}</span>
           </p>
-
-          <div className={styles.diamondSlot}>
-            <DiamondRow />
-          </div>
         </article>
 
         <button
@@ -207,7 +202,7 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
         {DISCO_MORE_INFO.map((item) => (
           <div key={item.heading} className={styles.moreInfoItem}>
             <h2 className={styles.script}>{item.heading}</h2>
-            <p>{item.text}</p>
+            {item.text && <p>{item.text}</p>}
           </div>
         ))}
 
