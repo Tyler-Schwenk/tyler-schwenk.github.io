@@ -12,13 +12,14 @@ import UploadTab from "./UploadTab";
 import RsvpsTab from "./RsvpsTab";
 import PublicSquareTab from "./PublicSquareTab";
 import LoginScreen from "./LoginScreen";
-import { ChatIcon, HouseIcon, ListIcon, MonitorIcon, MusicIcon, PhotosIcon, UploadIcon } from "./icons";
+import DjSetsTab from "./DjSetsTab";
+import { ChatIcon, HouseIcon, ListIcon, MonitorIcon, MusicIcon, PhotosIcon, RecordIcon, UploadIcon } from "./icons";
 import { Button } from "./ui";
 
 /**
  * The admin page (/admin): one login, then tabs for the display kiosk's
- * remote, the entrance song, who's home, galleries, uploads, RSVPs and Public Square
- * moderation. Built for a phone first: tabs sit in a bar along the bottom on small screens and move
+ * remote, the entrance song, who's home, galleries, uploads, RSVPs, Public Square
+ * moderation and the recorded DJ sets. Built for a phone first: tabs sit in a bar along the bottom on small screens and move
  * up into the header on a laptop. The open tab lives in the url hash
  * (/admin#galleries), so a tab can be bookmarked and the back button steps
  * between tabs. See website/docs/ADMIN.md.
@@ -46,6 +47,7 @@ const TABS: AdminTab[] = [
   { id: "upload", label: "Upload", title: "Upload", Icon: UploadIcon, Content: UploadTab },
   { id: "rsvps", label: "RSVPs", title: "RSVPs", Icon: ListIcon, Content: RsvpsTab },
   { id: "square", label: "Square", title: "Public Square", Icon: ChatIcon, Content: PublicSquareTab },
+  { id: "dj", label: "DJ", title: "DJ sets", Icon: RecordIcon, Content: DjSetsTab },
 ];
 
 /**
@@ -148,7 +150,7 @@ export default function AdminPage() {
         </main>
 
         <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-          <div className="grid grid-cols-7">
+          <div className="grid grid-cols-8">
             {TABS.map((tab) => (
               <TabLink key={tab.id} tab={tab} active={tab === current} place="bar" />
             ))}

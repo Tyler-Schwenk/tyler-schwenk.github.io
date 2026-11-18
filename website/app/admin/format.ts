@@ -40,7 +40,7 @@ export function formatBytes(bytes: number): string {
  * @returns Like "Oct 5, 3:12 PM", or "" if it can't be read.
  */
 export function formatDate(iso: string): string {
-  const date = new Date(TIMEZONE_SUFFIX_PATTERN.test(iso) ? iso : `${iso}Z`);
+  const date = parseBackendTime(iso);
   if (Number.isNaN(date.getTime())) return "";
   const day = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
@@ -48,14 +48,26 @@ export function formatDate(iso: string): string {
 }
 
 /**
- * A video length for people.
+ * A backend timestamp as a Date.
+ * @param iso - ISO timestamp; the backend stores UTC without a zone, so one without is read as UTC.
+ * @returns The date, invalid if it can't be read.
+ */
+export function parseBackendTime(iso: string): Date {
+  return new Date(TIMEZONE_SUFFIX_PATTERN.test(iso) ? iso : `${iso}Z`);
+}
+
+/**
+ * A video or set length for people.
  * @param seconds - Length in seconds.
- * @returns Like "3:07".
+ * @returns Like "3:07", or "1:03:07" past an hour.
  */
 export function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / S_PER_MIN);
-  const rest = Math.floor(seconds % S_PER_MIN);
-  return `${minutes}:${String(rest).padStart(2, "0")}`;
+  const totalMinutes = Math.floor(seconds / S_PER_MIN);
+  const rest = String(Math.floor(seconds % S_PER_MIN)).padStart(2, "0");
+  if (totalMinutes < MIN_PER_H) return `${totalMinutes}:${rest}`;
+  const hours = Math.floor(totalMinutes / MIN_PER_H);
+  const minutes = String(totalMinutes % MIN_PER_H).padStart(2, "0");
+  return `${hours}:${minutes}:${rest}`;
 }
 
 /**

@@ -2,7 +2,8 @@
 SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
-galleries, photos, recipes, kiln readings, and the house fly kill count.
+galleries, photos, recipes, kiln readings, the house fly kill count, and
+recorded dj sets.
 """
 
 from sqlalchemy import Boolean, Column, Float, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
@@ -471,3 +472,31 @@ class FlyKill(Base):
     id = Column(Integer, primary_key=True, index=True)
     killer = Column(String(32), nullable=False, index=True)
     killed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class DjSet(Base):
+    """
+    DjSet model: one recorded session from the live dj stream.
+
+    The recorder (app/dj_stream.py) adds the row when a session starts and fills in
+    ended_at when it stops, so a row with no ended_at is still being recorded. Too-short
+    sessions are deleted instead of finished. All times are naive UTC.
+
+    Attributes:
+        id: Unique identifier
+        title: Optional name set from the admin page; the site shows the date without one
+        started_at: When the recording started
+        ended_at: When it stopped, null while recording
+        duration_s: Length in seconds, null while recording
+        size_bytes: File size, null while recording
+        file_path: The mp3, as a container path under DJ_SETS_DIR
+    """
+    __tablename__ = "dj_sets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=True)
+    started_at = Column(DateTime, nullable=False, index=True)
+    ended_at = Column(DateTime, nullable=True)
+    duration_s = Column(Integer, nullable=True)
+    size_bytes = Column(Integer, nullable=True)
+    file_path = Column(String(500), nullable=False)

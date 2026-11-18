@@ -96,6 +96,16 @@ export function ChatIcon(props: { className?: string }) {
   );
 }
 
+/** A record, for the dj sets. */
+export function RecordIcon(props: { className?: string }) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="2.5" />
+    </Icon>
+  );
+}
+
 /** A chevron pointing up (rotate it for the other directions). */
 export function ChevronIcon(props: { className?: string }) {
   return (

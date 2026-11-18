@@ -99,13 +99,14 @@ architecture.
   - **Public Square**: Anonymous forum — posts, comments, upvote/downvote (operational)
   - **The Kitchen (Recipes)**: Public, rate-limited recipe submission (name/description/tags/photos, all optional) with search/tag-filter/random browsing; admin-only edit/delete (see `pi/docs/api/website-backend-api.md`)
   - **Fly Kills**: The house fly kill counter on `/flies`, one `fly_kills` row per kill, no login, rate limited per IP
+  - **DJ Stream**: Live DJ stream relayed from icecast (`dj-stream` service) at `/dj/live`, each session recorded to `/mnt/ssd/dj-sets` as a `dj_sets` row, shown on the Opium Den page (see `pi/docs/services/dj-stream.md`)
   - **Admin Panel**: `https://tyler-schwenk.com/admin` — gallery/photo/video management UI, Public Square moderation, and the display kiosk remote (relayed through `/display-control`, in memory, no database)
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:
   - Private: http://192.168.1.116:8000 (home LAN) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
-- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos, kiln_readings, kiln_firings, fly_kills
+- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos, kiln_readings, kiln_firings, fly_kills, dj_sets
 - Connection pool: 5 kept open, no cap on extras (`app/database.py`). A request waiting for a connection deadlocks the server, since the wait blocks whatever would return one; a capped pool froze it when the display kiosk's screens refreshed every gallery at once
 - Storage:
   - Photos: /mnt/ssd/public-gallery
@@ -194,7 +195,8 @@ Directories:
 │   └── ...             # one folder per gallery
 ├── videos/             # Website videos, named by slug
 │   └── thumbnails/     # Video poster frames, named by slug
-└── recipe-photos/      # The Kitchen photos
+├── recipe-photos/      # The Kitchen photos
+└── dj-sets/            # Recorded DJ sets (mp3), named by start time
 ```
 
 Containers mount these as `/app/photos`, `/app/videos`, and `/app/recipe_photos`. The database stores the container paths, so moving the host directory doesn't change any rows.
@@ -333,6 +335,7 @@ Visitor's Browser → Cloudflare Edge → Tunnel → Pi → Website Backend API
 |---------|------|----------|---------------|---------|
 | Website Backend | 8000 | Yes | Via Tunnel | Per ACLs |
 | Beszel | 8090 | Yes | No | Per ACLs |
+| DJ Stream (icecast) | 8010 | Yes | No (relayed by the backend at `/dj/live`) | Per ACLs |
 | Immich | 2283 | Planned | No | Per ACLs |
 | Samba | 445 | Planned | No | Per ACLs |
 

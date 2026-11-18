@@ -15,8 +15,9 @@ Backend API for tyler-schwenk.com providing:
 - **Entrance Song**: Plays an intro song on the big speakers from the admin page
 - **Presence**: Who's home, pushed by the presence agent on fart-pi, for the admin page
 - **Fly Kills**: The house fly kill counter on `/flies`. No login, rate limited per IP
+- **DJ Stream**: Live DJ stream relayed from icecast on fart-pi, plus every recorded set, for the Opium Den page
 
-**Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, recipe, kiln, and fly kill features.
+**Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, recipe, kiln, fly kill, and dj set features.
 
 ## Pac-Tyler
 
@@ -1156,6 +1157,61 @@ Logs a kill for them. `201` with the new tally.
 Takes back their newest kill, for misclicks. `200` with the new tally, or `409` if their count is already zero.
 
 **Rate limit:** same as the POST.
+
+---
+
+## DJ Stream
+
+The live DJ stream and its recorded sets, for the Opium Den page. butt on the DJ laptop sends to icecast on fart-pi; the backend watches icecast, records each session into `dj_sets` (mp3s in `/mnt/ssd/dj-sets`), and relays the stream publicly. Sets under 2 minutes are thrown away. All times are naive UTC. See `pi/docs/services/dj-stream.md`.
+
+A set:
+
+```json
+{
+  "id": 3,
+  "title": "first one that didn't trainwreck",
+  "started_at": "2026-11-18T03:12:09",
+  "ended_at": "2026-11-18T04:20:41",
+  "duration_s": 4112,
+  "size_bytes": 98689024
+}
+```
+
+`title` is null until it's named from the admin page; the site shows the date instead.
+
+### GET `/dj/status`
+
+Whether it's on air. Refreshed every 3 s from icecast, so it's cheap to poll. `200`:
+
+```json
+{"live": true, "started_at": "2026-11-18T03:12:05", "listeners": 2}
+```
+
+`started_at` is when butt connected (null when off air). `listeners` counts people on `/dj/live`.
+
+### GET `/dj/live`
+
+The live stream itself, `audio/mpeg`, endless until the set ends or the listener leaves. Point an `<audio>` element at it. `503` when it's off air, when 25 people are already listening, or when icecast won't serve it.
+
+### GET `/dj/sets`
+
+Every finished set, newest first. A set still being recorded isn't listed. `200`.
+
+### GET `/dj/sets/{set_id}/audio`
+
+A set's mp3, with `Range` support for seeking (`206` for a range, `200` whole). `404` if there's no finished set with that id or its file is missing, `416` for a bad range.
+
+### PATCH `/dj/sets/{set_id}`
+
+**Auth:** admin JWT.
+
+Renames a set. Body `{"title": "..."}` (max 200 characters); blank or null clears it. `200` with the set, `404` if there's no finished set with that id.
+
+### DELETE `/dj/sets/{set_id}`
+
+**Auth:** admin JWT.
+
+Deletes the set and its mp3. `204`, or `404` if there's no finished set with that id.
 
 ---
 

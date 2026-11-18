@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type CSSProperties } from "react";
+import { useDjLive } from "@/lib/useDjLive";
 import { useKilnFiring } from "@/lib/useKilnFiring";
 import worldMeta from "./world.generated.json";
 import { WORLD_OBJECTS, currentIconSrc, pickLuckyRoute, type LayoutName, type WorldObject } from "./worldObjects";
@@ -40,6 +41,35 @@ const SPRITE_SOURCE_PX = 112;
 const TAG_EDGE_MARGIN_PCT = 15;
 
 const FOOT_PADS: Record<string, number> = worldMeta.footPads;
+
+/** one music note rising off the dj board while the stream's live. */
+type LiveNote = {
+  /** two beamed notes instead of one. */
+  beamed: boolean;
+  /** where it starts, percent of the board's width from its left. */
+  leftPct: number;
+  /** sideways drift by the top, percent of the note's own width. */
+  driftPct: number;
+  /** stagger so they don't all rise together. */
+  delayS: number;
+};
+
+const LIVE_NOTES: LiveNote[] = [
+  { beamed: false, leftPct: 2, driftPct: -70, delayS: 0 },
+  { beamed: true, leftPct: 70, driftPct: 60, delayS: 0.9 },
+  { beamed: false, leftPct: 38, driftPct: -15, delayS: 1.8 },
+];
+
+// pixel art for the notes, as [x, y, width, height] rects on a tiny grid
+const NOTE_GRID = { single: { w: 6, h: 9 }, beamed: { w: 9, h: 9 } };
+const NOTE_RECTS: Record<"single" | "beamed", [number, number, number, number][]> = {
+  single: [[3, 0, 1, 7], [4, 1, 1, 1], [5, 2, 1, 2], [1, 6, 2, 1], [0, 7, 4, 1], [0, 8, 3, 1]],
+  beamed: [
+    [3, 0, 6, 2], [3, 2, 1, 5], [8, 2, 1, 5],
+    [1, 6, 2, 1], [0, 7, 4, 1], [0, 8, 3, 1],
+    [6, 6, 2, 1], [5, 7, 4, 1], [5, 8, 3, 1],
+  ],
+};
 
 /**
  * where a name tag sits relative to its object, as css values.
@@ -108,6 +138,7 @@ export default function HomeWorld() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const lastPointerType = useRef("mouse");
   const kilnFiring = useKilnFiring();
+  const djLive = useDjLive();
   const { desktop, mobile } = worldMeta.layouts;
 
   /**
@@ -161,6 +192,7 @@ export default function HomeWorld() {
           key={obj.id}
           obj={obj}
           kilnFiring={kilnFiring}
+          djLive={djLive}
           selected={selectedId === obj.id}
           onPointerDown={(event) => {
             lastPointerType.current = event.pointerType;
@@ -183,6 +215,7 @@ export default function HomeWorld() {
  * @param {object} props - component props.
  * @param {WorldObject} props.obj - what to draw and where it goes.
  * @param {boolean} props.kilnFiring - whether the kiln's firing, which picks its sprite.
+ * @param {boolean} props.djLive - whether the dj stream's on air, for objects with djLive set.
  * @param {boolean} props.selected - lit up from a first touch tap.
  * @param {Function} props.onPointerDown - records the pointer type for tap-to-select.
  * @param {Function} props.onKeyDown - marks keyboard use so enter goes straight through.
@@ -192,6 +225,7 @@ export default function HomeWorld() {
 function WorldObjectLink({
   obj,
   kilnFiring,
+  djLive,
   selected,
   onPointerDown,
   onKeyDown,
@@ -199,6 +233,7 @@ function WorldObjectLink({
 }: {
   obj: WorldObject;
   kilnFiring: boolean;
+  djLive: boolean;
   selected: boolean;
   onPointerDown: (event: React.PointerEvent) => void;
   onKeyDown: () => void;
@@ -214,7 +249,9 @@ function WorldObjectLink({
     onKeyDown,
     onClick,
   };
-  const body = <WorldObjectBody obj={obj} iconSrc={currentIconSrc(obj, kilnFiring)} />;
+  const body = (
+    <WorldObjectBody obj={obj} iconSrc={currentIconSrc(obj, kilnFiring)} live={Boolean(obj.djLive) && djLive} />
+  );
 
   if (obj.lucky) {
     return (
@@ -243,9 +280,10 @@ function WorldObjectLink({
  * @param {object} props - component props.
  * @param {WorldObject} props.obj - the object to draw.
  * @param {string} [props.iconSrc] - the sprite to show. without one it's an invisible hotspot.
+ * @param {boolean} props.live - show the dj stream's live notes and tag on it.
  * @returns {JSX.Element} shadow + sprite/hotspot + name tag.
  */
-function WorldObjectBody({ obj, iconSrc }: { obj: WorldObject; iconSrc?: string }) {
+function WorldObjectBody({ obj, iconSrc, live }: { obj: WorldObject; iconSrc?: string; live: boolean }) {
   // pull the art down past its transparent padding so its feet land on the spot
   const footPad = iconSrc ? (FOOT_PADS[iconSrc] ?? 0) : 0;
 
@@ -255,7 +293,8 @@ function WorldObjectBody({ obj, iconSrc }: { obj: WorldObject; iconSrc?: string 
         <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3/4 aspect-[4/1] rounded-[50%] bg-black/25 pointer-events-none" />
       )}
 
-      <span className="world-lift block">
+      {/* relative so the live notes ride along when the sprite lifts */}
+      <span className="world-lift relative block">
         <span className={`block ${obj.floating ? "world-float" : ""}`}>
           {iconSrc ? (
             <Image
@@ -271,7 +310,17 @@ function WorldObjectBody({ obj, iconSrc }: { obj: WorldObject; iconSrc?: string 
             <span className="world-hotspot block aspect-square border-2 border-dashed border-transparent" />
           )}
         </span>
+        {live && <LiveNotes />}
       </span>
+
+      {live && (
+        <span
+          aria-hidden="true"
+          className="world-live-tag absolute bottom-full left-1/2 -translate-x-1/2 mb-[2px] whitespace-nowrap pointer-events-none pixel-font text-[6px] md:text-[8px] text-white bg-[#D03030] border-2 border-black px-1 py-[1px] shadow-[2px_2px_0_rgba(0,0,0,1)]"
+        >
+          LIVE!
+        </span>
+      )}
 
       <span
         aria-hidden="true"
@@ -280,5 +329,52 @@ function WorldObjectBody({ obj, iconSrc }: { obj: WorldObject; iconSrc?: string 
         {obj.label}
       </span>
     </>
+  );
+}
+
+/**
+ * one pixel-art music note, drawn in the scene's yellow.
+ *
+ * @param {object} props - component props.
+ * @param {boolean} props.beamed - two beamed notes instead of one.
+ * @returns {JSX.Element} the note svg.
+ */
+function PixelNote({ beamed }: { beamed: boolean }) {
+  const kind = beamed ? "beamed" : "single";
+  const grid = NOTE_GRID[kind];
+  return (
+    <svg viewBox={`0 0 ${grid.w} ${grid.h}`} shapeRendering="crispEdges" className="block w-full h-auto" aria-hidden="true">
+      {NOTE_RECTS[kind].map(([x, y, w, h]) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} fill="#F8D030" />
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * music notes drifting up off the dj board while the stream's live. the rise and fade
+ * are .world-note in globals.css; reduced motion leaves them sitting still above it.
+ *
+ * @returns {JSX.Element} the notes, positioned over the sprite.
+ */
+function LiveNotes() {
+  return (
+    <span className="absolute inset-0 pointer-events-none" aria-hidden="true">
+      {LIVE_NOTES.map((note) => (
+        <span
+          key={note.leftPct}
+          className="world-note"
+          style={
+            {
+              left: `${note.leftPct}%`,
+              "--note-drift": `${note.driftPct}%`,
+              "--note-delay": `${note.delayS}s`,
+            } as CSSProperties
+          }
+        >
+          <PixelNote beamed={note.beamed} />
+        </span>
+      ))}
+    </span>
   );
 }

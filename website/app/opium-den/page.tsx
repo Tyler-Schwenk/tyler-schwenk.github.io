@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Navigation from "@/components/Navigation";
+import DjBooth from "@/components/opium-den/DjBooth";
 import { DEFAULT_PREVIEW_IMAGE, pageMetadata } from "@/lib/siteMetadata";
 
 export const metadata = pageMetadata({
@@ -73,6 +74,8 @@ export default function OpiumDenPage() {
             </p>
           </div>
         </details> */}
+
+        <DjBooth />
 
         <section className="mt-8 space-y-3">
           <h2 className="text-xl font-medium text-red-100">Listen</h2>

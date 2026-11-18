@@ -4,22 +4,26 @@ Website Backend API - Main application entry point.
 Backend API providing forum (Public Square), photo gallery, and recipe box
 (The Kitchen) services, plus the relay that lets the admin page remote
 control the display kiosk, the kiln logger's readings and firings, the
-entrance song on the big speakers, who's home, the house fly kill count, and
-each house machine's storage and memory for the monitor page.
+entrance song on the big speakers, who's home, the house fly kill count,
+each house machine's storage and memory for the monitor page, and the live
+dj stream with its recorded sets.
 """
+
+import asyncio
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from datetime import datetime, timezone
 
+from app import dj_stream
 from app.config import settings
 from app.database import init_db
 from app.rate_limit import limiter
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, entrance, presence, fly_kills, monitor
+from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, entrance, presence, fly_kills, dj, monitor
 
 
 @asynccontextmanager
@@ -27,10 +31,15 @@ async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
 
-    Initializes database on startup.
+    Initializes the database and starts the dj stream watcher on startup, and stops the
+    watcher on shutdown (which finishes any set it's recording).
     """
     init_db()
+    dj_watcher_task = asyncio.create_task(dj_stream.watcher.run())
     yield
+    dj_watcher_task.cancel()
+    with suppress(asyncio.CancelledError):
+        await dj_watcher_task
 
 
 # Create FastAPI application
@@ -102,4 +111,5 @@ app.include_router(kiln.router)
 app.include_router(entrance.router)
 app.include_router(presence.router)
 app.include_router(fly_kills.router)
+app.include_router(dj.router)
 app.include_router(monitor.router)

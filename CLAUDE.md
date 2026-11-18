@@ -118,6 +118,7 @@ After any file modifications:
 - **Cast receiver**: `castpi` (Pi 3B+, Raspberry Pi OS Lite) behind the opium den TV, an AirPlay mirroring receiver ("Opium Den TV") via UxPlay. SSH over Wi-Fi: `ssh tyler@192.168.1.114`. The SD card is read-only (RAM overlay) so it survives power pulls; changes need the overlay turned off first. Runbook: `pi/docs/services/cast-receiver.md`
 - **Kiln logger**: castpi also reads the kiln's thermocouple (MAX31856 over SPI) and sends readings to the backend on fart-pi. Runbook: `pi/docs/services/kiln-logger.md`
 - **Monitor agents**: fart-pi, displaytop and castpi each run `monitor-agent.service`, reporting storage (per partition, including unmounted/unallocated space), memory, cpu and temperature to the backend every 30 s for `tyler-schwenk.com/monitor` and the display's monitor slot. Runbook: `pi/docs/services/monitor-agent.md`
+- **DJ stream**: butt on Tyler's laptop streams rekordbox's master to icecast on fart-pi (port 8010, LAN/tailnet only); the backend records each session and relays it at `/dj/live` for the Opium Den page. Runbook: `pi/docs/services/dj-stream.md`
 - **PowerShell**: Quote comma-separated lists when needed
 
 ## When Making Changes

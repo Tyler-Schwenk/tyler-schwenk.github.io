@@ -14,6 +14,7 @@
 | Upload | `#upload` | Photos into an existing or new gallery, or a video (with the existing videos list and delete) |
 | RSVPs | `#rsvps` | Event RSVPs grouped by event, with responses and a rough headcount (responders + friends); delete a response |
 | Public Square | `#square` | Moderation: newest posts, expand to read comments, hard-delete a post (with its comments and votes) or a comment |
+| DJ sets | `#dj` | Every set the live DJ stream recorded (they're public on the Opium Den page as soon as they end): name one, play it, delete it (`pi/docs/services/dj-stream.md`) |
 
 It's linked from the bottom of the home page ("ADMIN"). It's `noindex` and not in the
 sitemap. The open tab lives in the url hash, so `tyler-schwenk.com/admin#display` can be
@@ -46,7 +47,7 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/adminApi.ts` | `createAdminFetch` (adds the JWT, logs out on 401, turns failures into `AdminRequestError`s with readable messages), `adminRequest`, `useAdminData` (load on mount, `reload`, `setData`), `delay`, `AdminFetchContext` / `useAdminFetch` |
 | `website/app/admin/ui.tsx` | Shared building blocks: `Button`, `Field`, `INPUT_CLASS`, `Card`, `Toolbar`, `Badge`, `useFlash` / `FlashMessage`, `ProgressBar`, `Segmented`, `DropZone` |
 | `website/app/admin/icons.tsx` | Line icons for the tabs and chevrons |
-| `website/app/admin/format.ts` | `slugify`, `formatBytes`, `formatDate` (backend timestamps are UTC without a zone), `formatDuration`, `formatElapsed`, `plural` |
+| `website/app/admin/format.ts` | `slugify`, `formatBytes`, `parseBackendTime` and `formatDate` (backend timestamps are UTC without a zone), `formatDuration` (`m:ss`, `h:mm:ss` past an hour), `formatElapsed`, `plural` |
 | `website/app/admin/types.ts` | Shapes of the backend responses the page reads |
 | `website/app/admin/LoginScreen.tsx` | The login form |
 | `website/app/admin/DisplayTab.tsx` | The kiosk remote (below) |
@@ -60,6 +61,7 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/UploadTab.tsx` | Photo and video upload |
 | `website/app/admin/RsvpsTab.tsx` | RSVPs |
 | `website/app/admin/PublicSquareTab.tsx` | Public Square moderation |
+| `website/app/admin/DjSetsTab.tsx` | DJ sets: rename, play, delete. Types and urls come from `website/app/opium-den/djApi.ts` |
 | `website/lib/useAdminAuth.ts` | The JWT in localStorage, shared with The Kitchen (each page passes its own storage key) |
 
 ### Auth
@@ -74,7 +76,7 @@ a 401 from any endpoint logs the page out and shows the login form. Tokens last 
 
 Write a component that loads what it needs with `useAdminData` (or `useAdminFetch` +
 `adminRequest` for writes), add it to `TABS` in `page.tsx` with a short label, a title and
-an icon from `icons.tsx`. The bottom bar is a seven-column grid, so an eighth tab needs that
+an icon from `icons.tsx`. The bottom bar is an eight-column grid, so a ninth tab needs that
 changed too.
 
 ## Display Remote

@@ -755,3 +755,34 @@ class MonitorState(BaseModel):
     """Every machine that's reported since the backend started, in name order."""
     now_ms: int
     devices: list[MonitorDevice]
+
+
+# DJ Stream Schemas
+MAX_DJ_SET_TITLE_LENGTH = 200
+
+
+class DjStreamStatus(BaseModel):
+    """
+    Whether the dj stream is on air. started_at is when butt connected (naive UTC),
+    listeners is how many people the public relay is serving right now.
+    """
+    live: bool
+    started_at: Optional[datetime] = None
+    listeners: int
+
+
+class DjSetRead(BaseModel):
+    """A finished recorded set."""
+    id: int
+    title: Optional[str] = None
+    started_at: datetime
+    ended_at: datetime
+    duration_s: int
+    size_bytes: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DjSetUpdate(BaseModel):
+    """Renaming a set. An empty or null title goes back to showing the date."""
+    title: Optional[str] = Field(None, max_length=MAX_DJ_SET_TITLE_LENGTH)

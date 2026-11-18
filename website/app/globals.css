@@ -449,6 +449,50 @@ body {
   .world-lift { transition: none; }
 }
 
+/*
+ * the opium den's dj board while the stream's live: notes float up off it and a LIVE!
+ * tag blinks above it. the tag ducks out while the object's lit up, so the name tag
+ * shows in its place.
+ */
+@keyframes world-note-rise {
+  0% { transform: translate(0, 0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(var(--note-drift), -260%); opacity: 0; }
+}
+
+.world-note {
+  position: absolute;
+  bottom: 45%;
+  width: 22%;
+  opacity: 0;
+  filter: drop-shadow(1px 1px 0 #000);
+  animation: world-note-rise 2.7s steps(9) infinite;
+  animation-delay: var(--note-delay);
+}
+
+@keyframes world-live-blink {
+  50% { opacity: 0.4; }
+}
+
+.world-live-tag {
+  animation: world-live-blink 1.2s steps(1) infinite;
+}
+
+.world-object:hover .world-live-tag,
+.world-object:focus-visible .world-live-tag,
+.world-object[data-selected="true"] .world-live-tag {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-note {
+    animation: none;
+    opacity: 1;
+    transform: translate(var(--note-drift), -120%);
+  }
+  .world-live-tag { animation: none; }
+}
+
 /* kiln page (/kiln): quiet ceramics catalog look, see website/docs/KILN.md */
 .kiln-theme {
   --kiln-surface: #ffffff;

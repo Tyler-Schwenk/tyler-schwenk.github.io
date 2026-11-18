@@ -1,0 +1,18 @@
+services:
+  icecast:
+    build: .
+    container_name: dj-stream-icecast
+    restart: unless-stopped
+    # butt on the dj laptop sends here. LAN and tailnet only: the public side is the
+    # backend's /dj/live relay, so this port never goes through the tunnel
+    ports:
+      - "8010:8000"
+    environment:
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD}
+      - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD}
+    networks:
+      - website-backend_default
+
+networks:
+  website-backend_default:
+    external: true

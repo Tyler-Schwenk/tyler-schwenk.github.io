@@ -51,6 +51,8 @@ export type WorldObject = MenuEntry & {
   floating?: boolean;
   /** skips the ground shadow -- for things that aren't standing on the ground (the roof). */
   noShadow?: boolean;
+  /** gets music notes and a LIVE! tag while the dj stream is on air (the opium den's board). */
+  djLive?: boolean;
   desktop: Placement;
   mobile: Placement;
 };
@@ -177,8 +179,11 @@ export const WORLD_OBJECTS: WorldObject[] = [
     desktop: { x: 300, y: 96, scale: 0.55 }, mobile: { x: 150, y: 110, scale: 0.7 },
   },
   {
-    id: "opium-den", label: "ENTER THE VIRTUAL OPIUM DEN", href: "/opium-den", size: 0.7,
-    desktop: { x: 614, y: 118, scale: 1 }, mobile: { x: 300, y: 168, scale: 1, size: 0.45 },
+    // the dj board sits on the cave floor, sized to fit inside the mouth the generator paints
+    // (draw_cave: desktop 40px wide at (614, 118), mobile 36px at (300, 168))
+    id: "opium-den", label: "ENTER THE VIRTUAL OPIUM DEN", href: "/opium-den", iconSrc: "/images/8bit/dj_board.png",
+    size: 1, noShadow: true, djLive: true,
+    desktop: { x: 614, y: 116, widthPx: 32 }, mobile: { x: 300, y: 166, widthPx: 28 },
   },
 ];
 

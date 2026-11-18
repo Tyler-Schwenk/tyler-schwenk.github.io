@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # `openssl rand -hex 32`; the same value goes in /etc/presence-agent/token on
     # fart-pi (see pi/docs/services/presence-agent.md).
     PRESENCE_TOKEN: str = ""
+
     # Monitor agents -- shared secret the agent on each house machine sends (X-Monitor-Token)
     # to report its storage, memory and so on. Empty turns that endpoint off. Generate with
     # `openssl rand -hex 32`; the same value goes in /etc/monitor-agent/token on each
@@ -80,6 +81,12 @@ class Settings(BaseSettings):
     # Speaker agent on displaytop, which plays everything on the big speakers
     # (see pi/docs/services/speaker-agent.md)
     SPEAKER_AGENT_URL: str = "http://192.168.1.192:8771"
+
+    # Live dj stream: icecast's address on the docker network, the mount butt sends to,
+    # and where finished sets are recorded (see pi/docs/services/dj-stream.md)
+    ICECAST_URL: str = "http://dj-stream-icecast:8000"
+    DJ_STREAM_MOUNT: str = "/live"
+    DJ_SETS_DIR: str = "/app/dj_sets"
 
     # Pac-Tyler data (written by pac-tyler-updater, mounted as a volume)
     PAC_TYLER_DATA_DIR: str = "/app/pac-tyler"
