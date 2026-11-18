@@ -7,6 +7,8 @@ import CloudLoop from "./CloudLoop";
 import {
   CLOUD_HANDOFF_S,
   DISCO_LETTER_COLORS,
+  FLOOR_GROUT,
+  FLOOR_PINK,
   INVITE_VIDEO_DESKTOP_SRC,
   INVITE_VIDEO_MOBILE_SRC,
   NIGHT_SKY_BOTTOM,
@@ -41,6 +43,8 @@ const THEME_VARS = {
   "--ornament-teal": ORNAMENT_TEAL,
   "--sky-top": NIGHT_SKY_TOP,
   "--sky-bottom": NIGHT_SKY_BOTTOM,
+  "--floor-pink": FLOOR_PINK,
+  "--floor-grout": FLOOR_GROUT,
 } as CSSProperties;
 
 /**

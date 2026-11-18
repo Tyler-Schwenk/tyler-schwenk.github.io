@@ -13,14 +13,14 @@ export const CLOUD_LOOP_MP4_SRC = `${MEDIA_DIR}/clouds-loop.mp4`;
 export const CLOUD_LOOP_POSTER_SRC = `${MEDIA_DIR}/clouds-poster.jpg`;
 
 /**
- * the three archival disco floor clips shown in circles behind the attire line.
- * cropped square (clear of the station logo), 360px, silent.
+ * the attire clip: three archival disco floor clips, crossfaded one after another
+ * into one loop. cropped square (clear of the station logo), 360px, silent.
  */
-export const ATTIRE_CLIPS = [1, 2, 3].map((n) => ({
-  webmSrc: `${MEDIA_DIR}/attire-${n}.webm`,
-  mp4Src: `${MEDIA_DIR}/attire-${n}.mp4`,
-  posterSrc: `${MEDIA_DIR}/attire-${n}.jpg`,
-}));
+export const ATTIRE_CLIP = {
+  webmSrc: `${MEDIA_DIR}/attire.webm`,
+  mp4Src: `${MEDIA_DIR}/attire.mp4`,
+  posterSrc: `${MEDIA_DIR}/attire.jpg`,
+};
 
 /**
  * the moment in the invite video where the cloud drawing matches frame 0 of the
@@ -62,6 +62,11 @@ export const ORNAMENT_TEAL = "#4fb39a";
 /** the deep blue of the video's starry space scene, used behind the flier */
 export const NIGHT_SKY_TOP = "#0b0d3f";
 export const NIGHT_SKY_BOTTOM = "#1c0f45";
+
+/** the snoopy dance floor: hot pink tiles, dark grout, and the colors the tiles light up in */
+export const FLOOR_PINK = "#e8318a";
+export const FLOOR_GROUT = "#6e0f45";
+export const FLOOR_LIGHT_COLORS = ["#ff3b3b", "#ff8a1f", "#ffd23a", "#2fb39a", "#6a3cf0"] as const;
 
 /** squares in the box ornament row and diamonds in the diamond row, same as the video */
 export const BOX_ROW_COUNT = 13;

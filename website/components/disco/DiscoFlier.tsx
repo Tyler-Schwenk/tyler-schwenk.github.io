@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
-import AttireClips from "./AttireClips";
+import AttireClip from "./AttireClip";
 import { DISCO_ADDRESS, DISCO_DETAILS, DISCO_MORE_INFO } from "./constants";
 import DiscoText from "./DiscoText";
 import {
@@ -10,8 +10,9 @@ import {
   DiamondRow,
   DiscoBall,
   NoPhoneIcon,
-  PosterCircles,
-  PosterStars,
+  DanceFloor,
+  SparkleBursts,
+  Spotlights,
   StarField,
 } from "./Ornaments";
 import { deliverFlierCard, renderFlierCard, type FlierCardInfo, type SaveResult } from "./saveFlierCard";
@@ -55,8 +56,8 @@ interface DiscoFlierProps {
 /**
  * the flier under the clouds, in two parts. first a poster sized to exactly fill
  * the screen, so one screenshot gets all the main info: laid out like an old disco
- * flier, with a tilted title, overlapping circles, stars, a hanging disco ball, and
- * the details set off to either side. the address opens in the person's maps app.
+ * flier, with a tilted title, a hanging disco ball, the light-up floor, spotlights
+ * and sparkles from the snoopy clips, and the details set off to either side. the address opens in the person's maps app.
  * below it, past a scroll hint, the longer details and the save and replay buttons.
  * @param {DiscoFlierProps} props - the event title, device type, and the replay handler.
  * @returns {JSX.Element} the full screen, scrollable flier.
@@ -112,8 +113,9 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
       <StarField />
       <div className={styles.posterScreen}>
         <article className={styles.poster}>
-          <PosterCircles />
-          <PosterStars />
+          <DanceFloor />
+          <Spotlights />
+          <SparkleBursts />
 
           <p className={`${styles.kicker} ${styles.rise}`} style={riseDelay(KICKER_DELAY_MS)}>
             {DISCO_DETAILS.kicker}
@@ -145,13 +147,13 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
             {DISCO_DETAILS.lineup.map((act, i) => (
               <p key={act} className={styles.act}>
                 {i > 0 && <span className={styles.actJoin}>+ </span>}
-                <DiscoText text={act} delayMs={FEATURING_DELAY_MS} />
+                <DiscoText text={act} delayMs={FEATURING_DELAY_MS} holdColors />
               </p>
             ))}
           </section>
 
           <section className={`${styles.attire} ${styles.rise}`} style={riseDelay(ATTIRE_DELAY_MS)}>
-            <AttireClips />
+            <AttireClip />
             <h2 className={styles.script}>Attire:</h2>
             <p className={styles.attireText}>{DISCO_DETAILS.attire}</p>
           </section>

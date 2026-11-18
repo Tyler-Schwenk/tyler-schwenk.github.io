@@ -75,15 +75,16 @@ height) so it stays flier-shaped. If you add something to the poster, size it in
 and check a short phone (375x553) still fits.
 
 It's laid out like an old disco flier rather than a centered stack: a framed poster
-(double rule border) with blocks pushed to either side, big outlined circles overlapping
-behind them, and scattered five-point stars. The grid in `.poster` places, top to bottom:
+(double rule border) with blocks pushed to either side. Behind them is the stage from the
+Snoopy clips in the video: a light-up dance floor, sweeping spotlights and white sparkle
+bursts. The grid in `.poster` places, top to bottom:
 
 | Area | What |
 |------|------|
 | `kicker` / `ball` | "Disco night is back!" on the left, the disco ball hanging from the frame on the right |
 | `title` | Tilted title, one word per line, the first big and the rest indented, over racing stripes |
 | `boxes` | The box row, left aligned |
-| `feat` / `attire` | Lineup over a circle on the left; three round dance floor clips and the dress code on the right, dropped lower |
+| `feat` / `attire` | Lineup over a circle on the left; the round dance floor clip and the dress code on the right, dropped lower |
 | `facts` | Date, time and place, script labels with slab values, all left aligned |
 | `phones` | The no-phones stamp, tilted |
 | `diamonds` | A short diamond row as a corner flourish |
@@ -94,17 +95,26 @@ behind them, and scattered five-point stars. The grid in `.poster` places, top t
   fliers. Both are in the root layout.
 - **Colors** (`constants.ts`): letters cycle through the video's six-color palette.
   `DiscoText` gives each letter its own color, pops the letters in out of order, then
-  chases the colors along the line. The title gets a hard lime drop shadow. Ornament lime,
-  blue and teal are for the box row, diamond row and stars. The night sky colors come from
+  chases the colors along the line. The lineup uses `holdColors`, so its letters keep their
+  first colors. The title gets a hard lime drop shadow. Ornament lime, blue and teal are for
+  the box row and diamond row. The dance floor's pink, grout and tile light colors are their
+  own constants (`FLOOR_*`), taken from the Snoopy floor. The night sky colors come from
   the video's space scene. All of these are set as CSS variables on the stage, so the
   stylesheet and the canvas card share one source.
 - **Moving parts** (`Ornaments.tsx`): blocks rise in one after another (`--rise-delay`),
   the stripes streak in then drift, the disco ball spins and throws beams, the box row
-  chases, stars turn and twinkle, the circles breathe, and the attire clips loop and bob. Background
-  star positions are seeded, so the prerendered HTML matches the browser. Everything holds
-  still under `prefers-reduced-motion`.
-- **Attire clips** (`AttireClips.tsx`): three archival 70s dance floor clips, looping
-  silently in overlapping ringed circles. Under reduced motion they're paused on their
+  chases, the spotlights sweep, the sparkle bursts flash, the dance floor's tiles blink,
+  and the attire clip loops and bobs. Everything holds still under `prefers-reduced-motion`.
+- **The dance floor** (`DanceFloor`): covers the bottom half of the poster. It's a grid
+  of tiles (40 wide, 26 deep), much wider than the poster because the far end shrinks
+  toward the horizon. It's tipped back with a 3D `rotateX` under `perspective`, so it runs
+  off to a hazy horizon. Plain tiles and grout are just the plane's background; only the
+  lit tiles (about 22%) are elements. Each lit tile blinks its color on a 1.2, 1.8 or 2.4 s
+  beat with its own offset, so the floor never blinks in step. Which tiles light, and the
+  background star dots, are seeded, so the prerendered HTML matches the browser. It's dimmed
+  to 60%, and the facts and stamp over it get a dark halo so they stay readable.
+- **Attire clip** (`AttireClip.tsx`): archival 70s dance floor footage in a ringed circle,
+  three clips crossfaded into one silent loop. Under reduced motion it's paused on its
   first frame.
 - **Address**: links to the person's own maps app (`useMapsUrl.ts`). Apple devices get an
   Apple Maps link, Android a `geo:` link that opens the default maps app, and everything
@@ -142,7 +152,7 @@ V1_1.mp4`, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
 | `invite-720.mp4` | Phone video, ~15 MB | Same, with `scale=1280:720` |
 | `clouds-loop.mp4` / `.webm` | The 30-frame cloud loop, 1440x1080, no audio | `-ss 57.45 -t 1.6`, then `crop=1440:1080:240:0,select='between(n\,5\,34)'`; x264 crf 20 / vp9 crf 32 |
 | `clouds-poster.jpg` | First frame of the loop, the poster before it plays | |
-| `attire-1..3.mp4` / `.webm` / `.jpg` | The attire clips, 360x360, ~250 KB each, no audio, with a still for each | From `attire1..3.mp4` (gitignored sources in the repo root): `crop=ih:ih:120:0` (`crop=1400:1400:150:50` for clip 2, to drop a black bar at the top) keeps the square clear of the station logo in the top right, then `scale=360:360,fps=24`; x264 crf 27 / vp9 crf 38 |
+| `attire.mp4` / `.webm` / `.jpg` | The attire clip, 360x360, 15.75 s, ~700 KB, no audio, plus its still | From `attire1..3.mp4` (gitignored sources in the repo root). Each is cropped to a square clear of the station logo in the top right (`crop=ih:ih:120:0`; `crop=1400:1400:150:50` for clip 2, to drop a black bar at the top), then `scale=360:360,fps=24`. They're joined with 0.4 s `xfade` fades; x264 crf 27 / vp9 crf 38 |
 
 The link preview is `website/public/images/events/disco-og.jpg`, the "Disco Night is Back!"
 title card at 18.5 s.
@@ -164,8 +174,8 @@ the time of the repeated frame.
 | `website/components/disco/cloudSeam.ts` | Canvas drawing for the parting |
 | `website/components/disco/DiscoFlier.tsx` | The flier and its save button |
 | `website/components/disco/DiscoText.tsx` | Per-letter colored text |
-| `website/components/disco/Ornaments.tsx` | Box row, diamond row, stars, circles, disco ball, no-phone icon |
-| `website/components/disco/AttireClips.tsx` | The three round dance floor clips by the attire line |
+| `website/components/disco/Ornaments.tsx` | Box row, diamond row, star dots, disco ball, dance floor, spotlights, sparkle bursts, no-phone icon |
+| `website/components/disco/AttireClip.tsx` | The round dance floor clip by the attire line |
 | `website/components/disco/saveFlierCard.ts` | Draws and shares or downloads the PNG |
 | `website/components/disco/useInviteDevice.ts` | Mobile and orientation detection |
 | `website/components/disco/useMapsUrl.ts` | The address link for this device's maps app |

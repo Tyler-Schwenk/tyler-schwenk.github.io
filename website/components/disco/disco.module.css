@@ -436,47 +436,19 @@
   color: var(--c1);
 }
 
-/* three round clips of a 70s dance floor, overlapping like the poster's circles */
-.attireClips {
-  position: relative;
-  width: calc(40 * var(--u));
-  height: calc(31 * var(--u));
-  margin-bottom: calc(1.5 * var(--u));
-}
-
+/* the round dance floor clip, ringed like the title's printed drop outline:
+   a gap of sky, then a colored ring */
 .attireClip {
-  position: absolute;
+  display: block;
+  width: calc(30 * var(--u));
   aspect-ratio: 1;
-  border: 2px solid var(--clip-ring, var(--c3));
+  margin-bottom: calc(1.5 * var(--u));
+  border: 2px solid var(--c3);
   border-radius: 50%;
   object-fit: cover;
   background: var(--sky-bottom);
-  /* a gap of sky then a ring, like the title's printed drop outline */
-  box-shadow: 0 0 0 3px var(--sky-top), 0 0 0 5px var(--clip-ring, var(--c3));
+  box-shadow: 0 0 0 3px var(--sky-top), 0 0 0 5px var(--ornament-lime);
   animation: clipBob 3.2s ease-in-out infinite;
-}
-
-.attireClip:nth-child(1) {
-  --clip-ring: var(--ornament-lime);
-  left: 0;
-  top: calc(3 * var(--u));
-  width: calc(19 * var(--u));
-}
-
-.attireClip:nth-child(2) {
-  --clip-ring: var(--c3);
-  right: 0;
-  top: 0;
-  width: calc(21 * var(--u));
-  animation-delay: -1.1s;
-}
-
-.attireClip:nth-child(3) {
-  --clip-ring: var(--ornament-teal);
-  left: calc(11 * var(--u));
-  top: calc(13 * var(--u));
-  width: calc(18 * var(--u));
-  animation-delay: -2.2s;
 }
 
 @keyframes clipBob {
@@ -492,12 +464,14 @@
   margin: 0;
 }
 
+/* the facts and the stamp sit over the dance floor, so they get a dark halo */
 .fact {
   display: flex;
   align-items: baseline;
   gap: 0.4em;
   font-size: calc(4.8 * var(--u));
   line-height: 1.15;
+  text-shadow: 0 2px 0 var(--sky-top), 0 0 10px var(--sky-top);
 }
 
 .fact dt {
@@ -510,9 +484,7 @@
 
 .address {
   color: var(--c4);
-  text-decoration: underline wavy var(--c3);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.2em;
+  text-decoration: none;
 }
 
 .address:hover,
@@ -538,6 +510,7 @@
   padding: calc(2 * var(--u)) calc(3.5 * var(--u));
   border: 2px dashed var(--c1);
   border-radius: 10px;
+  background: rgba(11, 13, 63, 0.75);
   font-size: calc(3.6 * var(--u));
   line-height: 1.15;
   color: var(--c1);
@@ -580,33 +553,96 @@
   pointer-events: none;
 }
 
-.posterCircle {
+/* the light-up floor from the snoopy clips, along the bottom of the poster: a
+   flat grid of tiles tipped back in 3d so it runs off to a hazy horizon */
+.danceFloor {
+  top: auto;
+  height: 50%;
+  overflow: hidden;
+  perspective: calc(70 * var(--u));
+  perspective-origin: 50% 0%;
+  opacity: 0.6;
+}
+
+/* the fog where the floor meets the dark */
+.danceFloor::after {
+  content: "";
   position: absolute;
-  aspect-ratio: 1;
-  border: 2px solid var(--c2);
-  border-radius: 50%;
-  opacity: 0.35;
-  animation: circleBreathe 6s ease-in-out infinite;
+  inset: 0;
+  background: linear-gradient(180deg, var(--sky-top) 0%, rgba(255, 170, 220, 0.35) 12%, transparent 40%);
 }
 
-.posterCircle:nth-child(even) {
-  border-color: var(--c3);
-}
-
-@keyframes circleBreathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-.posterStar {
+.floorPlane {
   position: absolute;
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-  animation: starTurn 4s ease-in-out infinite;
+  bottom: 0;
+  left: -150%;
+  width: 400%;
+  height: 300%;
+  display: grid;
+  background-color: var(--floor-pink);
+  background-image:
+    linear-gradient(90deg, var(--floor-grout) 3px, transparent 3px),
+    linear-gradient(180deg, var(--floor-grout) 3px, transparent 3px);
+  transform-origin: 50% 100%;
+  transform: rotateX(72deg);
 }
 
-@keyframes starTurn {
-  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.85; }
-  50% { transform: rotate(36deg) scale(1.25); opacity: 1; }
+/* a lit tile, inset so the grout shows round it. duration and delay are set per
+   tile, so the floor never blinks in step */
+.floorLight {
+  margin: 3px 0 0 3px;
+  background: var(--floor-pink);
+  animation: tileFlash 1800ms step-end infinite;
+}
+
+@keyframes tileFlash {
+  0% { background: var(--tile-light); }
+  50% { background: var(--floor-pink); }
+}
+
+.spotlight {
+  position: absolute;
+  top: -6%;
+  width: 34%;
+  height: 80%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 220, 240, 0.08) 70%, transparent);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  mix-blend-mode: screen;
+  animation: spotSweep 7s ease-in-out infinite alternate;
+}
+
+.spotlightLeft {
+  --sweep-from: -18deg;
+  --sweep-to: 14deg;
+  left: 6%;
+}
+
+.spotlightRight {
+  --sweep-from: 18deg;
+  --sweep-to: -14deg;
+  right: 6%;
+  animation-delay: -3.5s;
+}
+
+@keyframes spotSweep {
+  from { rotate: var(--sweep-from); }
+  to { rotate: var(--sweep-to); }
+}
+
+/* the snoopy stage's hand drawn sparkles: eight spikes, long and short */
+.burst {
+  position: absolute;
+  background: #fff;
+  clip-path: polygon(50% 0%, 51.9% 45.4%, 71.2% 28.8%, 54.6% 48.1%, 100% 50%, 54.6% 51.9%, 71.2% 71.2%, 51.9% 54.6%, 50% 100%, 48.1% 54.6%, 28.8% 71.2%, 45.4% 51.9%, 0% 50%, 45.4% 48.1%, 28.8% 28.8%, 48.1% 45.4%);
+  transform: scale(0);
+  animation: burstFlash 2.8s ease-in-out infinite;
+}
+
+@keyframes burstFlash {
+  0%, 50%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+  68% { transform: scale(1) rotate(20deg); opacity: 1; }
+  84% { transform: scale(0.55) rotate(35deg); opacity: 0.8; }
 }
 
 /* ---------- the scroll hint and what's below the poster ---------- */
@@ -697,6 +733,12 @@
 .word {
   display: inline-block;
   white-space: nowrap;
+}
+
+/* a letter that keeps its first color, for lines that shouldn't flash */
+.letterHeld {
+  display: inline-block;
+  animation: letterIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .letter {
@@ -864,8 +906,10 @@
   .rise,
   .speedStripes,
   .attireClip,
-  .posterCircle,
-  .posterStar,
+  .letterHeld,
+  .floorLight,
+  .spotlight,
+  .burst,
   .scrollChevron {
     animation: none;
   }

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { BOX_ROW_COUNT, DIAMOND_ROW_COUNT } from "./constants";
+import { BOX_ROW_COUNT, DIAMOND_ROW_COUNT, FLOOR_LIGHT_COLORS } from "./constants";
 import styles from "./disco.module.css";
 
 /** the lit box runs along the row once per box chase cycle (see .box in the css) */
@@ -13,10 +13,19 @@ const STAR_MIN_SIZE_PX = 1;
 const STAR_SIZE_RANGE_PX = 2.5;
 const STAR_TWINKLE_MAX_DELAY_MS = 3000;
 
-// a tiny seeded generator (park-miller) so the stars land in the same spots in
-// the prerendered html and in the browser
+// a tiny seeded generator (park-miller) so the stars and floor lights land the
+// same way in the prerendered html and in the browser
 const LCG_MULTIPLIER = 16807;
 const LCG_MODULUS = 2147483647;
+
+// the floor's much wider than the poster, since its far end shrinks toward the horizon
+const FLOOR_COLUMNS = 40;
+const FLOOR_ROWS = 26;
+const FLOOR_SEED = 1978;
+/** about this share of the floor's tiles light up */
+const FLOOR_LIT_CHANCE = 0.22;
+/** each lit tile blinks on and off over one of these, so the floor never settles into a pattern */
+const FLOOR_FLASH_PERIODS_MS = [1200, 1800, 2400];
 
 export interface Star {
   leftPct: number;
@@ -26,15 +35,24 @@ export interface Star {
 }
 
 /**
+ * a seeded random number source, the same sequence every time for a seed.
+ * @param {number} startSeed - any positive whole number.
+ * @returns {() => number} gives the next number in [0, 1) each call.
+ */
+function seededRandom(startSeed: number): () => number {
+  let seed = startSeed;
+  return () => {
+    seed = (seed * LCG_MULTIPLIER) % LCG_MODULUS;
+    return seed / LCG_MODULUS;
+  };
+}
+
+/**
  * scatters the flier's stars, the same way every time.
  * @returns {Star[]} positions, sizes and twinkle offsets.
  */
 function scatterStars(): Star[] {
-  let seed = STAR_SEED;
-  const next = () => {
-    seed = (seed * LCG_MULTIPLIER) % LCG_MODULUS;
-    return seed / LCG_MODULUS;
-  };
+  const next = seededRandom(STAR_SEED);
   return Array.from({ length: STAR_COUNT }, () => ({
     leftPct: next() * 100,
     topPct: next() * 100,
@@ -127,69 +145,116 @@ export function DiscoBall() {
   );
 }
 
-/**
- * the big five-point stars scattered over the poster, like the ones on old disco
- * fliers. hand placed (as % of the poster) so they sit in the gaps between blocks.
- */
-const POSTER_STARS = [
-  { leftPct: 6, topPct: 3, sizePx: 22, color: "var(--ornament-lime)", delayMs: 0 },
-  { leftPct: 52, topPct: 7, sizePx: 16, color: "var(--c3)", delayMs: 900 },
-  { leftPct: 90, topPct: 33, sizePx: 20, color: "var(--ornament-teal)", delayMs: 400 },
-  { leftPct: 4, topPct: 47, sizePx: 18, color: "var(--c3)", delayMs: 1500 },
-  { leftPct: 43, topPct: 57, sizePx: 24, color: "var(--ornament-lime)", delayMs: 700 },
-  { leftPct: 88, topPct: 71, sizePx: 16, color: "var(--c1)", delayMs: 1200 },
-  { leftPct: 62, topPct: 95, sizePx: 14, color: "var(--ornament-lime)", delayMs: 1800 },
-];
-
-/** the thin overlapping circles behind the poster's blocks, as % of the poster's width and height */
-const POSTER_CIRCLES = [
-  { leftPct: 58, topPct: -2, widthPct: 52, delayMs: 0 },
-  { leftPct: -14, topPct: 36, widthPct: 62, delayMs: 1500 },
-  { leftPct: 52, topPct: 40, widthPct: 58, delayMs: 3000 },
-  { leftPct: 18, topPct: 62, widthPct: 56, delayMs: 4500 },
-];
+interface FloorLight {
+  /** 1-based grid position on the floor */
+  column: number;
+  row: number;
+  color: string;
+  flashMs: number;
+  delayMs: number;
+}
 
 /**
- * five-point stars that slowly turn and glint.
- * @returns {JSX.Element} an absolutely positioned star layer for the poster.
+ * picks which dance floor tiles light up, in what color and rhythm. seeded, so
+ * the prerendered html matches the browser. plain tiles are just the floor's
+ * background, so only the lit ones become elements.
+ * @returns {FloorLight[]} the lit tiles.
  */
-export function PosterStars() {
+function layOutFloorLights(): FloorLight[] {
+  const next = seededRandom(FLOOR_SEED);
+  const lights: FloorLight[] = [];
+  for (let i = 0; i < FLOOR_COLUMNS * FLOOR_ROWS; i += 1) {
+    if (next() >= FLOOR_LIT_CHANCE) {
+      continue;
+    }
+    const flashMs = FLOOR_FLASH_PERIODS_MS[Math.floor(next() * FLOOR_FLASH_PERIODS_MS.length)];
+    lights.push({
+      column: (i % FLOOR_COLUMNS) + 1,
+      row: Math.floor(i / FLOOR_COLUMNS) + 1,
+      color: FLOOR_LIGHT_COLORS[Math.floor(next() * FLOOR_LIGHT_COLORS.length)],
+      flashMs,
+      delayMs: -Math.floor(next() * flashMs),
+    });
+  }
+  return lights;
+}
+
+const FLOOR_LIGHTS = layOutFloorLights();
+
+/** the floor's grid, and its grout lines drawn as a background one tile apart */
+const FLOOR_PLANE_STYLE = {
+  gridTemplateColumns: `repeat(${FLOOR_COLUMNS}, 1fr)`,
+  gridTemplateRows: `repeat(${FLOOR_ROWS}, 1fr)`,
+  backgroundSize: `calc(100% / ${FLOOR_COLUMNS}) calc(100% / ${FLOOR_ROWS})`,
+};
+
+/**
+ * the light-up disco floor from the snoopy clips: hot pink tiles going back to a
+ * hazy horizon, with tiles blinking red, orange, yellow, teal and violet.
+ * @returns {JSX.Element} the floor layer, along the bottom of the poster.
+ */
+export function DanceFloor() {
   return (
-    <div className={styles.posterDecor} aria-hidden="true">
-      {POSTER_STARS.map((star) => (
-        <span
-          key={`${star.leftPct}-${star.topPct}`}
-          className={styles.posterStar}
-          style={{
-            left: `${star.leftPct}%`,
-            top: `${star.topPct}%`,
-            width: `${star.sizePx}px`,
-            height: `${star.sizePx}px`,
-            background: star.color,
-            animationDelay: `${star.delayMs}ms`,
-          }}
-        />
-      ))}
+    <div className={`${styles.posterDecor} ${styles.danceFloor}`} aria-hidden="true">
+      <div className={styles.floorPlane} style={FLOOR_PLANE_STYLE}>
+        {FLOOR_LIGHTS.map((light) => {
+          const style = {
+            "--tile-light": light.color,
+            gridColumn: light.column,
+            gridRow: light.row,
+            animationDuration: `${light.flashMs}ms`,
+            animationDelay: `${light.delayMs}ms`,
+          } as CSSProperties;
+          return <span key={`${light.column}-${light.row}`} className={styles.floorLight} style={style} />;
+        })}
+      </div>
     </div>
   );
 }
 
 /**
- * big outlined circles overlapping behind everything, breathing in and out.
- * @returns {JSX.Element} an absolutely positioned circle layer for the poster.
+ * two stage spotlights sweeping down from the top, like the ones over the snoopy dance floor.
+ * @returns {JSX.Element} the spotlight layer.
  */
-export function PosterCircles() {
+export function Spotlights() {
   return (
     <div className={styles.posterDecor} aria-hidden="true">
-      {POSTER_CIRCLES.map((circle) => (
+      <span className={`${styles.spotlight} ${styles.spotlightLeft}`} />
+      <span className={`${styles.spotlight} ${styles.spotlightRight}`} />
+    </div>
+  );
+}
+
+/**
+ * where the white sparkle bursts flash, as % of the poster, kept to the dark sky
+ * above the floor and out of the way of the words.
+ */
+const SPARKLE_BURSTS = [
+  { leftPct: 7, topPct: 3, sizePx: 30, delayMs: 0 },
+  { leftPct: 50, topPct: 8, sizePx: 20, delayMs: 1300 },
+  { leftPct: 90, topPct: 34, sizePx: 26, delayMs: 600 },
+  { leftPct: 3, topPct: 46, sizePx: 22, delayMs: 1900 },
+  { leftPct: 45, topPct: 55, sizePx: 18, delayMs: 900 },
+  { leftPct: 70, topPct: 16, sizePx: 16, delayMs: 2400 },
+];
+
+/**
+ * the hand drawn white starbursts from the snoopy stage, flashing in and out.
+ * @returns {JSX.Element} the sparkle layer.
+ */
+export function SparkleBursts() {
+  return (
+    <div className={styles.posterDecor} aria-hidden="true">
+      {SPARKLE_BURSTS.map((burst) => (
         <span
-          key={`${circle.leftPct}-${circle.topPct}`}
-          className={styles.posterCircle}
+          key={`${burst.leftPct}-${burst.topPct}`}
+          className={styles.burst}
           style={{
-            left: `${circle.leftPct}%`,
-            top: `${circle.topPct}%`,
-            width: `${circle.widthPct}%`,
-            animationDelay: `${circle.delayMs}ms`,
+            left: `${burst.leftPct}%`,
+            top: `${burst.topPct}%`,
+            width: `${burst.sizePx}px`,
+            height: `${burst.sizePx}px`,
+            animationDelay: `${burst.delayMs}ms`,
           }}
         />
       ))}
