@@ -1,0 +1,482 @@
+/* disco december invite. the look comes from the invite video: a fat slab serif
+   with letters in a blue/violet/pink palette, lime and blue box ornaments, teal
+   diamonds, and the deep blue starry sky. see website/docs/DISCO_INVITE.md */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  color: #fdf2fa;
+  font-family: var(--font-disco), Georgia, serif;
+}
+
+/* ---------- the clouds ---------- */
+
+.cloudVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  visibility: hidden;
+  /* lets the frame size itself off the curtain; vh on phones is the biggest
+     viewport, not the visible one */
+  container-type: size;
+}
+
+.curtainUp {
+  visibility: visible;
+}
+
+/* exactly covers the stage at 4:3, the clouds' own shape, so nothing's cropped
+   unevenly as it grows. it starts at the video's pillarboxed size (--start-scale,
+   set from js when the curtain goes up) and swells to fill the screen. */
+.curtainFrame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, 133.334cqh);
+  aspect-ratio: 4 / 3;
+  transform: translate(-50%, -50%);
+}
+
+.curtainUp .curtainFrame {
+  animation: cloudsFill 1.4s ease-in-out 0.3s both;
+}
+
+@keyframes cloudsFill {
+  from { transform: translate(-50%, -50%) scale(var(--start-scale, 1)); }
+  to { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* the video keeps playing while hidden so the canvas can keep drawing it */
+.curtainParting .cloudVideo {
+  opacity: 0;
+}
+
+.curtainCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- the invite video ---------- */
+
+.inviteVideo {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  visibility: hidden;
+}
+
+.inviteVideoShown {
+  visibility: visible;
+}
+
+.skipButton {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 4;
+  padding: 6px 14px;
+  border: 2px solid rgba(253, 242, 250, 0.5);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fdf2fa;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.skipButton:hover,
+.skipButton:focus-visible {
+  opacity: 1;
+}
+
+/* ---------- prompts over the clouds (rotate, tap to start) ---------- */
+
+.prompt {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.promptCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 28px 24px;
+  border-radius: 28px;
+  background: rgba(28, 15, 69, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  box-shadow: 0 10px 40px rgba(28, 15, 69, 0.35);
+}
+
+.promptText {
+  margin: 0;
+  font-size: clamp(1.6rem, 7vw, 2.6rem);
+  line-height: 1.1;
+}
+
+.promptHint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--c1);
+}
+
+.phone {
+  width: 54px;
+  height: 92px;
+  border: 5px solid #fdf2fa;
+  border-radius: 12px;
+  position: relative;
+  animation: rotatePhone 2.4s ease-in-out infinite;
+}
+
+.phone::after {
+  content: "";
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: #fdf2fa;
+}
+
+@keyframes rotatePhone {
+  0%, 20% { transform: rotate(0deg); }
+  55%, 80% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.startButton {
+  padding: 14px 30px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c0);
+  color: #fdf2fa;
+  font: inherit;
+  font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+  cursor: pointer;
+  box-shadow: 0 0 0 4px var(--c3), 0 0 30px var(--c3);
+  animation: buttonGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes buttonGlow {
+  0%, 100% { box-shadow: 0 0 0 4px var(--c3), 0 0 18px var(--c3); }
+  50% { box-shadow: 0 0 0 4px var(--c2), 0 0 42px var(--c2); }
+}
+
+/* ---------- the flier ---------- */
+
+.flier {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+  animation: flierIn 2.6s ease-out both;
+}
+
+@keyframes flierIn {
+  from { transform: scale(0.94); filter: brightness(0.6); }
+  to { transform: scale(1); filter: brightness(1); }
+}
+
+.starField {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgba(200, 200, 255, 0.8);
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+.flierContent {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 16px 56px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2.8rem, 13vw, 6rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: clamp(1.3rem, 5.5vw, 2rem);
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.detailLabel {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ornament-teal);
+}
+
+.detailValue {
+  margin: 0 0 10px;
+  font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+}
+
+.highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: clamp(1rem, 4.2vw, 1.35rem);
+}
+
+.flierActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.secondaryButton {
+  padding: 12px 22px;
+  border: 2px solid var(--c1);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--c1);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.saveStatus {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--c1);
+}
+
+/* ---------- letters ---------- */
+
+.word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.letter {
+  display: inline-block;
+  animation:
+    letterIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    letterColors 3s step-end infinite;
+}
+
+@keyframes letterIn {
+  from { opacity: 0; transform: translateY(0.3em) scale(0.4); }
+  to { opacity: 1; transform: none; }
+}
+
+/* six steps through the palette, one per --cN set on the stage */
+@keyframes letterColors {
+  0% { color: var(--c0); }
+  16.666% { color: var(--c1); }
+  33.333% { color: var(--c2); }
+  50% { color: var(--c3); }
+  66.666% { color: var(--c4); }
+  83.333% { color: var(--c5); }
+}
+
+/* ---------- ornaments ---------- */
+
+.boxRow,
+.diamondRow {
+  display: flex;
+  justify-content: center;
+  gap: clamp(3px, 1.2vw, 8px);
+}
+
+.box {
+  width: clamp(16px, 5vw, 30px);
+  aspect-ratio: 1;
+  border: 2px solid var(--ornament-lime);
+  box-shadow:
+    inset 0 0 0 3px var(--ornament-blue),
+    inset 0 0 0 5px var(--ornament-lime),
+    inset 0 0 0 8px var(--ornament-blue);
+  animation: boxChase 1.95s linear infinite;
+}
+
+@keyframes boxChase {
+  0%, 100% { filter: brightness(0.75); }
+  8% { filter: brightness(1.8) drop-shadow(0 0 6px var(--ornament-lime)); }
+  20% { filter: brightness(0.75); }
+}
+
+.diamond {
+  width: clamp(9px, 2.6vw, 15px);
+  aspect-ratio: 1;
+  margin: 0 clamp(2px, 1vw, 6px);
+  border: 2px solid var(--ornament-teal);
+  box-shadow: inset 0 0 0 2px var(--ornament-lime);
+  transform: rotate(45deg);
+  animation: twinkle 2.4s ease-in-out infinite;
+}
+
+/* ---------- the disco ball ---------- */
+
+.ballRig {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: clamp(170px, 42vw, 240px);
+  width: 100%;
+}
+
+.ballString {
+  width: 2px;
+  height: 40%;
+  background: linear-gradient(#000, #aaa);
+}
+
+.beams {
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  width: 260vmax;
+  height: 260vmax;
+  margin: -130vmax 0 0 -130vmax;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(242, 127, 230, 0.12) 0deg 4deg,
+    transparent 4deg 22deg,
+    rgba(74, 60, 240, 0.12) 22deg 26deg,
+    transparent 26deg 45deg
+  );
+  mask-image: radial-gradient(circle, #000 0%, transparent 45%);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 45%);
+  animation: spin 18s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ball {
+  position: relative;
+  width: clamp(90px, 24vw, 130px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #cfd2ff 18%, #8a86c9 55%, #2b2560 100%);
+  box-shadow: 0 0 40px rgba(180, 86, 234, 0.6);
+}
+
+/* the mirror tiles slide sideways and the sphere shading stays put, which reads as spinning */
+.ballTiles {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(90deg, rgba(20, 10, 50, 0.55) 1px, transparent 1px),
+    linear-gradient(rgba(20, 10, 50, 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, transparent 0 40%, rgba(242, 127, 230, 0.35) 40% 52%, transparent 52% 70%, rgba(74, 60, 240, 0.3) 70% 80%, transparent 80%);
+  background-size: 11px 11px, 11px 11px, 66px 100%;
+  animation: tilesSpin 4s linear infinite;
+}
+
+@keyframes tilesSpin {
+  to { background-position: 66px 0, 0 0, 66px 0; }
+}
+
+.ballShade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, transparent 30%, rgba(10, 5, 30, 0.65) 100%);
+}
+
+.sparkle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background:
+    linear-gradient(transparent 45%, #fff 45% 55%, transparent 55%),
+    linear-gradient(90deg, transparent 45%, #fff 45% 55%, transparent 55%);
+  animation: sparkle 1.8s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(45deg); }
+}
+
+/* ---------- reduced motion: hold everything still ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .letter,
+  .box,
+  .diamond,
+  .star,
+  .beams,
+  .ballTiles,
+  .sparkle,
+  .phone,
+  .startButton,
+  .curtainUp .curtainFrame,
+  .flier {
+    animation: none;
+  }
+}
