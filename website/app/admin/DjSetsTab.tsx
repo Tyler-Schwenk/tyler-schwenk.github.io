@@ -8,31 +8,39 @@ import { Badge, Button, Card, FlashMessage, INPUT_CLASS, Muted, Toolbar, useFlas
 
 /**
  * The DJ sets tab: every set the live stream recorded, which all show on the Opium Den
- * page as soon as they end. Name the keepers, delete the trainwrecks.
+ * page as soon as they end. Name and describe the keepers, delete the trainwrecks.
  */
 
+// match the backend's limits (MAX_DJ_SET_*_LENGTH in schemas.py)
+const DJ_SET_TITLE_MAX_LENGTH = 200;
+const DJ_SET_DESCRIPTION_MAX_LENGTH = 5000;
+
+/** What the card saves: the title and description, trimmed. Blank clears one. */
+type DjSetEdit = { title: string; description: string };
+
 /**
- * One set: a title box, a player, and delete.
+ * One set: title and description boxes, a player, and delete.
  * @param props.set - The set.
- * @param props.onRename - Saves a new title (blank clears it). Resolves once saved.
+ * @param props.onSave - Saves the title and description. Resolves once saved.
  * @param props.onDelete - Deletes it (after confirming).
  */
 function DjSetCard({
   set,
-  onRename,
+  onSave,
   onDelete,
 }: {
   set: DjSet;
-  onRename: (title: string) => Promise<void>;
+  onSave: (edit: DjSetEdit) => Promise<void>;
   onDelete: () => void;
 }) {
   const [title, setTitle] = useState(set.title ?? "");
+  const [description, setDescription] = useState(set.description ?? "");
   const [saving, setSaving] = useState(false);
-  const changed = title.trim() !== (set.title ?? "");
+  const changed = title.trim() !== (set.title ?? "") || description.trim() !== (set.description ?? "");
 
   const save = async () => {
     setSaving(true);
-    await onRename(title.trim());
+    await onSave({ title: title.trim(), description: description.trim() });
     setSaving(false);
   };
 
@@ -44,7 +52,7 @@ function DjSetCard({
         <Badge tone="grey">{formatBytes(set.size_bytes)}</Badge>
       </div>
       <form
-        className="flex gap-2"
+        className="flex flex-col gap-2"
         onSubmit={(event) => {
           event.preventDefault();
           if (changed) save();
@@ -55,10 +63,19 @@ function DjSetCard({
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           placeholder="Untitled (shows the date)"
+          maxLength={DJ_SET_TITLE_MAX_LENGTH}
           aria-label="Set title"
         />
-        <Button type="submit" size="sm" variant="primary" disabled={!changed || saving}>
-          Save
+        <textarea
+          className={`${INPUT_CLASS} min-h-24 resize-y`}
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="Description: tracklist, vibe, what went wrong..."
+          maxLength={DJ_SET_DESCRIPTION_MAX_LENGTH}
+          aria-label="Set description"
+        />
+        <Button type="submit" size="sm" variant="primary" className="self-end" disabled={!changed || saving}>
+          {saving ? "Saving..." : "Save"}
         </Button>
       </form>
       <audio className="w-full" controls preload="none" src={djSetAudioUrl(set.id)} />
@@ -77,13 +94,13 @@ export default function DjSetsTab() {
   const sets = useAdminData<DjSet[]>(DJ_SETS_PATH, "couldn't load DJ sets");
   const [flash, showFlash] = useFlash();
 
-  const renameSet = async (id: number, title: string) => {
+  const saveSet = async (id: number, edit: DjSetEdit) => {
     try {
       const updated = await adminRequest<DjSet>(
         adminFetch,
         `${DJ_SETS_PATH}/${id}`,
-        "couldn't rename the set",
-        jsonBody("PATCH", { title })
+        "couldn't save the set",
+        jsonBody("PATCH", edit)
       );
       if (!updated) return;
       sets.setData((current) => current?.map((set) => (set.id === id ? updated : set)) ?? null);
@@ -119,7 +136,7 @@ export default function DjSetsTab() {
           <DjSetCard
             key={set.id}
             set={set}
-            onRename={(title) => renameSet(set.id, title)}
+            onSave={(edit) => saveSet(set.id, edit)}
             onDelete={() => deleteSet(set.id)}
           />
         ))}

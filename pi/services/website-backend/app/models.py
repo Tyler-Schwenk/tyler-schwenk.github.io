@@ -565,6 +565,7 @@ class DjSet(Base):
     Attributes:
         id: Unique identifier
         title: Optional name set from the admin page; the site shows the date without one
+        description: Optional notes set from the admin page (tracklist, vibe, whatever)
         started_at: When the recording started
         ended_at: When it stopped, null while recording
         duration_s: Length in seconds, null while recording
@@ -575,6 +576,7 @@ class DjSet(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
     started_at = Column(DateTime, nullable=False, index=True)
     ended_at = Column(DateTime, nullable=True)
     duration_s = Column(Integer, nullable=True)

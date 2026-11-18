@@ -52,7 +52,8 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 - If the backend restarts mid-set, the file just ends there. On startup, unfinished rows
   get finished using the file's last-modified time.
 - If butt drops and reconnects (Wi-Fi blip), that's two sets.
-- Sets are public as soon as they end. Rename or delete them from the admin page's DJ tab.
+- Sets are public as soon as they end. Give them a title and description, or delete them,
+  from the admin page's DJ tab.
 - An mp3 at 192 kbps is about 85 MB an hour, on the SSD at `/mnt/ssd/dj-sets`.
 
 Listeners hear the stream roughly 5-15 s behind the decks (butt's buffer, icecast's
@@ -127,7 +128,13 @@ curl http://localhost:8000/dj/status
 ```
 
 The backend has to be running first (icecast joins its `website-backend_default`
-network). The `dj_sets` table is new, so `init_db()` creates it on startup.
+network). `init_db()` creates the `dj_sets` table on a fresh database, but it never adds
+columns to an existing table. On a database whose `dj_sets` predates the `description`
+column, add it once:
+
+```bash
+docker exec website-backend-api python -c "import sqlite3; db = sqlite3.connect('/app/data/website_backend.db'); db.execute('ALTER TABLE dj_sets ADD COLUMN description TEXT'); db.commit()"
+```
 
 If UFW is enabled on fart-pi, let the laptop reach 8010 from the LAN:
 `sudo ufw allow from 192.168.1.0/24 to any port 8010 proto tcp`.

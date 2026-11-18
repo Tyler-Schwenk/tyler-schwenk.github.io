@@ -165,11 +165,11 @@ async def get_set_audio(set_id: int, request: Request, db: Session = Depends(get
 @router.patch("/sets/{set_id}", response_model=DjSetRead, dependencies=[Depends(require_admin)])
 async def update_set(set_id: int, update: DjSetUpdate, db: Session = Depends(get_db)) -> DjSet:
     """
-    Renames a set (admin only).
+    Edits a set's title and description (admin only). Only the fields sent change.
 
     Args:
         set_id: The set's id.
-        update: The new title; blank clears it.
+        update: The new title and/or description; blank or null clears one.
         db: Database session.
 
     Returns:
@@ -179,8 +179,9 @@ async def update_set(set_id: int, update: DjSetUpdate, db: Session = Depends(get
         HTTPException: 401 without a valid admin token, 404 if there's no such finished set.
     """
     dj_set = get_finished_set(db, set_id)
-    title = (update.title or "").strip()
-    dj_set.title = title or None
+    for field in update.model_fields_set:
+        value = (getattr(update, field) or "").strip()
+        setattr(dj_set, field, value or None)
     db.commit()
     db.refresh(dj_set)
     return dj_set

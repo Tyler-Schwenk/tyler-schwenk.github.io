@@ -865,6 +865,7 @@ class MonitorState(BaseModel):
 
 # DJ Stream Schemas
 MAX_DJ_SET_TITLE_LENGTH = 200
+MAX_DJ_SET_DESCRIPTION_LENGTH = 5000
 
 
 class DjStreamStatus(BaseModel):
@@ -881,6 +882,7 @@ class DjSetRead(BaseModel):
     """A finished recorded set."""
     id: int
     title: Optional[str] = None
+    description: Optional[str] = None
     started_at: datetime
     ended_at: datetime
     duration_s: int
@@ -890,5 +892,9 @@ class DjSetRead(BaseModel):
 
 
 class DjSetUpdate(BaseModel):
-    """Renaming a set. An empty or null title goes back to showing the date."""
+    """
+    Editing a set's title and description. Only the fields sent are changed. Blank or
+    null clears one: no title shows the date, no description shows nothing.
+    """
     title: Optional[str] = Field(None, max_length=MAX_DJ_SET_TITLE_LENGTH)
+    description: Optional[str] = Field(None, max_length=MAX_DJ_SET_DESCRIPTION_LENGTH)

@@ -1,3 +1,4 @@
+import { formatDate } from "@/app/admin/format";
 import { API_BASE } from "@/lib/api";
 
 /**
@@ -18,6 +19,8 @@ export type DjStreamStatus = {
 export type DjSet = {
   id: number;
   title: string | null;
+  /** notes added from the admin page, plain text with line breaks. */
+  description: string | null;
   started_at: string;
   ended_at: string;
   duration_s: number;
@@ -38,6 +41,26 @@ export const DJ_SETS_PATH = "/dj/sets";
  */
 export function djSetAudioUrl(setId: number): string {
   return `${API_BASE}${DJ_SETS_PATH}/${setId}/audio`;
+}
+
+/**
+ * the player's id for a set, so the list can tell which row is the one playing.
+ *
+ * @param {number} setId - the set's id.
+ * @returns {string} like "set-3".
+ */
+export function djSetTrackId(setId: number): string {
+  return `set-${setId}`;
+}
+
+/**
+ * what a set's called on the page: its title, or when it was recorded if it hasn't got one.
+ *
+ * @param {DjSet} set - the set.
+ * @returns {string} like "sunday warmup" or "Nov 18, 8:55 AM".
+ */
+export function djSetTitle(set: DjSet): string {
+  return set.title || formatDate(set.started_at);
 }
 
 /**

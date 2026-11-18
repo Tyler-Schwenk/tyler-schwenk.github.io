@@ -493,6 +493,25 @@ body {
   .world-live-tag { animation: none; }
 }
 
+/* opium den player (components/opium-den): the bouncing equalizer next to what's playing */
+@keyframes den-eq-bounce {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.den-eq-bar {
+  transform: scaleY(0.3);
+  transform-origin: bottom;
+}
+
+.den-eq-bar[data-active="true"] {
+  animation: den-eq-bounce 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .den-eq-bar[data-active="true"] { animation: none; transform: scaleY(0.7); }
+}
+
 /* kiln page (/kiln): quiet ceramics catalog look, see website/docs/KILN.md */
 .kiln-theme {
   --kiln-surface: #ffffff;

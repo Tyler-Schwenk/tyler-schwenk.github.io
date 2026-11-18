@@ -1275,6 +1275,7 @@ A set:
 {
   "id": 3,
   "title": "first one that didn't trainwreck",
+  "description": "warehouse-y stuff, then it falls apart around the hour mark",
   "started_at": "2026-11-18T03:12:09",
   "ended_at": "2026-11-18T04:20:41",
   "duration_s": 4112,
@@ -1282,7 +1283,7 @@ A set:
 }
 ```
 
-`title` is null until it's named from the admin page; the site shows the date instead.
+`title` and `description` are null until they're set from the admin page; without a title the site shows the date.
 
 ### GET `/dj/status`
 
@@ -1310,7 +1311,7 @@ A set's mp3, with `Range` support for seeking (`206` for a range, `200` whole). 
 
 **Auth:** admin JWT.
 
-Renames a set. Body `{"title": "..."}` (max 200 characters); blank or null clears it. `200` with the set, `404` if there's no finished set with that id.
+Edits a set. Body `{"title": "...", "description": "..."}`, either or both; only the fields sent change. Title max 200 characters, description max 5000. Blank or null clears a field. `200` with the set, `404` if there's no finished set with that id.
 
 ### DELETE `/dj/sets/{set_id}`
 
