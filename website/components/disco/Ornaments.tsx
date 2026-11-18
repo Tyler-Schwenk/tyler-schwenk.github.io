@@ -126,3 +126,107 @@ export function DiscoBall() {
     </div>
   );
 }
+
+/**
+ * the big five-point stars scattered over the poster, like the ones on old disco
+ * fliers. hand placed (as % of the poster) so they sit in the gaps between blocks.
+ */
+const POSTER_STARS = [
+  { leftPct: 6, topPct: 3, sizePx: 22, color: "var(--ornament-lime)", delayMs: 0 },
+  { leftPct: 52, topPct: 7, sizePx: 16, color: "var(--c3)", delayMs: 900 },
+  { leftPct: 90, topPct: 33, sizePx: 20, color: "var(--ornament-teal)", delayMs: 400 },
+  { leftPct: 4, topPct: 47, sizePx: 18, color: "var(--c3)", delayMs: 1500 },
+  { leftPct: 48, topPct: 58, sizePx: 24, color: "var(--ornament-lime)", delayMs: 700 },
+  { leftPct: 88, topPct: 71, sizePx: 16, color: "var(--c1)", delayMs: 1200 },
+  { leftPct: 86, topPct: 56, sizePx: 20, color: "var(--ornament-teal)", delayMs: 300 },
+  { leftPct: 62, topPct: 95, sizePx: 14, color: "var(--ornament-lime)", delayMs: 1800 },
+];
+
+/** the thin overlapping circles behind the poster's blocks, as % of the poster's width and height */
+const POSTER_CIRCLES = [
+  { leftPct: 58, topPct: -2, widthPct: 52, delayMs: 0 },
+  { leftPct: -14, topPct: 36, widthPct: 62, delayMs: 1500 },
+  { leftPct: 52, topPct: 40, widthPct: 58, delayMs: 3000 },
+  { leftPct: 18, topPct: 62, widthPct: 56, delayMs: 4500 },
+];
+
+/**
+ * five-point stars that slowly turn and glint.
+ * @returns {JSX.Element} an absolutely positioned star layer for the poster.
+ */
+export function PosterStars() {
+  return (
+    <div className={styles.posterDecor} aria-hidden="true">
+      {POSTER_STARS.map((star) => (
+        <span
+          key={`${star.leftPct}-${star.topPct}`}
+          className={styles.posterStar}
+          style={{
+            left: `${star.leftPct}%`,
+            top: `${star.topPct}%`,
+            width: `${star.sizePx}px`,
+            height: `${star.sizePx}px`,
+            background: star.color,
+            animationDelay: `${star.delayMs}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * big outlined circles overlapping behind everything, breathing in and out.
+ * @returns {JSX.Element} an absolutely positioned circle layer for the poster.
+ */
+export function PosterCircles() {
+  return (
+    <div className={styles.posterDecor} aria-hidden="true">
+      {POSTER_CIRCLES.map((circle) => (
+        <span
+          key={`${circle.leftPct}-${circle.topPct}`}
+          className={styles.posterCircle}
+          style={{
+            left: `${circle.leftPct}%`,
+            top: `${circle.topPct}%`,
+            width: `${circle.widthPct}%`,
+            animationDelay: `${circle.delayMs}ms`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * a pair of bell bottoms on platform shoes, dancing. stands in for the attire art
+ * until there's a proper 70s dancer drawing.
+ * @returns {JSX.Element} the svg.
+ */
+export function BellBottoms() {
+  return (
+    <svg className={styles.bellBottoms} viewBox="0 0 60 100" aria-hidden="true">
+      <path
+        className={styles.bellBottomsPants}
+        d="M14 6 H46 L47 30 L44 58 L54 86 H33 L31 58 L30 36 L29 58 L27 86 H6 L16 58 L13 30 Z"
+      />
+      <path className={styles.bellBottomsBelt} d="M14 6 H46 V13 H14 Z" />
+      <path className={styles.bellBottomsShoes} d="M6 86 H27 V96 H4 Z M33 86 H54 L56 96 H33 Z" />
+    </svg>
+  );
+}
+
+/**
+ * a phone with a big "no" slash through it.
+ * @returns {JSX.Element} the svg.
+ */
+export function NoPhoneIcon() {
+  return (
+    <svg className={styles.noPhoneIcon} viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="15" y="7" width="18" height="34" rx="3" className={styles.noPhoneBody} />
+      <line x1="21" y1="36" x2="27" y2="36" className={styles.noPhoneBody} />
+      <circle cx="24" cy="24" r="20" className={styles.noPhoneSlash} />
+      <line x1="10" y1="10" x2="38" y2="38" className={styles.noPhoneSlash} />
+    </svg>
+  );
+}

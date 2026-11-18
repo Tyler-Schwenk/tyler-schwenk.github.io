@@ -57,9 +57,17 @@ export const NIGHT_SKY_BOTTOM = "#1c0f45";
 export const BOX_ROW_COUNT = 13;
 export const DIAMOND_ROW_COUNT = 12;
 
-/** the lines from the invite video, repeated on the flier until the real copy exists */
-export const DISCO_HIGHLIGHTS = [
-  "The grooviest live DJs",
-  "Bell-bottoms encouraged",
-  "No phones on the dance floor",
-] as const;
+/** everything the flier says besides the title */
+export const DISCO_DETAILS = {
+  kicker: "Disco night is back!",
+  date: "Saturday, Dec. 12th",
+  time: "8pm",
+  addressStreet: "5375 Hewlett Dr",
+  addressCity: "San Diego, CA 92115",
+  lineup: ["Dancefloor DJs", "Ambient Den"],
+  attire: "Bell bottoms + dancing shoes",
+  phones: "iPhones haven’t been invented yet",
+} as const;
+
+/** the full address, for the maps link */
+export const DISCO_ADDRESS = `${DISCO_DETAILS.addressStreet}, ${DISCO_DETAILS.addressCity}`;

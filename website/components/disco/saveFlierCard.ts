@@ -6,7 +6,7 @@
 import {
   BOX_ROW_COUNT,
   DIAMOND_ROW_COUNT,
-  DISCO_HIGHLIGHTS,
+  DISCO_DETAILS,
   DISCO_LETTER_COLORS,
   DISCO_PAGE_URL_TEXT,
   NIGHT_SKY_BOTTOM,
@@ -44,13 +44,14 @@ const DIAMOND_GAP_PX = 58;
 const DIAMOND_ROW_Y_PX = 590;
 
 const LABEL_FONT_PX = 26;
-const VALUE_FONT_PX = 56;
-const DETAILS_START_Y_PX = 690;
+const VALUE_FONT_PX = 50;
+const VALUE_LINE_PX = 60;
+const DETAILS_START_Y_PX = 680;
 const LABEL_TO_VALUE_PX = 70;
-const DETAIL_BLOCK_PX = 150;
+const DETAIL_GAP_PX = 50;
 
-const HIGHLIGHT_FONT_PX = 40;
-const HIGHLIGHT_LINE_PX = 60;
+const HIGHLIGHT_FONT_PX = 36;
+const HIGHLIGHT_LINE_PX = 56;
 const HIGHLIGHTS_GAP_PX = 30;
 
 const URL_FONT_PX = 28;
@@ -61,8 +62,6 @@ const LETTER_SHADOW_PX = 18;
 
 export interface FlierCardInfo {
   title: string;
-  dateText: string;
-  locationText: string;
 }
 
 export type SaveResult = "shared" | "downloaded" | "cancelled";
@@ -158,32 +157,43 @@ function drawDiamondRow(ctx: CanvasRenderingContext2D): void {
   }
 }
 
+/** when and where, each a label over one or more lines */
+const CARD_FACTS = [
+  { label: "WHEN", lines: [`${DISCO_DETAILS.date} - ${DISCO_DETAILS.time}`] },
+  { label: "WHERE", lines: [DISCO_DETAILS.addressStreet, DISCO_DETAILS.addressCity] },
+];
+
+/** the lines under the facts, in the palette colors */
+const CARD_HIGHLIGHTS = [
+  DISCO_DETAILS.lineup.join(" + "),
+  `Attire: ${DISCO_DETAILS.attire}`,
+  DISCO_DETAILS.phones,
+];
+
 /**
- * when, where, the highlights, and the page address.
+ * when, where, the lineup and the rest, then the page address.
  * @param {CanvasRenderingContext2D} ctx - card context.
- * @param {FlierCardInfo} info - the event's details.
  * @param {string} family - the disco font family list.
  */
-function drawDetails(ctx: CanvasRenderingContext2D, info: FlierCardInfo, family: string): void {
+function drawDetails(ctx: CanvasRenderingContext2D, family: string): void {
   const centerX = CARD_WIDTH_PX / 2;
-  const details = [
-    { label: "WHEN", value: info.dateText },
-    { label: "WHERE", value: info.locationText },
-  ];
+  let y = DETAILS_START_Y_PX;
   ctx.textAlign = "center";
-  details.forEach((detail, i) => {
-    const top = DETAILS_START_Y_PX + i * DETAIL_BLOCK_PX;
+  for (const fact of CARD_FACTS) {
     ctx.font = `${LABEL_FONT_PX}px ${family}`;
     ctx.fillStyle = ORNAMENT_TEAL;
-    ctx.fillText(detail.label, centerX, top);
+    ctx.fillText(fact.label, centerX, y);
     ctx.font = `${VALUE_FONT_PX}px ${family}`;
     ctx.fillStyle = DISCO_LETTER_COLORS[1];
-    ctx.fillText(detail.value, centerX, top + LABEL_TO_VALUE_PX);
-  });
+    fact.lines.forEach((line, i) => {
+      ctx.fillText(line, centerX, y + LABEL_TO_VALUE_PX + i * VALUE_LINE_PX);
+    });
+    y += LABEL_TO_VALUE_PX + (fact.lines.length - 1) * VALUE_LINE_PX + DETAIL_GAP_PX + LABEL_FONT_PX;
+  }
 
   ctx.font = `${HIGHLIGHT_FONT_PX}px ${family}`;
-  const highlightsTop = DETAILS_START_Y_PX + details.length * DETAIL_BLOCK_PX + HIGHLIGHTS_GAP_PX;
-  DISCO_HIGHLIGHTS.forEach((line, i) => {
+  const highlightsTop = y + HIGHLIGHTS_GAP_PX;
+  CARD_HIGHLIGHTS.forEach((line, i) => {
     drawPaletteLine(ctx, line, centerX, highlightsTop + i * HIGHLIGHT_LINE_PX);
   });
 
@@ -196,7 +206,7 @@ function drawDetails(ctx: CanvasRenderingContext2D, info: FlierCardInfo, family:
 /**
  * draws the whole card. do this ahead of time: ios only allows the share sheet
  * right after a tap, and drawing first can use up that window.
- * @param {FlierCardInfo} info - the event's details.
+ * @param {FlierCardInfo} info - the event's title.
  * @returns {Promise<Blob>} the card as a png.
  * @throws {Error} if the browser can't give a 2d canvas or encode the png.
  */
@@ -226,7 +236,7 @@ export async function renderFlierCard(info: FlierCardInfo): Promise<Blob> {
   ctx.restore();
 
   drawDiamondRow(ctx);
-  drawDetails(ctx, info, family);
+  drawDetails(ctx, family);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {

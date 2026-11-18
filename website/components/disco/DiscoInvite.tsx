@@ -88,7 +88,7 @@ interface DiscoInviteProps {
  * the disco december invite: plays the invite video full screen, hands off to the
  * looping clouds at the end, parts them, and leaves the flier underneath. phones
  * held upright get asked to rotate first, and the video starts once they do.
- * @param {DiscoInviteProps} props - the event's title, date and location for the flier.
+ * @param {DiscoInviteProps} props - the event's title for the flier.
  * @returns {JSX.Element} the full screen invite.
  */
 export default function DiscoInvite({ info }: DiscoInviteProps) {

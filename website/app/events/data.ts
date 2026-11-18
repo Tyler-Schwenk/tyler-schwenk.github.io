@@ -59,9 +59,9 @@ export const EVENTS: EventEntry[] = [
   {
     slug: "disco",
     title: "Disco December",
-    dateText: "December 12",
-    locationText: "TBA",
-    summary: "If you are seeing this you are too early! check back in a few days for all the info",
+    dateText: "December 12 - 8 PM",
+    locationText: "5375 Hewlett Dr, San Diego",
+    summary: "Disco night is back. Dancefloor DJs + an ambient den. Bell bottoms + dancing shoes.",
     type: "info",
   },
   // Past — most recent first

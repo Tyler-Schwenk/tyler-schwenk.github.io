@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Instrument_Serif, Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono, Ultra } from "next/font/google";
+import { Instrument_Sans, Instrument_Serif, Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono, Ultra, Shrikhand } from "next/font/google";
 import "./globals.css";
 import { DEFAULT_PREVIEW_IMAGE, SITE_NAME, SITE_URL } from "@/lib/siteMetadata";
 
@@ -110,6 +110,15 @@ const discoDisplay = Ultra({
   preload: false,
 });
 
+// the invite's flier pairs it with a 70s brush script for its labels, like the
+// "Featuring:" lines on old disco fliers
+const discoScript = Shrikhand({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-disco-script",
+  preload: false,
+});
+
 const DEFAULT_TITLE = "Tyler Schwenk - Personal Website";
 const TITLE_TEMPLATE = "%s | Tyler Schwenk";
 const DEFAULT_DESCRIPTION =
@@ -178,7 +187,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
-      <body className={`${kilnDisplay.variable} ${kilnText.variable} ${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${caslonDisplay.variable} ${caslonText.variable} ${plexMono.variable} ${discoDisplay.variable} font-sans antialiased`}>
+      <body className={`${kilnDisplay.variable} ${kilnText.variable} ${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${caslonDisplay.variable} ${caslonText.variable} ${plexMono.variable} ${discoDisplay.variable} ${discoScript.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

@@ -20,8 +20,8 @@ export const metadata = pageMetadata({
 });
 
 /**
- * the disco december invite page. the event's title, date and location come from
- * the events list so they only live in one place.
+ * the disco december invite page. the title comes from the events list; the
+ * flier's own details live in components/disco/constants.ts.
  * @returns {JSX.Element} the full screen invite.
  */
 export default function DiscoInvitePage() {
@@ -30,9 +30,5 @@ export default function DiscoInvitePage() {
     notFound();
   }
 
-  return (
-    <DiscoInvite
-      info={{ title: event.title, dateText: event.dateText, locationText: event.locationText }}
-    />
-  );
+  return <DiscoInvite info={{ title: event.title }} />;
 }

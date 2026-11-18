@@ -8,8 +8,10 @@ as a looping animation, part down the middle, and show the flier underneath. The
 a button that saves the event info as an image.
 
 The page has its own route (`app/events/disco/`), which takes priority over the generic
-`[slug]` event page. The title, date and location still come from the `disco` entry in
-`app/events/data.ts`, so they only live in one place.
+`[slug]` event page. The title comes from the `disco` entry in `app/events/data.ts`. The
+flier's own details (date, time, address, lineup, attire) are in `DISCO_DETAILS` in
+`constants.ts`. The events list's `dateText` and `locationText` repeat the date and
+address, so change both places together.
 
 ## Sequence
 
@@ -55,26 +57,48 @@ first one in the loop.
 
 ## The flier
 
-Placeholder content in the video's style. It'll get the real copy and layout once those
-are settled.
+It's laid out like an old disco flier rather than a centered stack: a framed poster
+(double rule border) with blocks pushed to either side, big outlined circles overlapping
+behind them, and scattered five-point stars. The grid in `.poster` places, top to bottom:
 
-- **Type**: Ultra (Google Fonts, `--font-disco` in the root layout). It's the closest match
-  to the video's fat ball-terminal slab serif.
+| Area | What |
+|------|------|
+| `kicker` / `ball` | "Disco night is back!" on the left, the disco ball hanging from the frame on the right |
+| `title` | Tilted title, one word per line, the first big and the rest indented, over racing stripes |
+| `boxes` | The box row, left aligned |
+| `feat` / `attire` | Lineup over a circle on the left; bell bottoms and the dress code on the right, dropped lower |
+| `facts` | Date, time and place, script labels with slab values, all left aligned |
+| `phones` | The no-phones stamp, tilted, pushed right |
+| `diamonds` | A short diamond row as a corner flourish |
+
+- **Type**: Ultra (`--font-disco`) is the closest match to the video's fat ball-terminal
+  slab serif, used for the title and values. Shrikhand (`--font-disco-script`) is the
+  brush script for labels ("Featuring:", "Date:"), like the mixed type on the inspiration
+  fliers. Both are in the root layout.
 - **Colors** (`constants.ts`): letters cycle through the video's six-color palette.
   `DiscoText` gives each letter its own color, pops the letters in out of order, then
-  chases the colors along the line. Ornament lime, blue and teal are for the box row and
-  diamond row. The night sky colors come from the video's space scene. All of these are set
-  as CSS variables on the stage, so the stylesheet and the canvas card share one source.
-- **Moving parts** (`Ornaments.tsx`): a spinning disco ball (sliding mirror tiles under
-  fixed shading), rotating light beams, a light chasing along the box row, twinkling
-  diamonds and stars. Star positions are seeded, so the prerendered HTML matches the
-  browser. Everything holds still under `prefers-reduced-motion`.
+  chases the colors along the line. The title gets a hard lime drop shadow. Ornament lime,
+  blue and teal are for the box row, diamond row and stars. The night sky colors come from
+  the video's space scene. All of these are set as CSS variables on the stage, so the
+  stylesheet and the canvas card share one source.
+- **Moving parts** (`Ornaments.tsx`): blocks rise in one after another (`--rise-delay`),
+  the stripes streak in then drift, the disco ball spins and throws beams, the box row
+  chases, stars turn and twinkle, the circles breathe, and the bell bottoms sway. Background
+  star positions are seeded, so the prerendered HTML matches the browser. Everything holds
+  still under `prefers-reduced-motion`.
+- **Attire art**: the bell bottoms SVG is a stand-in until there's a drawing of a 70s
+  dancer for that spot.
+- **Address**: links to the person's own maps app (`useMapsUrl.ts`). Apple devices get an
+  Apple Maps link, Android a `geo:` link that opens the default maps app, and everything
+  else Google Maps. It goes by user agent, since there's no feature check for "default maps
+  app". The prerendered HTML has the Google Maps link until it hydrates.
 
 ## Saving the info
 
 `saveFlierCard.ts` draws a 1080x1350 PNG on a canvas by hand. It has the same sky, stars,
-ornaments, colored title, date, location, highlights and page address as the flier. It's
-drawn rather than screenshotted so it looks the same everywhere and needs no library.
+box and diamond rows, colored title, details and page address as the flier, but in the
+older centered layout. It'll be redrawn to match the poster once the design is final.
+It's drawn rather than screenshotted so it looks the same everywhere and needs no library.
 
 - The card is drawn when the flier mounts, not on tap. iOS only opens the share sheet
   straight after a tap, and drawing it then (font load plus PNG encode) can use up that
@@ -115,8 +139,9 @@ the time of the repeated frame.
 | `website/components/disco/cloudSeam.ts` | Canvas drawing for the parting |
 | `website/components/disco/DiscoFlier.tsx` | The flier and its save button |
 | `website/components/disco/DiscoText.tsx` | Per-letter colored text |
-| `website/components/disco/Ornaments.tsx` | Box row, diamond row, stars, disco ball |
+| `website/components/disco/Ornaments.tsx` | Box row, diamond row, stars, circles, disco ball, bell bottoms, no-phone icon |
 | `website/components/disco/saveFlierCard.ts` | Draws and shares or downloads the PNG |
 | `website/components/disco/useInviteDevice.ts` | Mobile and orientation detection |
-| `website/components/disco/constants.ts` | Media paths, timing, palette, flier lines |
+| `website/components/disco/useMapsUrl.ts` | The address link for this device's maps app |
+| `website/components/disco/constants.ts` | Media paths, timing, palette, flier details |
 | `website/components/disco/disco.module.css` | All of the invite's styles |

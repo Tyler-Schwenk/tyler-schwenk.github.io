@@ -194,6 +194,9 @@
 
 /* ---------- the flier ---------- */
 
+/* laid out like an old disco flier rather than a centered stack: a framed poster
+   with blocks pushed to either side, overlapping circles and stars behind them */
+
 .flier {
   position: absolute;
   inset: 0;
@@ -228,67 +231,363 @@
   50% { opacity: 1; }
 }
 
-.flierContent {
+.flierScroll {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 22px;
-  max-width: 680px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 0 16px 56px;
-  text-align: center;
+  padding: 16px 16px 40px;
 }
 
-.title {
+.poster {
+  --poster-pad: clamp(18px, 5vw, 44px);
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "kicker   ball"
+    "title    title"
+    "boxes    boxes"
+    "feat     attire"
+    "facts    facts"
+    "phones   phones"
+    "diamonds diamonds";
+  column-gap: 12px;
+  row-gap: clamp(14px, 3vw, 26px);
+  padding: var(--poster-pad) var(--poster-pad) calc(var(--poster-pad) + 6px);
+  border: 3px solid var(--c3);
+  outline: 2px solid var(--c1);
+  outline-offset: -11px;
+  overflow: hidden;
+  background: rgba(11, 13, 63, 0.55);
+  text-align: left;
+}
+
+/* everything in the poster sits over the circles and stars */
+.poster > :not(.posterDecor) {
+  position: relative;
+  z-index: 1;
+}
+
+.rise {
+  animation: riseIn 0.8s cubic-bezier(0.34, 1.4, 0.64, 1) var(--rise-delay, 0ms) both;
+}
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+.script {
   margin: 0;
-  font-size: clamp(2.8rem, 13vw, 6rem);
+  font-family: var(--font-disco-script), var(--font-disco), Georgia, serif;
   font-weight: 400;
-  line-height: 1;
-}
-
-.subtitle {
-  margin: 0;
-  font-size: clamp(1.3rem, 5.5vw, 2rem);
-  font-weight: 400;
-  line-height: 1.15;
-}
-
-.details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0;
-}
-
-.detailLabel {
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
   color: var(--ornament-teal);
 }
 
-.detailValue {
-  margin: 0 0 10px;
-  font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+.kicker {
+  grid-area: kicker;
+  align-self: end;
+  margin: 0;
+  font-size: clamp(0.85rem, 3.4vw, 1.2rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c1);
 }
 
-.highlights {
+.ballSlot {
+  grid-area: ball;
+  justify-self: end;
+  /* the string runs up to the frame's top edge */
+  margin-top: calc(-1 * var(--poster-pad));
+}
+
+.titleBlock {
+  grid-area: title;
+  transform: rotate(-5deg);
+  margin: 4px 0 6px;
+}
+
+/* the racing stripes from 70s flier art, streaking in behind the title */
+.speedStripes {
+  position: absolute;
+  top: 18%;
+  bottom: 14%;
+  left: calc(-1 * var(--poster-pad) - 20px);
+  right: 12%;
+  background: repeating-linear-gradient(180deg, var(--c3) 0 3px, transparent 3px 10px);
+  clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+  opacity: 0.45;
+  transform-origin: left center;
+  animation:
+    stripesIn 0.9s ease-out 0.4s both,
+    stripesDrift 1.4s linear 1.3s infinite;
+}
+
+@keyframes stripesIn {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes stripesDrift {
+  to { background-position: 0 20px; }
+}
+
+.title {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: flex-start;
   margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: clamp(1rem, 4.2vw, 1.35rem);
+  font-weight: 400;
+  line-height: 0.95;
+}
+
+/* a hard lime shadow behind a gap of sky, like a printed drop outline */
+.titleWord .letter {
+  text-shadow:
+    0.035em 0.035em 0 var(--sky-top),
+    0.07em 0.07em 0 var(--ornament-lime);
+}
+
+.titleWord:first-child {
+  font-size: clamp(3.4rem, 17vw, 7.5rem);
+}
+
+.titleWord:not(:first-child) {
+  margin-left: 10%;
+  font-size: clamp(2.2rem, 10.5vw, 4.8rem);
+}
+
+.boxSlot {
+  grid-area: boxes;
+  justify-self: start;
+}
+
+/* the circle's drawn behind the words rather than holding them, so the words
+   can run over its edge like the hand-lettered fliers */
+.featuring {
+  grid-area: feat;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12% 0 12% 4%;
+}
+
+.featuring::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 38%;
+  z-index: -1;
+  width: 118%;
+  aspect-ratio: 1;
+  border: 2px solid var(--c2);
+  border-radius: 50%;
+  background: rgba(28, 15, 69, 0.7);
+  transform: translate(-50%, -50%);
+}
+
+.featuring .script {
+  font-size: clamp(1rem, 4.6vw, 1.6rem);
+}
+
+.act {
+  margin: 0;
+  font-size: clamp(0.95rem, 4.4vw, 1.6rem);
+  line-height: 1.1;
+}
+
+.actJoin {
+  color: var(--ornament-lime);
+}
+
+.attire {
+  grid-area: attire;
+  /* dropped down a bit so it doesn't line up with the featuring bubble */
+  margin-top: 18%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.attire .script {
+  font-size: clamp(1rem, 4.6vw, 1.6rem);
+}
+
+.attireText {
+  margin: 0;
+  font-size: clamp(0.9rem, 4vw, 1.35rem);
+  line-height: 1.15;
+  color: var(--c1);
+}
+
+.bellBottoms {
+  width: clamp(54px, 15vw, 90px);
+  margin-bottom: 6px;
+  overflow: visible;
+  transform-origin: 50% 10%;
+  animation: bellSway 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes bellSway {
+  from { transform: rotate(-6deg); }
+  to { transform: rotate(6deg); }
+}
+
+.bellBottomsPants {
+  fill: var(--c2);
+  stroke: var(--c4);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.bellBottomsBelt {
+  fill: var(--ornament-lime);
+}
+
+.bellBottomsShoes {
+  fill: var(--c3);
+  stroke: var(--c4);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.facts {
+  grid-area: facts;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.fact {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  font-size: clamp(1.05rem, 4.8vw, 1.75rem);
+  line-height: 1.15;
+}
+
+.fact dt {
+  flex: none;
+}
+
+.fact dd {
+  margin: 0;
+}
+
+.address {
+  color: var(--c4);
+  text-decoration: underline wavy var(--c3);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.address:hover,
+.address:focus-visible {
+  color: var(--c3);
+}
+
+.addressHint {
+  display: block;
+  margin-top: 0.7em;
+  font-size: 0.5em;
+  letter-spacing: 0.08em;
+  color: var(--ornament-teal);
+}
+
+.noPhones {
+  grid-area: phones;
+  justify-self: end;
+  align-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 300px;
+  margin: 0;
+  padding: 8px 14px;
+  border: 2px dashed var(--c1);
+  border-radius: 10px;
+  font-size: clamp(0.8rem, 3.4vw, 1rem);
+  line-height: 1.15;
+  color: var(--c1);
+  rotate: 4deg;
+}
+
+.noPhoneIcon {
+  flex: none;
+  width: clamp(34px, 9vw, 46px);
+}
+
+.noPhoneBody {
+  fill: none;
+  stroke: var(--c4);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.noPhoneSlash {
+  fill: none;
+  stroke: var(--c3);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.diamondSlot {
+  grid-area: diamonds;
+  align-self: end;
+  justify-self: start;
+}
+
+/* the diamond row is short here, just a flourish in the corner */
+.diamondSlot .diamond:nth-child(n + 6) {
+  display: none;
+}
+
+.posterDecor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.posterCircle {
+  position: absolute;
+  aspect-ratio: 1;
+  border: 2px solid var(--c2);
+  border-radius: 50%;
+  opacity: 0.35;
+  animation: circleBreathe 6s ease-in-out infinite;
+}
+
+.posterCircle:nth-child(even) {
+  border-color: var(--c3);
+}
+
+@keyframes circleBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.posterStar {
+  position: absolute;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: starTurn 4s ease-in-out infinite;
+}
+
+@keyframes starTurn {
+  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.85; }
+  50% { transform: rotate(36deg) scale(1.25); opacity: 1; }
 }
 
 .flierActions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
   gap: 14px;
-  margin-top: 8px;
+  margin-top: 22px;
 }
 
 .secondaryButton {
@@ -303,7 +602,7 @@
 }
 
 .saveStatus {
-  margin: 0;
+  margin: 10px 0 0;
   min-height: 1.2em;
   font-size: 0.85rem;
   color: var(--c1);
@@ -381,8 +680,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: clamp(170px, 42vw, 240px);
-  width: 100%;
+  height: clamp(130px, 34vw, 210px);
 }
 
 .ballString {
@@ -417,7 +715,7 @@
 
 .ball {
   position: relative;
-  width: clamp(90px, 24vw, 130px);
+  width: clamp(76px, 20vw, 120px);
   aspect-ratio: 1;
   border-radius: 50%;
   overflow: hidden;
@@ -476,7 +774,12 @@
   .phone,
   .startButton,
   .curtainUp .curtainFrame,
-  .flier {
+  .flier,
+  .rise,
+  .speedStripes,
+  .bellBottoms,
+  .posterCircle,
+  .posterStar {
     animation: none;
   }
 }
