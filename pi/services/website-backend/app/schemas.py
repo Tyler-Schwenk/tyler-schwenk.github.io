@@ -670,3 +670,88 @@ class KilnStatus(BaseModel):
     def mark_as_utc(cls, value: Optional[datetime]) -> Optional[datetime]:
         """The table stores naive UTC, so this says so in the response."""
         return as_utc(value)
+
+
+# Monitor Schemas
+# limits only keep a broken report from being huge. the house has a handful of machines
+MAX_MONITOR_NAME_LENGTH = 64
+MAX_MONITOR_TEXT_LENGTH = 128
+MAX_MONITOR_DISKS = 16
+MAX_MONITOR_VOLUMES = 32
+
+MonitorVolumeKind = Literal["filesystem", "swap", "unmounted", "unallocated", "unpartitioned"]
+
+
+class MonitorVolume(BaseModel):
+    """
+    One part of a disk. used/available are only set for a mounted filesystem, and only
+    when the agent could read them; they don't add up to size_bytes (ext4 keeps ~5% back).
+    For unallocated/unpartitioned space, name is what the space is inside of.
+    """
+    name: str = Field(..., max_length=MAX_MONITOR_TEXT_LENGTH)
+    kind: MonitorVolumeKind
+    size_bytes: int = Field(..., ge=0)
+    fstype: Optional[str] = Field(default=None, max_length=MAX_MONITOR_TEXT_LENGTH)
+    mount: Optional[str] = Field(default=None, max_length=MAX_MONITOR_TEXT_LENGTH)
+    used_bytes: Optional[int] = Field(default=None, ge=0)
+    available_bytes: Optional[int] = Field(default=None, ge=0)
+
+
+class MonitorDisk(BaseModel):
+    """One physical disk and everything on it, in partition order."""
+    name: str = Field(..., max_length=MAX_MONITOR_TEXT_LENGTH)
+    model: Optional[str] = Field(default=None, max_length=MAX_MONITOR_TEXT_LENGTH)
+    transport: Optional[str] = Field(default=None, max_length=MAX_MONITOR_TEXT_LENGTH)
+    size_bytes: int = Field(..., ge=0)
+    volumes: list[MonitorVolume] = Field(..., max_length=MAX_MONITOR_VOLUMES)
+
+
+class MonitorCpu(BaseModel):
+    """Cpu load. usage_pct is over the agent's last report interval, null on its first report."""
+    cores: int = Field(..., ge=1)
+    usage_pct: Optional[float] = Field(default=None, ge=0, le=100)
+    load_1m: float = Field(..., ge=0)
+    load_5m: float = Field(..., ge=0)
+    load_15m: float = Field(..., ge=0)
+
+
+class MonitorMemory(BaseModel):
+    """Ram and swap. available counts reclaimable cache, so it's the real "free"."""
+    total_bytes: int = Field(..., ge=0)
+    available_bytes: int = Field(..., ge=0)
+    swap_total_bytes: int = Field(..., ge=0)
+    swap_free_bytes: int = Field(..., ge=0)
+
+
+class MonitorBattery(BaseModel):
+    """A laptop's battery. status is the kernel's word for it, like "Charging" or "Full"."""
+    percent: Optional[int] = Field(default=None, ge=0, le=100)
+    status: Optional[str] = Field(default=None, max_length=MAX_MONITOR_TEXT_LENGTH)
+    on_power: bool
+
+
+class MonitorReport(BaseModel):
+    """What a monitor agent pushes every 30 s. name is the machine's hostname."""
+    name: str = Field(..., min_length=1, max_length=MAX_MONITOR_NAME_LENGTH)
+    model: Optional[str] = Field(default=None, max_length=MAX_MONITOR_TEXT_LENGTH)
+    uptime_s: int = Field(..., ge=0)
+    cpu: MonitorCpu
+    temperature_c: Optional[float] = None
+    memory: MonitorMemory
+    battery: Optional[MonitorBattery] = None
+    disks: list[MonitorDisk] = Field(..., max_length=MAX_MONITOR_DISKS)
+
+
+class MonitorDevice(MonitorReport):
+    """
+    One machine on the monitor page: its last report, when that came in, and whether
+    that's recent enough to count as online. Stats from an offline machine are stale.
+    """
+    online: bool
+    reported_ms: int
+
+
+class MonitorState(BaseModel):
+    """Every machine that's reported since the backend started, in name order."""
+    now_ms: int
+    devices: list[MonitorDevice]

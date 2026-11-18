@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import PhotoPanel, { type PhotoHold } from "./PhotoPanel";
 import MallardPanel from "./MallardPanel";
 import FlyTotalPanel from "./FlyTotalPanel";
+import { MonitorStoragePanel, MonitorVitalsPanel } from "./MonitorPanels";
 import FlyKillCounter from "@/components/flies/FlyKillCounter";
 import BpmPanel, { BPM_VIEWS } from "./BpmPanel";
 import SurfConditionsPanel from "./SurfConditionsPanel";
@@ -21,6 +22,7 @@ import {
 import {
   FLIES_SLOT_ID,
   MALLARDS_SLOT_ID,
+  MONITOR_SLOT_ID,
   PANEL_ROTATE_INTERVAL_MS,
   PHOTOS_SLOT_ID,
   ROTATION_SLOTS,
@@ -70,6 +72,9 @@ const MALLARDS: DisplayPanel = { render: () => <MallardPanel /> };
 // the /flies scene (scoreboard and pile) below, just the total on top
 const FLY_SCENE: DisplayPanel = { render: () => <FlyKillCounter display /> };
 const FLY_TOTAL: DisplayPanel = { render: () => <FlyTotalPanel /> };
+// every machine's disks below, their memory, cpu and temperature on top
+const MONITOR_STORAGE: DisplayPanel = { render: () => <MonitorStoragePanel /> };
+const MONITOR_VITALS: DisplayPanel = { render: () => <MonitorVitalsPanel /> };
 
 // shown only from its key, never in the rotation. both sides render BpmPanel whichever view
 // is up, so it stays mounted (and keeps its stream) as the views change
@@ -124,6 +129,7 @@ const FIXED_SLOT_PANELS: Record<string, Pick<RotationSlot, "primary" | "secondar
   [PHOTOS_SLOT_ID]: { primary: PRIMARY_PHOTOS, secondary: SECONDARY_PHOTOS },
   [MALLARDS_SLOT_ID]: { primary: PRIMARY_PHOTOS, secondary: MALLARDS },
   [FLIES_SLOT_ID]: { primary: FLY_SCENE, secondary: FLY_TOTAL },
+  [MONITOR_SLOT_ID]: { primary: MONITOR_STORAGE, secondary: MONITOR_VITALS },
 };
 
 /**

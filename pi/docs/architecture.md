@@ -120,6 +120,11 @@ architecture.
 - Resource usage: <1% CPU, ~50MB RAM
 - Status: Running and operational
 
+**Monitor Agents**
+- Every house machine (fart-pi, displaytop, castpi) runs `monitor-agent.service`, which pushes its storage (per disk and partition, including unmounted and unallocated space), memory, cpu and temperature to the backend every 30 s
+- The backend keeps the latest report per machine in memory and serves it publicly at `GET /monitor`, for `tyler-schwenk.com/monitor` and the display kiosk's system monitor slot
+- Runbook: `pi/docs/services/monitor-agent.md`
+
 **Cloudflare Tunnel**
 - Public API access without port forwarding
 - Mode: Named tunnel with custom domain

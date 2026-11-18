@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # `openssl rand -hex 32`; the same value goes in /etc/presence-agent/token on
     # fart-pi (see pi/docs/services/presence-agent.md).
     PRESENCE_TOKEN: str = ""
+    # Monitor agents -- shared secret the agent on each house machine sends (X-Monitor-Token)
+    # to report its storage, memory and so on. Empty turns that endpoint off. Generate with
+    # `openssl rand -hex 32`; the same value goes in /etc/monitor-agent/token on each
+    # machine (see pi/docs/services/monitor-agent.md).
+    MONITOR_TOKEN: str = ""
 
     # Where to get the outdoor forecast for the kiln's cooldown. City-level on purpose: it
     # goes to an outside service, and a few miles doesn't change the temperature much.

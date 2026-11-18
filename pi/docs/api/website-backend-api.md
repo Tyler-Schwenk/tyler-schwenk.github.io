@@ -1159,6 +1159,58 @@ Takes back their newest kill, for misclicks. `200` with the new tally, or `409` 
 
 ---
 
+## Monitor
+
+Each house machine's storage, memory, cpu and temperature. The monitor agent on each machine pushes, the `/monitor` page and the display kiosk read. Kept in memory only. See `pi/docs/services/monitor-agent.md`.
+
+### GET `/monitor`
+
+**Auth:** none. Rate limited to 60/minute per IP.
+
+```json
+{
+  "now_ms": 1794955606420,
+  "devices": [
+    {
+      "name": "fart-pi",
+      "model": "Raspberry Pi 5 Model B Rev 1.1",
+      "uptime_s": 1376846,
+      "cpu": {"cores": 4, "usage_pct": 0.0, "load_1m": 0.18, "load_5m": 0.07, "load_15m": 0.02},
+      "temperature_c": 46.9,
+      "memory": {"total_bytes": 8454684672, "available_bytes": 7276068864, "swap_total_bytes": 2147467264, "swap_free_bytes": 2147467264},
+      "battery": null,
+      "disks": [
+        {
+          "name": "sda", "model": "SSK Portable SSD 500GB", "transport": "usb", "size_bytes": 500107862016,
+          "volumes": [
+            {"name": "sda1", "kind": "unmounted", "size_bytes": 206975238144, "fstype": "ntfs", "mount": null, "used_bytes": null, "available_bytes": null},
+            {"name": "sda2", "kind": "filesystem", "size_bytes": 293131528704, "fstype": "ext4", "mount": "/mnt/ssd", "used_bytes": 5949804544, "available_bytes": 278496681984}
+          ]
+        }
+      ],
+      "online": true,
+      "reported_ms": 1794955600000
+    }
+  ]
+}
+```
+
+- `devices`: every machine that's reported since the backend started, by name. Empty until the first report after a restart
+- `online`: reported within 2 min of `now_ms`. If not, its numbers are its last report's
+- `volumes[].kind`: `filesystem` (mounted, with `used_bytes`/`available_bytes`), `swap`, `unmounted` (a partition nothing's mounted), `unallocated` (free space in an LVM volume group) or `unpartitioned` (the end of a disk no partition covers). For the last two, `name` is what the space is inside of
+- `used_bytes` + `available_bytes` is a bit under `size_bytes` for ext4, which keeps ~5% back. Both are null if the agent couldn't read them
+- `cpu.usage_pct`: over the agent's last 30 s, null on its first report
+- `temperature_c`: null on a machine with no cpu sensor the agent knows
+- `battery`: null without one. `on_power` is whether the charger's in; `status` is the kernel's word, which isn't reliable on displaytop
+
+### PUT `/monitor/report`
+
+**Auth:** `X-Monitor-Token` header, matching `MONITOR_TOKEN` in the backend's `.env`. 401 if it's wrong, 503 if `MONITOR_TOKEN` isn't set.
+
+Replaces that machine's last report (keyed by `name`). Body is one device from `GET /monitor` without `online` and `reported_ms`. Up to 16 disks, 32 volumes per disk, names up to 64 characters. Answers `204`, or `422` if it doesn't fit.
+
+---
+
 ## System Endpoints
 
 ### Health Check

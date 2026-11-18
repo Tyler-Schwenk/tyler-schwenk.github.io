@@ -23,6 +23,7 @@ export const PANEL_ROTATE_INTERVAL_MS = 45_000;
 export const PHOTOS_SLOT_ID = "photos";
 export const MALLARDS_SLOT_ID = "mallards";
 export const FLIES_SLOT_ID = "flies";
+export const MONITOR_SLOT_ID = "monitor";
 const BPM_SHORTCUT_KEY = "b";
 
 /** One slot of the rotation, as named on the remote. Cam slots carry their cam. */
@@ -41,11 +42,12 @@ export function surfCamSlotId(camId: SurfCamId): string {
   return `surf-${camId}`;
 }
 
-/** The rotation, in order: photos, mallards, flies, then each cam. */
+/** The rotation, in order: photos, mallards, flies, the system monitor, then each cam. */
 export const ROTATION_SLOTS: RotationSlotInfo[] = [
   { id: PHOTOS_SLOT_ID, label: "Photos" },
   { id: MALLARDS_SLOT_ID, label: "Mallard counter" },
   { id: FLIES_SLOT_ID, label: "Fly kill count" },
+  { id: MONITOR_SLOT_ID, label: "System monitor" },
   ...SURF_CAMS.map(({ id, label }) => ({ id: surfCamSlotId(id), label, camId: id })),
 ];
 

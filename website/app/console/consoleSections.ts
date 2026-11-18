@@ -1,4 +1,4 @@
-import { CONTROL_CONFIG, FLIES_SLOT_ID, MALLARDS_SLOT_ID, PHOTOS_SLOT_ID } from "../display/displayConfig";
+import { CONTROL_CONFIG, FLIES_SLOT_ID, MALLARDS_SLOT_ID, MONITOR_SLOT_ID, PHOTOS_SLOT_ID } from "../display/displayConfig";
 import { INITIAL_CONTROL_STATE, applyControlEvent, type ControlState, type DisplayMode } from "../display/kioskControl";
 
 /**
@@ -8,7 +8,7 @@ import { INITIAL_CONTROL_STATE, applyControlEvent, type ControlState, type Displ
  * pressed on the keyboard keep the panel in step.
  */
 
-export type SectionId = "overview" | "photos" | "mallards" | "flies" | "surf" | "bpm";
+export type SectionId = "overview" | "photos" | "mallards" | "flies" | "monitor" | "surf" | "bpm";
 
 /** One section of the panel. */
 export interface ConsoleSection {
@@ -87,6 +87,15 @@ export const CONSOLE_SECTIONS: ConsoleSection[] = [
     enter: () => holdSlotState(FLIES_SLOT_ID),
   },
   {
+    id: "monitor",
+    label: "monitor",
+    description: [
+      "The machines that run the house and this site: fart-pi (the home server), displaytop (the laptop running these screens) and castpi (the opium den tv and the kiln logger). Each one reports its own stats to the Pi every 30 seconds, and these are the real numbers.",
+      "The monitor shows every disk, split into its partitions to scale, with how full each one is. Hatched space isn't in use at all: a partition nobody mounted, or space that was never allocated. The laptop screen shows each machine's memory, cpu, temperature and uptime.",
+    ],
+    enter: () => holdSlotState(MONITOR_SLOT_ID),
+  },
+  {
     id: "surf",
     label: "surf cams",
     description: [
@@ -119,5 +128,6 @@ export function sectionForMode(mode: DisplayMode): SectionId {
   if (mode.slotId === PHOTOS_SLOT_ID) return "photos";
   if (mode.slotId === MALLARDS_SLOT_ID) return "mallards";
   if (mode.slotId === FLIES_SLOT_ID) return "flies";
+  if (mode.slotId === MONITOR_SLOT_ID) return "monitor";
   return "surf";
 }

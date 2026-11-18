@@ -1,0 +1,517 @@
+/*
+ * the system monitor's look, shared by /monitor and the display panels.
+ * every size is in em, so a panel scales the whole thing by setting one font
+ * size on .theme (16px on the page, much bigger on the kiosk screens). colors
+ * are tokens: light by default, dark with the os setting, and always dark
+ * with .dark (the display).
+ *
+ * meters follow one ramp: blue fill on a lighter blue track, warning and
+ * critical swap both for their own pair. idle space (nothing mounted or
+ * allocated) is hatched gray, so it never reads as usage.
+ */
+
+.theme {
+  --mon-page: #f4f4f2;
+  --mon-surface: #fcfcfb;
+  --mon-ink: #0b0b0b;
+  --mon-ink-2: #52514e;
+  --mon-ink-3: #75746f;
+  --mon-hairline: #e2e1dc;
+  --mon-fill: #2a78d6;
+  --mon-track: #d3e3f7;
+  --mon-warning: #fab219;
+  --mon-warning-track: #fbe8bd;
+  --mon-critical: #d03b3b;
+  --mon-critical-track: #f5d3d3;
+  --mon-good: #0ca30c;
+  --mon-idle: #b9b8b2;
+  --mon-idle-gap: #ecebe7;
+  --mon-swap: #8b8a84;
+
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background: var(--mon-page);
+  color: var(--mon-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme {
+    --mon-page: #111110;
+    --mon-surface: #1a1a19;
+    --mon-ink: #f0efec;
+    --mon-ink-2: #c3c2b7;
+    --mon-ink-3: #9a998f;
+    --mon-hairline: #2f2f2c;
+    --mon-fill: #3987e5;
+    --mon-track: #1c3555;
+    --mon-warning-track: #4a3910;
+    --mon-critical-track: #4d1d1d;
+    --mon-idle: #5c5b56;
+    --mon-idle-gap: #262624;
+    --mon-swap: #77766f;
+  }
+}
+
+/* same as the dark block above: the display is always dark, whatever the os says */
+.theme.dark {
+  --mon-page: #000000;
+  --mon-surface: #111110;
+  --mon-ink: #f0efec;
+  --mon-ink-2: #c3c2b7;
+  --mon-ink-3: #9a998f;
+  --mon-hairline: #2f2f2c;
+  --mon-fill: #3987e5;
+  --mon-track: #1c3555;
+  --mon-warning-track: #4a3910;
+  --mon-critical-track: #4d1d1d;
+  --mon-idle: #5c5b56;
+  --mon-idle-gap: #262624;
+  --mon-swap: #77766f;
+}
+
+.mono {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+}
+
+.muted {
+  color: var(--mon-ink-3);
+}
+
+/* ---- page ---- */
+
+.page {
+  min-height: 100vh;
+  /* the frog home button floats over the top left corner */
+  padding: 5.5em 16px 5em;
+}
+
+.pageInner {
+  max-width: 76em;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 2em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.pageIntro {
+  color: var(--mon-ink-2);
+  max-width: 40em;
+  margin: 0.5em 0 0;
+  line-height: 1.5;
+}
+
+.notice {
+  margin-top: 1.5em;
+  padding: 0.75em 1em;
+  border: 1px solid var(--mon-hairline);
+  border-radius: 0.5em;
+  background: var(--mon-surface);
+  color: var(--mon-ink-2);
+}
+
+/* ---- kpi row ---- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12em, 1fr));
+  gap: 0.75em;
+  margin-top: 1.75em;
+}
+
+.tile {
+  background: var(--mon-surface);
+  border: 1px solid var(--mon-hairline);
+  border-radius: 0.5em;
+  padding: 0.85em 1em;
+  min-width: 0;
+}
+
+.tileLabel {
+  font-size: 0.8em;
+  color: var(--mon-ink-2);
+}
+
+.tileValue {
+  font-size: 1.6em;
+  font-weight: 600;
+  margin-top: 0.15em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tileSub {
+  font-size: 0.8em;
+  color: var(--mon-ink-3);
+  margin-top: 0.3em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- device cards ---- */
+
+.devices {
+  display: grid;
+  gap: 1.25em;
+  margin-top: 1.25em;
+}
+
+.card {
+  background: var(--mon-surface);
+  border: 1px solid var(--mon-hairline);
+  border-radius: 0.75em;
+  padding: 1.25em;
+}
+
+.cardBody {
+  display: grid;
+  gap: 1.5em;
+  margin-top: 1.1em;
+}
+
+@media (min-width: 64rem) {
+  .cardBody {
+    grid-template-columns: 21em minmax(0, 1fr);
+  }
+}
+
+.stale {
+  opacity: 0.5;
+}
+
+/* ---- device header ---- */
+
+.deviceHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25em 0.9em;
+}
+
+.deviceName {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 1.35em;
+  font-weight: 500;
+  margin: 0;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.85em;
+  color: var(--mon-ink-2);
+}
+
+.statusDot {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--mon-good);
+}
+
+.statusDotOff {
+  background: transparent;
+  border: 0.12em solid var(--mon-ink-3);
+}
+
+.deviceMeta {
+  font-size: 0.85em;
+  color: var(--mon-ink-3);
+  margin: 0.3em 0 0;
+  width: 100%;
+}
+
+/* ---- vitals ---- */
+
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6em;
+  align-content: start;
+}
+
+.vitalWide {
+  grid-column: 1 / -1;
+}
+
+/* ---- storage ---- */
+
+.sectionLabel {
+  font-size: 0.8em;
+  color: var(--mon-ink-2);
+  margin: 0 0 0.6em;
+}
+
+.disks {
+  display: grid;
+  gap: 1.4em;
+}
+
+.diskHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2em 0.6em;
+  margin-bottom: 0.5em;
+}
+
+.diskName {
+  font-weight: 600;
+}
+
+.diskSize {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--mon-ink-2);
+}
+
+.diskBar {
+  display: flex;
+  gap: 0.125em;
+  height: 0.75em;
+}
+
+.diskPart {
+  display: flex;
+  min-width: 0.125em;
+  overflow: hidden;
+  border-radius: 0.2em;
+  background: var(--mon-track);
+}
+
+.diskPart:first-child {
+  border-top-left-radius: 0.375em;
+  border-bottom-left-radius: 0.375em;
+}
+
+.diskPart:last-child {
+  border-top-right-radius: 0.375em;
+  border-bottom-right-radius: 0.375em;
+}
+
+.volumes {
+  list-style: none;
+  margin: 0.7em 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55em;
+}
+
+.volume {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name figure" "bar bar";
+  gap: 0.3em 0.75em;
+  align-items: center;
+  font-size: 0.9em;
+}
+
+@media (min-width: 40rem) {
+  .volume {
+    grid-template-columns: 10em minmax(0, 1fr) auto;
+    grid-template-areas: "name bar figure";
+  }
+}
+
+/* the display's columns are wide in px but narrow in em, so it always stacks */
+.dark .volume {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name figure" "bar bar";
+}
+
+.volumeName {
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.volumeBar {
+  grid-area: bar;
+}
+
+.volumeFigure {
+  grid-area: figure;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--mon-ink-2);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6em;
+}
+
+/* ---- meters ---- */
+
+.meter {
+  height: 0.5em;
+  border-radius: 999px;
+  background: var(--mon-track);
+  overflow: hidden;
+}
+
+.meterFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mon-fill);
+}
+
+.meter.warning,
+.diskPart.warning {
+  background: var(--mon-warning-track);
+}
+
+.warning .meterFill,
+.warning .diskUsed {
+  background: var(--mon-warning);
+}
+
+.meter.critical,
+.diskPart.critical {
+  background: var(--mon-critical-track);
+}
+
+.critical .meterFill,
+.critical .diskUsed {
+  background: var(--mon-critical);
+}
+
+.diskUsed {
+  height: 100%;
+  background: var(--mon-fill);
+}
+
+.idle {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--mon-idle) 0 0.15em,
+    var(--mon-idle-gap) 0.15em 0.4em
+  );
+}
+
+.swapPart {
+  background: var(--mon-swap);
+}
+
+.meterIdle {
+  height: 0.5em;
+  border-radius: 999px;
+}
+
+.meterSpacer {
+  height: 0.5em;
+}
+
+/* ---- severity tags ---- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tag svg {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
+.tagWarning svg {
+  color: var(--mon-warning);
+}
+
+.tagCritical svg {
+  color: var(--mon-critical);
+}
+
+/* ---- legend ---- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em 1.1em;
+  font-size: 0.8em;
+  color: var(--mon-ink-2);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.swatch {
+  width: 1.1em;
+  height: 0.65em;
+  border-radius: 0.2em;
+  display: inline-block;
+}
+
+.swatchUsed {
+  background: var(--mon-fill);
+}
+
+.swatchFree {
+  background: var(--mon-track);
+}
+
+/* ---- display panels ---- */
+
+.panel {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 1.6em 2em;
+}
+
+.panelTop {
+  display: flex;
+  align-items: baseline;
+  gap: 1em;
+  margin-bottom: 1.2em;
+}
+
+.panelTitle {
+  font-family: var(--font-garden-mono), ui-monospace, monospace;
+  font-size: 1.6em;
+  font-weight: 500;
+  margin: 0;
+}
+
+.panelTopEnd {
+  margin-left: auto;
+}
+
+.panelDeviceBody {
+  margin-top: 1em;
+}
+
+.panelColumns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1.2em;
+}
+
+.panelColumns .card {
+  max-height: 100%;
+  overflow: hidden;
+}
+
+/* the bottom of the laptop screen is partly blocked, so the vitals stay in the top part */
+.panelShort {
+  padding-bottom: 22%;
+}

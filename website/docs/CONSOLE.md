@@ -67,6 +67,8 @@ showing" line, that section's controls, and a description of what it is:
 | overview (default) | the standard rotation | the rotation's slots, the current one lit; picking one stays on it |
 | photos | the photos slot, photos still changing | keep changing / freeze this photo, and previous/next while frozen |
 | mallards | the mallard counter | none |
+| flies | the fly kill count | none |
+| monitor | the system monitor, with the real machines' stats | none |
 | surf cams | the cam-only rotation | all cams rotating, or one cam; a link to the real stream of the cam that's up |
 | bpm | bpm mode, cycling the views | cycle or hold the monitor's view, previous/next (views, or milkdrop presets), what the laptop screen shows (same as the monitor, a view, or the tempo), sound, beat earlier/later |
 

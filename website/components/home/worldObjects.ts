@@ -80,6 +80,7 @@ export const LUCKY_ROUTES = [
   "/opium-den",
   "/pac-tyler",
   "/flies",
+  "/monitor",
 ];
 
 /**
@@ -161,6 +162,11 @@ export const WORLD_OBJECTS: WorldObject[] = [
   {
     id: "flies", label: "FLY KILL COUNT", href: "/flies", iconSrc: "/images/8bit/fly.png", size: 0.35,
     desktop: { x: 600, y: 334 }, mobile: { x: 310, y: 905, size: 0.45 },
+  },
+  {
+    // on the floor by the console, across the rug from the fly
+    id: "monitor", label: "SYSTEM MONITOR", href: "/monitor", iconSrc: "/images/8bit/pi.png", size: 0.5,
+    desktop: { x: 438, y: 334 }, mobile: { x: 60, y: 905, size: 0.6 },
   },
   {
     id: "round-table", label: "ROUND TABLE", href: "/public-square", iconSrc: "/images/8bit/round_table.png", size: 1.3,

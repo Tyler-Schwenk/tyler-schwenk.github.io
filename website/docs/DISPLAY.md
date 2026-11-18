@@ -29,6 +29,7 @@ so its polling/timers stop automatically — an inactive panel costs nothing.
 | `website/app/display/useClockSlot.ts` | Wall-clock slot hook shared by the rotation and the photo slideshow |
 | `website/app/display/PhotoPanel.tsx` | Full-bleed rotating slideshow of every public gallery's photos (`staggered` changes half a beat later) |
 | `website/app/display/MallardPanel.tsx` | Current mallard count with a canvas-animated duck background |
+| `website/app/display/MonitorPanels.tsx` | System monitor: every machine's disks on the monitor, their memory, cpu and temperature on the laptop screen (see `MONITOR.md`) |
 | `website/app/display/FlyTotalPanel.tsx` | The house's total fly kills, for the top screen (the bottom screen reuses `FlyKillCounter` from `/flies`, see "Fly Kill Count") |
 | `website/app/display/SurfCamPanel.tsx` | Live surf cam; asks the surfcam agent on displaytop to play it (see "Surf Cams") |
 | `website/app/display/SurfConditionsPanel.tsx` | Waves, wind (compass dials) and tide for a cam's spot, shown on the top screen while the cam plays below |
@@ -77,6 +78,7 @@ both screens show at the same time:
 | photos | photos | photos, staggered |
 | mallards | photos (carries on) | mallard count |
 | flies | the `/flies` scoreboard and pile | total fly kills |
+| monitor | every machine's disks and partitions | every machine's memory, cpu, temperature and uptime |
 | each of the five cams | the live cam | that spot's waves, wind and tide |
 
 Bpm mode is a slot too, but it's not in `ROTATION_SLOTS`: it only comes up from its key (`b`,
@@ -114,7 +116,7 @@ the menu first); tab just shows the list on the top screen.
 | `3` | rotate through the surf cams only (from the first) |
 | `4`-`8` | hold one cam (in `SURF_CAMS` order: PB, La Jolla Shores, Scripps, Scripps underwater, Moonlight) |
 | `b` | bpm mode, cycling through its views (keys inside it below) |
-| `]` / `[` | next / previous, and hold there: the next photo while photos are held, otherwise the next slot (photos, mallards, flies, each cam) from wherever it was; backspace resumes the rotation |
+| `]` / `[` | next / previous, and hold there: the next photo while photos are held, otherwise the next slot (photos, mallards, flies, monitor, each cam) from wherever it was; backspace resumes the rotation |
 | `backspace` | back one step: closes the menu if it's open, else ends the hold or cam-only rotation |
 | `esc` | straight back to the standard display |
 
@@ -192,12 +194,6 @@ with `PlaceholderPanel` first as a stub) once it's actually being worked on.
 
 - MTS trolley info
 - Pac-Tyler bike map
-- Server status (Beszel) — blocked on Beszel having no public/read-only API access
-  (confirmed: the anonymous `systems` records endpoint returns zero items even though
-  it responds 200). Needs either a persistent authenticated Chromium session (simple,
-  but the login session will eventually expire) or a server-side proxy endpoint on
-  website-backend holding a Beszel service token (more durable, matches how the rest
-  of the backend handles secrets — preferred if there's time to build it properly)
 
 ### Running Elsewhere
 
