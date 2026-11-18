@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
-import { DISCO_ADDRESS, DISCO_DETAILS } from "./constants";
+import { DISCO_ADDRESS, DISCO_DETAILS, DISCO_MORE_INFO } from "./constants";
 import DiscoText from "./DiscoText";
 import {
   BellBottoms,
@@ -27,6 +27,7 @@ const FEATURING_DELAY_MS = 1600;
 const ATTIRE_DELAY_MS = 1900;
 const FACTS_DELAY_MS = 2200;
 const PHONES_DELAY_MS = 2600;
+const SCROLL_HINT_DELAY_MS = 3400;
 
 const SAVE_MESSAGES: Record<SaveResult, string> = {
   shared: "saved! see you on the dance floor",
@@ -52,9 +53,11 @@ interface DiscoFlierProps {
 }
 
 /**
- * the flier under the clouds, laid out like an old disco flier: a framed poster
- * with a tilted title, overlapping circles, stars, a hanging disco ball, and the
- * details set off to either side. the address opens in the person's maps app.
+ * the flier under the clouds, in two parts. first a poster sized to exactly fill
+ * the screen, so one screenshot gets all the main info: laid out like an old disco
+ * flier, with a tilted title, overlapping circles, stars, a hanging disco ball, and
+ * the details set off to either side. the address opens in the person's maps app.
+ * below it, past a scroll hint, the longer details and the save and replay buttons.
  * @param {DiscoFlierProps} props - the event title, device type, and the replay handler.
  * @returns {JSX.Element} the full screen, scrollable flier.
  */
@@ -62,6 +65,7 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
   const [card, setCard] = useState<Blob | null>(null);
   const [status, setStatus] = useState("");
   const mapsUrl = useMapsUrl(DISCO_ADDRESS);
+  const moreInfoRef = useRef<HTMLElement>(null);
   const { title } = info;
   // geo: links hand off to an app, https ones open best in a new tab
   const opensInNewTab = mapsUrl.startsWith("https:");
@@ -99,10 +103,14 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
       });
   };
 
+  const scrollToMoreInfo = () => {
+    moreInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className={styles.flier}>
       <StarField />
-      <div className={styles.flierScroll}>
+      <div className={styles.posterScreen}>
         <article className={styles.poster}>
           <PosterCircles />
           <PosterStars />
@@ -185,6 +193,26 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
           </div>
         </article>
 
+        <button
+          type="button"
+          className={`${styles.scrollHint} ${styles.rise}`}
+          style={riseDelay(SCROLL_HINT_DELAY_MS)}
+          onClick={scrollToMoreInfo}
+        >
+          more info
+          <span className={styles.scrollChevron} aria-hidden="true" />
+        </button>
+      </div>
+
+      <section ref={moreInfoRef} className={styles.moreInfo}>
+        <BoxRow />
+        {DISCO_MORE_INFO.map((item) => (
+          <div key={item.heading} className={styles.moreInfoItem}>
+            <h2 className={styles.script}>{item.heading}</h2>
+            <p>{item.text}</p>
+          </div>
+        ))}
+
         <div className={styles.flierActions}>
           <button type="button" className={styles.startButton} onClick={handleSave}>
             Save the info
@@ -196,7 +224,7 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
         <p className={styles.saveStatus} role="status">
           {status}
         </p>
-      </div>
+      </section>
     </div>
   );
 }

@@ -194,8 +194,10 @@
 
 /* ---------- the flier ---------- */
 
-/* laid out like an old disco flier rather than a centered stack: a framed poster
-   with blocks pushed to either side, overlapping circles and stars behind them */
+/* two parts: a poster that exactly fills the first screen (so one screenshot gets
+   all the main info), then the longer details below it. the poster's laid out
+   like an old disco flier rather than a centered stack: a framed poster with
+   blocks pushed to either side, overlapping circles and stars behind them. */
 
 .flier {
   position: absolute;
@@ -231,15 +233,25 @@
   50% { opacity: 1; }
 }
 
-.flierScroll {
+/* exactly one screen tall: the flier is the scroller and fills the visible
+   viewport, so 100% here is the visible height even with phone browser bars */
+.posterScreen {
+  --scroll-hint-height: 40px;
   position: relative;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 16px 16px 40px;
+  height: 100%;
+  min-height: 480px;
+  padding: 10px 10px 0;
+  container-type: size;
 }
 
+/* the poster's as wide as the screen allows, but never wider than a
+   letter-paper flier, so it stays flier shaped on a wide desktop */
 .poster {
-  --poster-pad: clamp(18px, 5vw, 44px);
+  --poster-height: calc(100cqh - var(--scroll-hint-height));
+  /* one design unit: 1% of the poster's width, unless the screen's too short for
+     the whole design (about 180 units tall), then shrunk to fit the height */
+  --u: min(1cqw, calc(100cqh / 180));
+  --poster-pad: calc(5 * var(--u));
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -251,15 +263,19 @@
     "facts    facts"
     "phones   phones"
     "diamonds diamonds";
-  column-gap: 12px;
-  row-gap: clamp(14px, 3vw, 26px);
-  padding: var(--poster-pad) var(--poster-pad) calc(var(--poster-pad) + 6px);
+  align-content: space-evenly;
+  column-gap: calc(3 * var(--u));
+  width: min(100%, calc(var(--poster-height) * 0.78));
+  height: var(--poster-height);
+  margin: 0 auto;
+  padding: var(--poster-pad);
   border: 3px solid var(--c3);
   outline: 2px solid var(--c1);
   outline-offset: -11px;
   overflow: hidden;
   background: rgba(11, 13, 63, 0.55);
   text-align: left;
+  container-type: size;
 }
 
 /* everything in the poster sits over the circles and stars */
@@ -288,7 +304,7 @@
   grid-area: kicker;
   align-self: end;
   margin: 0;
-  font-size: clamp(0.85rem, 3.4vw, 1.2rem);
+  font-size: calc(3.6 * var(--u));
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--c1);
@@ -304,7 +320,7 @@
 .titleBlock {
   grid-area: title;
   transform: rotate(-5deg);
-  margin: 4px 0 6px;
+  margin: calc(1 * var(--u)) 0 calc(2 * var(--u));
 }
 
 /* the racing stripes from 70s flier art, streaking in behind the title */
@@ -350,12 +366,12 @@
 }
 
 .titleWord:first-child {
-  font-size: clamp(3.4rem, 17vw, 7.5rem);
+  font-size: calc(17 * var(--u));
 }
 
 .titleWord:not(:first-child) {
   margin-left: 10%;
-  font-size: clamp(2.2rem, 10.5vw, 4.8rem);
+  font-size: calc(10.5 * var(--u));
 }
 
 .boxSlot {
@@ -371,16 +387,16 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12% 0 12% 4%;
+  padding: calc(5 * var(--u)) 0 calc(5 * var(--u)) calc(2 * var(--u));
 }
 
 .featuring::before {
   content: "";
   position: absolute;
   top: 50%;
-  left: 38%;
+  left: 42%;
   z-index: -1;
-  width: 118%;
+  width: 104%;
   aspect-ratio: 1;
   border: 2px solid var(--c2);
   border-radius: 50%;
@@ -388,13 +404,14 @@
   transform: translate(-50%, -50%);
 }
 
-.featuring .script {
-  font-size: clamp(1rem, 4.6vw, 1.6rem);
+.featuring .script,
+.attire .script {
+  font-size: calc(4.6 * var(--u));
 }
 
 .act {
   margin: 0;
-  font-size: clamp(0.95rem, 4.4vw, 1.6rem);
+  font-size: calc(4.4 * var(--u));
   line-height: 1.1;
 }
 
@@ -405,27 +422,23 @@
 .attire {
   grid-area: attire;
   /* dropped down a bit so it doesn't line up with the featuring bubble */
-  margin-top: 18%;
+  margin-top: calc(6 * var(--u));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   text-align: right;
 }
 
-.attire .script {
-  font-size: clamp(1rem, 4.6vw, 1.6rem);
-}
-
 .attireText {
   margin: 0;
-  font-size: clamp(0.9rem, 4vw, 1.35rem);
+  font-size: calc(4 * var(--u));
   line-height: 1.15;
   color: var(--c1);
 }
 
 .bellBottoms {
-  width: clamp(54px, 15vw, 90px);
-  margin-bottom: 6px;
+  width: calc(13 * var(--u));
+  margin-bottom: calc(1.5 * var(--u));
   overflow: visible;
   transform-origin: 50% 10%;
   animation: bellSway 1.2s ease-in-out infinite alternate;
@@ -458,7 +471,7 @@
   grid-area: facts;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(2 * var(--u));
   margin: 0;
 }
 
@@ -466,7 +479,7 @@
   display: flex;
   align-items: baseline;
   gap: 0.4em;
-  font-size: clamp(1.05rem, 4.8vw, 1.75rem);
+  font-size: calc(4.8 * var(--u));
   line-height: 1.15;
 }
 
@@ -501,16 +514,14 @@
 .noPhones {
   grid-area: phones;
   justify-self: end;
-  align-self: end;
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 300px;
+  gap: calc(2 * var(--u));
   margin: 0;
-  padding: 8px 14px;
+  padding: calc(2 * var(--u)) calc(3.5 * var(--u));
   border: 2px dashed var(--c1);
   border-radius: 10px;
-  font-size: clamp(0.8rem, 3.4vw, 1rem);
+  font-size: calc(3.6 * var(--u));
   line-height: 1.15;
   color: var(--c1);
   rotate: 4deg;
@@ -518,7 +529,7 @@
 
 .noPhoneIcon {
   flex: none;
-  width: clamp(34px, 9vw, 46px);
+  width: calc(9 * var(--u));
 }
 
 .noPhoneBody {
@@ -537,7 +548,6 @@
 
 .diamondSlot {
   grid-area: diamonds;
-  align-self: end;
   justify-self: start;
 }
 
@@ -582,12 +592,69 @@
   50% { transform: rotate(36deg) scale(1.25); opacity: 1; }
 }
 
+/* ---------- the scroll hint and what's below the poster ---------- */
+
+.scrollHint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: var(--scroll-hint-height);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c1);
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.scrollChevron {
+  width: 10px;
+  height: 10px;
+  border-right: 3px solid var(--ornament-lime);
+  border-bottom: 3px solid var(--ornament-lime);
+  transform: rotate(45deg);
+  animation: chevronBob 1.4s ease-in-out infinite;
+}
+
+@keyframes chevronBob {
+  0%, 100% { translate: 0 -3px; }
+  50% { translate: 0 3px; }
+}
+
+.moreInfo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 28px;
+  --u: min(1vw, 5px);
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+  text-align: left;
+}
+
+.moreInfoItem h2 {
+  font-size: clamp(1.4rem, 6vw, 2rem);
+  line-height: 1.1;
+}
+
+.moreInfoItem p {
+  margin: 10px 0 0;
+  font-size: clamp(1.05rem, 4.6vw, 1.35rem);
+  line-height: 1.4;
+  color: var(--c4);
+}
+
 .flierActions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  margin-top: 22px;
 }
 
 .secondaryButton {
@@ -602,7 +669,7 @@
 }
 
 .saveStatus {
-  margin: 10px 0 0;
+  margin: -14px 0 0;
   min-height: 1.2em;
   font-size: 0.85rem;
   color: var(--c1);
@@ -639,15 +706,17 @@
 
 /* ---------- ornaments ---------- */
 
+/* sized in the poster's design unit (--u). the box row under the poster gets its own */
+
 .boxRow,
 .diamondRow {
   display: flex;
   justify-content: center;
-  gap: clamp(3px, 1.2vw, 8px);
+  gap: calc(1.4 * var(--u));
 }
 
 .box {
-  width: clamp(16px, 5vw, 30px);
+  width: calc(5.2 * var(--u));
   aspect-ratio: 1;
   border: 2px solid var(--ornament-lime);
   box-shadow:
@@ -664,9 +733,9 @@
 }
 
 .diamond {
-  width: clamp(9px, 2.6vw, 15px);
+  width: calc(2.8 * var(--u));
   aspect-ratio: 1;
-  margin: 0 clamp(2px, 1vw, 6px);
+  margin: 0 var(--u);
   border: 2px solid var(--ornament-teal);
   box-shadow: inset 0 0 0 2px var(--ornament-lime);
   transform: rotate(45deg);
@@ -680,7 +749,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: clamp(130px, 34vw, 210px);
+  height: calc(24 * var(--u));
 }
 
 .ballString {
@@ -715,7 +784,7 @@
 
 .ball {
   position: relative;
-  width: clamp(76px, 20vw, 120px);
+  width: calc(17 * var(--u));
   aspect-ratio: 1;
   border-radius: 50%;
   overflow: hidden;
@@ -779,7 +848,8 @@
   .speedStripes,
   .bellBottoms,
   .posterCircle,
-  .posterStar {
+  .posterStar,
+  .scrollChevron {
     animation: none;
   }
 }

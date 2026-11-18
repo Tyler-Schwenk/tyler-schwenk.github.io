@@ -138,7 +138,6 @@ const POSTER_STARS = [
   { leftPct: 4, topPct: 47, sizePx: 18, color: "var(--c3)", delayMs: 1500 },
   { leftPct: 48, topPct: 58, sizePx: 24, color: "var(--ornament-lime)", delayMs: 700 },
   { leftPct: 88, topPct: 71, sizePx: 16, color: "var(--c1)", delayMs: 1200 },
-  { leftPct: 86, topPct: 56, sizePx: 20, color: "var(--ornament-teal)", delayMs: 300 },
   { leftPct: 62, topPct: 95, sizePx: 14, color: "var(--ornament-lime)", delayMs: 1800 },
 ];
 

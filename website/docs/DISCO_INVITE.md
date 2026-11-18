@@ -57,6 +57,23 @@ first one in the loop.
 
 ## The flier
 
+The flier has two parts:
+
+1. **The poster** fills exactly the first screen, so one screenshot gets all the main
+   info. A "more info" hint sits under it and scrolls down when tapped.
+2. **More info** below it: the longer details from `DISCO_MORE_INFO` in `constants.ts`
+   (an array, so add entries there), then the save and watch again buttons.
+
+**Fitting the screen**: `.flier` is the scroller and fills the visible viewport, so
+`.posterScreen` at `height: 100%` is one visible screen even with phone browser bars.
+Everything inside the poster is sized in one design unit, `--u`. That's 1% of the
+poster's width, unless the screen is too short for the whole design (about 180 units
+tall), in which case it shrinks to fit the height. Rows are spread with
+`align-content: space-evenly`, so taller phones get more breathing room, not bigger type.
+On wide screens the poster is capped at letter-paper proportions (0.78 wide per unit of
+height) so it stays flier-shaped. If you add something to the poster, size it in `--u`
+and check a short phone (375x553) still fits.
+
 It's laid out like an old disco flier rather than a centered stack: a framed poster
 (double rule border) with blocks pushed to either side, big outlined circles overlapping
 behind them, and scattered five-point stars. The grid in `.poster` places, top to bottom:
@@ -68,7 +85,7 @@ behind them, and scattered five-point stars. The grid in `.poster` places, top t
 | `boxes` | The box row, left aligned |
 | `feat` / `attire` | Lineup over a circle on the left; bell bottoms and the dress code on the right, dropped lower |
 | `facts` | Date, time and place, script labels with slab values, all left aligned |
-| `phones` | The no-phones stamp, tilted, pushed right |
+| `phones` | The no-phones stamp, tilted |
 | `diamonds` | A short diamond row as a corner flourish |
 
 - **Type**: Ultra (`--font-disco`) is the closest match to the video's fat ball-terminal
@@ -95,11 +112,17 @@ behind them, and scattered five-point stars. The grid in `.poster` places, top t
 
 ## Saving the info
 
-`saveFlierCard.ts` draws a 1080x1350 PNG on a canvas by hand. It has the same sky, stars,
+`saveFlierCard.ts` draws a 1080x1350 PNG on a canvas by hand. It leaves out the more info
+section. It has the same sky, stars,
 box and diamond rows, colored title, details and page address as the flier, but in the
 older centered layout. It'll be redrawn to match the poster once the design is final.
 It's drawn rather than screenshotted so it looks the same everywhere and needs no library.
 
+- **Font loading**: it waits for the disco font before drawing, but only loads the first
+  family in `--font-disco`. next/font's "Ultra Fallback" face points at a local Times New
+  Roman, and on a device without that font, `document.fonts.load` rejects the whole load
+  (NetworkError). If the disco font itself won't load, it logs a warning and still draws the
+  card in a fallback font.
 - The card is drawn when the flier mounts, not on tap. iOS only opens the share sheet
   straight after a tap, and drawing it then (font load plus PNG encode) can use up that
   window.

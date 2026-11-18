@@ -71,3 +71,14 @@ export const DISCO_DETAILS = {
 
 /** the full address, for the maps link */
 export const DISCO_ADDRESS = `${DISCO_DETAILS.addressStreet}, ${DISCO_DETAILS.addressCity}`;
+
+/**
+ * the extra details below the poster, past the scroll. the poster holds what fits
+ * in one screenshot; anything longer goes here.
+ */
+export const DISCO_MORE_INFO = [
+  {
+    heading: "Coming from out of town?",
+    text: "Feel free to reach out to me and we\u2019ll make sure there\u2019s space for you to stay in the Opium Den.",
+  },
+] as const;

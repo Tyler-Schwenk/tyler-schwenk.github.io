@@ -77,6 +77,23 @@ function discoFontFamily(): string {
 }
 
 /**
+ * makes sure the disco font is loaded, since canvas text silently falls back to a
+ * default font if it isn't. only the first family is loaded: next/font's fallback
+ * face points at a local font (times new roman) that plenty of phones don't have,
+ * and loading a missing local font rejects the whole load. if the disco font
+ * itself won't load, the card still gets drawn, just in a fallback font.
+ * @param {string} family - the css font-family list from discoFontFamily.
+ */
+async function loadDiscoFont(family: string): Promise<void> {
+  const primaryFamily = family.split(",")[0].trim();
+  try {
+    await document.fonts.load(`${TITLE_FONT_PX}px ${primaryFamily}`);
+  } catch (error) {
+    console.warn(`disco invite: couldn't load ${primaryFamily} for the saved card, drawing it in a fallback font`, error);
+  }
+}
+
+/**
  * draws text one letter at a time, each in the next palette color, centered on a point.
  * @param {CanvasRenderingContext2D} ctx - card context, with its font already set.
  * @param {string} text - the line to draw.
@@ -212,8 +229,7 @@ function drawDetails(ctx: CanvasRenderingContext2D, family: string): void {
  */
 export async function renderFlierCard(info: FlierCardInfo): Promise<Blob> {
   const family = discoFontFamily();
-  // canvas text silently falls back to a default font if it isn't loaded yet
-  await document.fonts.load(`${TITLE_FONT_PX}px ${family}`);
+  await loadDiscoFont(family);
 
   const canvas = document.createElement("canvas");
   canvas.width = CARD_WIDTH_PX;
