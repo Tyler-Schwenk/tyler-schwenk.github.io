@@ -19,18 +19,15 @@ interface DiscoTextProps {
   className?: string;
   /** added to every letter's pop-in delay, to sequence lines one after another */
   delayMs?: number;
-  /** keep each letter's first color instead of chasing the palette along the line */
-  holdColors?: boolean;
 }
 
 /**
  * text in the invite video's style: each letter its own color from the palette,
- * popping in out of order, then the colors chase along the line (unless holdColors
- * is set). words never break mid-word.
- * @param {DiscoTextProps} props - the text, wrapper element, class, starting delay, and whether colors hold still.
+ * popping in out of order, then the colors chase along the line. words never break mid-word.
+ * @param {DiscoTextProps} props - the text, wrapper element, class, and starting delay.
  * @returns {JSX.Element} the text with the full string as its accessible label.
  */
-export default function DiscoText({ text, as: Tag = "span", className, delayMs = 0, holdColors = false }: DiscoTextProps) {
+export default function DiscoText({ text, as: Tag = "span", className, delayMs = 0 }: DiscoTextProps) {
   const letterCount = text.replace(/\s/g, "").length;
   const paletteSize = DISCO_LETTER_COLORS.length;
   const colorStepMs = COLOR_CYCLE_MS / paletteSize;
@@ -49,7 +46,7 @@ export default function DiscoText({ text, as: Tag = "span", className, delayMs =
         animationDelay: `${delayMs + popInOrder * POP_IN_STAGGER_MS}ms, ${-(index % paletteSize) * colorStepMs}ms`,
       };
       return (
-        <span key={index} className={holdColors ? styles.letterHeld : styles.letter} style={style}>
+        <span key={index} className={styles.letter} style={style}>
           {char}
         </span>
       );

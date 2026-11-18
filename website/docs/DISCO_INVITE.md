@@ -81,10 +81,9 @@ bursts. The grid in `.poster` places, top to bottom:
 
 | Area | What |
 |------|------|
-| `kicker` / `ball` | "Disco night is back!" on the left, the disco ball hanging from the frame on the right |
 | `title` | Tilted title, one word per line, the first big and the rest indented, over racing stripes |
-| `boxes` | The box row, left aligned |
-| `feat` / `attire` | Lineup over a circle on the left; the round dance floor clip and the dress code on the right, dropped lower |
+| `boxes` | The box row on the left, with the disco ball at its right end. The ball's string runs up past the title to the frame's top edge (the poster clips it) |
+| `feat` / `attire` | Lineup over a circle on the left; on the right, the round dance floor clip with the dress code over its darkened lower half |
 | `facts` | Date, time and place, script labels with slab values, all left aligned |
 | `phones` | The no-phones stamp, tilted |
 | `diamonds` | A short diamond row as a corner flourish |
@@ -93,10 +92,13 @@ bursts. The grid in `.poster` places, top to bottom:
   slab serif, used for the title and values. Shrikhand (`--font-disco-script`) is the
   brush script for labels ("Featuring:", "Date:"), like the mixed type on the inspiration
   fliers. Both are in the root layout.
+- **Lineup**: the two acts are styled as opposites. "Dancefloor DJs" is loud: hot pink
+  Ultra with the title's lime drop shadow, bouncing on a beat. "Ambient Den" is calm: the
+  kiln page's light Instrument Serif (`--font-kiln-display`) in italic, pale lavender and
+  spaced out, with a slow breathing glow.
 - **Colors** (`constants.ts`): letters cycle through the video's six-color palette.
   `DiscoText` gives each letter its own color, pops the letters in out of order, then
-  chases the colors along the line. The lineup uses `holdColors`, so its letters keep their
-  first colors. The title gets a hard lime drop shadow. Ornament lime, blue and teal are for
+  chases the colors along the line. The title gets a hard lime drop shadow. Ornament lime, blue and teal are for
   the box row and diamond row. The dance floor's pink, grout and tile light colors are their
   own constants (`FLOOR_*`), taken from the Snoopy floor. The night sky colors come from
   the video's space scene. All of these are set as CSS variables on the stage, so the
@@ -113,8 +115,9 @@ bursts. The grid in `.poster` places, top to bottom:
   beat with its own offset, so the floor never blinks in step. Which tiles light, and the
   background star dots, are seeded, so the prerendered HTML matches the browser. It's dimmed
   to 60%, and the facts and stamp over it get a dark halo so they stay readable.
-- **Attire clip** (`AttireClip.tsx`): archival 70s dance floor footage in a ringed circle,
-  three clips crossfaded into one silent loop. Under reduced motion it's paused on its
+- **Attire clip** (`AttireClip.tsx`): archival 70s dance floor footage in a lime-ringed
+  circle, three clips crossfaded into one silent loop. It's a little wider than its column,
+  spilling toward the featuring circle. Under reduced motion it's paused on its
   first frame.
 - **Address**: links to the person's own maps app (`useMapsUrl.ts`). Apple devices get an
   Apple Maps link, Android a `geo:` link that opens the default maps app, and everything

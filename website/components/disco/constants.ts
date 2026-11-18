@@ -74,12 +74,11 @@ export const DIAMOND_ROW_COUNT = 12;
 
 /** everything the flier says besides the title */
 export const DISCO_DETAILS = {
-  kicker: "Disco night is back!",
   date: "Saturday, Dec. 12th",
   time: "8pm",
   addressStreet: "5375 Hewlett Dr",
   addressCity: "San Diego, CA 92115",
-  lineup: ["Dancefloor DJs", "Ambient Den"],
+  lineup: { dancefloor: "Dancefloor DJs", den: "Ambient Den" },
   attire: "Bell bottoms + dancing shoes",
   phones: "iPhones haven’t been invented yet",
 } as const;

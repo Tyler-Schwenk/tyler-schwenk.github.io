@@ -20,7 +20,6 @@ import { useMapsUrl } from "./useMapsUrl";
 import styles from "./disco.module.css";
 
 // the poster's blocks rise in one after another as the clouds clear
-const KICKER_DELAY_MS = 400;
 const TITLE_DELAY_MS = 600;
 const TITLE_WORD_STAGGER_MS = 450;
 const BOXES_DELAY_MS = 1300;
@@ -117,13 +116,6 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
           <Spotlights />
           <SparkleBursts />
 
-          <p className={`${styles.kicker} ${styles.rise}`} style={riseDelay(KICKER_DELAY_MS)}>
-            {DISCO_DETAILS.kicker}
-          </p>
-          <div className={styles.ballSlot}>
-            <DiscoBall />
-          </div>
-
           <div className={styles.titleBlock}>
             <div className={styles.speedStripes} aria-hidden="true" />
             <h1 className={styles.title} aria-label={title}>
@@ -138,24 +130,28 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
             </h1>
           </div>
 
-          <div className={`${styles.boxSlot} ${styles.rise}`} style={riseDelay(BOXES_DELAY_MS)}>
-            <BoxRow />
+          <div className={styles.boxSlot}>
+            <div className={styles.rise} style={riseDelay(BOXES_DELAY_MS)}>
+              <BoxRow />
+            </div>
+            <DiscoBall />
           </div>
 
           <section className={`${styles.featuring} ${styles.rise}`} style={riseDelay(FEATURING_DELAY_MS)}>
             <h2 className={styles.script}>Featuring:</h2>
-            {DISCO_DETAILS.lineup.map((act, i) => (
-              <p key={act} className={styles.act}>
-                {i > 0 && <span className={styles.actJoin}>+ </span>}
-                <DiscoText text={act} delayMs={FEATURING_DELAY_MS} holdColors />
-              </p>
-            ))}
+            <p className={styles.actDancefloor}>{DISCO_DETAILS.lineup.dancefloor}</p>
+            <p className={styles.actJoin}>+</p>
+            <p className={styles.actDen}>{DISCO_DETAILS.lineup.den}</p>
           </section>
 
           <section className={`${styles.attire} ${styles.rise}`} style={riseDelay(ATTIRE_DELAY_MS)}>
-            <AttireClip />
-            <h2 className={styles.script}>Attire:</h2>
-            <p className={styles.attireText}>{DISCO_DETAILS.attire}</p>
+            <div className={styles.attireFrame}>
+              <AttireClip />
+              <div className={styles.attireCaption}>
+                <h2 className={styles.script}>Attire:</h2>
+                <p className={styles.attireText}>{DISCO_DETAILS.attire}</p>
+              </div>
+            </div>
           </section>
 
           <dl className={`${styles.facts} ${styles.rise}`} style={riseDelay(FACTS_DELAY_MS)}>

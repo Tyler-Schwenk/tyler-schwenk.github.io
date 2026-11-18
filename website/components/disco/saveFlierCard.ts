@@ -182,7 +182,7 @@ const CARD_FACTS = [
 
 /** the lines under the facts, in the palette colors */
 const CARD_HIGHLIGHTS = [
-  DISCO_DETAILS.lineup.join(" + "),
+  `${DISCO_DETAILS.lineup.dancefloor} + ${DISCO_DETAILS.lineup.den}`,
   `Attire: ${DISCO_DETAILS.attire}`,
   DISCO_DETAILS.phones,
 ];
