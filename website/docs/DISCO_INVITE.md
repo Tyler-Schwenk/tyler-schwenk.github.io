@@ -83,7 +83,7 @@ behind them, and scattered five-point stars. The grid in `.poster` places, top t
 | `kicker` / `ball` | "Disco night is back!" on the left, the disco ball hanging from the frame on the right |
 | `title` | Tilted title, one word per line, the first big and the rest indented, over racing stripes |
 | `boxes` | The box row, left aligned |
-| `feat` / `attire` | Lineup over a circle on the left; bell bottoms and the dress code on the right, dropped lower |
+| `feat` / `attire` | Lineup over a circle on the left; three round dance floor clips and the dress code on the right, dropped lower |
 | `facts` | Date, time and place, script labels with slab values, all left aligned |
 | `phones` | The no-phones stamp, tilted |
 | `diamonds` | A short diamond row as a corner flourish |
@@ -100,11 +100,12 @@ behind them, and scattered five-point stars. The grid in `.poster` places, top t
   stylesheet and the canvas card share one source.
 - **Moving parts** (`Ornaments.tsx`): blocks rise in one after another (`--rise-delay`),
   the stripes streak in then drift, the disco ball spins and throws beams, the box row
-  chases, stars turn and twinkle, the circles breathe, and the bell bottoms sway. Background
+  chases, stars turn and twinkle, the circles breathe, and the attire clips loop and bob. Background
   star positions are seeded, so the prerendered HTML matches the browser. Everything holds
   still under `prefers-reduced-motion`.
-- **Attire art**: the bell bottoms SVG is a stand-in until there's a drawing of a 70s
-  dancer for that spot.
+- **Attire clips** (`AttireClips.tsx`): three archival 70s dance floor clips, looping
+  silently in overlapping ringed circles. Under reduced motion they're paused on their
+  first frame.
 - **Address**: links to the person's own maps app (`useMapsUrl.ts`). Apple devices get an
   Apple Maps link, Android a `geo:` link that opens the default maps app, and everything
   else Google Maps. It goes by user agent, since there's no feature check for "default maps
@@ -141,6 +142,7 @@ V1_1.mp4`, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
 | `invite-720.mp4` | Phone video, ~15 MB | Same, with `scale=1280:720` |
 | `clouds-loop.mp4` / `.webm` | The 30-frame cloud loop, 1440x1080, no audio | `-ss 57.45 -t 1.6`, then `crop=1440:1080:240:0,select='between(n\,5\,34)'`; x264 crf 20 / vp9 crf 32 |
 | `clouds-poster.jpg` | First frame of the loop, the poster before it plays | |
+| `attire-1..3.mp4` / `.webm` / `.jpg` | The attire clips, 360x360, ~250 KB each, no audio, with a still for each | From `attire1..3.mp4` (gitignored sources in the repo root): `crop=ih:ih:120:0` (`crop=1400:1400:150:50` for clip 2, to drop a black bar at the top) keeps the square clear of the station logo in the top right, then `scale=360:360,fps=24`; x264 crf 27 / vp9 crf 38 |
 
 The link preview is `website/public/images/events/disco-og.jpg`, the "Disco Night is Back!"
 title card at 18.5 s.
@@ -162,7 +164,8 @@ the time of the repeated frame.
 | `website/components/disco/cloudSeam.ts` | Canvas drawing for the parting |
 | `website/components/disco/DiscoFlier.tsx` | The flier and its save button |
 | `website/components/disco/DiscoText.tsx` | Per-letter colored text |
-| `website/components/disco/Ornaments.tsx` | Box row, diamond row, stars, circles, disco ball, bell bottoms, no-phone icon |
+| `website/components/disco/Ornaments.tsx` | Box row, diamond row, stars, circles, disco ball, no-phone icon |
+| `website/components/disco/AttireClips.tsx` | The three round dance floor clips by the attire line |
 | `website/components/disco/saveFlierCard.ts` | Draws and shares or downloads the PNG |
 | `website/components/disco/useInviteDevice.ts` | Mobile and orientation detection |
 | `website/components/disco/useMapsUrl.ts` | The address link for this device's maps app |

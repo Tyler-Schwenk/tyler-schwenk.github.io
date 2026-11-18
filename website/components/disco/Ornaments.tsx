@@ -136,7 +136,7 @@ const POSTER_STARS = [
   { leftPct: 52, topPct: 7, sizePx: 16, color: "var(--c3)", delayMs: 900 },
   { leftPct: 90, topPct: 33, sizePx: 20, color: "var(--ornament-teal)", delayMs: 400 },
   { leftPct: 4, topPct: 47, sizePx: 18, color: "var(--c3)", delayMs: 1500 },
-  { leftPct: 48, topPct: 58, sizePx: 24, color: "var(--ornament-lime)", delayMs: 700 },
+  { leftPct: 43, topPct: 57, sizePx: 24, color: "var(--ornament-lime)", delayMs: 700 },
   { leftPct: 88, topPct: 71, sizePx: 16, color: "var(--c1)", delayMs: 1200 },
   { leftPct: 62, topPct: 95, sizePx: 14, color: "var(--ornament-lime)", delayMs: 1800 },
 ];
@@ -194,24 +194,6 @@ export function PosterCircles() {
         />
       ))}
     </div>
-  );
-}
-
-/**
- * a pair of bell bottoms on platform shoes, dancing. stands in for the attire art
- * until there's a proper 70s dancer drawing.
- * @returns {JSX.Element} the svg.
- */
-export function BellBottoms() {
-  return (
-    <svg className={styles.bellBottoms} viewBox="0 0 60 100" aria-hidden="true">
-      <path
-        className={styles.bellBottomsPants}
-        d="M14 6 H46 L47 30 L44 58 L54 86 H33 L31 58 L30 36 L29 58 L27 86 H6 L16 58 L13 30 Z"
-      />
-      <path className={styles.bellBottomsBelt} d="M14 6 H46 V13 H14 Z" />
-      <path className={styles.bellBottomsShoes} d="M6 86 H27 V96 H4 Z M33 86 H54 L56 96 H33 Z" />
-    </svg>
   );
 }
 

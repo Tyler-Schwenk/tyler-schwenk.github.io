@@ -13,6 +13,16 @@ export const CLOUD_LOOP_MP4_SRC = `${MEDIA_DIR}/clouds-loop.mp4`;
 export const CLOUD_LOOP_POSTER_SRC = `${MEDIA_DIR}/clouds-poster.jpg`;
 
 /**
+ * the three archival disco floor clips shown in circles behind the attire line.
+ * cropped square (clear of the station logo), 360px, silent.
+ */
+export const ATTIRE_CLIPS = [1, 2, 3].map((n) => ({
+  webmSrc: `${MEDIA_DIR}/attire-${n}.webm`,
+  mp4Src: `${MEDIA_DIR}/attire-${n}.mp4`,
+  posterSrc: `${MEDIA_DIR}/attire-${n}.jpg`,
+}));
+
+/**
  * the moment in the invite video where the cloud drawing matches frame 0 of the
  * loop. swapping to the loop here is invisible. after this the video's clouds
  * fade to black, but its audio keeps going, so the video plays on underneath.

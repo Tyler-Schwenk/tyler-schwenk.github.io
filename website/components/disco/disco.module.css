@@ -422,7 +422,7 @@
 .attire {
   grid-area: attire;
   /* dropped down a bit so it doesn't line up with the featuring bubble */
-  margin-top: calc(6 * var(--u));
+  margin-top: calc(2 * var(--u));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -436,35 +436,52 @@
   color: var(--c1);
 }
 
-.bellBottoms {
-  width: calc(13 * var(--u));
+/* three round clips of a 70s dance floor, overlapping like the poster's circles */
+.attireClips {
+  position: relative;
+  width: calc(40 * var(--u));
+  height: calc(31 * var(--u));
   margin-bottom: calc(1.5 * var(--u));
-  overflow: visible;
-  transform-origin: 50% 10%;
-  animation: bellSway 1.2s ease-in-out infinite alternate;
 }
 
-@keyframes bellSway {
-  from { transform: rotate(-6deg); }
-  to { transform: rotate(6deg); }
+.attireClip {
+  position: absolute;
+  aspect-ratio: 1;
+  border: 2px solid var(--clip-ring, var(--c3));
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--sky-bottom);
+  /* a gap of sky then a ring, like the title's printed drop outline */
+  box-shadow: 0 0 0 3px var(--sky-top), 0 0 0 5px var(--clip-ring, var(--c3));
+  animation: clipBob 3.2s ease-in-out infinite;
 }
 
-.bellBottomsPants {
-  fill: var(--c2);
-  stroke: var(--c4);
-  stroke-width: 2;
-  stroke-linejoin: round;
+.attireClip:nth-child(1) {
+  --clip-ring: var(--ornament-lime);
+  left: 0;
+  top: calc(3 * var(--u));
+  width: calc(19 * var(--u));
 }
 
-.bellBottomsBelt {
-  fill: var(--ornament-lime);
+.attireClip:nth-child(2) {
+  --clip-ring: var(--c3);
+  right: 0;
+  top: 0;
+  width: calc(21 * var(--u));
+  animation-delay: -1.1s;
 }
 
-.bellBottomsShoes {
-  fill: var(--c3);
-  stroke: var(--c4);
-  stroke-width: 2;
-  stroke-linejoin: round;
+.attireClip:nth-child(3) {
+  --clip-ring: var(--ornament-teal);
+  left: calc(11 * var(--u));
+  top: calc(13 * var(--u));
+  width: calc(18 * var(--u));
+  animation-delay: -2.2s;
+}
+
+@keyframes clipBob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 calc(-1 * var(--u)); }
 }
 
 .facts {
@@ -846,7 +863,7 @@
   .flier,
   .rise,
   .speedStripes,
-  .bellBottoms,
+  .attireClip,
   .posterCircle,
   .posterStar,
   .scrollChevron {

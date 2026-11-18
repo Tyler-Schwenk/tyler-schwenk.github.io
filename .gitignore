@@ -5,9 +5,10 @@
 # copyrighted audio dropped here on its way to fart-pi, the repo is public
 input/*.mp3
 
-# source edit of the disco invite, too big for github (142 MB). the web cuts
-# made from it live in website/public/video/disco (see website/docs/DISCO_INVITE.md)
+# source edit of the disco invite (too big for github, 142 MB) and the raw
+# attire clips. the web cuts made from them live in website/public/video/disco (see website/docs/DISCO_INVITE.md)
 Disco December Invite*.mp4
+/attire[0-9].mp4
 
 # ============================================================
 # OPERATING SYSTEM FILES

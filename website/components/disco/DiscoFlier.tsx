@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
+import AttireClips from "./AttireClips";
 import { DISCO_ADDRESS, DISCO_DETAILS, DISCO_MORE_INFO } from "./constants";
 import DiscoText from "./DiscoText";
 import {
-  BellBottoms,
   BoxRow,
   DiamondRow,
   DiscoBall,
@@ -151,7 +151,7 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
           </section>
 
           <section className={`${styles.attire} ${styles.rise}`} style={riseDelay(ATTIRE_DELAY_MS)}>
-            <BellBottoms />
+            <AttireClips />
             <h2 className={styles.script}>Attire:</h2>
             <p className={styles.attireText}>{DISCO_DETAILS.attire}</p>
           </section>
