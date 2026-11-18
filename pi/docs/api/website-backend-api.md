@@ -77,6 +77,10 @@ Used only to protect admin-only endpoints (gallery/video/RSVP management, Public
 
 All authenticated endpoints require a JWT bearer token in the `Authorization` header.
 
+There are two kinds of token. The admin's has no `scope` claim and works everywhere. The kiln
+editor's (Jude's, from `POST /kiln/auth/login`) has `"scope": "kiln"`, and only works on the
+[Kiln Journal](#kiln-journal) endpoints. Admin-only endpoints answer a scoped token with 403.
+
 ### Register
 
 Create a new user account.
@@ -1056,6 +1060,107 @@ The newest raw readings as a list, oldest first, each with `recorded_at`, `therm
 
 - `since` (optional): only readings after this ISO 8601 time. Without a timezone it's taken as UTC
 - `limit` (optional): the most readings to return, 1 to 20000, default 1000
+
+## Kiln Journal
+
+Jude's notes and photos on firings, shown on the kiln page (see
+[`website/docs/KILN.md`](../../../website/docs/KILN.md#notes-and-photos)). Code:
+`app/routers/kiln_journal.py`.
+
+A note is general (`noted_at` null) or pinned to a moment in the firing. Notes and photos are
+each public or private, and start private. Reads are public and rate limited per IP: without a
+token they only return public items, and with a kiln editor or admin token they return
+everything. A missing, bad or expired token on a read just gets the public view.
+
+All times are ISO 8601. One sent without a timezone is taken as UTC. Responses are UTC.
+
+**Making a login**: run this on fart-pi. It asks for the password twice, so it never lands in shell
+history. Running it again for the same username resets the password. Usernames are lowercase.
+
+```bash
+docker exec -it website-backend-api python scripts/create_kiln_editor.py --username jude
+```
+
+### POST `/kiln/auth/login`
+
+Swaps a kiln editor's username and password for a 30-day token with the `kiln` scope. Same form
+and response as `POST /auth/login` (`username`, `password` as form fields). The username isn't
+case sensitive. **Rate limit:** 5 per minute per IP. 401 for a wrong username or password.
+
+### GET `/kiln/firings/{id}/notes`
+
+A firing's notes, general ones first, then pinned ones by time. 404 if there's no such firing.
+
+```json
+[
+  {
+    "id": 3,
+    "firing_id": 1,
+    "body": "Opened the vents",
+    "noted_at": "2026-11-03T04:30:00Z",
+    "is_public": true,
+    "created_at": "2026-11-03T04:31:12Z",
+    "updated_at": null
+  }
+]
+```
+
+### POST `/kiln/firings/{id}/notes`
+
+Adds a note. **Auth:** kiln editor or admin. 404 if there's no such firing.
+
+```json
+{ "body": "Opened the vents", "noted_at": "2026-11-02T20:30:00-08:00", "is_public": true }
+```
+
+- `body`: up to 5000 characters, trimmed, and can't be blank
+- `noted_at` (optional): the moment it's about. Leave it out or send null for a general note
+- `is_public` (optional): default false
+
+Answers 201 with the note.
+
+### PATCH `/kiln/notes/{note_id}`
+
+Changes a note. **Auth:** kiln editor or admin. Only the fields sent change. `noted_at: null`
+makes it general. `body` and `is_public` can't be null (422). 404 if there's no such note.
+
+### DELETE `/kiln/notes/{note_id}`
+
+Deletes a note. **Auth:** kiln editor or admin. 204, or 404 if there's no such note.
+
+### GET `/kiln/firings/{id}/photos`
+
+A firing's photos, oldest upload first. 404 if there's no such firing.
+
+```json
+[{ "id": 7, "firing_id": 1, "width": 3024, "height": 4032, "is_public": false, "created_at": "2026-11-04T18:02:41Z" }]
+```
+
+### POST `/kiln/firings/{id}/photos`
+
+Adds one photo, as multipart form data: `file` (the image) and `is_public` (optional, default
+false). **Auth:** kiln editor or admin. HEIC and EXIF-rotated photos are converted the same way
+gallery uploads are, and a 400x400 thumbnail is made. Stored under `KILN_PHOTOS_DIR`
+(`/mnt/ssd/kiln-photos`), in a `firing_<id>` folder.
+
+Answers 201 with the photo. 400 if the file isn't an image, 413 if it's over 40 MB, 404 if
+there's no such firing.
+
+### PATCH `/kiln/photos/{photo_id}`
+
+Makes a photo public or private: `{ "is_public": true }`. **Auth:** kiln editor or admin. 404 if
+there's no such photo.
+
+### DELETE `/kiln/photos/{photo_id}`
+
+Deletes a photo and its files. **Auth:** kiln editor or admin. 204, or 404 if there's no such photo.
+
+### GET `/kiln/photos/{photo_id}/file`
+
+The photo's image. **Query parameters:** `thumbnail` (optional), true for the thumbnail. A
+private photo needs a kiln editor or admin token, and answers 404 without one, the same as a
+photo that doesn't exist. Private photos are sent with `Cache-Control: private, no-store`, so
+Cloudflare never keeps a copy.
 
 ---
 

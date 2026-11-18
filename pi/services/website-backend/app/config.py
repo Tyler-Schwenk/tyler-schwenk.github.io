@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     # Recipe Photo Storage
     RECIPE_PHOTOS_DIR: str = "/app/recipe_photos"
 
+    # Photos Jude adds to kiln firings, a folder per firing (see website/docs/KILN.md)
+    KILN_PHOTOS_DIR: str = "/app/kiln_photos"
+
     # Entrance song: its mp3 and rendered wav (see pi/docs/services/entrance-song.md)
     ENTRANCE_DIR: str = "/app/entrance"
 

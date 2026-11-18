@@ -67,6 +67,21 @@ def utc_now_naive() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def utc_naive(moment: datetime) -> datetime:
+    """
+    Converts a datetime to the naive UTC form the kiln tables store.
+
+    Args:
+        moment: Any datetime. Naive ones are taken to already be UTC.
+
+    Returns:
+        datetime: The same moment, naive, in UTC.
+    """
+    if moment.tzinfo is None:
+        return moment
+    return moment.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def _open_firing(db: Session, recorded_at: datetime) -> KilnFiring:
     """
     Starts a firing, including any hot readings just before this one.

@@ -106,12 +106,13 @@ architecture.
   - Private: http://192.168.1.116:8000 (home LAN) or http://localhost:8000 (on Pi)
   - Public: https://api.tyler-schwenk.com
 - Port: 8000
-- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos, kiln_readings, kiln_firings, fly_kills, dj_sets
+- Database: website_backend.db with tables for users, galleries, gallery_photos, videos, posts, comments, post_votes, comment_votes, event_rsvps, recipes, tags, recipe_tags, recipe_photos, kiln_readings, kiln_firings, kiln_editors, kiln_notes, kiln_photos, fly_kills, dj_sets
 - Connection pool: 5 kept open, no cap on extras (`app/database.py`). A request waiting for a connection deadlocks the server, since the wait blocks whatever would return one; a capped pool froze it when the display kiosk's screens refreshed every gallery at once
 - Storage:
   - Photos: /mnt/ssd/public-gallery
   - Videos: /mnt/ssd/videos
   - Recipe photos: /mnt/ssd/recipe-photos
+  - Kiln photos: /mnt/ssd/kiln-photos
 - Dependencies: ffmpeg for video processing
 
 **Beszel Monitoring**
@@ -196,10 +197,11 @@ Directories:
 ├── videos/             # Website videos, named by slug
 │   └── thumbnails/     # Video poster frames, named by slug
 ├── recipe-photos/      # The Kitchen photos
+├── kiln-photos/        # Photos Jude adds to kiln firings, a folder per firing
 └── dj-sets/            # Recorded DJ sets (mp3), named by start time
 ```
 
-Containers mount these as `/app/photos`, `/app/videos`, and `/app/recipe_photos`. The database stores the container paths, so moving the host directory doesn't change any rows.
+Containers mount these as `/app/photos`, `/app/videos`, `/app/recipe_photos`, and `/app/kiln_photos`. The database stores the container paths, so moving the host directory doesn't change any rows.
 
 ## Website Architecture (tyler-schwenk.github.io)
 

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { API_BASE } from "./api";
 
 const MS_PER_S = 1000;
+/** the backend's rate limiter answers with this, and no `detail` to show. */
+const TOO_MANY_REQUESTS_STATUS = 429;
 
 /**
  * Checks whether a JWT's `exp` claim has passed. Only reads the
@@ -28,21 +30,27 @@ export interface AdminAuth {
   isAdmin: boolean;
   /** False until the stored token has been read, so pages don't flash a login form at a logged-in admin. */
   ready: boolean;
-  login: (email: string, password: string) => Promise<string | null>;
+  login: (username: string, password: string) => Promise<string | null>;
   logout: () => void;
 }
 
+/** the admin login (pi/services/website-backend/app/routers/auth.py). */
+const ADMIN_LOGIN_PATH = "/auth/login";
+
 /**
- * Tracks the admin JWT (see pi/services/website-backend/app/routers/auth.py)
- * in localStorage, so admin controls survive a reload and work from a phone.
- * Each page that uses it passes its own storage key, so logging into one
- * doesn't log you into another. An already-expired stored token is discarded
- * on mount so the login shows again instead of dead admin controls.
+ * Tracks a login's JWT in localStorage, so admin controls survive a reload and
+ * work from a phone. Each page that uses it passes its own storage key, so
+ * logging into one doesn't log you into another. An already-expired stored
+ * token is discarded on mount so the login shows again instead of dead admin
+ * controls.
  *
  * @param {string} storageKey - localStorage key to keep the token under.
+ * @param {string} [loginPath] - backend endpoint that swaps a username and
+ *   password for a token. Defaults to the admin login; the kiln page passes
+ *   its own, for the kiln editor login.
  * @returns {AdminAuth} Current token/admin state plus login and logout actions.
  */
-export function useAdminAuth(storageKey: string): AdminAuth {
+export function useAdminAuth(storageKey: string, loginPath: string = ADMIN_LOGIN_PATH): AdminAuth {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -63,16 +71,16 @@ export function useAdminAuth(storageKey: string): AdminAuth {
   /**
    * Logs in against the backend and stores the returned JWT.
    *
-   * @param {string} email - Admin email.
-   * @param {string} password - Admin password.
+   * @param {string} username - Admin email, or the username for logins that use one.
+   * @param {string} password - The password.
    * @returns {Promise<string | null>} An error message, or null on success.
    */
   const login = useCallback(
-    async (email: string, password: string) => {
-      const body = new URLSearchParams({ username: email, password });
+    async (username: string, password: string) => {
+      const body = new URLSearchParams({ username, password });
       let res: Response;
       try {
-        res = await fetch(`${API_BASE}/auth/login`, {
+        res = await fetch(`${API_BASE}${loginPath}`, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body,
@@ -81,9 +89,12 @@ export function useAdminAuth(storageKey: string): AdminAuth {
         return `couldn't reach ${API_BASE} - check your connection, or whether the Pi is up (${API_BASE}/health)`;
       }
 
+      if (res.status === TOO_MANY_REQUESTS_STATUS) {
+        return "too many login tries - wait a minute and try again";
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        return typeof data.detail === "string" ? data.detail : "login failed - check your email and password";
+        return typeof data.detail === "string" ? data.detail : "login failed - check your username and password";
       }
 
       const data = await res.json();
@@ -91,7 +102,7 @@ export function useAdminAuth(storageKey: string): AdminAuth {
       setToken(data.access_token);
       return null;
     },
-    [storageKey]
+    [storageKey, loginPath]
   );
 
   /** Clears the stored admin token, hiding admin controls again. */

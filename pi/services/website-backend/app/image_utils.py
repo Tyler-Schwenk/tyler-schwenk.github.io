@@ -1,14 +1,15 @@
 """
 Shared image processing helpers for photo uploads and serving.
 
-Used by any router that handles user-uploaded photos (galleries, recipes) so
-decoding/normalization/thumbnailing logic lives in exactly one place.
+Used by any router that handles user-uploaded photos (galleries, recipes, kiln
+firings) so decoding/normalization/thumbnailing logic lives in exactly one place.
 """
 
 import io
 import logging
 import shutil
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -17,7 +18,7 @@ from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 
 from app.config import settings
-from app.models import GalleryPhoto, RecipePhoto
+from app.models import GalleryPhoto, KilnPhoto, RecipePhoto
 
 # lets Pillow decode HEIC/HEIF (default format for iPhone camera photos)
 register_heif_opener()
@@ -146,7 +147,87 @@ def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[byte
     return file_content, width, height, ext, f"image/{img_format.lower()}"
 
 
-def fix_legacy_orientation(photo: GalleryPhoto | RecipePhoto, photos_base: Path) -> bool:
+@dataclass
+class StoredPhoto:
+    """
+    A photo saved to disk by store_photo. Field names match the photo models' columns,
+    so it can be splatted straight into one with dataclasses.asdict.
+
+    Attributes:
+        file_path: The image, relative to the photos directory it was saved under.
+        thumbnail_path: Its thumbnail, relative the same way. None if making one failed.
+        width: Width in pixels.
+        height: Height in pixels.
+        file_size: Size of the saved image in bytes.
+        mime_type: Its content type, like image/jpeg.
+    """
+    file_path: str
+    thumbnail_path: Optional[str]
+    width: int
+    height: int
+    file_size: int
+    mime_type: str
+
+
+def store_photo(photos_base: Path, subdir: str, file_content: bytes, filename: str) -> StoredPhoto:
+    """
+    Normalizes an uploaded photo, saves it under a unique name, and makes its thumbnail.
+
+    Args:
+        photos_base: The photos directory, like settings.RECIPE_PHOTOS_DIR.
+        subdir: Folder under it for this photo, like "recipe_3". Its thumbnail goes in
+            a "thumbnails" folder inside that.
+        file_content: Raw uploaded file bytes.
+        filename: Original filename from the upload.
+
+    Returns:
+        StoredPhoto: Where it went and what it is. The caller makes the database row.
+
+    Raises:
+        HTTPException: 400 if the bytes aren't a decodable image. Nothing's saved then.
+    """
+    file_content, width, height, file_ext, mime_type = decode_and_normalize_image(file_content, filename)
+
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    photo_dir = photos_base / subdir
+    file_path = photo_dir / unique_filename
+    thumbnail_path: Optional[Path] = photo_dir / "thumbnails" / unique_filename
+
+    photo_dir.mkdir(parents=True, exist_ok=True)
+    file_path.write_bytes(file_content)
+
+    try:
+        create_thumbnail(file_path, thumbnail_path)
+    except Exception as e:
+        # pages fall back to the full image when thumbnail_path is None
+        logger.warning(f"thumbnail generation failed for {file_path.name}: {e}")
+        thumbnail_path = None
+
+    return StoredPhoto(
+        file_path=str(file_path.relative_to(photos_base)),
+        thumbnail_path=str(thumbnail_path.relative_to(photos_base)) if thumbnail_path else None,
+        width=width,
+        height=height,
+        file_size=len(file_content),
+        mime_type=mime_type,
+    )
+
+
+def delete_photo_files(photos_base: Path, file_path: str, thumbnail_path: Optional[str]) -> None:
+    """
+    Removes a photo's image and thumbnail from disk, skipping any that are already gone.
+
+    Args:
+        photos_base: The photos directory the paths are relative to.
+        file_path: The image's relative path.
+        thumbnail_path: The thumbnail's relative path, or None if it has none.
+    """
+    (photos_base / file_path).unlink(missing_ok=True)
+    if thumbnail_path:
+        (photos_base / thumbnail_path).unlink(missing_ok=True)
+
+
+def fix_legacy_orientation(photo: GalleryPhoto | RecipePhoto | KilnPhoto, photos_base: Path) -> bool:
     """
     Straighten a photo uploaded before rotation was baked in at upload time.
 

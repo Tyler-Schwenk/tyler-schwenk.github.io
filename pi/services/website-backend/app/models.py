@@ -2,8 +2,8 @@
 SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
-galleries, photos, recipes, kiln readings, the house fly kill count, and
-recorded dj sets.
+galleries, photos, recipes, kiln readings, firings and their notes and photos,
+the house fly kill count, and recorded dj sets.
 """
 
 from sqlalchemy import Boolean, Column, Float, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
@@ -453,6 +453,86 @@ class KilnFiring(Base):
     last_reading_at = Column(DateTime, nullable=False)
     peak_c = Column(Float, nullable=False)
     peak_at = Column(DateTime, nullable=False)
+
+
+class KilnEditor(Base):
+    """
+    KilnEditor model: a login that can only write kiln notes and photos (Jude's).
+
+    Kept out of the users table so a kiln login can never be mistaken for the admin
+    account. These logins get tokens with the "kiln" scope, which require_admin turns
+    away (see app/dependencies.py). Created with scripts/create_kiln_editor.py.
+
+    Attributes:
+        id: Unique identifier
+        username: What they log in with
+        hashed_password: bcrypt hash, never the password itself
+        created_at: When the login was made
+    """
+    __tablename__ = "kiln_editors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class KilnNote(Base):
+    """
+    KilnNote model: a note on a firing, either about the whole firing or pinned to a moment.
+
+    Attributes:
+        id: Unique identifier
+        firing_id: The firing it's about
+        body: The note's text
+        noted_at: The moment in the firing it's pinned to, naive UTC. Null for a general note
+        is_public: Whether people who aren't logged in can see it
+        created_at: When it was written
+        updated_at: When it was last changed
+    """
+    __tablename__ = "kiln_notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    firing_id = Column(Integer, ForeignKey("kiln_firings.id"), nullable=False, index=True)
+    body = Column(Text, nullable=False)
+    noted_at = Column(DateTime, nullable=True)
+    is_public = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class KilnPhoto(Base):
+    """
+    KilnPhoto model: a photo of what came out of a firing.
+
+    Files live under settings.KILN_PHOTOS_DIR, in a folder per firing.
+
+    Attributes:
+        id: Unique identifier
+        firing_id: The firing it's from
+        filename: The uploaded file's original name
+        file_path: Path to the image, relative to KILN_PHOTOS_DIR
+        thumbnail_path: Path to its thumbnail, null if making one failed
+        width: Width in pixels
+        height: Height in pixels
+        file_size: Size in bytes
+        mime_type: Its content type, like image/jpeg
+        is_public: Whether people who aren't logged in can see it
+        created_at: When it was uploaded
+    """
+    __tablename__ = "kiln_photos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    firing_id = Column(Integer, ForeignKey("kiln_firings.id"), nullable=False, index=True)
+    filename = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    thumbnail_path = Column(String(500), nullable=True)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    file_size = Column(Integer, nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    is_public = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class FlyKill(Base):

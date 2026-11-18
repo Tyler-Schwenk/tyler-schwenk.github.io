@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   fetchKilnCurve,
   fetchKilnFirings,
@@ -22,12 +22,19 @@ import {
   formatTemp,
   NO_VALUE,
 } from "@/app/kiln/kilnFormat";
+import { KILN_LOGIN_PATH, KILN_TOKEN_KEY } from "@/app/kiln/kilnJournalApi";
 import Navigation from "@/components/Navigation";
+import { useAdminAuth } from "@/lib/useAdminAuth";
+import { usePolling } from "@/lib/usePolling";
 import CompareFirings, { useComparedFirings } from "./CompareFirings";
 import FiringCard from "./FiringCard";
+import FiringNotes, { numberPinnedNotes } from "./FiringNotes";
+import FiringPhotos from "./FiringPhotos";
 import KilnCalculator from "./KilnCalculator";
+import KilnEditorLogin from "./KilnEditorLogin";
 import ReadingsTable from "./ReadingsTable";
 import TemperatureChart from "./TemperatureChart";
+import { useFiringJournal } from "./useFiringJournal";
 
 /** matches the logger's 5 s readings, with a little slack. */
 const STATUS_POLL_MS = 10_000;
@@ -39,25 +46,6 @@ const FAULT_OPEN_CIRCUIT = 0x01;
 const KILN_ART_WIDTH_PX = 672;
 const KILN_ART_HEIGHT_PX = 979;
 const JUDE_INSTAGRAM_URL = "https://www.instagram.com/judecastilloceramics/";
-
-/**
- * runs something now and on an interval, skipping ticks while the tab's hidden.
- *
- * @param {() => void} task - what to run.
- * @param {number} intervalMs - how often.
- * @param {unknown} key - restarts the schedule when it changes.
- */
-function usePolling(task: () => void, intervalMs: number, key: unknown): void {
-  useEffect(() => {
-    task();
-    const timer = setInterval(() => {
-      if (!document.hidden) task();
-    }, intervalMs);
-    return () => clearInterval(timer);
-    // the task closes over nothing that changes without `key` changing
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intervalMs, key]);
-}
 
 /**
  * one number in the row under the title.
@@ -237,6 +225,19 @@ export default function KilnConsole() {
   );
   const mainLabel = isLiveView || !shownFiring ? "This firing" : formatShortDate(shownFiring.started_at);
 
+  const auth = useAdminAuth(KILN_TOKEN_KEY, KILN_LOGIN_PATH);
+  const journal = useFiringJournal(shownCurve ? shownCurve.firing.id : null, auth.token);
+  const markers = useMemo(() => {
+    const numbers = numberPinnedNotes(journal.notes);
+    return journal.notes
+      .filter((note) => note.noted_at !== null)
+      .map((note) => ({
+        key: note.id,
+        timeMs: new Date(note.noted_at as string).getTime(),
+        label: String(numbers.get(note.id)),
+      }));
+  }, [journal.notes]);
+
   // from the first reading to the hottest. while it's live and still rising, the peak isn't final
   const startTempC = shownCurve?.points.find((point) => point.thermocouple_c !== null)?.thermocouple_c ?? null;
   const stillClimbing = isLiveView && (status?.rise_30m_c_per_h ?? 0) > 0;
@@ -319,6 +320,7 @@ export default function KilnConsole() {
                 bucketS={shownCurve.bucket_s}
                 label={mainLabel}
                 comparisons={comparisons}
+                markers={markers}
               />
               <ReadingsTable points={shownCurve.points} bucketS={shownCurve.bucket_s} firingId={shownCurve.firing.id} />
             </>
@@ -343,6 +345,27 @@ export default function KilnConsole() {
           />
         )}
 
+        {shownCurve && (
+          <>
+            <FiringNotes
+              firingId={shownCurve.firing.id}
+              notes={journal.notes}
+              points={shownCurve.points}
+              bucketS={shownCurve.bucket_s}
+              token={auth.token}
+              onChanged={journal.reload}
+              onAuthExpired={auth.logout}
+            />
+            <FiringPhotos
+              firingId={shownCurve.firing.id}
+              photos={journal.photos}
+              token={auth.token}
+              onChanged={journal.reload}
+              onAuthExpired={auth.logout}
+            />
+          </>
+        )}
+
         <section className="kiln-section" aria-label="Past firings">
           <div className="kiln-grid-header">
             <h2 className="kiln-section-title">Past firings</h2>
@@ -360,6 +383,8 @@ export default function KilnConsole() {
             </div>
           )}
         </section>
+
+        <KilnEditorLogin auth={auth} />
       </main>
     </div>
   );

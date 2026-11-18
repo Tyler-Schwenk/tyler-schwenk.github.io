@@ -27,6 +27,7 @@ const TOOLTIP_WIDTH_PX = 170;
 const TOOLTIP_COMPARE_WIDTH_PX = 250;
 const TOOLTIP_OFFSET_PX = 14;
 const END_DOT_RADIUS_PX = 4;
+const MARKER_RADIUS_PX = 9;
 const NICE_STEP_MULTIPLES = [1, 2, 2.5, 5, 10];
 
 const MINUTE_MS = 60_000;
@@ -50,6 +51,9 @@ const MAIN_SERIES_ID = 0;
 
 /** another firing drawn over the main one. slot picks its color. */
 export type ComparisonSeries = { id: number; label: string; slot: number; points: KilnCurvePoint[]; bucketS: number };
+
+/** a pinned note's spot on the chart, drawn as a numbered flag. */
+export type ChartMarker = { key: number; timeMs: number; label: string };
 
 /** a line ready to draw. slot's null for the main firing. */
 type Series = { key: string; label: string; slot: number | null; points: ChartPoint[]; runs: ChartPoint[][]; jumpMs: number };
@@ -188,6 +192,8 @@ function TooltipRow({ row }: { row: HoverRow }) {
  * @param {number} props.bucketS - how much time each main point covers.
  * @param {string} props.label - what the legend calls the main firing.
  * @param {ComparisonSeries[]} [props.comparisons] - other firings to draw over it.
+ * @param {ChartMarker[]} [props.markers] - pinned notes to flag. only drawn on clock time,
+ *   since they belong to the main firing, and only the ones inside the curve's time range.
  * @returns {JSX.Element} the chart.
  */
 export default function TemperatureChart({
@@ -195,11 +201,13 @@ export default function TemperatureChart({
   bucketS,
   label,
   comparisons = [],
+  markers = [],
 }: {
   points: KilnCurvePoint[];
   bucketS: number;
   label: string;
   comparisons?: ComparisonSeries[];
+  markers?: ChartMarker[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [widthPx, setWidthPx] = useState(0);
@@ -242,6 +250,7 @@ export default function TemperatureChart({
   const toPath = (run: ChartPoint[]) =>
     run.map((p, i) => `${i ? "L" : "M"}${xFor(p.timeMs).toFixed(1)} ${yFor(p.value as number).toFixed(1)}`).join("");
   const baselineY = MARGIN_TOP_PX + plotHeightPx;
+  const shownMarkers = elapsed ? [] : markers.filter((marker) => marker.timeMs >= startMs && marker.timeMs <= endMs);
   const lastKnown = known[known.length - 1];
   // alone, the crosshair snaps to the nearest reading. comparing, it sits where the pointer is,
   // since firings have readings at different times and can run past the main one's end
@@ -277,7 +286,9 @@ export default function TemperatureChart({
 
   const ariaLabel = elapsed
     ? `Kiln temperature by time since the start, for ${allSeries.map((series) => series.label).join(", ")}. Hover for each one's readings.`
-    : `Kiln temperature over time, ending at ${formatTemp(lastKnown?.tempC ?? null)}. The same data is in the table below.`;
+    : `Kiln temperature over time, ending at ${formatTemp(lastKnown?.tempC ?? null)}. The same data is in the table below.${
+        shownMarkers.length > 0 ? " Numbered flags mark the notes listed under the chart." : ""
+      }`;
 
   return (
     <>
@@ -336,6 +347,15 @@ export default function TemperatureChart({
               r={END_DOT_RADIUS_PX}
               className={`kiln-dot ${seriesClass(null)}`}
             />
+            {shownMarkers.map((marker) => (
+              <g key={marker.key} className="kiln-marker">
+                <line x1={xFor(marker.timeMs)} x2={xFor(marker.timeMs)} y1={MARGIN_TOP_PX} y2={baselineY} />
+                <circle cx={xFor(marker.timeMs)} cy={MARGIN_TOP_PX + MARKER_RADIUS_PX} r={MARKER_RADIUS_PX} />
+                <text x={xFor(marker.timeMs)} y={MARGIN_TOP_PX + MARKER_RADIUS_PX} dy="0.35em" textAnchor="middle">
+                  {marker.label}
+                </text>
+              </g>
+            ))}
             {hoverMs !== null && (
               <line x1={hoverX} x2={hoverX} y1={MARGIN_TOP_PX} y2={baselineY} className="kiln-crosshair" />
             )}

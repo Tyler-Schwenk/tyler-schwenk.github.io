@@ -62,7 +62,7 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/RsvpsTab.tsx` | RSVPs |
 | `website/app/admin/PublicSquareTab.tsx` | Public Square moderation |
 | `website/app/admin/DjSetsTab.tsx` | DJ sets: rename, play, delete. Types and urls come from `website/app/opium-den/djApi.ts` |
-| `website/lib/useAdminAuth.ts` | The JWT in localStorage, shared with The Kitchen (each page passes its own storage key) |
+| `website/lib/useAdminAuth.ts` | The JWT in localStorage, shared with The Kitchen and the kiln page (each page passes its own storage key; the kiln page also passes its own login endpoint) |
 
 ### Auth
 

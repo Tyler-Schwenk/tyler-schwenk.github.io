@@ -12,7 +12,7 @@ See pi/docs/services/kiln-logger.md.
 
 import hmac
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.dependencies import require_admin
-from app.kiln_firings import close_idle_firings, get_curve, get_status, track_firings, utc_now_naive
+from app.kiln_firings import close_idle_firings, get_curve, get_status, track_firings, utc_naive, utc_now_naive
 from app.models import KilnFiring, KilnReading
 from app.rate_limit import limiter
 from app.schemas import (
@@ -70,21 +70,6 @@ def require_kiln_token(x_kiln_token: str = Header(default="")) -> None:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="wrong kiln token -- it must match KILN_TOKEN in the backend's .env",
         )
-
-
-def utc_naive(moment: datetime) -> datetime:
-    """
-    Converts a datetime to the naive UTC form the kiln tables store.
-
-    Args:
-        moment: Any datetime. Naive ones are taken to already be UTC.
-
-    Returns:
-        datetime: The same moment, naive, in UTC.
-    """
-    if moment.tzinfo is None:
-        return moment
-    return moment.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 @router.post("/readings", response_model=KilnBatchResult, dependencies=[Depends(require_kiln_token)])

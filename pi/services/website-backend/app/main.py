@@ -3,10 +3,10 @@ Website Backend API - Main application entry point.
 
 Backend API providing forum (Public Square), photo gallery, and recipe box
 (The Kitchen) services, plus the relay that lets the admin page remote
-control the display kiosk, the kiln logger's readings and firings, the
-entrance song on the big speakers, who's home, the house fly kill count,
-each house machine's storage and memory for the monitor page, and the live
-dj stream with its recorded sets.
+control the display kiosk, the kiln logger's readings and firings with
+Jude's notes and photos on them, the entrance song on the big speakers,
+who's home, the house fly kill count, each house machine's storage and
+memory for the monitor page, and the live dj stream with its recorded sets.
 """
 
 import asyncio
@@ -23,7 +23,7 @@ from app.config import settings
 from app.database import init_db
 from app.rate_limit import limiter
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, entrance, presence, fly_kills, dj, monitor
+from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, kiln_journal, entrance, presence, fly_kills, dj, monitor
 
 
 @asynccontextmanager
@@ -108,6 +108,7 @@ app.include_router(recipes.router)
 app.include_router(mallard.router)
 app.include_router(display_control.router)
 app.include_router(kiln.router)
+app.include_router(kiln_journal.router)
 app.include_router(entrance.router)
 app.include_router(presence.router)
 app.include_router(fly_kills.router)

@@ -758,6 +758,139 @@ body {
 }
 .kiln-card-tile svg { display: block; width: 100%; height: 100%; }
 .kiln-card-line { fill: none; stroke: var(--kiln-clay); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+/* jude's notes and photos on a firing, and his login */
+.kiln-marker line { stroke: var(--kiln-ink); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.45; }
+.kiln-marker circle { fill: var(--kiln-ink); }
+.kiln-marker text { fill: var(--kiln-surface); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kiln-input {
+  padding: 8px 12px;
+  border: 1px solid var(--kiln-hairline);
+  border-radius: 8px;
+  background: var(--kiln-surface);
+  color: var(--kiln-ink);
+  /* 16px keeps ios from zooming in on focus */
+  font: inherit;
+  font-size: 16px;
+}
+.kiln-input:focus { outline: 2px solid var(--kiln-ink); outline-offset: 1px; }
+.kiln-input-time { min-height: 34px; padding: 4px 10px; }
+.kiln-button {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: var(--kiln-ink);
+  color: var(--kiln-surface);
+  font-size: 15px;
+  cursor: pointer;
+}
+.kiln-button:disabled { opacity: 0.4; cursor: not-allowed; }
+.kiln-link-button, .kiln-journal-actions button {
+  color: var(--kiln-ink);
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.kiln-journal-actions button:disabled { color: var(--kiln-ink-muted); cursor: wait; }
+.kiln-journal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 10px; }
+.kiln-journal-actions .kiln-table-tag { margin-left: 0; }
+.kiln-journal-error { margin-top: 8px; font-size: 15px; color: var(--kiln-fault); }
+.kiln-note-form, .kiln-photo-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 720px;
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: var(--kiln-radius);
+  background: var(--kiln-control);
+}
+.kiln-note-form textarea { width: 100%; resize: vertical; line-height: 1.5; }
+.kiln-note-form-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.kiln-note-form-label { min-width: 96px; font-size: 15px; color: var(--kiln-ink-muted); }
+.kiln-note-form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.kiln-photo-upload input[type="file"] { max-width: 100%; font-size: 15px; }
+.kiln-notes { max-width: 720px; margin-top: 18px; }
+.kiln-note { padding: 16px 0; border-bottom: 1px solid var(--kiln-hairline); }
+.kiln-note:last-child { border-bottom: 0; }
+.kiln-note .kiln-note-form { margin-top: 0; }
+.kiln-note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 14px;
+  color: var(--kiln-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.kiln-note-meta .kiln-table-tag { margin-left: 0; }
+.kiln-note-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--kiln-ink);
+  color: var(--kiln-surface);
+  font-size: 11px;
+  font-weight: 600;
+}
+.kiln-note-body { margin-top: 6px; font-size: 16px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.kiln-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 44%), 1fr));
+  gap: 24px 16px;
+  margin-top: 24px;
+}
+.kiln-photo-open { display: block; width: 100%; cursor: zoom-in; }
+.kiln-photo-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--kiln-radius);
+  background: var(--kiln-control);
+}
+.kiln-viewer {
+  position: fixed;
+  inset: 0;
+  /* above the floating home button (z-[9999] in Navigation) */
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px 16px;
+  background: rgb(0 0 0 / 0.85);
+  cursor: zoom-out;
+}
+.kiln-viewer-image { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+.kiln-viewer-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  min-height: 40px;
+  padding: 0 14px;
+  color: #ffffff;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.kiln-login {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: clamp(48px, 6vw, 88px);
+  padding-top: 20px;
+  border-top: 1px solid var(--kiln-hairline);
+  font-size: 15px;
+  color: var(--kiln-ink-muted);
+}
+.kiln-login .kiln-link-button { color: var(--kiln-ink-muted); }
+.kiln-login-form .kiln-input { width: min(220px, 100%); }
+.kiln-login-form .kiln-journal-error { flex-basis: 100%; margin-top: 0; }
 .kiln-card-text { padding: 18px 16px 0; font-size: 17px; line-height: 1.55; }
 .kiln-card:hover .kiln-card-text { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 640px) {

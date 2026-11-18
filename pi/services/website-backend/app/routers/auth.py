@@ -1,10 +1,12 @@
 """Auth router — handles login and returns a JWT.
 
 Single-user admin auth. No registration endpoint — use scripts/create_admin.py
-to create your account. Token lasts 30 days.
+to create your account. Token lasts 30 days. The kiln editor has its own login
+(app/routers/kiln_journal.py) that reuses the helpers here.
 """
 
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -19,17 +21,28 @@ from app.models import User
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-def _verify_password(plain: str, hashed: str) -> bool:
-    """Check a plain-text password against its bcrypt hash."""
+def verify_password(plain: str, hashed: str) -> bool:
+    """
+    Check a plain-text password against its bcrypt hash.
+
+    Args:
+        plain: The password as typed.
+        hashed: The stored bcrypt hash.
+
+    Returns:
+        True if they match.
+    """
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def _create_access_token(email: str) -> str:
+def create_access_token(subject: str, scope: Optional[str] = None) -> str:
     """
-    Create a signed JWT for the given email.
+    Create a signed JWT for a login.
 
     Args:
-        email: User email to embed in the token subject.
+        subject: Who it's for, embedded as the `sub` claim.
+        scope: Limits what the token can do (see app/dependencies.py). None for the
+            admin, whose tokens can do everything.
 
     Returns:
         Signed JWT string valid for JWT_EXPIRATION_MINUTES.
@@ -37,7 +50,9 @@ def _create_access_token(email: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.JWT_EXPIRATION_MINUTES
     )
-    payload = {"sub": email, "exp": expire}
+    payload = {"sub": subject, "exp": expire}
+    if scope is not None:
+        payload["scope"] = scope
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -64,7 +79,7 @@ def login(
     user = db.query(User).filter(User.email == form_data.username).first()
 
     # deliberately vague — don't leak whether the email exists
-    if not user or not _verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="incorrect email or password",
@@ -77,5 +92,5 @@ def login(
             detail="account is disabled",
         )
 
-    token = _create_access_token(user.email)
+    token = create_access_token(user.email)
     return {"access_token": token, "token_type": "bearer"}

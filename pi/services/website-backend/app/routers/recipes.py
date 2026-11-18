@@ -7,8 +7,7 @@ Square and RSVP. Editing and deleting a recipe requires admin auth (JWT),
 same as gallery photo management.
 """
 
-import logging
-import uuid
+from dataclasses import asdict
 from pathlib import Path
 from typing import List, Optional
 
@@ -20,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.dependencies import require_admin
-from app.image_utils import create_thumbnail, decode_and_normalize_image, fix_legacy_orientation
+from app.image_utils import delete_photo_files, fix_legacy_orientation, store_photo
 from app.models import Recipe, RecipePhoto, Tag
 from app.rate_limit import limiter
 from app.schemas import (
@@ -33,8 +32,6 @@ from app.schemas import (
     TagWithCount,
     normalize_recipe_link,
 )
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
@@ -129,36 +126,8 @@ def _save_recipe_photo(recipe_id: int, file_content: bytes, filename: str) -> Re
     Returns:
         An unsaved RecipePhoto instance (caller adds/commits it).
     """
-    file_content, width, height, file_ext, mime_type = decode_and_normalize_image(file_content, filename)
-    file_size = len(file_content)
-
-    unique_filename = f"{uuid.uuid4()}{file_ext}"
-    photos_base = Path(settings.RECIPE_PHOTOS_DIR)
-    recipe_dir = photos_base / f"recipe_{recipe_id}"
-    file_path = recipe_dir / unique_filename
-    thumbnail_path = recipe_dir / "thumbnails" / unique_filename
-
-    recipe_dir.mkdir(parents=True, exist_ok=True)
-    with file_path.open("wb") as f:
-        f.write(file_content)
-
-    try:
-        create_thumbnail(file_path, thumbnail_path)
-    except Exception as e:
-        # recipe grid falls back to the full image when thumbnail_path is None
-        logger.warning(f"thumbnail generation failed for {file_path.name}: {e}")
-        thumbnail_path = None
-
-    return RecipePhoto(
-        recipe_id=recipe_id,
-        filename=filename,
-        file_path=str(file_path.relative_to(photos_base)),
-        thumbnail_path=str(thumbnail_path.relative_to(photos_base)) if thumbnail_path else None,
-        width=width,
-        height=height,
-        file_size=file_size,
-        mime_type=mime_type,
-    )
+    stored = store_photo(Path(settings.RECIPE_PHOTOS_DIR), f"recipe_{recipe_id}", file_content, filename)
+    return RecipePhoto(recipe_id=recipe_id, filename=filename, **asdict(stored))
 
 
 @router.get("", response_model=List[RecipeRead])
@@ -376,7 +345,7 @@ async def delete_recipe(
 
     photos_base = Path(settings.RECIPE_PHOTOS_DIR)
     for photo in recipe.photos:
-        _delete_photo_files(photos_base, photo)
+        delete_photo_files(photos_base, photo.file_path, photo.thumbnail_path)
 
     db.delete(recipe)
     db.commit()
@@ -457,7 +426,7 @@ async def delete_recipe_photo(
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    _delete_photo_files(Path(settings.RECIPE_PHOTOS_DIR), photo)
+    delete_photo_files(Path(settings.RECIPE_PHOTOS_DIR), photo.file_path, photo.thumbnail_path)
     db.delete(photo)
     db.commit()
 
@@ -507,23 +476,6 @@ async def set_recipe_thumbnail(
 
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     return recipe
-
-
-def _delete_photo_files(photos_base: Path, photo: RecipePhoto) -> None:
-    """
-    Remove a recipe photo's original and thumbnail files from disk, if present.
-
-    Args:
-        photos_base: Root recipe photos directory (settings.RECIPE_PHOTOS_DIR).
-        photo: The photo row whose files should be removed.
-    """
-    file_path = photos_base / photo.file_path
-    if file_path.exists():
-        file_path.unlink()
-    if photo.thumbnail_path:
-        thumb_path = photos_base / photo.thumbnail_path
-        if thumb_path.exists():
-            thumb_path.unlink()
 
 
 @router.get("/photos/{photo_id}/file")

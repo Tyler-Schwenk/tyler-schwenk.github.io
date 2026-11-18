@@ -1,7 +1,7 @@
 # Kiln Page
 
 `/kiln` is the public console for the kiln: current temperature, rate of rise, the current
-firing's curve, and every past firing. The home page links to it with the kiln sprite. The
+firing's curve, every past firing, and Jude's notes and photos on each firing. The home page links to it with the kiln sprite. The
 sprite and the art on this page both show flames and smoke while a firing's in progress, and a cold
 kiln otherwise.
 
@@ -15,6 +15,7 @@ side, and [the API docs](../../pi/docs/api/website-backend-api.md#kiln) for the 
 |---|---|
 | `app/kiln/page.tsx` | Route and metadata. Wraps the console in the Suspense boundary `useSearchParams` needs |
 | `app/kiln/kilnApi.ts` | Types and fetchers for the public `/kiln` endpoints |
+| `app/kiln/kilnJournalApi.ts` | Types, fetchers and writes for notes and photos, the editor login's path and storage key, and photo urls |
 | `app/kiln/kilnFormat.ts` | Unit conversion and number, rate and date formatting |
 | `app/kiln/kilnCurve.ts` | Turns a curve into chart points, finds gaps, and works out the rate at a point |
 | `app/kiln/kilnForecast.ts` | The calculator's predictions. No React, so they can be replayed against real data |
@@ -24,8 +25,15 @@ side, and [the API docs](../../pi/docs/api/website-backend-api.md#kiln) for the 
 | `components/kiln/ReadingsTable.tsx` | The readings as a table, with adjustable spacing, sorting and CSV download |
 | `components/kiln/KilnCalculator.tsx` | Estimates how long until a temperature, and how hot it'll be later |
 | `components/kiln/FiringCard.tsx` | A past firing's tile in the grid |
+| `components/kiln/useFiringJournal.ts` | Loads and polls the shown firing's notes and photos, with the editor's token if logged in |
+| `components/kiln/FiringNotes.tsx` | The notes list, the add and edit form, and `numberPinnedNotes` for the chart's markers |
+| `components/kiln/FiringPhotos.tsx` | The photo grid, the upload form, and the full-size viewer |
+| `components/kiln/JournalControls.tsx` | Shared bits for both: chip pickers, the private/public toggle, and `useJournalAction` for writes |
+| `components/kiln/KilnEditorLogin.tsx` | "Jude's login" at the bottom of the page |
 | `app/globals.css` (`.kiln-*` rules) | The page's theme tokens and styles |
 | `lib/useKilnFiring.ts` | Checks once whether a firing's in progress, for the home page sprite |
+| `lib/usePolling.ts` | Runs a task now and on an interval, skipping ticks while the tab's hidden |
+| `lib/useAdminAuth.ts` | Keeps the editor's token in localStorage (shared with the admin page and The Kitchen) |
 | `public/images/kiln/kiln-idle.png`, `kiln-firing.png` | The kiln art on this page |
 | `public/images/8bit/kiln-idle.png`, `kiln-firing.png` | The same art shrunk for the home page |
 
@@ -58,6 +66,7 @@ differences, so converting them skips the 32 degree offset.
 | Past firings list | 60 s | `GET /kiln/firings` |
 | A card's thumbnail | Once | `GET /kiln/firings/{id}/curve?max_points=80` |
 | A compared firing | Once, when first turned on | `GET /kiln/firings/{id}/curve?max_points=500` |
+| Notes and photos on the shown firing | 60 s, and right after any change | `GET /kiln/firings/{id}/notes`, `/photos` |
 
 Polling pauses while the tab's hidden. Graphs are always drawn from stored readings, so there are
 no saved images. A curve averages down to at most 1,500 points, so a long firing costs the same to
@@ -92,6 +101,37 @@ one on draws it over the main curve. Up to 3 at once, since more lines get hard 
   each firing's temperature and rate at that point, or "No data" past its end or in a hole
 - The table and CSV stay the main firing's only. Compared curves are fetched once and kept for
   the visit, since finished firings don't change. Selections aren't saved in the URL
+
+## Notes and photos
+
+Jude can write notes on a firing and add photos of what came out. Everyone sees the public ones,
+and only Jude sees the private ones. Both sections sit under the chart (and the calculator), on
+whichever firing is showing, so the live view gets them while a firing's in progress. With no
+firing in progress there's nowhere to put them, so they're hidden. For someone who isn't logged
+in, each section only shows if it has something public in it.
+
+**Logging in**: "Jude's login" at the very bottom of the page opens a username and password form.
+It's a separate login from the admin page's, made on the backend with
+`scripts/create_kiln_editor.py` (see [the API docs](../../pi/docs/api/website-backend-api.md#kiln-journal)),
+and its token can only write notes and photos. The token's kept in localStorage under
+`kiln-editor-token` and lasts 30 days, so a phone stays logged in. If a write comes back 401, the
+page logs out and shows the login again. Logging in or out reloads the notes and photos, to add or
+drop the private ones.
+
+**Notes**: the form has the text, then "When": General (about the whole firing), Right now, or
+Pick a time (a date and time in the viewer's timezone), then "Who sees it": Private or Public.
+New notes start private. The list puts general notes first, then pinned ones in time order. Each
+pinned note shows its time, the kiln's temperature then (from the curve, if there's a reading
+within a few buckets), and a number. The same number marks its time on the chart with a dashed
+line and a flag. Markers only show on the clock-time axis, not while comparing firings, since
+they belong to the main firing, and only inside the curve's range. Jude can edit any note
+(including its time, or making it general), flip it public or private, or delete it.
+
+**Photos**: pick any number of images and whether they're public, then they upload one at a time,
+so one bad file doesn't stop the rest. HEIC and sideways phone photos get converted on the backend.
+New photos start private. Tiles are square thumbnails, and clicking one opens it full size (escape
+or a click closes it). Public photos load straight from their url. Private ones need the token,
+which an `img` tag can't send, so they're fetched and shown from a blob url instead.
 
 ## Table
 

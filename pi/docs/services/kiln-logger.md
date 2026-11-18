@@ -73,6 +73,8 @@ Everything's in the backend's SQLite database, and nothing gets deleted:
   permanent record. Graphs are drawn from it, so there are no saved images, and later analysis can
   use the full data
 - **`kiln_firings`**: one row per firing, a time range plus its peak
+- **`kiln_notes`**, **`kiln_photos`**: Jude's notes and photos on a firing, and **`kiln_editors`**
+  his login. See [the API docs](../api/website-backend-api.md#kiln-journal)
 
 ### Firing detection
 

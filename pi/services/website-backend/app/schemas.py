@@ -672,6 +672,112 @@ class KilnStatus(BaseModel):
         return as_utc(value)
 
 
+# Kiln journal schemas: notes and photos on a firing, written by the kiln editor login
+MAX_KILN_NOTE_LENGTH = 5000
+
+
+def clean_note_body(value: Optional[str]) -> Optional[str]:
+    """
+    Trims a note's text and makes sure something's left.
+
+    Args:
+        value: The note text as sent, or None when it's left out.
+
+    Returns:
+        Optional[str]: The trimmed text, or None when it was left out.
+
+    Raises:
+        ValueError: If the text is only whitespace.
+    """
+    if value is None:
+        return None
+    trimmed = value.strip()
+    if not trimmed:
+        raise ValueError("the note is empty -- write something, or delete the note instead")
+    return trimmed
+
+
+class KilnNoteCreate(BaseModel):
+    """A new note. Leave noted_at out for a general note about the whole firing."""
+    body: str = Field(max_length=MAX_KILN_NOTE_LENGTH)
+    noted_at: Optional[datetime] = None
+    is_public: bool = False
+
+    @field_validator("body")
+    @classmethod
+    def check_body(cls, value: str) -> str:
+        """Trims the text and rejects an empty note."""
+        return clean_note_body(value)
+
+
+class KilnNoteUpdate(BaseModel):
+    """
+    Changes to a note. Only the fields sent change. Sending noted_at as null makes it a
+    general note, but body and is_public can't be null.
+    """
+    body: Optional[str] = Field(default=None, max_length=MAX_KILN_NOTE_LENGTH)
+    noted_at: Optional[datetime] = None
+    is_public: Optional[bool] = None
+
+    @field_validator("body")
+    @classmethod
+    def check_body(cls, value: Optional[str]) -> str:
+        """Trims the text and rejects an empty or null note."""
+        if value is None:
+            raise ValueError("body can't be null -- leave it out to keep the current text")
+        return clean_note_body(value)
+
+    @field_validator("is_public")
+    @classmethod
+    def check_is_public(cls, value: Optional[bool]) -> bool:
+        """Rejects null, since a note is always either public or private."""
+        if value is None:
+            raise ValueError("is_public can't be null -- send true or false, or leave it out")
+        return value
+
+
+class KilnNoteRead(BaseModel):
+    """A note on a firing. noted_at is null for a general note."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    firing_id: int
+    body: str
+    noted_at: Optional[datetime] = None
+    is_public: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    @field_validator("noted_at", "created_at", "updated_at")
+    @classmethod
+    def mark_as_utc(cls, value: Optional[datetime]) -> Optional[datetime]:
+        """The table stores naive UTC, so this says so in the response."""
+        return as_utc(value)
+
+
+class KilnPhotoUpdate(BaseModel):
+    """Changes to a photo. Right now that's just who can see it."""
+    is_public: bool
+
+
+class KilnPhotoRead(BaseModel):
+    """A photo from a firing. Its image is at /kiln/photos/{id}/file."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    firing_id: int
+    width: Optional[int] = None
+    height: Optional[int] = None
+    is_public: bool
+    created_at: datetime
+
+    @field_validator("created_at")
+    @classmethod
+    def mark_as_utc(cls, value: datetime) -> datetime:
+        """The table stores naive UTC, so this says so in the response."""
+        return as_utc(value)
+
+
 # Monitor Schemas
 # limits only keep a broken report from being huge. the house has a handful of machines
 MAX_MONITOR_NAME_LENGTH = 64
