@@ -54,12 +54,12 @@ function dancerMedia(name: string) {
  * own dance. listed back to front so nearer dancers draw over further ones.
  */
 export const DANCERS: readonly Dancer[] = [
-  { name: "schroeder", ...dancerMedia("schroeder"), leftPct: 74, bottomPct: 39, heightU: 13 },
+  { name: "schroeder", ...dancerMedia("schroeder"), leftPct: 16, bottomPct: 39, heightU: 13 },
+  { name: "headback", ...dancerMedia("headback"), leftPct: 34, bottomPct: 37, heightU: 15 },
   { name: "snoopy", ...dancerMedia("snoopy"), leftPct: 50, bottomPct: 38, heightU: 15 },
   { name: "sally", ...dancerMedia("sally"), leftPct: 84, bottomPct: 22, heightU: 19 },
   { name: "linus", ...dancerMedia("linus"), leftPct: 62, bottomPct: 19, heightU: 21, flip: true },
   { name: "shermy", ...dancerMedia("shermy"), leftPct: 14, bottomPct: 1, heightU: 25 },
-  { name: "headback", ...dancerMedia("headback"), leftPct: 38, bottomPct: 1, heightU: 24 },
 ];
 
 /**
