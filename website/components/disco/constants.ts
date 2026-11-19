@@ -22,6 +22,46 @@ export const ATTIRE_CLIP = {
   posterSrc: `${MEDIA_DIR}/attire.jpg`,
 };
 
+const DANCER_DIR = `${MEDIA_DIR}/dancers`;
+
+/** one peanuts kid dancing on the flier's floor: a looping cutout and where it stands */
+export interface Dancer {
+  name: string;
+  /** looping animated webp with a transparent background */
+  animSrc: string;
+  /** one frame of it, shown instead under prefers-reduced-motion */
+  stillSrc: string;
+  /** feet position, as % of the poster's width and up from its bottom edge */
+  leftPct: number;
+  bottomPct: number;
+  /** height in poster design units (--u). further back on the floor = smaller */
+  heightU: number;
+  /** mirror it, so neighbours don't all face the same way */
+  flip?: boolean;
+}
+
+/**
+ * builds a dancer's media paths from its file name.
+ * @param {string} name - the file name in public/video/disco/dancers, no extension.
+ * @returns {{ animSrc: string; stillSrc: string }} the webp loop and the png still.
+ */
+function dancerMedia(name: string) {
+  return { animSrc: `${DANCER_DIR}/${name}.webp`, stillSrc: `${DANCER_DIR}/${name}.png` };
+}
+
+/**
+ * the kids from the snoopy dance scene, cut out of their shots, each looping its
+ * own dance. listed back to front so nearer dancers draw over further ones.
+ */
+export const DANCERS: readonly Dancer[] = [
+  { name: "schroeder", ...dancerMedia("schroeder"), leftPct: 74, bottomPct: 39, heightU: 13 },
+  { name: "snoopy", ...dancerMedia("snoopy"), leftPct: 50, bottomPct: 38, heightU: 15 },
+  { name: "sally", ...dancerMedia("sally"), leftPct: 84, bottomPct: 22, heightU: 19 },
+  { name: "linus", ...dancerMedia("linus"), leftPct: 62, bottomPct: 19, heightU: 21, flip: true },
+  { name: "shermy", ...dancerMedia("shermy"), leftPct: 14, bottomPct: 1, heightU: 25 },
+  { name: "headback", ...dancerMedia("headback"), leftPct: 38, bottomPct: 1, heightU: 24 },
+];
+
 /**
  * the moment in the invite video where the cloud drawing matches frame 0 of the
  * loop. swapping to the loop here is invisible. after this the video's clouds

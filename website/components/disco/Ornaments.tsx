@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { BOX_ROW_COUNT, FLOOR_LIGHT_COLORS } from "./constants";
+import { BOX_ROW_COUNT, DANCERS, FLOOR_LIGHT_COLORS } from "./constants";
 import styles from "./disco.module.css";
 
 /** the lit box runs along the row once per box chase cycle (see .box in the css) */
@@ -193,6 +193,38 @@ export function DanceFloor() {
           return <span key={`${light.column}-${light.row}`} className={styles.floorLight} style={style} />;
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * the peanuts kids dancing on the floor, each a looping cutout from the snoopy
+ * dance scene. under prefers-reduced-motion the picture swaps to a still frame,
+ * since an animated image can't be paused.
+ * @returns {JSX.Element} the dancer layer, over the floor and under the words.
+ */
+export function Dancers() {
+  return (
+    <div className={styles.posterDecor} aria-hidden="true">
+      {DANCERS.map((dancer) => {
+        const style = {
+          left: `${dancer.leftPct}%`,
+          bottom: `${dancer.bottomPct}%`,
+          "--dancer-height": dancer.heightU,
+        } as CSSProperties;
+        return (
+          <picture key={dancer.name} className={styles.dancer} style={style}>
+            <source srcSet={dancer.stillSrc} media="(prefers-reduced-motion: reduce)" />
+            <img
+              src={dancer.animSrc}
+              alt=""
+              className={dancer.flip ? styles.dancerFlipped : undefined}
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
+        );
+      })}
     </div>
   );
 }

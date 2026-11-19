@@ -114,6 +114,12 @@ bursts. The grid in `.poster` places, top to bottom:
   beat with its own offset, so the floor never blinks in step. Which tiles light, and the
   background star dots, are seeded, so the prerendered HTML matches the browser. It's dimmed
   to 60%, and the facts and stamp over it get a dark halo so they stay readable.
+- **Dancers** (`Dancers` in `Ornaments.tsx`, placed by `DANCERS` in `constants.ts`): the
+  kids from the Snoopy dance scene (Schroeder, Snoopy, Sally, Linus, Shermy and the girl
+  with her head thrown back), each cut out of the video and looping its own dance. They
+  stand on the floor over the tiles and under the words, smaller further back. Each is an
+  animated webp with a transparent background; under reduced motion a `<picture>` source
+  swaps it for a still png.
 - **Attire clip** (`AttireClip.tsx`): archival 70s dance floor footage in a lime-ringed
   circle, three clips crossfaded into one silent loop. It's wider than its column, spilling
   left under the lineup; the lineup sits in front in case a long act name reaches it. Under reduced motion it's paused on its
@@ -155,6 +161,14 @@ V1_1.mp4`, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
 | `clouds-loop.mp4` / `.webm` | The 30-frame cloud loop, 1440x1080, no audio | `-ss 57.45 -t 1.6`, then `crop=1440:1080:240:0,select='between(n\,5\,34)'`; x264 crf 20 / vp9 crf 32 |
 | `clouds-poster.jpg` | First frame of the loop, the poster before it plays | |
 | `attire.mp4` / `.webm` / `.jpg` | The attire clip, 360x360, 15.75 s, ~700 KB, no audio, plus its still | From `attire1..3.mp4` (gitignored sources in the repo root). Each is cropped to a square clear of the station logo in the top right (`crop=ih:ih:120:0`; `crop=1400:1400:150:50` for clip 2, to drop a black bar at the top), then `scale=360:360,fps=24`. They're joined with 0.4 s `xfade` fades; x264 crf 27 / vp9 crf 38 |
+
+The dancers are in `website/public/video/disco/dancers/` (`<name>.webp` loop, `<name>.png`
+still, 180px tall). They're cut from a 720x480 copy of the Charlie Brown Christmas dance
+scene. For each kid, the loop is found by matching frames one dance cycle apart inside a
+clean stretch of one shot. Each frame is matted by keying out the pink backdrop reachable
+from the crop's edge, since the black outlines close off the faces. On the wood floor
+shots, the floorboard lines are peeled off as long thin strokes at the floor's angle.
+Small loose specks are then dropped. Some floorboard stubs remain near feet.
 
 The link preview is `website/public/images/events/disco-og.jpg`, the "Disco Night is Back!"
 title card at 18.5 s.

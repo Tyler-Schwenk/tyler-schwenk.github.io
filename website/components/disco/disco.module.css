@@ -615,6 +615,23 @@
   50% { background: var(--floor-pink); }
 }
 
+/* a dancer's feet sit at its left/bottom point, so it's centred on that spot */
+.dancer {
+  position: absolute;
+  translate: -50% 0;
+}
+
+.dancer img {
+  display: block;
+  width: auto;
+  height: calc(var(--dancer-height) * var(--u));
+  filter: drop-shadow(0 calc(0.6 * var(--u)) calc(0.8 * var(--u)) rgba(11, 13, 63, 0.7));
+}
+
+.dancer img.dancerFlipped {
+  scale: -1 1;
+}
+
 .spotlight {
   position: absolute;
   top: -6%;

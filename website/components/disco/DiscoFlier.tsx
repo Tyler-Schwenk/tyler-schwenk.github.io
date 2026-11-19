@@ -7,6 +7,7 @@ import { DISCO_ADDRESS, DISCO_DETAILS, DISCO_MORE_INFO } from "./constants";
 import DiscoText from "./DiscoText";
 import {
   BoxRow,
+  Dancers,
   DiscoBall,
   NoPhoneIcon,
   DanceFloor,
@@ -112,6 +113,7 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
       <div className={styles.posterScreen}>
         <article className={styles.poster}>
           <DanceFloor />
+          <Dancers />
           <Spotlights />
           <SparkleBursts />
 
