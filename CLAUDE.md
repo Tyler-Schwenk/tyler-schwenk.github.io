@@ -9,11 +9,13 @@ Personal website and home server monorepo for tyler-schwenk.com.
 ```
 tyler-schwenk.github.io/      (monorepo root)
 ├── website/                   Next.js frontend, deployed to GitHub Pages
-└── pi/                        Raspberry Pi 5 backend (Docker services + FastAPI)
+├── pi/                        Raspberry Pi 5 backend (Docker services + FastAPI)
+└── input/                     Source media, gitignored (see below)
 ```
 
 - **website/** — Next.js static site (`output: 'export'`). Deployed automatically to tyler-schwenk.com via GitHub Actions on push to main.
 - **pi/** — FastAPI backend + Docker Compose configs for fart-pi home server. Pulled and run on the Pi separately.
+- **input/** — Gitignored masters the site's media is cut from, one folder per feature (`input/disco/`, `input/opium-den/`, `input/entrance/`): full-size art, raw video edits, copyrighted songs. Put new source files here, not in the repo root. The docs for each feature say what was made from them.
 
 ### Documentation
 

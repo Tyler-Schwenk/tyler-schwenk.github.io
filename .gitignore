@@ -2,13 +2,10 @@
 # Tyler Schwenk Portfolio - Git Ignore File
 # ============================================================
 
-# copyrighted audio dropped here on its way to fart-pi, the repo is public
-input/*.mp3
-
-# source edit of the disco invite (too big for github, 142 MB) and the raw
-# attire clips. the web cuts made from them live in website/public/video/disco (see website/docs/DISCO_INVITE.md)
-Disco December Invite*.mp4
-/attire[0-9].mp4
+# source media: masters the site's assets are cut from, one folder per feature
+# (input/disco, input/opium-den, input/entrance). too big for github, or copyrighted
+# audio in a public repo. the web versions live under website/public
+/input/
 
 # ============================================================
 # OPERATING SYSTEM FILES

@@ -41,7 +41,7 @@ machine, once the backend's deployed and the speaker agent's running:
 
 ```bash
 ssh tyler@192.168.1.116 "sudo mkdir -p /mnt/ssd/entrance && sudo chown tyler:tyler /mnt/ssd/entrance"
-scp "input/TheFatRat - Xenogenesis (Outro Song).mp3" tyler@192.168.1.116:/mnt/ssd/entrance/source.mp3
+scp "input/entrance/TheFatRat - Xenogenesis (Outro Song).mp3" tyler@192.168.1.116:/mnt/ssd/entrance/source.mp3
 ssh tyler@192.168.1.116 "docker exec website-backend-api python scripts/render_entrance.py"
 ```
 

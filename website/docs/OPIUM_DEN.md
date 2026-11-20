@@ -65,8 +65,10 @@ On the home page there are two ways in (object fields in `website/docs/HOME.md`)
 - **The radio tower** on the hill just left of the cave goes to the live room. It's idle
   (`radio-tower-idle.png`, steady red light) off air, and broadcasting
   (`radio-tower-live.png`, signal waves) with a blinking LIVE! tag while live
-  (`liveIconSrc`, `liveTag`). Both sprites were cut from one sheet with the same canvas and
-  base point, so the swap doesn't shift it.
+  (`liveIconSrc`, `liveTag`). Both sprites were cut from one sheet
+  (`input/opium-den/Pixel Art Radio Towers_ Idle and Active.png`, gitignored) with the same
+  canvas and base point, so the swap doesn't shift it. The DJ board sprite's full-size
+  original is `input/opium-den/dj_board.png`.
 
 The den and the room link to each other: the room's "Opium Den" link at the top, and the
 den's live row ("Join the room" while live, a small "Live room" link off air).

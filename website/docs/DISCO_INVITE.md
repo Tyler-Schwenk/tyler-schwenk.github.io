@@ -60,7 +60,8 @@ first one in the loop.
 The video's soundtrack is Get Down Tonight, and the song plays on under the flier
 (`useDiscoMusic.ts`, settings in `MUSIC` in `constants.ts`).
 
-- `music.mp3` is the song trimmed to start where the video's audio does (17.683 s into
+- `music.mp3` is the song (`input/disco/KC & The Sunshine Band - Get Down Tonight (HQ with
+  lyrics).mp3`, gitignored) trimmed to start where the video's audio does (17.683 s into
   the track), so a time on the video is the same time in the file.
 - At `MUSIC_HANDOFF_S` (58.2 s), just before the video fades its own sound out (from about
   58.4 s), the music starts at the video's current time and the video is muted in the same
@@ -179,8 +180,8 @@ It's drawn rather than screenshotted so it looks the same everywhere and needs n
 
 ## Media
 
-All in `website/public/video/disco/`, made from the source edit (`Disco December Invite
-V2.mp4`, gitignored in the repo root, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
+All in `website/public/video/disco/`, made from the source edit (`input/disco/Disco December Invite
+V2.mp4`, gitignored, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
 
 | File | What | Made with |
 |------|------|-----------|
@@ -188,7 +189,7 @@ V2.mp4`, gitignored in the repo root, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
 | `invite-720.mp4` | Phone video, ~15 MB | Same, with `scale=1280:720` |
 | `clouds-loop.mp4` / `.webm` | The 30-frame cloud loop, 1440x1080, no audio | `-ss 57.45 -t 1.6`, then `crop=1440:1080:240:0,select='between(n\,5\,34)'`; x264 crf 20 / vp9 crf 32 |
 | `clouds-poster.jpg` | First frame of the loop, the poster before it plays | |
-| `attire.mp4` / `.webm` / `.jpg` | The attire clip, 360x360, 15.75 s, ~700 KB, no audio, plus its still | From `attire1..3.mp4` (gitignored sources in the repo root). Each is cropped to a square clear of the station logo in the top right (`crop=ih:ih:120:0`; `crop=1400:1400:150:50` for clip 2, to drop a black bar at the top), then `scale=360:360,fps=24`. They're joined with 0.4 s `xfade` fades; x264 crf 27 / vp9 crf 38 |
+| `attire.mp4` / `.webm` / `.jpg` | The attire clip, 360x360, 15.75 s, ~700 KB, no audio, plus its still | From `input/disco/attire1..3.mp4` (gitignored sources). Each is cropped to a square clear of the station logo in the top right (`crop=ih:ih:120:0`; `crop=1400:1400:150:50` for clip 2, to drop a black bar at the top), then `scale=360:360,fps=24`. They're joined with 0.4 s `xfade` fades; x264 crf 27 / vp9 crf 38 |
 
 The dancers are in `website/public/video/disco/dancers/` (`<name>.webp` loop, `<name>.png`
 still, 180px tall). They're cut from a 720x480 copy of the Charlie Brown Christmas dance
