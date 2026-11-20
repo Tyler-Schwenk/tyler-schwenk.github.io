@@ -16,8 +16,11 @@ rekordbox (DDJ-400 master, also sent to the laptop's own output by PC MASTER OUT
        - while live, ffmpeg copies the stream to /mnt/ssd/dj-sets/<start time>.mp3
        - relays the stream to listeners -> GET /dj/live (through the existing tunnel)
        - serves finished sets -> GET /dj/sets, GET /dj/sets/{id}/audio
+       - works out each finished set's waveform (ffmpeg) -> GET /dj/sets/{id}/waveform
+       - keeps the room's chat, replayed per set -> GET /dj/sets/{id}/chat
   -> Opium Den page: past sets, and the way into the live room (/opium-den/live),
-     which has the stream, who's listening and a chat (GET/POST /dj/chat)
+     which has the stream, who's listening and a chat (GET/POST /dj/chat). each past
+     set has its own page (/opium-den/set?id=) with its waveform and its chat replaying
 ```
 
 Icecast never goes through the Cloudflare tunnel. Listeners only ever reach the backend's
@@ -40,6 +43,7 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/dj-stream/.env` | `ICECAST_SOURCE_PASSWORD`, `ICECAST_ADMIN_PASSWORD` (not in git) |
 | `pi/services/website-backend/app/dj_stream.py` | The watcher: live state, recording, listener count |
 | `pi/services/website-backend/app/routers/dj.py` | The `/dj` endpoints (see `pi/docs/api/website-backend-api.md#dj-stream`) |
+| `pi/services/website-backend/app/dj_waveform.py` | Works out and caches each set's waveform with ffmpeg |
 | `pi/services/website-backend/app/routers/dj_chat.py` | The live room chat, `/dj/chat` (open only while live, admin can delete) |
 
 ## Recording
@@ -57,6 +61,13 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 - Sets are public as soon as they end. Give them a title and description, or delete them,
   from the admin page's DJ tab.
 - An mp3 at 192 kbps is about 85 MB an hour, on the SSD at `/mnt/ssd/dj-sets`.
+- Once a set's kept, the watcher works out its waveform in the background (ffmpeg decodes
+  it to low-rate mono and measures each slice's loudness, a few seconds for a long set)
+  and saves it next to the mp3 as `<start time>.waveform.json`. If that fails, or the set
+  is older than this, it's done on the first request for it instead.
+- The live room's chat is never thrown away. A set's chat is whatever was sent while it was
+  on air, matched by time, so the set page can replay it (see
+  `pi/docs/api/website-backend-api.md#get-djsetsset_idchat`).
 
 Listeners hear the stream roughly 5-15 s behind the decks (butt's buffer, icecast's
 burst, the browser's buffer). The relay caps listeners at 25 (`MAX_LIVE_LISTENERS`).

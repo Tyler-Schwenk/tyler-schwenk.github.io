@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import SessionLocal
+from app.dj_waveform import prepare_waveform
 from app.kiln_firings import utc_now_naive
 from app.models import DjSet
 from app.schemas import DjStreamStatus
@@ -96,7 +97,7 @@ def parse_stream_start(source: dict) -> datetime | None:
     return started.astimezone(UTC).replace(tzinfo=None)
 
 
-def finalize_set(db: Session, dj_set: DjSet, ended_at: datetime) -> None:
+def finalize_set(db: Session, dj_set: DjSet, ended_at: datetime) -> bool:
     """
     Finishes a set's row once its recording has stopped, or throws it away if it's too short.
 
@@ -104,6 +105,9 @@ def finalize_set(db: Session, dj_set: DjSet, ended_at: datetime) -> None:
         db: Database session. Committed here.
         dj_set: The set that was recording.
         ended_at: When the recording stopped (naive UTC).
+
+    Returns:
+        bool: True if the set was kept, False if it was thrown away.
 
     Side effects:
         Deletes the row and its mp3 for a too-short or empty recording.
@@ -117,13 +121,14 @@ def finalize_set(db: Session, dj_set: DjSet, ended_at: datetime) -> None:
         db.delete(dj_set)
         db.commit()
         logger.info(f"dj stream: discarded {path.name}, only {duration_s} s / {size_bytes} bytes")
-        return
+        return False
 
     dj_set.ended_at = ended_at
     dj_set.duration_s = duration_s
     dj_set.size_bytes = size_bytes
     db.commit()
     logger.info(f"dj stream: saved {path.name}, {duration_s} s, {size_bytes} bytes")
+    return True
 
 
 def finish_interrupted_sets() -> None:
@@ -183,6 +188,8 @@ class DjStreamWatcher:
         self._recorder_output: asyncio.Task | None = None
         self._set_id: int | None = None
         self._icecast_unreachable = False
+        # held so the finished set's waveform analysis isn't garbage collected mid-run
+        self._waveform_task: asyncio.Task | None = None
 
     def status(self) -> DjStreamStatus:
         """
@@ -321,7 +328,8 @@ class DjStreamWatcher:
         Wraps up after ffmpeg has exited: saves or discards the set and clears the recorder.
 
         Side effects:
-            Updates or deletes the dj_sets row (and the file, if discarded).
+            Updates or deletes the dj_sets row (and the file, if discarded), and starts
+            working out a kept set's waveform in the background.
         """
         set_id = self._set_id
         if self._recorder_output is not None:
@@ -337,7 +345,11 @@ class DjStreamWatcher:
             if dj_set is None:
                 logger.warning(f"dj stream: set {set_id} vanished while recording, nothing to finish")
                 return
-            finalize_set(db, dj_set, utc_now_naive())
+            if not finalize_set(db, dj_set, utc_now_naive()):
+                return
+            audio_path, duration_s = Path(dj_set.file_path), dj_set.duration_s
+        # in the background: polling (and spotting the next set) shouldn't wait on ffmpeg
+        self._waveform_task = asyncio.create_task(prepare_waveform(audio_path, duration_s))
 
 
 # the one watcher for this process; main.py runs it, the router reads it

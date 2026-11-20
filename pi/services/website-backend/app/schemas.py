@@ -949,3 +949,17 @@ class DjChatMessageRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DjSetChatMessage(DjChatMessageRead):
+    """
+    A chat message from during a recorded set, placed on the set's timeline. offset_s is
+    how far into the recording it belongs: when it was sent, less the set's start and the
+    few seconds listeners hear the stream behind the decks.
+    """
+    offset_s: float
+
+
+class DjSetWaveform(BaseModel):
+    """A recorded set's loudness over time, for drawing its waveform."""
+    peaks: list[float] = Field(..., description="evenly spread over the set, each 0 to 1 (1 is the loudest moment)")

@@ -4,7 +4,8 @@ import type { PlayerTrack } from "@/lib/useAudioPlayer";
 
 /**
  * types, fetchers and urls for the backend's /dj endpoints: the live stream, the
- * recorded sets and the live room's chat (see pi/docs/api/website-backend-api.md#dj-stream).
+ * recorded sets (with their replayed chat and waveforms) and the live room's chat (see
+ * pi/docs/api/website-backend-api.md#dj-stream).
  */
 
 /** whether the stream's on air, as /dj/status sends it. */
@@ -36,6 +37,18 @@ export type DjChatMessage = {
   created_at: string;
 };
 
+/** a message from during a recorded set, placed on its timeline. */
+export type DjSetChatMessage = DjChatMessage & {
+  /** how far into the recording it belongs, in seconds. */
+  offset_s: number;
+};
+
+/** a set's loudness over time, evenly spread over the whole set. */
+export type DjSetWaveform = {
+  /** each 0 to 1, 1 being the loudest moment. */
+  peaks: number[];
+};
+
 /** the live stream, for an <audio> element. */
 export const DJ_LIVE_URL = `${API_BASE}/dj/live`;
 
@@ -50,6 +63,19 @@ export const LIVE_TRACK: PlayerTrack = {
 
 /** where the live room lives on the site. */
 export const LIVE_ROOM_PATH = "/opium-den/live";
+
+/** the page that replays one recorded set with its chat, picked by ?id=. */
+export const SET_PAGE_PATH = "/opium-den/set";
+
+/**
+ * the site link to a set's replay page.
+ *
+ * @param {number} setId - the set's id.
+ * @returns {string} like "/opium-den/set?id=3".
+ */
+export function djSetPagePath(setId: number): string {
+  return `${SET_PAGE_PATH}?id=${setId}`;
+}
 
 /** the chat endpoint: GET for the room, POST to send, DELETE /{id} to moderate. */
 export const DJ_CHAT_PATH = "/dj/chat";
@@ -93,6 +119,22 @@ export function djSetTitle(set: DjSet): string {
 }
 
 /**
+ * a recorded set as something the player can play.
+ *
+ * @param {DjSet} set - the set.
+ * @returns {PlayerTrack} the track, keyed so the list and the set page agree it's the same one.
+ */
+export function djSetTrack(set: DjSet): PlayerTrack {
+  return {
+    id: djSetTrackId(set.id),
+    title: djSetTitle(set),
+    subtitle: set.title ? formatDate(set.started_at) : "untitled set",
+    src: djSetAudioUrl(set.id),
+    live: false,
+  };
+}
+
+/**
  * fetches json from the dj endpoints, or throws with what went wrong.
  *
  * @param {string} path - path under the api.
@@ -123,6 +165,37 @@ export function fetchDjStatus(): Promise<DjStreamStatus> {
  */
 export function fetchDjSets(): Promise<DjSet[]> {
   return fetchDjJson<DjSet[]>(DJ_SETS_PATH, "load the past sets");
+}
+
+/**
+ * one finished set.
+ *
+ * @param {number} setId - the set's id.
+ * @returns {Promise<DjSet>} the set.
+ */
+export function fetchDjSet(setId: number): Promise<DjSet> {
+  return fetchDjJson<DjSet>(`${DJ_SETS_PATH}/${setId}`, "load this set");
+}
+
+/**
+ * the chat from while a set was live, each message placed on the set's timeline.
+ *
+ * @param {number} setId - the set's id.
+ * @returns {Promise<DjSetChatMessage[]>} oldest first.
+ */
+export function fetchDjSetChat(setId: number): Promise<DjSetChatMessage[]> {
+  return fetchDjJson<DjSetChatMessage[]>(`${DJ_SETS_PATH}/${setId}/chat`, "load this set's chat");
+}
+
+/**
+ * a set's waveform. the first request for an older set can take a few seconds while the
+ * pi works it out.
+ *
+ * @param {number} setId - the set's id.
+ * @returns {Promise<DjSetWaveform>} the peaks.
+ */
+export function fetchDjSetWaveform(setId: number): Promise<DjSetWaveform> {
+  return fetchDjJson<DjSetWaveform>(`${DJ_SETS_PATH}/${setId}/waveform`, "load this set's waveform");
 }
 
 /**

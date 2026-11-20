@@ -2,17 +2,19 @@
 
 ## Overview
 
-The opium den is the music section, two pages sharing one layout:
+The opium den is the music section, three pages sharing one layout:
 
 - `/opium-den`: what the project is, the DJ booth (the way into the live room, and past
   sets), and a list of outside radio and sets worth listening to.
 - `/opium-den/live`: the live room. The stream, how long it's been on, who's listening,
   and a chat.
+- `/opium-den/set?id=<set id>`: one past set, with its waveform and its chat replaying as
+  it plays.
 
 `app/opium-den/layout.tsx` wraps both: the home button, the den's look (`.den-page`), and
 the shared player (`DenPlayerProvider`). The player lives in the layout, so music keeps
-playing when you move between the den and the room. Both pages are server components for
-their metadata; the booth and the room are the client parts.
+playing when you move between the den, the room and a set. The pages are server components
+for their metadata; the booth, the room and the set replay are the client parts.
 
 ## Look
 
@@ -48,8 +50,9 @@ icecast, recording) is in `pi/docs/services/dj-stream.md`.
 - **Past sets**: a numbered track list, newest first. Each row shows the title (or the
   date when untitled), the date, the start of the description, and the length. Tapping a
   row plays or pauses it (the number turns into a red play/pause on hover); the playing
-  row's title goes red with bouncing bars. Sets with a description get an "about this set"
-  toggle that shows it in full (line breaks kept).
+  row's title goes red with bouncing bars. Under each row, "waveform & chat" goes to the
+  set's page, and sets with a description get an "about this set" toggle that shows it in
+  full (line breaks kept).
 - Status and sets are polled every 15 s while the tab is visible (`useDjStream`), so the
   page flips to live on its own and a finished set appears shortly after it ends.
 - If the backend can't be reached, the live row stays on off air with the error
@@ -112,6 +115,39 @@ around when Tyler goes live.
 The backend side (`/dj/chat`, limits, moderation) is in
 `pi/docs/api/website-backend-api.md#live-room-chat`.
 
+## Set Page
+
+`/opium-den/set?id=<set id>` (`SetReplay`), one past set replayed with its chat, like a
+SoundCloud track page. One static page that reads `?id=` on the client, so new sets need no
+rebuild. Laid out like the live room: one screen tall, less the player bar.
+
+- **Header**: the board art, the title (or date), "date · length · N messages", the red play
+  button, and an "about this set" toggle when it has a description.
+- **Waveform** (`Waveform`): the set's loudness as bars (from `GET /dj/sets/{id}/waveform`),
+  grown up from a baseline with a faint reflection under it. It's the seek bar: played bars
+  are red, and on desktop the stretch up to the mouse is faint red with the time you'd land
+  on. Click or drag anywhere to play from there, even when the set isn't loaded yet
+  (`play(track, startAtS)` holds the position until the file's metadata is in). Elapsed and
+  total time sit in its bottom corners. An invisible range input lies over it
+  (`RangeOverlay`, shared with `SliderBar`), so keyboards and screen readers seek it too.
+  It's as many bars as fit the width (3px each), each the loudest of its slice. While it
+  loads it's flat pulsing bars, and if it fails it says so and still seeks.
+- **Chat markers**: under the waveform, a dot for every message at its moment, red once
+  passed. Tap one to jump there. The message that just went by pops up as a bubble by its
+  dot for 5 s (`BUBBLE_VISIBLE_S`).
+- **Chat replay**: only the messages up to where playback is, so the chat fills in as the
+  set plays and empties back out when you skip back, like being there. It follows the newest
+  line unless you've scrolled up (`useStickToBottom`, shared with the live room). Each line
+  starts with its time in the set, which jumps there. The header counts "6 of 9". Before
+  playing it says when the first message comes in. Your own name shows in white, like in
+  the room.
+- Messages are matched to a set by time, and placed a few seconds earlier than they were
+  sent, since listeners hear the stream behind the decks. How that works is in
+  `pi/docs/api/website-backend-api.md` (`GET /dj/sets/{set_id}/chat`).
+- The set, its chat and its waveform are loaded once (`useDjSetReplay`), no polling. The
+  waveform loads on its own since an older set's first one can take the Pi a few seconds.
+- A bad or missing id, or a deleted set, shows a note pointing back to the den.
+
 ## Player
 
 - **One player for everything** (`useAudioPlayer`, provided by `DenPlayerProvider` and read
@@ -146,10 +182,16 @@ The backend side (`/dj/chat`, limits, moderation) is in
 | `website/components/opium-den/LiveRoom.tsx` | The live room: stage and chat |
 | `website/components/opium-den/LiveChat.tsx` | The room's chat panel: messages, name step, message box |
 | `website/components/opium-den/SetList.tsx` | The past sets track list |
+| `website/app/opium-den/set/page.tsx` | The set page and its metadata |
+| `website/components/opium-den/SetReplay.tsx` | The set page: header, waveform, chat replay |
+| `website/components/opium-den/Waveform.tsx` | The waveform seek bar with chat markers and the passing message's bubble |
+| `website/components/opium-den/ChatLine.tsx` | One chat line, shared by the room and the replay |
+| `website/lib/useDjSetReplay.ts` | Loads a set, its chat and its waveform for the set page |
+| `website/lib/useStickToBottom.ts` | Keeps a chat list on its newest line unless you've scrolled up |
 | `website/components/opium-den/PlayerBar.tsx` | The now-playing bar (mini player on phones) |
 | `website/components/opium-den/NowPlayingSheet.tsx` | The phone's full-screen now-playing view, swipe down to close |
 | `website/components/opium-den/PlayerControls.tsx` | Play/pause, skip, progress and volume, shared by the bar, sheet and room |
-| `website/components/opium-den/SliderBar.tsx` | Seek and volume slider (a range input under a styled track), with a large touch version |
+| `website/components/opium-den/SliderBar.tsx` | Seek and volume slider, with a large touch version, and `RangeOverlay` (the invisible range input the slider and waveform sit under) |
 | `website/components/opium-den/EqBars.tsx` | The bouncing equalizer (`.den-eq-bar` in `globals.css`) |
 | `website/components/opium-den/playerIcons.tsx` | Play, pause, skip, volume, chevron, send, external link and spinner icons |
 | `website/lib/useAudioPlayer.ts` | The audio element: play/pause/seek/volume state, live-edge reconnects, media session |
@@ -157,7 +199,7 @@ The backend side (`/dj/chat`, limits, moderation) is in
 | `website/lib/usePoll.ts` | Fetch now and every so often while the tab's visible; used by the hooks below and the room's status |
 | `website/lib/useDjStream.ts` | Polls `/dj/status` and `/dj/sets` for the den |
 | `website/lib/useDjChat.ts` | Polls `/dj/chat`, sends messages, remembers the nickname |
-| `website/app/opium-den/djApi.ts` | Types, fetchers, urls and limits for the `/dj` endpoints and chat, shared with the admin tab |
+| `website/app/opium-den/djApi.ts` | Types, fetchers, urls and limits for the `/dj` endpoints and chat, a set as a player track (`djSetTrack`), shared with the admin tab |
 
 Times and lengths are formatted with `parseBackendTime`, `formatDate`, `formatDuration`
 and `formatElapsed` from `website/app/admin/format.ts`.

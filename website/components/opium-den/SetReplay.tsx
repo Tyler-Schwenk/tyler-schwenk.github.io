@@ -1,0 +1,264 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { formatDate, formatDuration, plural } from "@/app/admin/format";
+import { djSetTitle, djSetTrack, type DjSet, type DjSetChatMessage } from "@/app/opium-den/djApi";
+import type { AudioPlayer, PlayerTrack } from "@/lib/useAudioPlayer";
+import { useChatNickname } from "@/lib/useDjChat";
+import { useDjSetReplay } from "@/lib/useDjSetReplay";
+import { useStickToBottom } from "@/lib/useStickToBottom";
+import ChatLine from "./ChatLine";
+import { useDenPlayer } from "./DenPlayerProvider";
+import EqBars from "./EqBars";
+import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
+import Waveform from "./Waveform";
+
+const BOARD_ART_SRC = "/images/8bit/dj_board.png";
+const BOARD_ART_WIDTH_PX = 112;
+const BOARD_ART_HEIGHT_PX = 52;
+const SET_ID_PATTERN = /^\d+$/;
+
+/**
+ * the set id from the page's ?id=, if it's a real one.
+ *
+ * @param {string | null} raw - the query value.
+ * @returns {number | null} the id, or null.
+ */
+function parseSetId(raw: string | null): number | null {
+  return raw && SET_ID_PATTERN.test(raw) ? Number(raw) : null;
+}
+
+/**
+ * the round red play button for this set.
+ *
+ * @param {object} props
+ * @param {AudioPlayer} props.player - the den's shared player.
+ * @param {PlayerTrack} props.track - this set as a track.
+ * @returns {JSX.Element} the button.
+ */
+function SetPlayButton({ player, track }: { player: AudioPlayer; track: PlayerTrack }) {
+  const current = player.track?.id === track.id;
+  const playing = current && player.playing;
+  return (
+    <button
+      type="button"
+      onClick={() => player.toggle(track)}
+      aria-label={playing ? `Pause ${track.title}` : `Play ${track.title}`}
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:scale-105 hover:brightness-110 active:scale-95 sm:h-14 sm:w-14"
+    >
+      {current && player.loading ? (
+        <SpinnerIcon className="h-6 w-6" />
+      ) : playing ? (
+        <PauseIcon className="h-6 w-6" />
+      ) : (
+        <PlayIcon className="h-6 w-6" />
+      )}
+    </button>
+  );
+}
+
+/**
+ * the header line under the title, like "Nov 18, 8:55 PM · 1:12:40 · 23 messages".
+ *
+ * @param {DjSet} set - the set.
+ * @param {DjSetChatMessage[] | null} messages - its chat, null while it loads.
+ * @returns {string} the line.
+ */
+function setMeta(set: DjSet, messages: DjSetChatMessage[] | null): string {
+  const parts = [formatDate(set.started_at), formatDuration(set.duration_s)];
+  if (messages) parts.push(plural(messages.length, "message"));
+  return parts.join(" · ");
+}
+
+/**
+ * what the replay's chat says when there's nothing to show yet.
+ *
+ * @param {object} props
+ * @param {DjSetChatMessage[]} props.messages - the set's whole chat.
+ * @param {boolean} props.started - this set's loaded in the player.
+ * @returns {JSX.Element} the note.
+ */
+function ReplayEmptyNote({ messages, started }: { messages: DjSetChatMessage[]; started: boolean }) {
+  if (messages.length === 0) {
+    return <li className="text-sm text-den-faint">nobody chatted during this one.</li>;
+  }
+  const first = formatDuration(messages[0].offset_s);
+  return (
+    <li className="text-sm text-den-faint">
+      {started
+        ? `the first message comes in at ${first}.`
+        : `the chat replays along with the set, the first message comes in at ${first}. press play, or tap a dot on the waveform.`}
+    </li>
+  );
+}
+
+/**
+ * the set's chat, replayed: only the messages up to where playback is, so it fills in as
+ * the set plays and empties back out when you skip back, like being there live. each
+ * line's timestamp jumps to that moment.
+ *
+ * @param {object} props
+ * @param {DjSetChatMessage[] | null} props.messages - the set's chat, null while it loads.
+ * @param {number} props.positionS - where playback is.
+ * @param {boolean} props.started - this set's loaded in the player.
+ * @param {(seconds: number) => void} props.onSeek - jumps there and plays.
+ * @returns {JSX.Element} the panel.
+ */
+function ReplayChat({
+  messages,
+  positionS,
+  started,
+  onSeek,
+}: {
+  messages: DjSetChatMessage[] | null;
+  positionS: number;
+  started: boolean;
+  onSeek: (seconds: number) => void;
+}) {
+  const [nickname] = useChatNickname();
+  const visible = messages?.filter((message) => message.offset_s <= positionS) ?? [];
+  const [listRef, onListScroll] = useStickToBottom<HTMLOListElement>(visible.at(-1)?.id);
+
+  return (
+    <section className="flex h-full min-h-0 flex-col rounded-xl border border-den-line bg-den-raised/70">
+      <header className="flex items-baseline justify-between border-b border-den-line px-4 py-3">
+        <h2 className="text-sm font-semibold">Chat replay</h2>
+        {messages && messages.length > 0 && (
+          <span className="text-xs tabular-nums text-den-faint">
+            {visible.length} of {messages.length}
+          </span>
+        )}
+      </header>
+
+      <ol
+        ref={listRef}
+        onScroll={onListScroll}
+        aria-label="Chat from this set"
+        className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-3"
+      >
+        {visible.map((message) => (
+          <ChatLine
+            key={message.id}
+            message={message}
+            own={message.nickname === nickname}
+            hint={formatDate(message.created_at)}
+            lead={
+              <button
+                type="button"
+                onClick={() => onSeek(message.offset_s)}
+                aria-label={`Jump to ${formatDuration(message.offset_s)}`}
+                className="mr-2 text-xs tabular-nums text-den-faint transition-colors hover:text-den-accent-soft"
+              >
+                {formatDuration(message.offset_s)}
+              </button>
+            }
+          />
+        ))}
+        {messages === null && <li className="text-sm text-den-faint">loading the chat...</li>}
+        {messages && visible.length === 0 && <ReplayEmptyNote messages={messages} started={started} />}
+      </ol>
+    </section>
+  );
+}
+
+/**
+ * one recorded set, replayed with its chat: a header with the play button, the set's
+ * waveform as its seek bar (chat messages as dots along it), and the chat filling the
+ * rest of the screen, showing only what had been said by that point in the set. one
+ * screen tall like the live room, less the player bar, which stays up for volume and
+ * skips. the set is picked by ?id=. see website/docs/OPIUM_DEN.md.
+ *
+ * @returns {JSX.Element} the replay.
+ */
+export default function SetReplay() {
+  const setId = parseSetId(useSearchParams().get("id"));
+  const { set, messages, peaks, error, waveformError } = useDjSetReplay(setId);
+  const player = useDenPlayer();
+
+  const track = set ? djSetTrack(set) : null;
+  const current = track !== null && player.track?.id === track.id;
+  const positionS = current ? player.currentTimeS : 0;
+  const seek = (seconds: number) => {
+    if (track) player.play(track, seconds);
+  };
+
+  const problem = setId === null ? "that link doesn't point at a set." : error;
+
+  return (
+    <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-3xl flex-col px-4 pb-4 sm:px-5 sm:pb-6">
+      {/* the home button's row: it sits fixed top-left, so this just leaves it room */}
+      <div className="flex h-20 shrink-0 items-center justify-end sm:h-24">
+        <Link href="/opium-den" className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
+          &larr; Opium Den
+        </Link>
+      </div>
+
+      {problem && (
+        <p className="rounded-xl border border-den-line p-4 text-sm text-den-muted">
+          {problem}{" "}
+          <Link href="/opium-den" className="text-den-accent-soft underline-offset-4 hover:underline">
+            all the past sets
+          </Link>{" "}
+          are in the den.
+        </p>
+      )}
+      {!problem && !set && <p className="text-sm text-den-faint">loading the set...</p>}
+
+      {set && track && (
+        <>
+          <header className="flex shrink-0 items-center gap-3 sm:gap-4">
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-white/[0.05] sm:h-14 sm:w-14">
+              <Image
+                src={BOARD_ART_SRC}
+                alt=""
+                width={BOARD_ART_WIDTH_PX}
+                height={BOARD_ART_HEIGHT_PX}
+                priority
+                className="pixelated h-auto w-[85%]"
+              />
+              {current && player.playing && (
+                <EqBars active={!player.loading} className="absolute bottom-1 right-1 h-2.5 w-2.5 text-den-accent" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate font-semibold sm:text-lg">{djSetTitle(set)}</h1>
+              <p className="mt-0.5 truncate text-xs text-den-muted sm:text-sm">{setMeta(set, messages)}</p>
+            </div>
+            <SetPlayButton player={player} track={track} />
+          </header>
+
+          {set.description && (
+            <details className="group mt-2 shrink-0">
+              <summary className="inline-flex cursor-pointer list-none text-xs text-den-faint transition-colors hover:text-den-accent-soft [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">about this set</span>
+                <span className="hidden group-open:inline">less</span>
+              </summary>
+              <p className="mt-1 max-h-32 overflow-y-auto whitespace-pre-line text-sm leading-relaxed text-den-muted">
+                {set.description}
+              </p>
+            </details>
+          )}
+
+          <div className="mt-4 shrink-0">
+            <Waveform
+              peaks={peaks}
+              loading={peaks === null && waveformError === null}
+              durationS={set.duration_s}
+              positionS={positionS}
+              messages={messages ?? []}
+              onSeek={seek}
+            />
+            {waveformError && <p className="text-xs text-den-faint">{waveformError}</p>}
+            {current && player.error && <p className="text-xs text-den-accent-soft">{player.error}</p>}
+          </div>
+
+          <div className="mt-1 min-h-0 flex-1">
+            <ReplayChat messages={messages} positionS={positionS} started={current} onSeek={seek} />
+          </div>
+        </>
+      )}
+    </main>
+  );
+}

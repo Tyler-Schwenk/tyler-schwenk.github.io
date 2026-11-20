@@ -1,9 +1,74 @@
 "use client";
 
+import type { PointerEventHandler } from "react";
+
+/**
+ * an invisible range input stretched over whatever draws a slider (a track, a waveform),
+ * so clicking, dragging, keyboards and screen readers all get the native control while
+ * the drawing underneath stays custom. the parent needs `relative`.
+ *
+ * @param {object} props
+ * @param {number} props.value - current value.
+ * @param {number} props.max - the end of the range; 0 disables it.
+ * @param {(value: number) => void} props.onChange - called while dragging.
+ * @param {() => void} [props.onRelease] - called when the finger, mouse or key lets go.
+ * @param {string} props.label - accessible name, like "seek" or "volume".
+ * @param {string} [props.valueText] - spoken value, like "3:12 of 58:40".
+ * @param {number} [props.step] - input step.
+ * @param {PointerEventHandler<HTMLInputElement>} [props.onPointerMove] - for hover previews.
+ * @param {PointerEventHandler<HTMLInputElement>} [props.onPointerLeave] - for hover previews.
+ * @returns {JSX.Element} the input.
+ */
+export function RangeOverlay({
+  value,
+  max,
+  onChange,
+  onRelease,
+  label,
+  valueText,
+  step = 1,
+  onPointerMove,
+  onPointerLeave,
+}: {
+  value: number;
+  max: number;
+  onChange: (value: number) => void;
+  onRelease?: () => void;
+  label: string;
+  valueText?: string;
+  step?: number;
+  onPointerMove?: PointerEventHandler<HTMLInputElement>;
+  onPointerLeave?: PointerEventHandler<HTMLInputElement>;
+}) {
+  return (
+    <input
+      type="range"
+      min={0}
+      max={max || 1}
+      step={step}
+      value={max > 0 ? value : 0}
+      disabled={max <= 0}
+      onChange={(event) => onChange(Number(event.target.value))}
+      // a phone can end a drag with pointercancel or only touchend, so listen for all
+      // of them; letting go twice is harmless
+      onPointerUp={onRelease}
+      onPointerCancel={onRelease}
+      onTouchEnd={onRelease}
+      onKeyUp={onRelease}
+      onBlur={onRelease}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+      aria-label={label}
+      aria-valuetext={valueText}
+      className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
+    />
+  );
+}
+
 /**
  * a slim slider for the player's progress and volume: a filled track you can click or
- * drag, with a knob that shows on hover. it's a real range input underneath (invisible,
- * stretched over the track), so keyboards and screen readers get the native control.
+ * drag, with a knob that shows on hover. it's a real range input underneath
+ * (RangeOverlay), so keyboards and screen readers get the native control.
  * the large version has a thicker track, a bigger hit area and an always-on knob, since
  * there's no hover on a phone.
  *
@@ -54,24 +119,14 @@ export default function SliderBar({
           style={{ left: `${fillPct}%` }}
         />
       </div>
-      <input
-        type="range"
-        min={0}
-        max={max || 1}
+      <RangeOverlay
+        value={value}
+        max={max}
         step={step}
-        value={max > 0 ? value : 0}
-        disabled={max <= 0}
-        onChange={(event) => onChange(Number(event.target.value))}
-        // a phone can end a drag with pointercancel or only touchend, so listen for all
-        // of them; letting go twice is harmless
-        onPointerUp={onRelease}
-        onPointerCancel={onRelease}
-        onTouchEnd={onRelease}
-        onKeyUp={onRelease}
-        onBlur={onRelease}
-        aria-label={label}
-        aria-valuetext={valueText}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
+        onChange={onChange}
+        onRelease={onRelease}
+        label={label}
+        valueText={valueText}
       />
     </div>
   );

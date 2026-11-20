@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { formatDate, formatDuration } from "@/app/admin/format";
-import { djSetTitle, djSetTrackId, type DjSet } from "@/app/opium-den/djApi";
+import { djSetPagePath, djSetTitle, djSetTrackId, type DjSet } from "@/app/opium-den/djApi";
 import EqBars from "./EqBars";
 import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 
@@ -64,7 +65,8 @@ function RowMarker({
 }
 
 /**
- * one set: tap the row to play or pause it, and open its description if it has one.
+ * one set: tap the row to play or pause it. under it, a link to its page (the waveform
+ * and its chat replaying), and its description if it has one.
  *
  * @param {object} props
  * @param {DjSet} props.set - the set.
@@ -114,19 +116,27 @@ function SetRow({
         <span className="text-sm tabular-nums text-den-faint">{formatDuration(set.duration_s)}</span>
       </button>
 
-      {set.description && (
-        <div className="-mt-1.5 pb-3.5 pl-10">
-          {open && <p className="mb-1 whitespace-pre-line text-sm leading-relaxed text-den-muted">{set.description}</p>}
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            aria-expanded={open}
-            className="text-xs text-den-faint underline-offset-4 transition-colors hover:text-den-accent-soft hover:underline"
+      <div className="-mt-1.5 pb-3.5 pl-10">
+        {open && <p className="mb-1 whitespace-pre-line text-sm leading-relaxed text-den-muted">{set.description}</p>}
+        <div className="flex gap-4 text-xs text-den-faint">
+          <Link
+            href={djSetPagePath(set.id)}
+            className="underline-offset-4 transition-colors hover:text-den-accent-soft hover:underline"
           >
-            {open ? "less" : "about this set"}
-          </button>
+            waveform &amp; chat
+          </Link>
+          {set.description && (
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              aria-expanded={open}
+              className="underline-offset-4 transition-colors hover:text-den-accent-soft hover:underline"
+            >
+              {open ? "less" : "about this set"}
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </li>
   );
 }

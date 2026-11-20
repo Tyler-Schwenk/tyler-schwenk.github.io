@@ -30,8 +30,11 @@ export type AudioPlayer = {
   muted: boolean;
   /** why the last play failed, null when things are fine. */
   error: string | null;
-  /** plays a track from the start, or resumes it if it's the one loaded. */
-  play: (track: PlayerTrack) => void;
+  /**
+   * plays a track from the start, or resumes it if it's the one loaded. with startAtS
+   * (recorded sets only) it plays from there instead, even for a track that's just loading.
+   */
+  play: (track: PlayerTrack, startAtS?: number) => void;
   pause: () => void;
   /** play if it's paused or a different track, pause if it's this one playing. */
   toggle: (track: PlayerTrack) => void;
@@ -95,6 +98,8 @@ export function useAudioPlayer(): AudioPlayer {
   const [error, setError] = useState<string | null>(null);
   // the handlers below read it without re-subscribing every time it changes
   const trackRef = useRef<PlayerTrack | null>(null);
+  // where a freshly loaded set should start: a new file can't seek until its metadata's in
+  const startAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     const audio = new Audio();
@@ -109,6 +114,12 @@ export function useAudioPlayer(): AudioPlayer {
     const onWaiting = () => setLoading(true);
     const onTime = () => setCurrentTimeS(audio.currentTime);
     const onDuration = () => setDurationS(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const onMetadata = () => {
+      const startAt = startAtRef.current;
+      if (startAt === null) return;
+      startAtRef.current = null;
+      audio.currentTime = startAt;
+    };
     const onVolume = () => {
       setVolumeState(audio.volume);
       setMuted(audio.muted);
@@ -132,6 +143,7 @@ export function useAudioPlayer(): AudioPlayer {
       ["waiting", onWaiting],
       ["timeupdate", onTime],
       ["durationchange", onDuration],
+      ["loadedmetadata", onMetadata],
       ["volumechange", onVolume],
       ["ended", onEnded],
       ["error", onError],
@@ -157,23 +169,6 @@ export function useAudioPlayer(): AudioPlayer {
     });
   }, []);
 
-  const play = useCallback(
-    (next: PlayerTrack) => {
-      const audio = audioRef.current;
-      if (!audio) return;
-      const sameTrack = trackRef.current?.id === next.id;
-      if (!sameTrack || next.live || !audio.getAttribute("src")) {
-        audio.src = next.live ? liveEdgeUrl(next.src) : next.src;
-        setCurrentTimeS(0);
-        setDurationS(0);
-      }
-      trackRef.current = next;
-      setTrack(next);
-      startPlayback(audio);
-    },
-    [startPlayback]
-  );
-
   const pause = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -186,14 +181,6 @@ export function useAudioPlayer(): AudioPlayer {
     audio.pause();
   }, []);
 
-  const toggle = useCallback(
-    (next: PlayerTrack) => {
-      if (trackRef.current?.id === next.id && playing) pause();
-      else play(next);
-    },
-    [playing, pause, play]
-  );
-
   const seekTo = useCallback((seconds: number) => {
     const audio = audioRef.current;
     if (!audio || trackRef.current?.live) return;
@@ -201,6 +188,35 @@ export function useAudioPlayer(): AudioPlayer {
     audio.currentTime = Math.min(Math.max(seconds, 0), end);
     setCurrentTimeS(audio.currentTime);
   }, []);
+
+  const play = useCallback(
+    (next: PlayerTrack, startAtS?: number) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      const sameTrack = trackRef.current?.id === next.id;
+      const startAt = next.live ? null : (startAtS ?? null);
+      trackRef.current = next;
+      setTrack(next);
+      if (!sameTrack || next.live || !audio.getAttribute("src")) {
+        audio.src = next.live ? liveEdgeUrl(next.src) : next.src;
+        startAtRef.current = startAt;
+        setCurrentTimeS(startAt ?? 0);
+        setDurationS(0);
+      } else if (startAt !== null) {
+        seekTo(startAt);
+      }
+      startPlayback(audio);
+    },
+    [startPlayback, seekTo]
+  );
+
+  const toggle = useCallback(
+    (next: PlayerTrack) => {
+      if (trackRef.current?.id === next.id && playing) pause();
+      else play(next);
+    },
+    [playing, pause, play]
+  );
 
   const seekBy = useCallback(
     (seconds: number) => seekTo((audioRef.current?.currentTime ?? 0) + seconds),

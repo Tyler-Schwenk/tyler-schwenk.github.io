@@ -1,28 +1,10 @@
 "use client";
 
-import { formatDate } from "@/app/admin/format";
-import { djSetAudioUrl, djSetTitle, djSetTrackId, LIVE_TRACK, type DjSet } from "@/app/opium-den/djApi";
-import type { PlayerTrack } from "@/lib/useAudioPlayer";
+import { djSetTrack, LIVE_TRACK } from "@/app/opium-den/djApi";
 import { useDjStream } from "@/lib/useDjStream";
 import { useDenPlayer } from "./DenPlayerProvider";
 import LiveHero from "./LiveHero";
 import SetList from "./SetList";
-
-/**
- * a recorded set as something the player can play.
- *
- * @param {DjSet} set - the set.
- * @returns {PlayerTrack} the track.
- */
-function setToTrack(set: DjSet): PlayerTrack {
-  return {
-    id: djSetTrackId(set.id),
-    title: djSetTitle(set),
-    subtitle: set.title ? formatDate(set.started_at) : "untitled set",
-    src: djSetAudioUrl(set.id),
-    live: false,
-  };
-}
 
 /**
  * the opium den's dj booth, laid out like a streaming app: the way into the live room up
@@ -52,7 +34,7 @@ export default function DjBooth() {
           currentId={player.track?.id ?? null}
           playing={player.playing}
           loading={player.loading}
-          onToggle={(set) => player.toggle(setToTrack(set))}
+          onToggle={(set) => player.toggle(djSetTrack(set))}
         />
       )}
     </div>

@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { parseBackendTime } from "@/app/admin/format";
-import { DJ_CHAT_MESSAGE_MAX_LENGTH, DJ_CHAT_NICKNAME_MAX_LENGTH, type DjChatMessage } from "@/app/opium-den/djApi";
+import { DJ_CHAT_MESSAGE_MAX_LENGTH, DJ_CHAT_NICKNAME_MAX_LENGTH } from "@/app/opium-den/djApi";
 import { useChatNickname, useDjChat } from "@/lib/useDjChat";
+import { useStickToBottom } from "@/lib/useStickToBottom";
+import ChatLine from "./ChatLine";
 import { SendIcon } from "./playerIcons";
 
-// how close to the bottom still counts as "reading the latest", so new messages follow along
-const STICK_TO_BOTTOM_PX = 48;
 // 16px text on phones: ios zooms the whole page into any input smaller than that
 const INPUT_BASE_CLASS =
   "min-w-0 flex-1 border bg-den-bg py-2 text-base text-den-ink placeholder:text-den-faint focus:outline-none sm:text-sm";
@@ -17,21 +17,13 @@ const MESSAGE_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-full border-den-line px
 const NAME_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-md border-den-accent/50 px-3 focus:border-den-accent`;
 
 /**
- * one chat line: the name in red (yours in white), then the message. hover for the time.
+ * when a message was sent, in the reader's local time.
  *
- * @param {object} props
- * @param {DjChatMessage} props.message - the message.
- * @param {boolean} props.own - it's from this chatter's nickname.
- * @returns {JSX.Element} the line.
+ * @param {string} createdAt - the backend's naive utc timestamp.
+ * @returns {string} like "9:41 PM".
  */
-function ChatLine({ message, own }: { message: DjChatMessage; own: boolean }) {
-  const sentAt = parseBackendTime(message.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  return (
-    <li className="break-words text-sm leading-relaxed" title={sentAt}>
-      <span className={`font-semibold ${own ? "text-den-ink" : "text-den-accent-soft"}`}>{message.nickname}</span>{" "}
-      <span className="text-den-ink/90">{message.content}</span>
-    </li>
-  );
+function sentAt(createdAt: string): string {
+  return parseBackendTime(createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 /**
@@ -205,22 +197,7 @@ function Composer({
 export default function LiveChat({ live }: { live: boolean }) {
   const { messages, error, send } = useDjChat();
   const [nickname, setNickname] = useChatNickname();
-  const listRef = useRef<HTMLOListElement>(null);
-  const stickRef = useRef(true);
-  const lastId = messages?.at(-1)?.id;
-
-  // follow new messages, unless they've scrolled up to read something
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    if (list && stickRef.current) list.scrollTop = list.scrollHeight;
-  }, [lastId]);
-
-  const onScroll = () => {
-    const list = listRef.current;
-    if (!list) return;
-    stickRef.current = list.scrollHeight - list.scrollTop - list.clientHeight < STICK_TO_BOTTOM_PX;
-  };
-
+  const [listRef, onListScroll] = useStickToBottom<HTMLOListElement>(messages?.at(-1)?.id);
   const empty = messages !== null && messages.length === 0;
 
   return (
@@ -232,13 +209,13 @@ export default function LiveChat({ live }: { live: boolean }) {
 
       <ol
         ref={listRef}
-        onScroll={onScroll}
+        onScroll={onListScroll}
         aria-live="polite"
         aria-label="Chat messages"
         className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-3"
       >
         {messages?.map((message) => (
-          <ChatLine key={message.id} message={message} own={message.nickname === nickname} />
+          <ChatLine key={message.id} message={message} own={message.nickname === nickname} hint={sentAt(message.created_at)} />
         ))}
         {empty && live && <li className="text-sm text-den-faint">nobody&apos;s said anything yet. say hi.</li>}
         {empty && !live && (

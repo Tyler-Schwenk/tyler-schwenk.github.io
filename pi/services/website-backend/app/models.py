@@ -590,9 +590,11 @@ class DjChatMessage(Base):
     DjChatMessage model: one message in the opium den's live room chat.
 
     Anonymous like the public square: a nickname the chatter picks, no account. Messages
-    can only be sent while the stream's live (routers/dj_chat.py) and are read back over
-    a recent window, so each session's chat reads as its own room. Times are naive UTC
-    like the dj sets they sit next to.
+    can only be sent while the stream's live (routers/dj_chat.py). The live room reads
+    back a recent window, so each session's chat reads as its own room. They're kept for
+    good: a recorded set's chat is the messages sent while it was on, matched by time
+    (GET /dj/sets/{id}/chat), with no column linking them. Times are naive UTC like the
+    dj sets they sit next to.
 
     Attributes:
         id: Unique identifier, increasing, so clients poll for anything after the last one

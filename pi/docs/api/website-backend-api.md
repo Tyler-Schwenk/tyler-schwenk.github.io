@@ -1303,9 +1303,27 @@ The live stream itself, `audio/mpeg`, endless until the set ends or the listener
 
 Every finished set, newest first. A set still being recorded isn't listed. `200`.
 
+### GET `/dj/sets/{set_id}`
+
+One finished set, for its page on the site (`/opium-den/set?id=`). `200` with the set, `404` if there's no finished set with that id.
+
 ### GET `/dj/sets/{set_id}/audio`
 
 A set's mp3, with `Range` support for seeking (`206` for a range, `200` whole). `404` if there's no finished set with that id or its file is missing, `416` for a bad range.
+
+### GET `/dj/sets/{set_id}/chat`
+
+The live room's chat from while the set was on, so the set page can replay it as the recording plays. Oldest first, each message with `offset_s`, how far into the recording it belongs:
+
+```json
+[{"id": 42, "nickname": "kyle", "content": "this transition is crazy", "created_at": "2026-11-18T03:30:12", "offset_s": 1075.0}]
+```
+
+There's no link stored between a message and a set: a set's chat is every message sent between its `started_at` and `ended_at` plus `LISTENER_LAG_S` (8 s), since listeners hear the stream a few seconds behind the decks and can react to the last bit after it's over. For the same reason `offset_s` is the send time less the set's start less that lag, kept between 0 and `duration_s`. Messages deleted from the admin page are gone here too. `200`, `404` if there's no finished set with that id.
+
+### GET `/dj/sets/{set_id}/waveform`
+
+The set's loudness over time, for drawing its waveform: `{"peaks": [0.31, 0.42, ...]}`, about 1000 values (`WAVEFORM_BUCKETS`) evenly spread over the set, each 0 to 1 with 1 the loudest moment. ffmpeg works it out (RMS per slice) when the set finishes recording, and it's cached as `<set>.waveform.json` next to the mp3. A set without one gets it on its first request, which takes a few seconds for a long set. Code: `app/dj_waveform.py`. `200`, `404` if the set or its file is missing, `500` if ffmpeg can't read the mp3.
 
 ### PATCH `/dj/sets/{set_id}`
 
@@ -1317,7 +1335,7 @@ Edits a set. Body `{"title": "...", "description": "..."}`, either or both; only
 
 **Auth:** admin JWT.
 
-Deletes the set and its mp3. `204`, or `404` if there's no finished set with that id.
+Deletes the set, its mp3 and its cached waveform. Its chat stays in `dj_chat_messages`. `204`, or `404` if there's no finished set with that id.
 
 ### Live room chat
 
@@ -1331,7 +1349,7 @@ A message:
 
 ### GET `/dj/chat`
 
-The room's chat, oldest first: the latest 100 messages from the last 6 hours (`MAX_CHAT_MESSAGES`, `CHAT_HISTORY_WINDOW`). Readable off air too, so the last set's chat stays up for a while. `200`.
+The room's chat, oldest first: the latest 100 messages from the last 6 hours (`MAX_CHAT_MESSAGES`, `CHAT_HISTORY_WINDOW`). Readable off air too, so the last set's chat stays up for a while. `200`. Messages are kept for good either way: older ones are read per set through `GET /dj/sets/{set_id}/chat`.
 
 ### POST `/dj/chat`
 
