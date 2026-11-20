@@ -15,7 +15,8 @@ export default function OpiumDenLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <Navigation />
-      <div className="den-page min-h-screen bg-den-bg text-den-ink">
+      {/* one screen tall, less the player bar the body is padded for, so short pages (the room) don't scroll */}
+      <div className="den-page min-h-[calc(100dvh-var(--den-bar-clearance,0px))] bg-den-bg text-den-ink">
         <DenPlayerProvider>{children}</DenPlayerProvider>
       </div>
     </>

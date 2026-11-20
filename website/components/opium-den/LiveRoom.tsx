@@ -19,37 +19,36 @@ const BOARD_ART_WIDTH_PX = 112;
 const BOARD_ART_HEIGHT_PX = 52;
 
 /**
- * the big red play button for the stream, with volume beside it on desktop.
+ * the round red play button for the stream.
  *
  * @param {object} props
  * @param {AudioPlayer} props.player - the den's shared player.
- * @returns {JSX.Element} the controls.
+ * @returns {JSX.Element} the button.
  */
-function StreamControls({ player }: { player: AudioPlayer }) {
+function StreamButton({ player }: { player: AudioPlayer }) {
   const current = player.track?.id === LIVE_TRACK.id;
   const playing = current && player.playing;
   const loading = current && player.loading;
   return (
-    <div className="mt-6 flex items-center gap-5">
-      <button
-        type="button"
-        onClick={() => player.toggle(LIVE_TRACK)}
-        aria-label={playing ? "Pause the live stream" : "Play the live stream"}
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:scale-105 hover:brightness-110 active:scale-95"
-      >
-        {loading ? <SpinnerIcon className="h-6 w-6" /> : playing ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
-      </button>
-      {current && <VolumeControl player={player} className="hidden md:flex" />}
-    </div>
+    <button
+      type="button"
+      onClick={() => player.toggle(LIVE_TRACK)}
+      aria-label={playing ? "Pause the live stream" : "Play the live stream"}
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:scale-105 hover:brightness-110 active:scale-95 sm:h-14 sm:w-14"
+    >
+      {loading ? <SpinnerIcon className="h-6 w-6" /> : playing ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
+    </button>
   );
 }
 
 /**
- * the opium den's live room, like a stream page: the dj board, whether it's live, how
- * long it's been on and who's listening, the play button, and the chat beside it (under
- * it on phones). plays through the den's shared player, so leaving for the den keeps the
- * music going. off air it says so, keeps the last few hours of chat readable, and points
- * back to the past sets. see website/docs/OPIUM_DEN.md.
+ * the opium den's live room, built around the chat: a compact header (a small dj board,
+ * "live from the den", how long it's been on and who's listening, the play button, volume
+ * on desktop), and the chat filling the rest of the screen with its box at the bottom.
+ * the room is exactly one screen tall (less the player bar when a past set's playing, via
+ * --den-bar-clearance), so on a phone the message box sits where your thumb is. plays
+ * through the den's shared player, so leaving for the den keeps the music going. off air
+ * it says so and keeps the last few hours of chat readable. see website/docs/OPIUM_DEN.md.
  *
  * @returns {JSX.Element} the room.
  */
@@ -60,49 +59,41 @@ export default function LiveRoom() {
   const streaming = live && player.track?.id === LIVE_TRACK.id && player.playing;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col px-5 pb-8 pt-24 sm:pt-28 lg:h-dvh">
-      <Link href="/opium-den" className="w-fit text-sm text-den-accent-soft transition-colors hover:text-den-ink">
-        &larr; Opium Den
-      </Link>
+    <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-3xl flex-col px-4 pb-4 sm:px-5 sm:pb-6">
+      {/* the home button's row: it sits fixed top-left, so this just leaves it room */}
+      <div className="flex h-20 shrink-0 items-center justify-end sm:h-24">
+        <Link href="/opium-den" className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
+          &larr; Opium Den
+        </Link>
+      </div>
 
-      <div className="mt-6 grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <section className="flex flex-col">
-          <div
-            className={`relative flex aspect-[5/2] items-center justify-center rounded-xl border lg:aspect-auto lg:min-h-0 lg:flex-1 ${
-              live ? "border-den-accent/40 bg-den-accent/10" : "border-den-line bg-white/[0.03]"
-            }`}
-          >
-            <Image
-              src={BOARD_ART_SRC}
-              alt="pixel art of the ddj-400 controller"
-              width={BOARD_ART_WIDTH_PX}
-              height={BOARD_ART_HEIGHT_PX}
-              priority
-              className={`pixelated h-auto w-2/5 max-w-sm transition lg:w-1/2 ${live ? "" : "opacity-40 grayscale"}`}
-            />
-            {streaming && <EqBars active={!player.loading} className="absolute bottom-4 right-4 h-5 w-5 text-den-accent" />}
-          </div>
-
-          <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl">Live from the den</h1>
-          <LiveStatus status={status} className="mt-2" />
-          {error && !status && <p className="mt-2 text-sm text-den-faint">{error}</p>}
-
-          {live ? (
-            <StreamControls player={player} />
-          ) : (
-            <p className="mt-6 text-sm text-den-muted">
-              nothing on right now.{" "}
-              <Link href="/opium-den" className="text-den-accent-soft underline-offset-4 hover:underline">
-                dig through the past sets
-              </Link>{" "}
-              in the meantime.
-            </p>
-          )}
-        </section>
-
-        <div className="h-[70dvh] min-h-80 lg:h-auto lg:min-h-0">
-          <LiveChat live={live} />
+      <header
+        className={`flex shrink-0 items-center gap-3 rounded-xl border p-3 sm:gap-4 sm:p-4 ${
+          live ? "border-den-accent/40 bg-den-accent/10" : "border-den-line"
+        }`}
+      >
+        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-white/[0.05] sm:h-14 sm:w-14">
+          <Image
+            src={BOARD_ART_SRC}
+            alt=""
+            width={BOARD_ART_WIDTH_PX}
+            height={BOARD_ART_HEIGHT_PX}
+            priority
+            className={`pixelated h-auto w-[85%] transition ${live ? "" : "opacity-40 grayscale"}`}
+          />
+          {streaming && <EqBars active={!player.loading} className="absolute bottom-1 right-1 h-2.5 w-2.5 text-den-accent" />}
         </div>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate font-semibold sm:text-lg">Live from the den</h1>
+          <LiveStatus status={status} className="mt-0.5 text-xs sm:text-sm" />
+          {error && !status && <p className="mt-0.5 text-xs text-den-faint">{error}</p>}
+        </div>
+        {live && player.track?.id === LIVE_TRACK.id && <VolumeControl player={player} className="hidden md:flex" />}
+        {live && <StreamButton player={player} />}
+      </header>
+
+      <div className="mt-3 min-h-0 flex-1 sm:mt-4">
+        <LiveChat live={live} />
       </div>
     </main>
   );

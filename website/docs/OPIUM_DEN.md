@@ -78,21 +78,29 @@ den's live row ("Join the room" while live, a small "Live room" link off air).
 `/opium-den/live`, laid out like a stream page. It's a link of its own, so it can be sent
 around when Tyler goes live.
 
-- **Stage**: the DJ board in a panel (red-tinted while live, greyed out off air), "Live
-  from the den", the same status line as the den's live row, and a big red play button
-  with volume beside it on desktop. Off air it says nothing's on and links back to the
-  past sets.
-- **Chat** (`LiveChat`): beside the stage on desktop (filling the screen height), under it
-  on phones. Anyone can read it: the last few hours of messages, so the last set's chat
-  stays up for a while. It follows new messages unless you've scrolled up to read.
-  Sending only works while the stream's live; off air the box disappears and the header
-  says it opens with the next set.
-  - First message: pick a name ("Join"). It's remembered in this browser
-    (`localStorage`, key `den-chat-nickname`, falling back to just this page load when
-    storage is blocked) and can be changed under the box. Your own name shows in white,
-    everyone else's in red.
-  - Messages are one line, up to 280 characters; names up to 24. Sending too fast (more
-    than 8 a minute) gets a "slow down" note instead of the message.
+- **Layout**: built around the chat. The room is exactly one screen tall (less the player
+  bar when a past set's playing, via the `--den-bar-clearance` variable `PlayerBar` sets on
+  the body), so the page itself never scrolls and the message box sits at the bottom where
+  a thumb is. On top, a compact header: a small DJ board, "Live from the den", the status
+  line, the red play button, and volume on desktop. Red-tinted while live, greyed out off
+  air. The rest of the screen is the chat. "Opium Den" at the top goes back to the den.
+- **Chat** (`LiveChat`): anyone can read it: the last few hours of messages, so the last
+  set's chat stays up for a while. It follows new messages unless you've scrolled up to
+  read, and scrolling it doesn't drag the page. Sending only works while the stream's live;
+  off air the box disappears, the header says it opens with the next set, and an empty
+  room points to the past sets.
+  - There's only ever a message box, so typing always goes where you'd expect. Without a
+    name yet, the first send opens a "Pick a name first" panel above the box instead (its
+    own labelled form, a squarer red-outlined field, so it can't be mistaken for the
+    message box). The message waits in the box and sends as soon as a name is picked.
+    Under the box it says "chatting as <name> · change", or that you'll pick a name with
+    your first message.
+  - The name is remembered in this browser (`localStorage`, key `den-chat-nickname`,
+    falling back to just this page load when storage is blocked). Your own name shows in
+    white, everyone else's in red.
+  - Messages are one line, up to 280 characters; names up to 24. Inputs are 16px on phones,
+    since iOS zooms the page into anything smaller. Sending too fast (more than 8 a minute)
+    gets a "slow down" note instead of the message.
   - The room is re-fetched every 3 s while the tab's visible (`useDjChat`), whole, so a
     message deleted from the admin page's DJ tab disappears for everyone. Your own message
     shows the moment it's sent.

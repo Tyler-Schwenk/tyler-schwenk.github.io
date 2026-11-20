@@ -13,6 +13,8 @@ const ART_WIDTH_PX = 112;
 const ART_HEIGHT_PX = 52;
 // a bit taller than the bar on either layout, plus the phone's home indicator
 const BAR_CLEARANCE = "calc(6rem + env(safe-area-inset-bottom))";
+// screen-height layouts (the live room) subtract this so the bar doesn't cover their bottom
+const BAR_CLEARANCE_VAR = "--den-bar-clearance";
 
 /**
  * the now-playing bar pinned to the bottom of the screen, like a streaming app: what's
@@ -20,7 +22,8 @@ const BAR_CLEARANCE = "calc(6rem + env(safe-area-inset-bottom))";
  * phone it folds down to a mini player (title, play/pause, a thin progress line along the
  * top), and tapping anywhere else on it opens the full now-playing sheet with seeking and
  * skips. hidden until something's been played; while it's up it pads the bottom of the
- * page so nothing ends up stuck underneath it.
+ * page so nothing ends up stuck underneath it, and sets --den-bar-clearance on the body
+ * for layouts that are exactly one screen tall.
  *
  * @param {object} props
  * @param {AudioPlayer} props.player - the shared player.
@@ -37,8 +40,10 @@ export default function PlayerBar({ player }: { player: AudioPlayer }) {
     if (!visible) return;
     const previous = document.body.style.paddingBottom;
     document.body.style.paddingBottom = BAR_CLEARANCE;
+    document.body.style.setProperty(BAR_CLEARANCE_VAR, BAR_CLEARANCE);
     return () => {
       document.body.style.paddingBottom = previous;
+      document.body.style.removeProperty(BAR_CLEARANCE_VAR);
     };
   }, [visible]);
 

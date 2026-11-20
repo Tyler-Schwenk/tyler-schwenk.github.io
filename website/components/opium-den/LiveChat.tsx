@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { parseBackendTime } from "@/app/admin/format";
 import { DJ_CHAT_MESSAGE_MAX_LENGTH, DJ_CHAT_NICKNAME_MAX_LENGTH, type DjChatMessage } from "@/app/opium-den/djApi";
@@ -8,8 +9,12 @@ import { SendIcon } from "./playerIcons";
 
 // how close to the bottom still counts as "reading the latest", so new messages follow along
 const STICK_TO_BOTTOM_PX = 48;
-const INPUT_CLASS =
-  "min-w-0 flex-1 rounded-full border border-den-line bg-den-bg px-4 py-2 text-sm text-den-ink placeholder:text-den-faint focus:border-den-accent/60 focus:outline-none disabled:opacity-60";
+// 16px text on phones: ios zooms the whole page into any input smaller than that
+const INPUT_BASE_CLASS =
+  "min-w-0 flex-1 border bg-den-bg py-2 text-base text-den-ink placeholder:text-den-faint focus:outline-none sm:text-sm";
+// the message box is a pill; the name field is squarer and outlined in red, so the two never look alike
+const MESSAGE_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-full border-den-line px-4 focus:border-den-accent/60`;
+const NAME_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-md border-den-accent/50 px-3 focus:border-den-accent`;
 
 /**
  * one chat line: the name in red (yours in white), then the message. hover for the time.
@@ -30,69 +35,97 @@ function ChatLine({ message, own }: { message: DjChatMessage; own: boolean }) {
 }
 
 /**
- * the name step: pick what you're called before your first message.
+ * the "pick a name" panel. it opens above the message box the first time you send (your
+ * message waits in the box and goes out as soon as there's a name), or from "change".
+ * styled as its own labelled form so it can't be mistaken for the message box.
  *
  * @param {object} props
- * @param {(nickname: string) => void} props.onPick - saves the name.
+ * @param {string} props.initial - the current name, to edit, or "".
+ * @param {boolean} props.hasPending - a message is waiting to send once there's a name.
+ * @param {(nickname: string) => void} props.onSave - takes the new name.
+ * @param {() => void} props.onCancel - closes it without changing anything.
  * @returns {JSX.Element} the form.
  */
-function NicknameForm({ onPick }: { onPick: (nickname: string) => void }) {
-  const [draft, setDraft] = useState("");
+function NamePanel({
+  initial,
+  hasPending,
+  onSave,
+  onCancel,
+}: {
+  initial: string;
+  hasPending: boolean;
+  onSave: (nickname: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const name = draft.trim();
-    if (name) onPick(name);
+    if (name) onSave(name);
   };
   return (
-    <form onSubmit={submit} className="flex gap-2">
-      <input
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        placeholder="pick a name to chat"
-        maxLength={DJ_CHAT_NICKNAME_MAX_LENGTH}
-        aria-label="Your chat name"
-        className={INPUT_CLASS}
-      />
-      <button
-        type="submit"
-        disabled={!draft.trim()}
-        className="rounded-full bg-den-accent px-4 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-40"
-      >
-        Join
+    <form onSubmit={submit} className="mb-3 rounded-lg border border-den-accent/40 bg-den-accent/10 p-3">
+      <label htmlFor="den-chat-name" className="block text-sm font-medium">
+        {initial ? "Change your name" : "Pick a name first"}
+      </label>
+      <p className="mt-0.5 text-xs text-den-muted">
+        it shows next to your messages{hasPending ? ", and your message sends as soon as you pick one." : "."}
+      </p>
+      <div className="mt-2 flex gap-2">
+        <input
+          id="den-chat-name"
+          autoFocus
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="your name"
+          autoComplete="nickname"
+          maxLength={DJ_CHAT_NICKNAME_MAX_LENGTH}
+          className={NAME_INPUT_CLASS}
+        />
+        <button
+          type="submit"
+          disabled={!draft.trim()}
+          className="min-h-10 shrink-0 rounded-md bg-den-accent px-4 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-40"
+        >
+          {hasPending ? "Send" : "Save"}
+        </button>
+      </div>
+      <button type="button" onClick={onCancel} className="mt-2 text-xs text-den-faint transition-colors hover:text-den-accent-soft">
+        cancel
       </button>
     </form>
   );
 }
 
 /**
- * the message box, with who you're chatting as and a way to change it.
+ * where you talk: always a message box, so typing goes where you'd expect. without a
+ * name yet, sending opens the name panel instead and the message waits for it. under the
+ * box it says who you're chatting as, with a way to change it.
  *
  * @param {object} props
- * @param {string} props.nickname - who's chatting.
- * @param {() => void} props.onChangeName - forgets the name so a new one can be picked.
- * @param {(content: string) => Promise<void>} props.onSend - sends; throws with a readable reason.
- * @returns {JSX.Element} the form.
+ * @param {string} props.nickname - the saved name, "" before one's picked.
+ * @param {(nickname: string) => void} props.onNickname - saves a name.
+ * @param {(nickname: string, content: string) => Promise<void>} props.onSend - sends; throws with a readable reason.
+ * @returns {JSX.Element} the composer.
  */
-function MessageForm({
+function Composer({
   nickname,
-  onChangeName,
+  onNickname,
   onSend,
 }: {
   nickname: string;
-  onChangeName: () => void;
-  onSend: (content: string) => Promise<void>;
+  onNickname: (nickname: string) => void;
+  onSend: (nickname: string, content: string) => Promise<void>;
 }) {
   const [draft, setDraft] = useState("");
+  const [naming, setNaming] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    const content = draft.trim();
-    if (!content || sending) return;
+  const deliver = async (name: string, content: string) => {
     setSending(true);
     try {
-      await onSend(content);
+      await onSend(name, content);
       setDraft("");
       setError(null);
     } catch (err) {
@@ -102,31 +135,58 @@ function MessageForm({
     }
   };
 
+  const submitMessage = (event: FormEvent) => {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content || sending) return;
+    if (!nickname) {
+      setNaming(true);
+      return;
+    }
+    deliver(nickname, content);
+  };
+
+  const saveName = (name: string) => {
+    onNickname(name);
+    setNaming(false);
+    const content = draft.trim();
+    if (content) deliver(name, content);
+  };
+
   return (
     <div>
-      <form onSubmit={submit} className="flex gap-2">
+      {naming && (
+        <NamePanel initial={nickname} hasPending={Boolean(draft.trim())} onSave={saveName} onCancel={() => setNaming(false)} />
+      )}
+      <form onSubmit={submitMessage} className="flex gap-2">
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="say something"
           maxLength={DJ_CHAT_MESSAGE_MAX_LENGTH}
           aria-label="Chat message"
-          className={INPUT_CLASS}
+          className={MESSAGE_INPUT_CLASS}
         />
         <button
           type="submit"
           disabled={!draft.trim() || sending}
           aria-label="Send"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:brightness-110 disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:brightness-110 disabled:opacity-40"
         >
           <SendIcon className="h-4 w-4" />
         </button>
       </form>
       <p className="mt-2 px-1 text-xs text-den-faint">
-        chatting as <span className="text-den-ink/80">{nickname}</span> ·{" "}
-        <button type="button" onClick={onChangeName} className="underline-offset-4 hover:text-den-accent-soft hover:underline">
-          change
-        </button>
+        {nickname ? (
+          <>
+            chatting as <span className="text-den-ink/80">{nickname}</span> ·{" "}
+            <button type="button" onClick={() => setNaming(true)} className="underline-offset-4 hover:text-den-accent-soft hover:underline">
+              change
+            </button>
+          </>
+        ) : (
+          "you'll pick a name when you send your first message"
+        )}
       </p>
       {error && <p className="mt-1 px-1 text-xs text-den-accent-soft">{error}</p>}
     </div>
@@ -175,13 +235,20 @@ export default function LiveChat({ live }: { live: boolean }) {
         onScroll={onScroll}
         aria-live="polite"
         aria-label="Chat messages"
-        className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-3"
+        className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-3"
       >
         {messages?.map((message) => (
           <ChatLine key={message.id} message={message} own={message.nickname === nickname} />
         ))}
-        {empty && (
-          <li className="text-sm text-den-faint">{live ? "nobody's said anything yet. say hi." : "the room's quiet."}</li>
+        {empty && live && <li className="text-sm text-den-faint">nobody&apos;s said anything yet. say hi.</li>}
+        {empty && !live && (
+          <li className="text-sm text-den-faint">
+            the room&apos;s quiet.{" "}
+            <Link href="/opium-den" className="text-den-accent-soft underline-offset-4 hover:underline">
+              the past sets
+            </Link>{" "}
+            are in the den.
+          </li>
         )}
         {messages === null && <li className="text-sm text-den-faint">{error ?? "loading the chat..."}</li>}
       </ol>
@@ -189,11 +256,7 @@ export default function LiveChat({ live }: { live: boolean }) {
       {/* off air there's nothing to type into; the header already says when it opens */}
       {live && (
         <div className="border-t border-den-line p-3">
-          {nickname ? (
-            <MessageForm nickname={nickname} onChangeName={() => setNickname("")} onSend={(content) => send(nickname, content)} />
-          ) : (
-            <NicknameForm onPick={setNickname} />
-          )}
+          <Composer nickname={nickname} onNickname={setNickname} onSend={send} />
         </div>
       )}
     </section>
