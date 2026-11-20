@@ -19,6 +19,16 @@ Since the laptop's on the tailnet, `ssh tyler@fart-pi.taila4ff35.ts.net` works f
 |---------|-------|-----------|---------------|
 | mattbot | Kyle | `100.67.239.119` | `mattbot.tailaaa0c4.ts.net` |
 
+Shared machines keep their owner's MagicDNS suffix, so bare names like `mattbot` don't resolve from our tailnet. Use the full name, or an alias in `~/.ssh/config`:
+
+```
+Host mattbot
+    HostName mattbot.tailaaa0c4.ts.net
+    User tyler
+```
+
+Ground rules on mattbot: it hosts Kyle's public-facing sites, so no port forwarding or networking changes of any kind, and his data isn't backed up, so be careful with anything that writes or deletes.
+
 ## How it fits with everything else
 
 | Path | Who uses it | Reaches |
