@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { parseBackendTime } from "@/app/admin/format";
-import { DJ_CHAT_MESSAGE_MAX_LENGTH, DJ_CHAT_NICKNAME_MAX_LENGTH } from "@/app/opium-den/djApi";
+import {
+  ChatNameTakenError,
+  DJ_CHAT_MESSAGE_MAX_LENGTH,
+  DJ_CHAT_NICKNAME_MAX_LENGTH,
+  LIVE_SECTION_PATH,
+} from "@/app/opium-den/djApi";
 import { useChatNickname, useDjChat } from "@/lib/useDjChat";
 import { useStickToBottom } from "@/lib/useStickToBottom";
+import AlertSignup from "./AlertSignup";
 import ChatLine from "./ChatLine";
 import { SendIcon } from "./playerIcons";
 
@@ -91,8 +97,9 @@ function NamePanel({
 
 /**
  * where you talk: always a message box, so typing goes where you'd expect. without a
- * name yet, sending opens the name panel instead and the message waits for it. under the
- * box it says who you're chatting as, with a way to change it.
+ * name yet, sending opens the name panel instead and the message waits for it, and the
+ * same happens when the name turns out to be someone else's. under the box it says who
+ * you're chatting as, with a way to change it.
  *
  * @param {object} props
  * @param {string} props.nickname - the saved name, "" before one's picked.
@@ -122,6 +129,8 @@ function Composer({
       setError(null);
     } catch (err) {
       setError((err as Error).message);
+      // the name's someone else's: straight back to picking one, the message still waiting
+      if (err instanceof ChatNameTakenError) setNaming(true);
     } finally {
       setSending(false);
     }
@@ -188,7 +197,8 @@ function Composer({
 /**
  * the live room's chat, like a stream's side chat: the room's recent messages, following
  * the newest unless you've scrolled up to read, and a box to talk in. anyone can read it;
- * it only takes messages while the stream's live. names are remembered in this browser.
+ * it only takes messages while the stream's live, and off air the box is swapped for the
+ * live alerts signup. names are remembered in this browser.
  *
  * @param {object} props
  * @param {boolean} props.live - the stream's on, so the chat's open.
@@ -221,21 +231,23 @@ export default function LiveChat({ live }: { live: boolean }) {
         {empty && !live && (
           <li className="text-sm text-den-faint">
             the room&apos;s quiet.{" "}
-            <Link href="/opium-den" className="text-den-accent-soft underline-offset-4 hover:underline">
+            <Link href={LIVE_SECTION_PATH} className="text-den-accent-soft underline-offset-4 hover:underline">
               the past sets
             </Link>{" "}
-            are in the den.
+            are all recorded, chat and all.
           </li>
         )}
         {messages === null && <li className="text-sm text-den-faint">{error ?? "loading the chat..."}</li>}
       </ol>
 
-      {/* off air there's nothing to type into; the header already says when it opens */}
-      {live && (
-        <div className="border-t border-den-line p-3">
+      {/* off air there's nothing to type into, so the box's spot offers an email for next time */}
+      <div className="border-t border-den-line p-3">
+        {live ? (
           <Composer nickname={nickname} onNickname={setNickname} onSend={send} />
-        </div>
-      )}
+        ) : (
+          <AlertSignup startOpen />
+        )}
+      </div>
     </section>
   );
 }

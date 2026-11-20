@@ -871,11 +871,14 @@ MAX_DJ_SET_DESCRIPTION_LENGTH = 5000
 class DjStreamStatus(BaseModel):
     """
     Whether the dj stream is on air. started_at is when butt connected (naive UTC),
-    listeners is how many people the public relay is serving right now.
+    listeners is how many people the public relay is serving right now. set_id is the set
+    being recorded, and image_id its cover image if one's been uploaded yet.
     """
     live: bool
     started_at: Optional[datetime] = None
     listeners: int
+    set_id: Optional[int] = None
+    image_id: Optional[int] = None
 
 
 class DjSetRead(BaseModel):
@@ -887,6 +890,17 @@ class DjSetRead(BaseModel):
     ended_at: datetime
     duration_s: int
     size_bytes: int
+    image_id: Optional[int] = Field(None, description="its cover image, changes with every upload")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DjSetImageRead(BaseModel):
+    """A set's cover image, as uploading one answers."""
+    id: int
+    set_id: int
+    width: Optional[int] = None
+    height: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -903,6 +917,10 @@ class DjSetUpdate(BaseModel):
 # DJ live room chat. short on purpose: it's a chat next to a stream, not a forum
 MAX_DJ_CHAT_NICKNAME_LENGTH = 24
 MAX_DJ_CHAT_MESSAGE_LENGTH = 280
+# the browser's secret key that owns its chat name (a uuid, 36 characters). bounds leave
+# room for other random formats without letting anyone post a novel
+MIN_DJ_CHAT_OWNER_KEY_LENGTH = 16
+MAX_DJ_CHAT_OWNER_KEY_LENGTH = 128
 
 
 def _one_line(value: str) -> str:
@@ -920,11 +938,14 @@ def _one_line(value: str) -> str:
 
 class DjChatMessageCreate(BaseModel):
     """
-    A chat message from the live room. Both fields are squashed onto one line and trimmed
-    before the length checks, so a message of only spaces is rejected as empty.
+    A chat message from the live room. The nickname and message are squashed onto one line
+    and trimmed before the length checks, so a message of only spaces is rejected as
+    empty. owner_key is the random secret the browser keeps, which owns the nickname once
+    it's used (see routers/dj_chat.py).
     """
     nickname: str = Field(..., max_length=MAX_DJ_CHAT_NICKNAME_LENGTH)
     content: str = Field(..., max_length=MAX_DJ_CHAT_MESSAGE_LENGTH)
+    owner_key: str = Field(..., min_length=MIN_DJ_CHAT_OWNER_KEY_LENGTH, max_length=MAX_DJ_CHAT_OWNER_KEY_LENGTH)
 
     @field_validator("nickname", "content", mode="before")
     @classmethod
@@ -963,3 +984,69 @@ class DjSetChatMessage(DjChatMessageRead):
 class DjSetWaveform(BaseModel):
     """A recorded set's loudness over time, for drawing its waveform."""
     peaks: list[float] = Field(..., description="evenly spread over the set, each 0 to 1 (1 is the loudest moment)")
+
+
+# DJ live alerts: emails the admin sends by hand when going live
+# the longest an email address can be (RFC 5321's limit on a forward path)
+MAX_EMAIL_LENGTH = 254
+MAX_DJ_ALERT_SUBJECT_LENGTH = 120
+MAX_DJ_ALERT_BODY_LENGTH = 2000
+
+
+class DjAlertSignup(BaseModel):
+    """Signing up for live alerts from the live room."""
+    email: EmailStr = Field(..., max_length=MAX_EMAIL_LENGTH)
+
+
+class DjAlertSignupResult(BaseModel):
+    """
+    The same answer whether the address is new, waiting on its confirmation or already
+    signed up, so the form can't be used to check who's on the list.
+    """
+    email: str
+
+
+class DjAlertSubscriberRead(BaseModel):
+    """A subscriber as the admin page lists them. Times are naive UTC."""
+    id: int
+    email: str
+    created_at: datetime
+    confirmed_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DjAlertSend(BaseModel):
+    """
+    An alert from the admin page. The subject is squashed onto one line (an email header
+    can't hold a line break); blank or missing means the default. The body keeps its
+    line breaks, trimmed at the ends, and can't be blank.
+    """
+    subject: Optional[str] = Field(None, max_length=MAX_DJ_ALERT_SUBJECT_LENGTH)
+    body: str = Field(..., max_length=MAX_DJ_ALERT_BODY_LENGTH)
+
+    @field_validator("subject", mode="before")
+    @classmethod
+    def subject_on_one_line(cls, value: object) -> object:
+        """trims and flattens the subject; anything else is left for the type check."""
+        return _one_line(value) if isinstance(value, str) else value
+
+    @field_validator("body", mode="before")
+    @classmethod
+    def trim_body(cls, value: object) -> object:
+        """trims the body's ends, keeping its line breaks."""
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("body")
+    @classmethod
+    def body_not_blank(cls, value: str) -> str:
+        """rejects a body that was empty or only whitespace."""
+        if not value:
+            raise ValueError("can't be empty -- write what the email should say")
+        return value
+
+
+class DjAlertSendResult(BaseModel):
+    """How an alert went: how many took it, and any address the mail server refused."""
+    sent: int
+    failed: list[str]

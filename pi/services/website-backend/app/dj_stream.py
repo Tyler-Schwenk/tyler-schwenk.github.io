@@ -23,8 +23,9 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import SessionLocal
 from app.dj_waveform import prepare_waveform
+from app.image_utils import delete_photo_files
 from app.kiln_firings import utc_now_naive
-from app.models import DjSet
+from app.models import DjSet, DjSetImage
 from app.schemas import DjStreamStatus
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,8 @@ FFMPEG_STOP_TIMEOUT_S = 10.0
 ICECAST_STATUS_PATH = "/status-json.xsl"
 ICECAST_START_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 SET_FILENAME_FORMAT = "%Y-%m-%d_%H-%M-%S.mp3"
+# cover images sit next to the recordings, so they're on the same ssd and mount
+SET_IMAGES_SUBDIR = "images"
 
 
 def stream_url() -> str:
@@ -97,6 +100,27 @@ def parse_stream_start(source: dict) -> datetime | None:
     return started.astimezone(UTC).replace(tzinfo=None)
 
 
+def set_images_dir() -> Path:
+    """
+    Where sets' cover images are kept, a folder per set.
+
+    Returns:
+        Path: DJ_SETS_DIR/images.
+    """
+    return Path(settings.DJ_SETS_DIR) / SET_IMAGES_SUBDIR
+
+
+def delete_set_image_files(image: DjSetImage | None) -> None:
+    """
+    Removes a cover image's files from disk. The caller deletes (or replaces) the row.
+
+    Args:
+        image: The image, or None when the set hasn't got one (then this does nothing).
+    """
+    if image is not None:
+        delete_photo_files(set_images_dir(), image.file_path, image.thumbnail_path)
+
+
 def finalize_set(db: Session, dj_set: DjSet, ended_at: datetime) -> bool:
     """
     Finishes a set's row once its recording has stopped, or throws it away if it's too short.
@@ -110,7 +134,7 @@ def finalize_set(db: Session, dj_set: DjSet, ended_at: datetime) -> bool:
         bool: True if the set was kept, False if it was thrown away.
 
     Side effects:
-        Deletes the row and its mp3 for a too-short or empty recording.
+        Deletes the row, its mp3 and any cover image for a too-short or empty recording.
     """
     path = Path(dj_set.file_path)
     duration_s = int((ended_at - dj_set.started_at).total_seconds())
@@ -118,6 +142,7 @@ def finalize_set(db: Session, dj_set: DjSet, ended_at: datetime) -> bool:
 
     if duration_s < MIN_SET_DURATION_S or size_bytes == 0:
         path.unlink(missing_ok=True)
+        delete_set_image_files(dj_set.image)
         db.delete(dj_set)
         db.commit()
         logger.info(f"dj stream: discarded {path.name}, only {duration_s} s / {size_bytes} bytes")
@@ -191,14 +216,24 @@ class DjStreamWatcher:
         # held so the finished set's waveform analysis isn't garbage collected mid-run
         self._waveform_task: asyncio.Task | None = None
 
+    @property
+    def recording_set_id(self) -> int | None:
+        """the dj_sets row being recorded right now, None when nothing is."""
+        return self._set_id if self._recorder is not None else None
+
     def status(self) -> DjStreamStatus:
         """
-        What /dj/status reports.
+        What /dj/status reports, less the cover image (the router looks that up).
 
         Returns:
-            DjStreamStatus: live, since when, and how many are listening.
+            DjStreamStatus: live, since when, how many are listening, and the set being recorded.
         """
-        return DjStreamStatus(live=self.live, started_at=self.started_at, listeners=self.listeners)
+        return DjStreamStatus(
+            live=self.live,
+            started_at=self.started_at,
+            listeners=self.listeners,
+            set_id=self.recording_set_id,
+        )
 
     async def run(self) -> None:
         """

@@ -25,7 +25,7 @@ Documentation for fart-pi Raspberry Pi 5 home server.
 - [**Presence Agent**](services/presence-agent.md) - Who's home, from whose phone is on the Wi-Fi, for the admin page
 - [**Monitor Agent**](services/monitor-agent.md) - Each house machine reports its storage, memory and temperature for the `/monitor` page
 - [**Kiln Logger**](services/kiln-logger.md) - Kiln temperature logging from castpi to fart-pi
-- [**DJ Stream**](services/dj-stream.md) - Live stream from rekordbox on the DJ laptop to the Opium Den page, with every session recorded
+- [**DJ Stream**](services/dj-stream.md) - Live stream from rekordbox on the DJ laptop to the Opium Den's live section, with every session recorded
 - [**Trash Reminder**](services/trash-reminder.md) - Thursday trash reminders in Matt's voice, and the display kiosk takeover
 
 ### For Tyler

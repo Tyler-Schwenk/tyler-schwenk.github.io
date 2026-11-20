@@ -12,6 +12,10 @@ export type PlayerTrack = {
   src: string;
   /** the live stream: no seeking, and resuming jumps back to the live edge. */
   live: boolean;
+  /** the site page that's this track's full view (a set's replay, the live room). */
+  href: string;
+  /** cover art, square-ish, null for none (the player shows a placeholder). */
+  artSrc: string | null;
 };
 
 /** what useAudioPlayer hands back. */
@@ -51,7 +55,8 @@ export const SKIP_FORWARD_S = 30;
 
 // what the lock screen and notification controls show next to the title
 const MEDIA_SESSION_ARTIST = "Opium Den";
-const MEDIA_SESSION_ARTWORK = [{ src: "/images/8bit/dj_board.png", sizes: "112x52", type: "image/png" }];
+// the site's icon, for anything without its own cover
+const FALLBACK_ARTWORK = { src: "/images/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" };
 const DEFAULT_VOLUME = 1;
 
 /**
@@ -77,8 +82,9 @@ function unloadAudio(audio: HTMLAudioElement): void {
 }
 
 /**
- * one audio element shared by everything on the page that plays something, so starting
- * a set stops the live stream and the player bar always shows what's actually playing.
+ * one audio element shared by the whole site, so starting a set stops the live stream
+ * and the player bar always shows what's actually playing. it isn't in the page, so it
+ * keeps going through client-side navigation, a backgrounded tab and a locked phone.
  *
  * pausing the live stream hangs up instead of buffering in the background, and playing
  * it again reconnects at the live edge. hooks into the media session so phones show the
@@ -241,7 +247,7 @@ export function useAudioPlayer(): AudioPlayer {
       title: track.title,
       artist: MEDIA_SESSION_ARTIST,
       album: track.subtitle,
-      artwork: MEDIA_SESSION_ARTWORK,
+      artwork: [track.artSrc ? { src: track.artSrc } : FALLBACK_ARTWORK],
     });
     navigator.mediaSession.setActionHandler("play", () => play(track));
     navigator.mediaSession.setActionHandler("pause", pause);

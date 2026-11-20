@@ -99,7 +99,7 @@ architecture.
   - **Public Square**: Anonymous forum — posts, comments, upvote/downvote (operational)
   - **The Kitchen (Recipes)**: Public, rate-limited recipe submission (name/description/tags/photos, all optional) with search/tag-filter/random browsing; admin-only edit/delete (see `pi/docs/api/website-backend-api.md`)
   - **Fly Kills**: The house fly kill counter on `/flies`, one `fly_kills` row per kill, no login, rate limited per IP
-  - **DJ Stream**: Live DJ stream relayed from icecast (`dj-stream` service) at `/dj/live`, each session recorded to `/mnt/ssd/dj-sets` as a `dj_sets` row, shown on the Opium Den page (see `pi/docs/services/dj-stream.md`)
+  - **DJ Stream**: Live DJ stream relayed from icecast (`dj-stream` service) at `/dj/live`, each session recorded to `/mnt/ssd/dj-sets` as a `dj_sets` row, shown in the Opium Den's live section (see `pi/docs/services/dj-stream.md`)
   - **Admin Panel**: `https://tyler-schwenk.com/admin` — gallery/photo/video management UI, Public Square moderation, and the display kiosk remote (relayed through `/display-control`, in memory, no database)
 - Frontend: GitHub Pages (hosted separately at tyler-schwenk.com)
 - Access:

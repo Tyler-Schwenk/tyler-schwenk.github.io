@@ -86,7 +86,7 @@ Object-level fields:
   by the DJ board inside the opium den cave.
 - `liveTag` -- while the DJ stream's on air, a blinking red LIVE! tag sits above the sprite
   (hidden while the object's lit up, so its name tag shows instead). Used by the radio tower
-  on the hill next to the cave, which goes to the live room (`/opium-den/live`).
+  on the hill next to the cave, which goes to the live section (`/opium-den/live`), where the live room and every past set are.
 - The live state comes from `useDjLive`, which checks `/dj/status` on load and every 30 s
   while the tab's visible. The animations are the `.world-note` / `.world-live-tag` rules
   in `globals.css`, held still under reduced motion. See `website/docs/OPIUM_DEN.md`.

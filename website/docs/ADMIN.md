@@ -14,7 +14,7 @@
 | Upload | `#upload` | Photos into an existing or new gallery, or a video (with the existing videos list and delete) |
 | RSVPs | `#rsvps` | Event RSVPs grouped by event, with responses and a rough headcount (responders + friends); delete a response |
 | Public Square | `#square` | Moderation: newest posts, expand to read comments, hard-delete a post (with its comments and votes) or a comment |
-| DJ sets | `#dj` | The live room's recent chat, with delete on each message. Then every set the live DJ stream recorded (they're public on the Opium Den page as soon as they end): give one a title and description, play it, delete it (`pi/docs/services/dj-stream.md`) |
+| DJ sets | `#dj` | While the stream's live, an "On air now" card to give the set being recorded its cover image. Live alerts: write an email and send it to everyone who signed up and confirmed, and the list of who has (remove anyone). The live room's recent chat, with delete on each message. Then every set the live DJ stream recorded (they're public in the Opium Den's live section as soon as they end): add, replace or remove its cover, give it a title and description, play it, delete it (`pi/docs/services/dj-stream.md`) |
 
 It's linked from the bottom of the home page ("ADMIN"). It's `noindex` and not in the
 sitemap. The open tab lives in the url hash, so `tyler-schwenk.com/admin#display` can be
@@ -61,7 +61,8 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/UploadTab.tsx` | Photo and video upload |
 | `website/app/admin/RsvpsTab.tsx` | RSVPs |
 | `website/app/admin/PublicSquareTab.tsx` | Public Square moderation |
-| `website/app/admin/DjSetsTab.tsx` | DJ tab: chat moderation, then sets (title and description, play, delete). Types and urls come from `website/app/opium-den/djApi.ts` |
+| `website/app/admin/DjSetsTab.tsx` | DJ tab: the on-air set's cover, live alerts, chat moderation, then sets (cover, title and description, play, delete). Covers are picked or dropped like gallery photos and upload straight away. Types and urls come from `website/app/opium-den/djApi.ts` |
+| `website/app/admin/DjAlertsPanel.tsx` | The DJ tab's live alerts: subject (blank for the default), message, send (asks first, then says how many it reached and any it couldn't), and the signup list with confirmed/unconfirmed and remove |
 | `website/lib/useAdminAuth.ts` | The JWT in localStorage, shared with The Kitchen and the kiln page (each page passes its own storage key; the kiln page also passes its own login endpoint) |
 
 ### Auth

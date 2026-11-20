@@ -1,8 +1,8 @@
 # DJ Stream
 
-Whatever's playing out of rekordbox on the DJ laptop streams live to the Opium Den page
-(`tyler-schwenk.com/opium-den`), and every session gets recorded and listed there as a
-past set. Streaming starts by itself when there's sound and stops after a stretch of
+Whatever's playing out of rekordbox on the DJ laptop streams live to the Opium Den's live
+section (`tyler-schwenk.com/opium-den/live`), and every session gets recorded and listed
+there as a past set. Streaming starts by itself when there's sound and stops after a stretch of
 silence, so practicing is all it takes to go live.
 
 ## How it fits together
@@ -18,9 +18,12 @@ rekordbox (DDJ-400 master, also sent to the laptop's own output by PC MASTER OUT
        - serves finished sets -> GET /dj/sets, GET /dj/sets/{id}/audio
        - works out each finished set's waveform (ffmpeg) -> GET /dj/sets/{id}/waveform
        - keeps the room's chat, replayed per set -> GET /dj/sets/{id}/chat
-  -> Opium Den page: past sets, and the way into the live room (/opium-den/live),
-     which has the stream, who's listening and a chat (GET/POST /dj/chat). each past
-     set has its own page (/opium-den/set?id=) with its waveform and its chat replaying
+       - keeps each set's cover image -> PUT/GET /dj/sets/{id}/image
+       - keeps the live alerts list, and emails it when the admin sends one -> /dj/alerts
+  -> the live section (/opium-den/live): past sets, and the way into the live room
+     (/opium-den/live/room), which has the stream, who's listening and a chat
+     (GET/POST /dj/chat). each past set has its own page (/opium-den/live/set?id=)
+     with its waveform and its chat replaying
 ```
 
 Icecast never goes through the Cloudflare tunnel. Listeners only ever reach the backend's
@@ -45,6 +48,8 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/website-backend/app/routers/dj.py` | The `/dj` endpoints (see `pi/docs/api/website-backend-api.md#dj-stream`) |
 | `pi/services/website-backend/app/dj_waveform.py` | Works out and caches each set's waveform with ffmpeg |
 | `pi/services/website-backend/app/routers/dj_chat.py` | The live room chat, `/dj/chat` (open only while live, admin can delete) |
+| `pi/services/website-backend/app/routers/dj_alerts.py` | Live alerts, `/dj/alerts`: signup, confirm, unsubscribe, and the admin's list and send |
+| `pi/services/website-backend/app/mailer.py` | Sends email over SMTP, one message per recipient |
 
 ## Recording
 
@@ -60,6 +65,9 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 - If butt drops and reconnects (Wi-Fi blip), that's two sets.
 - Sets are public as soon as they end. Give them a title and description, or delete them,
   from the admin page's DJ tab.
+- Covers: the DJ tab can give a set a cover image, while it's still recording ("On air
+  now") or any time after. They're kept in `/mnt/ssd/dj-sets/images/set_<id>/` with a
+  thumbnail, and go when the set does (deleted, or thrown away for being too short).
 - An mp3 at 192 kbps is about 85 MB an hour, on the SSD at `/mnt/ssd/dj-sets`.
 - Once a set's kept, the watcher works out its waveform in the background (ffmpeg decodes
   it to low-rate mono and measures each slice's loudness, a few seconds for a long set)
@@ -71,6 +79,62 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 
 Listeners hear the stream roughly 5-15 s behind the decks (butt's buffer, icecast's
 burst, the browser's buffer). The relay caps listeners at 25 (`MAX_LIVE_LISTENERS`).
+
+## Live alerts
+
+People can ask for an email when the stream's live. Nothing goes out on its own (butt
+starts the stream for any practice): each alert is written and sent by hand from the
+admin page's DJ tab.
+
+- **Signing up**: in the live room off air (the box sits where the message box goes), the
+  "Get an email when I go live" link under the live section's live row, or `/opium-den/live/alerts` on its
+  own, which is a link worth sending people. They get a confirmation email, and only
+  confirmed addresses get alerts, so typing in someone else's address does nothing but
+  send them one email they can ignore.
+- **Sending**: admin page, DJ tab, "Live alerts". An optional subject (default "Tyler's live
+  in the opium den"), the message, Send. Everyone gets their own plain text copy: the
+  message, the live room link, and their own unsubscribe link. One-click unsubscribe
+  headers are on it too, so Gmail and Apple Mail show their own unsubscribe button.
+- Emails go out one after another, 0.6 s apart, and the admin page waits for the whole
+  batch: about a minute per 100 people. Cloudflare drops a request after 100 s, so past
+  ~150 subscribers sending needs to move to a background job.
+- Unsubscribing deletes the address. The admin tab lists everyone (confirmed or not) and
+  can remove anyone.
+
+Endpoints: `pi/docs/api/website-backend-api.md#live-alerts`.
+
+### Setting up email
+
+Any SMTP provider works. Resend is the easy one: a free tier (check its current limits; it
+was 3,000 a month and 100 a day) and sending from our own domain, so alerts come from
+something like `den@tyler-schwenk.com` instead of a personal address.
+
+1. Sign up at resend.com. **Domains > Add domain**, `tyler-schwenk.com`.
+2. It lists DNS records (DKIM, and SPF on its `send.` subdomain). Add each in Cloudflare's
+   DNS for the domain, set to **DNS only**, then hit verify in Resend. They're on their
+   own names, so they don't touch the site's or the tunnel's records.
+3. **API Keys > Create**, with sending access.
+4. On fart-pi, in `pi/services/website-backend/.env`:
+   ```
+   SMTP_HOST=smtp.resend.com
+   SMTP_PORT=587
+   SMTP_USERNAME=resend
+   SMTP_PASSWORD=<the api key, re_...>
+   MAIL_FROM=Opium Den <den@tyler-schwenk.com>
+   ```
+5. `cd ~/tyler-schwenk.github.io/pi/services/website-backend && docker compose up -d`
+   (recreates the container with the new settings).
+6. Sign yourself up at `tyler-schwenk.com/opium-den/live/alerts`, confirm, and send a test from
+   the admin tab. Check it lands in the inbox and not spam.
+
+To use Gmail instead: `SMTP_HOST=smtp.gmail.com`, `SMTP_USERNAME` your address,
+`SMTP_PASSWORD` an app password (Google account > Security > App passwords, needs 2-step
+verification), and `MAIL_FROM` that same address, which every subscriber will see.
+
+The free tiers cap a day's sending (Resend's at 100). An alert to more people than that
+gets cut off partway, and the admin tab lists who it didn't reach.
+
+The `dj_alert_subscribers` table is created on startup, no migration needed.
 
 ## DJ laptop setup (Windows)
 
@@ -111,7 +175,7 @@ Play something and watch for:
 1. butt's meter moving (it's capturing the master)
 2. butt connecting by itself after ~5 s (status shows connected)
 3. `curl http://192.168.1.116:8000/dj/status` showing `"live": true` within a few seconds
-4. the Opium Den page showing "live now" and playing
+4. the live section (`/opium-den/live`) showing "live now" and playing
 5. after stopping for 60 s, butt disconnecting and a new set in the list (if it ran 2+ min)
 
 If butt's meter doesn't move, or capturing the output only works with the laptop speakers
@@ -168,6 +232,16 @@ If UFW is enabled on fart-pi, let the laptop reach 8010 from the LAN:
 
 **Container exits right away**
 - `docker logs dj-stream-icecast`. The entrypoint says which password is empty or not hex.
+
+**Signing up says alerts aren't set up**
+- `SMTP_HOST` or `MAIL_FROM` is empty in the backend's `.env`, or the container wasn't
+  recreated after setting them (`docker compose up -d`).
+
+**Signing up or sending says it couldn't reach the mail server**
+- `docker logs website-backend-api | grep mailer` has the real error: a wrong
+  password or api key is an authentication error, a typo in `SMTP_HOST` a name error.
+- A refused address (`failed` in the send's answer) is usually the sender: `MAIL_FROM`'s
+  domain has to be verified with the provider.
 
 **Icecast's status page**: http://192.168.1.116:8010/ (admin pages under `/admin/`, user
 `admin`, password `ICECAST_ADMIN_PASSWORD`). The backend's recorder and every relay listener

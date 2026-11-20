@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatDate, formatDuration } from "@/app/admin/format";
-import { djSetPagePath, djSetTitle, djSetTrackId, type DjSet } from "@/app/opium-den/djApi";
+import { djSetPagePath, djSetThumbUrl, djSetTitle, djSetTrackId, type DjSet } from "@/app/opium-den/djApi";
 import EqBars from "./EqBars";
+import SetArt from "./SetArt";
 import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 
 const S_PER_MIN = 60;
@@ -24,53 +25,35 @@ function summary(sets: DjSet[]): string {
 }
 
 /**
- * the number column of a row: the set's number, a play/pause button on hover, and the
- * bouncing bars for the one that's playing.
+ * what sits over a row's cover: nothing until you hover (then play), bouncing bars for
+ * the one playing (pause on hover), or a spinner while it buffers.
  *
  * @param {object} props
- * @param {number} props.index - its position in the list, from 1.
  * @param {boolean} props.current - it's the loaded track.
  * @param {boolean} props.playing - and it's playing.
  * @param {boolean} props.loading - and it's buffering.
- * @returns {JSX.Element} the cell.
+ * @returns {JSX.Element} the overlay's contents.
  */
-function RowMarker({
-  index,
-  current,
-  playing,
-  loading,
-}: {
-  index: number;
-  current: boolean;
-  playing: boolean;
-  loading: boolean;
-}) {
-  if (current && loading) return <SpinnerIcon className="h-4 w-4 text-den-accent" />;
+function ArtOverlay({ current, playing, loading }: { current: boolean; playing: boolean; loading: boolean }) {
+  if (current && loading) return <SpinnerIcon className="h-5 w-5" />;
   if (current && playing) {
     return (
       <>
-        <EqBars active className="h-3.5 w-3.5 text-den-accent group-hover:hidden" />
-        <PauseIcon className="hidden h-4 w-4 text-den-accent group-hover:block" />
+        <EqBars active className="h-4 w-4 group-hover/art:hidden" />
+        <PauseIcon className="hidden h-5 w-5 group-hover/art:block" />
       </>
     );
   }
-  return (
-    <>
-      <span className={`text-sm tabular-nums group-hover:hidden ${current ? "text-den-accent" : "text-den-faint"}`}>
-        {index}
-      </span>
-      <PlayIcon className="hidden h-4 w-4 text-den-accent group-hover:block" />
-    </>
-  );
+  // touchscreens can't hover, so they always get the play icon
+  return <PlayIcon className="hidden h-5 w-5 group-hover/art:block pointer-coarse:block" />;
 }
 
 /**
- * one set: tap the row to play or pause it. under it, a link to its page (the waveform
- * and its chat replaying), and its description if it has one.
+ * one set: its cover plays or pauses it, and the title opens its page (the waveform and
+ * its chat replaying). its description, if it has one, opens underneath.
  *
  * @param {object} props
  * @param {DjSet} props.set - the set.
- * @param {number} props.index - its position, from 1.
  * @param {boolean} props.current - it's the loaded track.
  * @param {boolean} props.playing - the player's playing.
  * @param {boolean} props.loading - the player's buffering.
@@ -79,14 +62,12 @@ function RowMarker({
  */
 function SetRow({
   set,
-  index,
   current,
   playing,
   loading,
   onToggle,
 }: {
   set: DjSet;
-  index: number;
   current: boolean;
   playing: boolean;
   loading: boolean;
@@ -94,49 +75,58 @@ function SetRow({
 }) {
   const [open, setOpen] = useState(false);
   const title = djSetTitle(set);
+  // the playing one keeps its overlay up, so the bars show over the cover
+  const overlayShown = current && (playing || loading);
 
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={`${current && playing ? "Pause" : "Play"} ${title}`}
-        className="group grid w-full grid-cols-[1.5rem_1fr_auto] items-center gap-4 py-3.5 text-left"
-      >
-        <span className="flex h-5 items-center justify-start">
-          <RowMarker index={index} current={current} playing={playing} loading={loading} />
-        </span>
-        <span className="min-w-0">
-          <span className={`block truncate transition-colors ${current ? "text-den-accent-soft" : "text-den-ink group-hover:text-den-accent-soft"}`}>{title}</span>
+    <li className="py-3">
+      <div className="flex items-center gap-3.5">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={`${current && playing ? "Pause" : "Play"} ${title}`}
+          className="group/art relative shrink-0"
+        >
+          <SetArt src={djSetThumbUrl(set)} className="h-14 w-14 rounded-md" />
+          <span
+            className={`absolute inset-0 flex items-center justify-center rounded-md bg-black/50 text-den-accent-soft transition-opacity group-hover/art:opacity-100 ${
+              overlayShown ? "opacity-100" : "opacity-0 pointer-coarse:bg-black/30 pointer-coarse:opacity-100"
+            }`}
+          >
+            <ArtOverlay current={current} playing={playing} loading={loading} />
+          </span>
+        </button>
+
+        <Link href={djSetPagePath(set.id)} className="group min-w-0 flex-1">
+          <span
+            className={`block truncate transition-colors ${
+              current ? "text-den-accent-soft" : "text-den-ink group-hover:text-den-accent-soft"
+            }`}
+          >
+            {title}
+          </span>
           <span className="mt-0.5 block truncate text-sm text-den-faint">
             {set.title ? formatDate(set.started_at) : "untitled set"}
             {set.description && !open && <span> · {set.description}</span>}
           </span>
-        </span>
-        <span className="text-sm tabular-nums text-den-faint">{formatDuration(set.duration_s)}</span>
-      </button>
+        </Link>
 
-      <div className="-mt-1.5 pb-3.5 pl-10">
-        {open && <p className="mb-1 whitespace-pre-line text-sm leading-relaxed text-den-muted">{set.description}</p>}
-        <div className="flex gap-4 text-xs text-den-faint">
-          <Link
-            href={djSetPagePath(set.id)}
-            className="underline-offset-4 transition-colors hover:text-den-accent-soft hover:underline"
-          >
-            waveform &amp; chat
-          </Link>
-          {set.description && (
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              aria-expanded={open}
-              className="underline-offset-4 transition-colors hover:text-den-accent-soft hover:underline"
-            >
-              {open ? "less" : "about this set"}
-            </button>
-          )}
-        </div>
+        <span className="shrink-0 text-sm tabular-nums text-den-faint">{formatDuration(set.duration_s)}</span>
       </div>
+
+      {set.description && (
+        <div className="mt-1 pl-[4.375rem]">
+          {open && <p className="mb-1 whitespace-pre-line text-sm leading-relaxed text-den-muted">{set.description}</p>}
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            className="text-xs text-den-faint underline-offset-4 transition-colors hover:text-den-accent-soft hover:underline"
+          >
+            {open ? "less" : "about this set"}
+          </button>
+        </div>
+      )}
     </li>
   );
 }
@@ -177,13 +167,12 @@ export default function SetList({
         </p>
       ) : (
         <ol className="mt-1 divide-y divide-den-line">
-          {sets.map((set, i) => {
+          {sets.map((set) => {
             const current = currentId === djSetTrackId(set.id);
             return (
               <SetRow
                 key={set.id}
                 set={set}
-                index={i + 1}
                 current={current}
                 playing={current && playing}
                 loading={current && loading}

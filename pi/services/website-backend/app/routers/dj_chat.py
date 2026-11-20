@@ -1,13 +1,17 @@
 """
 DJ chat router -- the chat in the opium den's live room.
 
-Anonymous like the public square: chatters pick a nickname, nothing else. Anyone can read
+Anonymous like the public square: chatters pick a nickname, nothing else. During a live
+session, a nickname belongs to the browser that first sends with it (its random
+owner_key, kept in localStorage), so two people can't chat as the same name at once. The
+next session starts with every name free again. Anyone can read
 the recent messages; sending only works while the stream's live, so the chat is a room
 that opens with the set instead of an always-on board for spam to collect in. The page
 polls GET /dj/chat for the whole recent room (it's small), so a message the admin
 deletes disappears for everyone on the next poll.
 """
 
+import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
 
@@ -17,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import require_admin
 from app.dj_stream import watcher
-from app.models import DjChatMessage
+from app.models import DjChatMessage, DjChatName
 from app.rate_limit import limiter
 from app.schemas import DjChatMessageCreate, DjChatMessageRead
 
@@ -42,6 +46,56 @@ def utc_now() -> datetime:
         datetime: Now, without tzinfo.
     """
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+def hash_owner_key(owner_key: str) -> str:
+    """
+    Hashes a browser's owner key for storing, so the table never holds a usable key.
+
+    Args:
+        owner_key: The browser's secret key.
+
+    Returns:
+        str: sha256 hex digest.
+    """
+    return hashlib.sha256(owner_key.encode()).hexdigest()
+
+
+def claim_nickname(db: Session, nickname: str, owner_key: str) -> None:
+    """
+    Makes sure this browser may chat as this name in the current live session, claiming
+    it if nobody has yet this session. Claims from earlier sessions are cleared out along
+    the way. Changes are added to the db session and saved with the message's commit.
+
+    Args:
+        db: Database session.
+        nickname: The name, already trimmed.
+        owner_key: The sending browser's secret key.
+
+    Raises:
+        HTTPException: 403 if another browser holds the name this session (ignoring case).
+    """
+    session_started_at = watcher.started_at
+    if session_started_at is None:
+        # icecast gave no readable start time, so there's no session to hold names in
+        logger.warning("dj chat: no session start time from icecast, not checking chat names")
+        return
+    db.query(DjChatName).filter(DjChatName.session_started_at != session_started_at).delete()
+    name_key = nickname.lower()
+    key_hash = hash_owner_key(owner_key)
+    claim = (
+        db.query(DjChatName)
+        .filter(DjChatName.session_started_at == session_started_at, DjChatName.name_key == name_key)
+        .first()
+    )
+    if claim is None:
+        db.add(DjChatName(session_started_at=session_started_at, name_key=name_key, owner_key_hash=key_hash, created_at=utc_now()))
+        return
+    if claim.owner_key_hash != key_hash:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"someone else is already chatting as {nickname} this set -- pick another name",
+        )
 
 
 @router.get("", response_model=list[DjChatMessageRead])
@@ -80,13 +134,15 @@ async def send_message(request: Request, message: DjChatMessageCreate, db: Sessi
         DjChatMessage: The stored message, with its id and time.
 
     Raises:
-        HTTPException: 409 when the stream's off air, 429 past the rate limit.
+        HTTPException: 409 when the stream's off air, 403 when the name belongs to another
+            browser, 429 past the rate limit.
     """
     if not watcher.live:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="the chat's closed while the stream's off air -- it opens when the next set starts",
         )
+    claim_nickname(db, message.nickname, message.owner_key)
     row = DjChatMessage(nickname=message.nickname, content=message.content, created_at=utc_now())
     db.add(row)
     db.commit()

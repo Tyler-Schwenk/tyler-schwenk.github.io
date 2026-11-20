@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, Instrument_Serif, Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono, Ultra, Shrikhand } from "next/font/google";
 import "./globals.css";
+import DenPlayerProvider from "@/components/opium-den/DenPlayerProvider";
 import { DEFAULT_PREVIEW_IMAGE, SITE_NAME, SITE_URL } from "@/lib/siteMetadata";
 
 // only Press Start 2P (the homepage/nav pixel font) is preloaded. everything
@@ -168,7 +169,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root layout for the site shell.
+ * Root layout for the site shell. Holds the opium den's player, so a set or the live
+ * stream keeps playing (with its bar along the bottom) wherever you go on the site.
  *
  * @param {Readonly<{ children: React.ReactNode }>} props - Layout properties.
  * @returns {JSX.Element} Root HTML layout wrapper.
@@ -188,7 +190,7 @@ export default function RootLayout({
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
       <body className={`${kilnDisplay.variable} ${kilnText.variable} ${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${caslonDisplay.variable} ${caslonText.variable} ${plexMono.variable} ${discoDisplay.variable} ${discoScript.variable} font-sans antialiased`}>
-        {children}
+        <DenPlayerProvider>{children}</DenPlayerProvider>
       </body>
     </html>
   );

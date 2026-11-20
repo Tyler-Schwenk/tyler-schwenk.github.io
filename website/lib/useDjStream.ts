@@ -3,7 +3,7 @@
 import { fetchDjSets, fetchDjStatus, type DjSet, type DjStreamStatus } from "@/app/opium-den/djApi";
 import { usePoll } from "@/lib/usePoll";
 
-// how quickly a den visitor notices the stream going live, without hammering the pi
+// how quickly a visitor to the live section notices the stream going live, without hammering the pi
 const POLL_INTERVAL_MS = 15000;
 
 /** what useDjStream hands back. */

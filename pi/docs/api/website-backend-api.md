@@ -15,7 +15,7 @@ Backend API for tyler-schwenk.com providing:
 - **Entrance Song**: Plays an intro song on the big speakers from the admin page
 - **Presence**: Who's home, pushed by the presence agent on fart-pi, for the admin page
 - **Fly Kills**: The house fly kill counter on `/flies`. No login, rate limited per IP
-- **DJ Stream**: Live DJ stream relayed from icecast on fart-pi, plus every recorded set, for the Opium Den page
+- **DJ Stream**: Live DJ stream relayed from icecast on fart-pi, plus every recorded set and its cover, for the Opium Den's live section
 
 **Database:** Single SQLite file (`website_backend.db`) with separate tables for Public Square, gallery, video, recipe, kiln, fly kill, and dj set features.
 
@@ -1267,7 +1267,7 @@ Takes back their newest kill, for misclicks. `200` with the new tally, or `409` 
 
 ## DJ Stream
 
-The live DJ stream and its recorded sets, for the Opium Den page. butt on the DJ laptop sends to icecast on fart-pi; the backend watches icecast, records each session into `dj_sets` (mp3s in `/mnt/ssd/dj-sets`), and relays the stream publicly. Sets under 2 minutes are thrown away. All times are naive UTC. See `pi/docs/services/dj-stream.md`.
+The live DJ stream and its recorded sets, for the Opium Den's live section (`/opium-den/live`). butt on the DJ laptop sends to icecast on fart-pi; the backend watches icecast, records each session into `dj_sets` (mp3s in `/mnt/ssd/dj-sets`), and relays the stream publicly. Sets under 2 minutes are thrown away. All times are naive UTC. See `pi/docs/services/dj-stream.md`.
 
 A set:
 
@@ -1279,21 +1279,22 @@ A set:
   "started_at": "2026-11-18T03:12:09",
   "ended_at": "2026-11-18T04:20:41",
   "duration_s": 4112,
-  "size_bytes": 98689024
+  "size_bytes": 98689024,
+  "image_id": 7
 }
 ```
 
-`title` and `description` are null until they're set from the admin page; without a title the site shows the date.
+`title` and `description` are null until they're set from the admin page; without a title the site shows the date. `image_id` is the set's cover image (see `PUT /dj/sets/{set_id}/image`), null without one.
 
 ### GET `/dj/status`
 
 Whether it's on air. Refreshed every 3 s from icecast, so it's cheap to poll. `200`:
 
 ```json
-{"live": true, "started_at": "2026-11-18T03:12:05", "listeners": 2}
+{"live": true, "started_at": "2026-11-18T03:12:05", "listeners": 2, "set_id": 12, "image_id": 9}
 ```
 
-`started_at` is when butt connected (null when off air). `listeners` counts people on `/dj/live`.
+`started_at` is when butt connected (null when off air). `listeners` counts people on `/dj/live`. `set_id` is the set being recorded and `image_id` its cover, if one's been uploaded yet (both null when nothing's recording), so the live room can show the cover mid-set.
 
 ### GET `/dj/live`
 
@@ -1305,7 +1306,7 @@ Every finished set, newest first. A set still being recorded isn't listed. `200`
 
 ### GET `/dj/sets/{set_id}`
 
-One finished set, for its page on the site (`/opium-den/set?id=`). `200` with the set, `404` if there's no finished set with that id.
+One finished set, for its page on the site (`/opium-den/live/set?id=`). `200` with the set, `404` if there's no finished set with that id.
 
 ### GET `/dj/sets/{set_id}/audio`
 
@@ -1335,11 +1336,33 @@ Edits a set. Body `{"title": "...", "description": "..."}`, either or both; only
 
 **Auth:** admin JWT.
 
-Deletes the set, its mp3 and its cached waveform. Its chat stays in `dj_chat_messages`. `204`, or `404` if there's no finished set with that id.
+Deletes the set, its mp3, its cached waveform and its cover image. Its chat stays in `dj_chat_messages`. `204`, or `404` if there's no finished set with that id.
+
+### Set cover images
+
+Each set can have one cover image, in `dj_set_images` (its own table, since startup creates new tables but never adds columns). Files go in `/mnt/ssd/dj-sets/images/set_<id>/` with a ~400 px thumbnail, converted like gallery uploads (HEIC to JPEG, phone rotation baked in). These work on a set that's still recording too, so it can get its cover while it's on air.
+
+Every upload gets a new image id that's never reused (the table's `AUTOINCREMENT`), and the site puts it in the url (`?v=<image_id>`), so a given url always means the same picture and can be cached for good.
+
+#### PUT `/dj/sets/{set_id}/image`
+
+**Auth:** admin JWT.
+
+Multipart form with `file`, the image (max 40 MB). Replaces any cover it had, old files and all. `200` with `{"id": 9, "set_id": 12, "width": 1200, "height": 1200}`, `400` if it isn't an image, `404` if there's no set with that id, `413` if it's too big.
+
+#### DELETE `/dj/sets/{set_id}/image`
+
+**Auth:** admin JWT.
+
+Takes the cover off and deletes its files. `204`, also when it had none. `404` if there's no set with that id.
+
+#### GET `/dj/sets/{set_id}/image`
+
+The cover, or with `?thumbnail=true` its thumbnail. Public, `Cache-Control: public, max-age=31536000, immutable`. The `v` query the site adds is ignored here. `404` if there's no set with that id, it has no cover, or the file's missing.
 
 ### Live room chat
 
-The chat in the Opium Den's live room (`/opium-den/live`), in `dj_chat_messages`. Anonymous like the Public Square: a nickname, no account, no IP stored. Anyone can read it; sending only works while the stream's live. The room polls `GET /dj/chat` every 3 s and gets the whole recent room each time, so a deleted message drops out for everyone on the next poll. Code: `app/routers/dj_chat.py`.
+The chat in the Opium Den's live room (`/opium-den/live/room`), in `dj_chat_messages`. Anonymous like the Public Square: a nickname, no account, no IP stored. Anyone can read it; sending only works while the stream's live. The room polls `GET /dj/chat` every 3 s and gets the whole recent room each time, so a deleted message drops out for everyone on the next poll. Code: `app/routers/dj_chat.py`.
 
 A message:
 
@@ -1353,13 +1376,53 @@ The room's chat, oldest first: the latest 100 messages from the last 6 hours (`M
 
 ### POST `/dj/chat`
 
-Sends a message. Body `{"nickname": "...", "content": "..."}`. Both are squashed onto one line (whitespace runs become single spaces) and trimmed first. Then the nickname must be 1-24 characters and the message 1-280. Rate limited per IP to 8 a minute and 120 an hour (`CHAT_SEND_RATE_LIMIT`). `201` with the stored message. `409` when the stream's off air, `422` for a blank or too-long field, `429` past the rate limit.
+Sends a message. Body `{"nickname": "...", "content": "...", "owner_key": "..."}`. The nickname and message are squashed onto one line (whitespace runs become single spaces) and trimmed first. Then the nickname must be 1-24 characters and the message 1-280. Rate limited per IP to 8 a minute and 120 an hour (`CHAT_SEND_RATE_LIMIT`). `201` with the stored message. `403` when someone else has the name this set, `409` when the stream's off air, `422` for a blank or too-long field, `429` past the rate limit.
+
+**One person per name per set.** `owner_key` is a random secret the browser makes once and keeps (a uuid, 16-128 characters allowed). The first message sent with a name during a live session claims it for that key, in `dj_chat_names` (the session's start time, the name lowercased, and a sha256 of the key, never the key itself). For the rest of that session, a send with the same name under a different key gets `403`. Names match ignoring case and surrounding spaces, so `KYLE` is the same name as `kyle`. A session is the stream watcher's `started_at` (when butt connected), so the next set starts with every name free, and the first claim in it deletes the last session's. If butt drops and reconnects, that's a new session too. If icecast gives no readable start time, names aren't checked at all (logged as a warning).
 
 ### DELETE `/dj/chat/{message_id}`
 
 **Auth:** admin JWT.
 
 Deletes a message (the admin page's DJ tab). `204`, or `404` if there's no message with that id.
+
+### Live alerts
+
+Emails telling people the stream's live, in `dj_alert_subscribers`. Anyone signs up with an address; they get a confirmation email, and only confirmed addresses get alerts. Nothing is sent automatically: the admin writes each alert on the admin page's DJ tab and sends it with `POST /dj/alerts/send`. Mail goes out over SMTP (`SMTP_*` and `MAIL_FROM` in `.env`); with `SMTP_HOST` or `MAIL_FROM` empty, signup and send answer `503`. Setup is in `pi/docs/services/dj-stream.md#live-alerts`. Code: `app/routers/dj_alerts.py`, `app/mailer.py`.
+
+Each subscriber has a random `token` that's in both their confirm and unsubscribe links. The links go to the site's `/opium-den/live/alerts?confirm=<token>` and `?unsubscribe=<token>`, and that page makes the POST below, so a mail scanner opening the link doesn't confirm or unsubscribe anyone.
+
+### POST `/dj/alerts/signup`
+
+Body `{"email": "..."}`. Lowercased, must look like an address, max 254 characters. Emails a confirmation link to a new address, or again to an unconfirmed one if the last went out over 10 minutes ago (`CONFIRM_RESEND_COOLDOWN`). An already confirmed address gets nothing. The answer is the same `202` `{"email": "..."}` either way, so the form can't be used to check who's signed up. A new address is only saved once its confirmation's sent. Rate limited per IP to 5 a minute and 20 an hour (`SIGNUP_RATE_LIMIT`). `422` for a bad address, `429` past the limit, `502` if the mail server refuses the address or can't be reached, `503` when mail isn't configured.
+
+### POST `/dj/alerts/confirm?token=...`
+
+Confirms the signup with that token. `200` `{"email": "..."}`, also when it's already confirmed. `404` if no subscriber has that token (a mistyped link, or they've unsubscribed since).
+
+### POST `/dj/alerts/unsubscribe?token=...`
+
+Deletes the subscriber with that token. Also the target of each alert's `List-Unsubscribe` header (RFC 8058 one-click: mail apps POST `List-Unsubscribe=One-Click` as a form body, which is ignored). `204` whether or not the token matched anyone, so a second click isn't an error.
+
+### GET `/dj/alerts/subscribers`
+
+**Auth:** admin JWT.
+
+Everyone signed up, newest first: `[{"id": 3, "email": "kyle@example.com", "created_at": "2026-11-20T02:10:00", "confirmed_at": "2026-11-20T02:11:42"}]`. `confirmed_at` is null until they click the link. `200`.
+
+### DELETE `/dj/alerts/subscribers/{subscriber_id}`
+
+**Auth:** admin JWT.
+
+Takes someone off the list. `204`, or `404` if there's no subscriber with that id.
+
+### POST `/dj/alerts/send`
+
+**Auth:** admin JWT.
+
+Emails every confirmed subscriber. Body `{"subject": "...", "body": "..."}`. The subject is optional (max 120, squashed onto one line; blank or missing means "Tyler's live in the opium den"). The body is required, max 2000, trimmed at the ends with its line breaks kept. Each subscriber gets their own plain text copy: the body, a link to the live room, and their unsubscribe link, with `List-Unsubscribe` / `List-Unsubscribe-Post` headers. They go out one at a time over one connection, 0.6 s apart (`SEND_INTERVAL_S`), and the request waits for all of them.
+
+`200` `{"sent": 11, "failed": ["bounced@example.com"]}`: `failed` lists addresses the mail server refused (if the connection drops partway, everyone after that is in it too). `409` with nobody confirmed, `422` for a blank body or too-long field, `502` if the mail server can't be reached or logged in to (nothing was sent), `503` when mail isn't configured.
 
 ---
 
@@ -1768,6 +1831,8 @@ document.getElementById('photoInput').addEventListener('change', async (e) => {
 - **Create Recipe:** 10 requests/hour per IP
 - **Add Recipe Photos:** 30 requests/hour per IP
 - **Add or take back a fly kill:** 60/minute and 1000/day per IP, both together
+- **Send a live room chat message:** 8/minute and 120/hour per IP
+- **Sign up for live alerts:** 5/minute and 20/hour per IP
 
 All Public Square and Recipe limits are intentionally loose for a low-traffic personal site — tighten them in `pi/services/website-backend/app/routers/public_square.py` or `pi/services/website-backend/app/routers/recipes.py` only if abuse actually shows up.
 

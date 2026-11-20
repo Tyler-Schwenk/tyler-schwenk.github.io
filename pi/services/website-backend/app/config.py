@@ -91,6 +91,20 @@ class Settings(BaseSettings):
     DJ_STREAM_MOUNT: str = "/live"
     DJ_SETS_DIR: str = "/app/dj_sets"
 
+    # Outgoing email, for the opium den's live alerts (see pi/docs/services/dj-stream.md,
+    # "Live alerts"). Any SMTP provider works; port 465 means implicit TLS, anything else
+    # STARTTLS. An empty SMTP_HOST turns alerts off (signing up answers 503).
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    # who the emails come from, like "Opium Den <den@tyler-schwenk.com>". the provider has
+    # to be allowed to send as this address (a verified domain, or the account's own)
+    MAIL_FROM: str = ""
+    # where links in emails point: the site's pages, and the api for one-click unsubscribe
+    SITE_URL: str = "https://tyler-schwenk.com"
+    PUBLIC_API_URL: str = "https://api.tyler-schwenk.com"
+
     # Pac-Tyler data (written by pac-tyler-updater, mounted as a volume)
     PAC_TYLER_DATA_DIR: str = "/app/pac-tyler"
     

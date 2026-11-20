@@ -11,6 +11,10 @@ const NICKNAME_STORAGE_KEY = "den-chat-nickname";
 const NICKNAME_CHANGED_EVENT = "den-chat-nickname-changed";
 // the name for this page load, for when storage is blocked and can't hold it
 let sessionNickname = "";
+// this browser's secret key, which holds whatever chat name it sends with first in a set
+const OWNER_KEY_STORAGE_KEY = "den-chat-key";
+// the key for this page load, for when storage is blocked
+let sessionOwnerKey = "";
 
 /** what useDjChat hands back. */
 export type DjChat = {
@@ -18,9 +22,29 @@ export type DjChat = {
   messages: DjChatMessage[] | null;
   /** why the last load failed, null when it worked. */
   error: string | null;
-  /** sends a message and shows it right away. throws with a readable reason. */
+  /** sends a message and shows it right away. throws with a readable reason (ChatNameTakenError when the name's someone else's). */
   send: (nickname: string, content: string) => Promise<void>;
 };
+
+/**
+ * this browser's chat owner key: made once and kept in localStorage, so its name stays
+ * its own for the rest of the set, reloads included. with storage blocked it only lasts
+ * the page load, so a reload mid-set can't get the same name back until the next set.
+ *
+ * @returns {string} the key, a random uuid.
+ */
+function ownerKey(): string {
+  try {
+    const stored = window.localStorage.getItem(OWNER_KEY_STORAGE_KEY);
+    if (stored) return stored;
+    const created = sessionOwnerKey || crypto.randomUUID();
+    window.localStorage.setItem(OWNER_KEY_STORAGE_KEY, created);
+    return created;
+  } catch {
+    sessionOwnerKey ||= crypto.randomUUID();
+    return sessionOwnerKey;
+  }
+}
 
 /**
  * the live room's chat: the recent messages, re-fetched every few seconds while the tab's
@@ -33,7 +57,7 @@ export function useDjChat(): DjChat {
 
   const send = useCallback(
     async (nickname: string, content: string) => {
-      const sent = await sendDjChat(nickname, content);
+      const sent = await sendDjChat(nickname, content, ownerKey());
       // the next poll brings it back anyway, this just skips the wait
       setData((current) => {
         if (!current) return [sent];

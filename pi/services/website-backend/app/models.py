@@ -3,14 +3,15 @@ SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
 galleries, photos, recipes, kiln readings, firings and their notes and photos,
-the house fly kill count, recorded dj sets and the live room chat.
+the house fly kill count, recorded dj sets and their cover images, the live room chat and who holds
+each chat name this session, and who wants an email when the stream goes live.
 """
 
 from sqlalchemy import Boolean, Column, Float, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-from app.schemas import MAX_DJ_CHAT_MESSAGE_LENGTH, MAX_DJ_CHAT_NICKNAME_LENGTH
+from app.schemas import MAX_DJ_CHAT_MESSAGE_LENGTH, MAX_DJ_CHAT_NICKNAME_LENGTH, MAX_EMAIL_LENGTH
 
 
 class User(Base):
@@ -572,6 +573,7 @@ class DjSet(Base):
         duration_s: Length in seconds, null while recording
         size_bytes: File size, null while recording
         file_path: The mp3, as a container path under DJ_SETS_DIR
+        image: Its cover image (DjSetImage), None until one's uploaded
     """
     __tablename__ = "dj_sets"
 
@@ -583,6 +585,46 @@ class DjSet(Base):
     duration_s = Column(Integer, nullable=True)
     size_bytes = Column(Integer, nullable=True)
     file_path = Column(String(500), nullable=False)
+
+    image = relationship("DjSetImage", uselist=False, cascade="all, delete-orphan")
+
+    @property
+    def image_id(self) -> int | None:
+        """the cover image's id, or None. it changes with every upload, so it doubles as a cache buster."""
+        return self.image.id if self.image else None
+
+
+class DjSetImage(Base):
+    """
+    DjSetImage model: a recorded set's cover image, uploaded from the admin page.
+
+    Its own table rather than columns on dj_sets, since create_all makes new tables on
+    startup but never adds columns to existing ones. One per set: uploading another
+    replaces it (new row, new id). Files live under DJ_SETS_DIR/images, a folder per set.
+
+    Attributes:
+        id: Unique identifier, new for every upload
+        set_id: The set it's the cover of
+        file_path: The image, relative to the images folder
+        thumbnail_path: Its thumbnail, null if making one failed
+        width: Width in pixels
+        height: Height in pixels
+        mime_type: Its content type, like image/jpeg
+        created_at: When it was uploaded
+    """
+    __tablename__ = "dj_set_images"
+    # the site caches an image by its id for good, so an id must never come back. plain
+    # sqlite rowids reuse the top one after it's deleted, which replacing an image does
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    set_id = Column(Integer, ForeignKey("dj_sets.id"), nullable=False, unique=True, index=True)
+    file_path = Column(String(500), nullable=False)
+    thumbnail_path = Column(String(500), nullable=True)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class DjChatMessage(Base):
@@ -608,3 +650,58 @@ class DjChatMessage(Base):
     nickname = Column(String(MAX_DJ_CHAT_NICKNAME_LENGTH), nullable=False)
     content = Column(String(MAX_DJ_CHAT_MESSAGE_LENGTH), nullable=False)
     created_at = Column(DateTime, nullable=False, index=True)
+
+
+class DjAlertSubscriber(Base):
+    """
+    DjAlertSubscriber model: someone who wants an email when the dj stream goes live.
+
+    Signing up only sends a confirmation email; alerts go only to confirmed rows, so
+    nobody gets alerts for an address someone else typed in. The admin sends each alert
+    by hand from the admin page (routers/dj_alerts.py), nothing goes out automatically.
+    Unsubscribing deletes the row. Times are naive UTC.
+
+    Attributes:
+        id: Unique identifier
+        email: The address, lowercased
+        token: Random secret in the confirm and unsubscribe links
+        created_at: When they first signed up
+        confirm_sent_at: When the last confirmation email went out
+        confirmed_at: When they clicked the confirmation link, null until then
+    """
+    __tablename__ = "dj_alert_subscribers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(MAX_EMAIL_LENGTH), unique=True, index=True, nullable=False)
+    token = Column(String(64), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    confirm_sent_at = Column(DateTime, nullable=False)
+    confirmed_at = Column(DateTime, nullable=True)
+
+
+class DjChatName(Base):
+    """
+    DjChatName model: a live room chat name, held by one browser for one live session.
+
+    The first message sent with a name during a session claims it for that browser's
+    secret key; for the rest of that session only that key can send as it
+    (routers/dj_chat.py). The next session starts with every name free, and the old
+    session's claims are deleted then. Names match ignoring case, so "KYLE" can't pass
+    for "kyle". Only a hash of the key is stored.
+
+    Attributes:
+        id: Unique identifier
+        session_started_at: When the live session the claim belongs to started (the
+            stream watcher's started_at), naive UTC
+        name_key: The name lowercased, what matching is done on
+        owner_key_hash: sha256 hex of the owning browser's key
+        created_at: When it was claimed, naive UTC
+    """
+    __tablename__ = "dj_chat_names"
+    __table_args__ = (UniqueConstraint("session_started_at", "name_key", name="uq_dj_chat_names_session_name"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_started_at = Column(DateTime, nullable=False, index=True)
+    name_key = Column(String(MAX_DJ_CHAT_NICKNAME_LENGTH), nullable=False)
+    owner_key_hash = Column(String(64), nullable=False)
+    created_at = Column(DateTime, nullable=False)

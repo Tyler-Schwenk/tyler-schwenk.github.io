@@ -1,26 +1,22 @@
-import { Suspense } from "react";
-import SetReplay from "@/components/opium-den/SetReplay";
-import { DEFAULT_PREVIEW_IMAGE, pageMetadata } from "@/lib/siteMetadata";
+"use client";
 
-export const metadata = pageMetadata({
-  title: "Past set",
-  description: "A recorded DJ set from the Opium Den, with its chat replaying as it plays",
-  path: "/opium-den/set",
-  image: DEFAULT_PREVIEW_IMAGE,
-});
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { SET_PAGE_PATH } from "@/app/opium-den/djApi";
 
 /**
- * one recorded set replayed with its chat, picked by ?id=. a static page that reads the
- * query on the client, so new sets need no rebuild. the frame and shared player come from
- * app/opium-den/layout.tsx.
+ * where set pages used to be, before the dj sets moved under /opium-den/live. links to
+ * it were already shared, so it forwards to the same set's page there, query and all.
+ * a static export can't redirect on the server, hence doing it on the client.
  *
- * @returns {JSX.Element} the set page.
+ * @returns {JSX.Element} a one-line note while it forwards.
  */
-export default function SetPage() {
-  // useSearchParams needs a suspense boundary in a static export
-  return (
-    <Suspense>
-      <SetReplay />
-    </Suspense>
-  );
+export default function OldSetPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(`${SET_PAGE_PATH}${window.location.search}`);
+  }, [router]);
+
+  return <p className="px-5 pt-28 text-sm text-den-faint">taking you to the set...</p>;
 }

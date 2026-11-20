@@ -1,23 +1,31 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useCallback, useState } from "react";
 import { formatDate, formatDuration, plural } from "@/app/admin/format";
-import { djSetTitle, djSetTrack, type DjSet, type DjSetChatMessage } from "@/app/opium-den/djApi";
+import {
+  djSetImageUrl,
+  djSetThumbUrl,
+  djSetTitle,
+  djSetTrack,
+  LIVE_SECTION_PATH,
+  type DjSet,
+  type DjSetChatMessage,
+} from "@/app/opium-den/djApi";
 import type { AudioPlayer, PlayerTrack } from "@/lib/useAudioPlayer";
 import { useChatNickname } from "@/lib/useDjChat";
 import { useDjSetReplay } from "@/lib/useDjSetReplay";
 import { useStickToBottom } from "@/lib/useStickToBottom";
 import ChatLine from "./ChatLine";
-import { useDenPlayer } from "./DenPlayerProvider";
+import CoverViewer from "./CoverViewer";
+import { useCoverPlayerBar, useDenPlayer } from "./DenPlayerProvider";
 import EqBars from "./EqBars";
+import { SkipButton, VolumeControl } from "./PlayerControls";
+import SetArt from "./SetArt";
 import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 import Waveform from "./Waveform";
 
-const BOARD_ART_SRC = "/images/8bit/dj_board.png";
-const BOARD_ART_WIDTH_PX = 112;
-const BOARD_ART_HEIGHT_PX = 52;
 const SET_ID_PATTERN = /^\d+$/;
 
 /**
@@ -56,6 +64,49 @@ function SetPlayButton({ player, track }: { player: AudioPlayer; track: PlayerTr
         <PlayIcon className="h-6 w-6" />
       )}
     </button>
+  );
+}
+
+/**
+ * the set's cover in the header, with the bouncing bars while it plays. when the set has
+ * an uploaded image, tapping it opens it full screen.
+ *
+ * @param {object} props
+ * @param {DjSet} props.set - the set.
+ * @param {boolean} props.playing - it's what's playing.
+ * @param {boolean} props.loading - and it's buffering.
+ * @returns {JSX.Element} the cover.
+ */
+function SetCover({ set, playing, loading }: { set: DjSet; playing: boolean; loading: boolean }) {
+  const [viewing, setViewing] = useState(false);
+  const close = useCallback(() => setViewing(false), []);
+  const thumb = djSetThumbUrl(set);
+  const art = <SetArt src={thumb} className="h-12 w-12 rounded-md sm:h-14 sm:w-14" />;
+  const bars = playing && <EqBars active={!loading} className="absolute bottom-1 right-1 h-2.5 w-2.5 text-den-accent" />;
+
+  if (set.image_id == null) {
+    return (
+      <div className="relative shrink-0">
+        {art}
+        {bars}
+      </div>
+    );
+  }
+
+  const title = djSetTitle(set);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setViewing(true)}
+        aria-label={`Show the cover for ${title} full screen`}
+        className="relative shrink-0 cursor-zoom-in rounded-md transition hover:brightness-110"
+      >
+        {art}
+        {bars}
+      </button>
+      {viewing && <CoverViewer src={djSetImageUrl(set.id, set.image_id)} alt={`cover for ${title}`} onClose={close} />}
+    </>
   );
 }
 
@@ -164,11 +215,13 @@ function ReplayChat({
 }
 
 /**
- * one recorded set, replayed with its chat: a header with the play button, the set's
- * waveform as its seek bar (chat messages as dots along it), and the chat filling the
- * rest of the screen, showing only what had been said by that point in the set. one
- * screen tall like the live room, less the player bar, which stays up for volume and
- * skips. the set is picked by ?id=. see website/docs/OPIUM_DEN.md.
+ * one recorded set, replayed with its chat: the set's full view. a header with its cover
+ * (tap for full screen), the play button and, once it's loaded, skips and volume; the
+ * set's waveform as its seek bar (chat messages as dots along it); and the chat filling
+ * the rest of the screen, showing only what had been said by that point in the set. one
+ * screen tall like the live room. while this set's the one loaded, the player bar steps
+ * aside, since this page has its controls; anything else playing keeps the bar. the set
+ * is picked by ?id=. see website/docs/OPIUM_DEN.md.
  *
  * @returns {JSX.Element} the replay.
  */
@@ -178,6 +231,7 @@ export default function SetReplay() {
   const player = useDenPlayer();
 
   const track = set ? djSetTrack(set) : null;
+  useCoverPlayerBar(track?.id ?? null);
   const current = track !== null && player.track?.id === track.id;
   const positionS = current ? player.currentTimeS : 0;
   const seek = (seconds: number) => {
@@ -190,18 +244,18 @@ export default function SetReplay() {
     <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-3xl flex-col px-4 pb-4 sm:px-5 sm:pb-6">
       {/* the home button's row: it sits fixed top-left, so this just leaves it room */}
       <div className="flex h-20 shrink-0 items-center justify-end sm:h-24">
-        <Link href="/opium-den" className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
-          &larr; Opium Den
+        <Link href={LIVE_SECTION_PATH} className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
+          &larr; All sets
         </Link>
       </div>
 
       {problem && (
         <p className="rounded-xl border border-den-line p-4 text-sm text-den-muted">
           {problem}{" "}
-          <Link href="/opium-den" className="text-den-accent-soft underline-offset-4 hover:underline">
+          <Link href={LIVE_SECTION_PATH} className="text-den-accent-soft underline-offset-4 hover:underline">
             all the past sets
           </Link>{" "}
-          are in the den.
+          are in the live section.
         </p>
       )}
       {!problem && !set && <p className="text-sm text-den-faint">loading the set...</p>}
@@ -209,24 +263,17 @@ export default function SetReplay() {
       {set && track && (
         <>
           <header className="flex shrink-0 items-center gap-3 sm:gap-4">
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-white/[0.05] sm:h-14 sm:w-14">
-              <Image
-                src={BOARD_ART_SRC}
-                alt=""
-                width={BOARD_ART_WIDTH_PX}
-                height={BOARD_ART_HEIGHT_PX}
-                priority
-                className="pixelated h-auto w-[85%]"
-              />
-              {current && player.playing && (
-                <EqBars active={!player.loading} className="absolute bottom-1 right-1 h-2.5 w-2.5 text-den-accent" />
-              )}
-            </div>
+            <SetCover set={set} playing={current && player.playing} loading={player.loading} />
             <div className="min-w-0 flex-1">
               <h1 className="truncate font-semibold sm:text-lg">{djSetTitle(set)}</h1>
               <p className="mt-0.5 truncate text-xs text-den-muted sm:text-sm">{setMeta(set, messages)}</p>
             </div>
-            <SetPlayButton player={player} track={track} />
+            {current && <VolumeControl player={player} className="hidden md:flex" />}
+            <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+              {current && <SkipButton player={player} direction="back" className="p-1" />}
+              <SetPlayButton player={player} track={track} />
+              {current && <SkipButton player={player} direction="forward" className="p-1" />}
+            </div>
           </header>
 
           {set.description && (

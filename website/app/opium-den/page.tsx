@@ -1,5 +1,5 @@
 import Link from "next/link";
-import DjBooth from "@/components/opium-den/DjBooth";
+import LiveSectionLink from "@/components/opium-den/LiveSectionLink";
 import { ChevronIcon, ExternalIcon } from "@/components/opium-den/playerIcons";
 import { DEFAULT_PREVIEW_IMAGE, pageMetadata } from "@/lib/siteMetadata";
 
@@ -56,9 +56,9 @@ function ListenRow({ link }: { link: ListenLink }) {
 }
 
 /**
- * the opium den: what the project is, the dj booth (the way into the live room, and past
- * sets), and a list of outside radio and sets worth hearing. the frame, look and shared
- * player come from layout.tsx. see website/docs/OPIUM_DEN.md.
+ * the opium den: what the project is, the way over to the live section (where the dj
+ * sets live), and a list of outside radio and sets worth hearing. the frame and look come
+ * from layout.tsx. see website/docs/OPIUM_DEN.md.
  *
  * @returns {JSX.Element} the opium den page layout.
  */
@@ -114,7 +114,7 @@ export default function OpiumDenPage() {
           </details> */}
         </header>
 
-        <DjBooth />
+        <LiveSectionLink />
 
         <section className="mt-16">
           <h2 className="border-b border-den-accent/40 pb-3 text-base font-semibold">Listen</h2>

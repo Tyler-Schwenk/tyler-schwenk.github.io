@@ -1,21 +1,18 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
+import { djLiveThumbUrl, LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
 import EqBars from "./EqBars";
 import LiveStatus from "./LiveStatus";
+import SetArt from "./SetArt";
 import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 
-const BOARD_ART_SRC = "/images/8bit/dj_board.png";
-const BOARD_ART_WIDTH_PX = 112;
-const BOARD_ART_HEIGHT_PX = 52;
-
 /**
- * the den's way into the live room. off air it's one quiet row: the dj board art greyed
- * out, when it streams, and a small link to the room (its chat from the last set stays
- * readable). live it lights up red with how long it's been on and who's listening, a play
- * button to listen right here, and a link into the room for the chat.
+ * the top of the live section, the way into the live room. off air it's one quiet row:
+ * a greyed-out cover, when it streams, and a small link to the room (its chat from the
+ * last set stays readable). live it lights up red with the set's cover (once one's
+ * uploaded), how long it's been on and who's listening, a play button to listen right
+ * here, and a link into the room for the chat.
  *
  * @param {object} props
  * @param {DjStreamStatus | null} props.status - latest status, null before the first answer.
@@ -47,30 +44,21 @@ export default function LiveHero({
       }`}
     >
       <div className="flex min-w-0 flex-1 basis-64 items-center gap-4">
-        <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-white/[0.05] sm:h-20 sm:w-20">
-          <Image
-            src={BOARD_ART_SRC}
-            alt="pixel art of the ddj-400 controller"
-            width={BOARD_ART_WIDTH_PX}
-            height={BOARD_ART_HEIGHT_PX}
-            className={`pixelated h-auto w-[80%] transition ${live ? "" : "opacity-50 grayscale"}`}
-          />
+        <div className="relative shrink-0">
+          <SetArt src={djLiveThumbUrl(status)} dim={!live} className="h-16 w-16 rounded-md sm:h-20 sm:w-20" />
           {live && playing && (
             <EqBars active={!loading} className="absolute bottom-1.5 right-1.5 h-3 w-3 text-den-accent" />
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-den-ink">Live from the den</h2>
+          <h2 className="font-semibold text-den-ink">{live ? "On air" : "The live room"}</h2>
           <LiveStatus status={status} className="mt-1 text-sm" />
           {error && !status && <p className="mt-1 text-xs text-den-faint">{error}</p>}
         </div>
       </div>
 
       {!live && (
-        <Link
-          href={LIVE_ROOM_PATH}
-          className="text-sm text-den-accent-soft transition-colors hover:text-den-ink"
-        >
+        <Link href={LIVE_ROOM_PATH} className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
           Live room &rarr;
         </Link>
       )}

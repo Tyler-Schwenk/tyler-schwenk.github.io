@@ -519,8 +519,13 @@ body:has(.den-page) {
   background: var(--color-den-bg);
 }
 
+/* the den's type. on its own too, for the player bar, which floats over every page on the site */
+.den-font,
 .den-page {
   font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.den-page {
   /* a low red lamp over the top of the room. scrolls away with the page */
   background-image: radial-gradient(ellipse 90% 420px at 50% 0, rgb(229 72 77 / 0.16), transparent);
   background-repeat: no-repeat;

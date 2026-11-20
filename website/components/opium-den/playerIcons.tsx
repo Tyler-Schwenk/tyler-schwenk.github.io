@@ -77,7 +77,7 @@ export function MutedIcon(props: { className?: string }) {
 }
 
 /**
- * a chevron, for opening and closing the phone's now-playing sheet.
+ * a chevron, pointing up or down (the mini player's "opens up" hint, disclosures).
  *
  * @param {object} props
  * @param {"up" | "down"} props.direction - which way it points.
@@ -140,5 +140,25 @@ export function SkipIcon({
         {seconds}
       </text>
     </svg>
+  );
+}
+
+/** a vinyl record: the stand-in cover for a set that hasn't got one. */
+export function RecordIcon(props: { className?: string }) {
+  return (
+    <Icon {...props}>
+      <path
+        fillRule="evenodd"
+        d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 7.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"
+      />
+      <path
+        d="M12 5.5a6.5 6.5 0 0 0-6.5 6.5M18.5 12a6.5 6.5 0 0 1-6.5 6.5"
+        fill="none"
+        stroke="black"
+        strokeOpacity="0.35"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    </Icon>
   );
 }

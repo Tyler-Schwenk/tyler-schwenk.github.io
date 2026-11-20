@@ -1,32 +1,35 @@
 """
-DJ router -- the live dj stream and its recorded sets, for the Opium Den page.
+DJ router -- the live dj stream and its recorded sets, for the Opium Den's live section.
 
 The stream itself comes from icecast on the pi's LAN (pi/services/dj-stream). /dj/live
 relays it so listeners reach it through the existing tunnel without icecast ever being
 public. Recording and live state live in app/dj_stream.py, waveforms in
 app/dj_waveform.py. Each set also has its chat: the live room's messages from while it was
-recording, placed on its timeline so the set page can replay them. Reads are public;
-renaming and deleting sets are admin only.
+recording, placed on its timeline so the set page can replay them, and can have a cover
+image, uploaded while it's still recording or any time after. Reads are public; renaming,
+deleting and setting cover images are admin only.
 """
 
 import logging
 from collections.abc import AsyncIterator
+from dataclasses import asdict
 from datetime import timedelta
 from pathlib import Path
 
 import anyio
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import require_admin
-from app.dj_stream import STATUS_TIMEOUT_S, stream_url, watcher
+from app.dj_stream import STATUS_TIMEOUT_S, delete_set_image_files, set_images_dir, stream_url, watcher
 from app.dj_waveform import WaveformError, get_waveform, waveform_path
 from app.file_streaming import ranged_file_response
-from app.models import DjChatMessage, DjSet
-from app.schemas import DjSetChatMessage, DjSetRead, DjSetUpdate, DjSetWaveform, DjStreamStatus
+from app.image_utils import store_photo
+from app.models import DjChatMessage, DjSet, DjSetImage
+from app.schemas import DjSetChatMessage, DjSetImageRead, DjSetRead, DjSetUpdate, DjSetWaveform, DjStreamStatus
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,12 @@ SET_MEDIA_TYPE = "audio/mpeg"
 # listeners hear the stream roughly 5-15 s behind the decks (see dj-stream.md), so a
 # message reacts to whatever was in the recording about this long before it was sent
 LISTENER_LAG_S = 8
+# a phone photo is a few MB. room for big ones without letting one fill the ssd
+MAX_SET_IMAGE_BYTES = 40 * 1024 * 1024
+BYTES_PER_MB = 1024 * 1024
+# the site asks for an image by its id (?v=), and a new upload gets a new id, so a given
+# url never changes and browsers and cloudflare can hang on to it
+SET_IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable"
 
 
 def set_audio_path(dj_set: DjSet) -> Path:
@@ -103,15 +112,43 @@ def get_finished_set(db: Session, set_id: int) -> DjSet:
     return dj_set
 
 
+def get_any_set(db: Session, set_id: int) -> DjSet:
+    """
+    Looks up a set, finished or still recording.
+
+    Args:
+        db: Database session.
+        set_id: The set's id.
+
+    Returns:
+        DjSet: The set.
+
+    Raises:
+        HTTPException: 404 if there's no such set.
+    """
+    dj_set = db.get(DjSet, set_id)
+    if dj_set is None:
+        raise HTTPException(status_code=404, detail=f"no dj set with id {set_id}")
+    return dj_set
+
+
 @router.get("/status", response_model=DjStreamStatus)
-async def get_stream_status() -> DjStreamStatus:
+async def get_stream_status(db: Session = Depends(get_db)) -> DjStreamStatus:
     """
     Whether the stream's on air right now. Updated every few seconds, so it's cheap to poll.
 
+    Args:
+        db: Database session, for the recording set's cover image.
+
     Returns:
-        DjStreamStatus: live, since when, and how many are listening through /dj/live.
+        DjStreamStatus: live, since when, how many are listening through /dj/live, and the
+            set being recorded with its cover image's id.
     """
-    return watcher.status()
+    stream_status = watcher.status()
+    if stream_status.set_id is not None:
+        recording = db.get(DjSet, stream_status.set_id)
+        stream_status.image_id = recording.image_id if recording else None
+    return stream_status
 
 
 @router.get("/live")
@@ -322,13 +359,119 @@ async def delete_set(set_id: int, db: Session = Depends(get_db)) -> None:
         HTTPException: 401 without a valid admin token, 404 if there's no such finished set.
 
     Side effects:
-        Removes the mp3 and its cached waveform from disk. Its chat stays, like the rest
-        of the room's history.
+        Removes the mp3, its cached waveform and its cover image from disk. Its chat stays,
+        like the rest of the room's history.
     """
     dj_set = get_finished_set(db, set_id)
     path = Path(dj_set.file_path)
     path.unlink(missing_ok=True)
     waveform_path(path).unlink(missing_ok=True)
+    delete_set_image_files(dj_set.image)
     db.delete(dj_set)
     db.commit()
     logger.info(f"dj sets: deleted set {set_id} ({path.name})")
+
+
+@router.put(
+    "/sets/{set_id}/image",
+    response_model=DjSetImageRead,
+    dependencies=[Depends(require_admin)],
+)
+def upload_set_image(set_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)) -> DjSetImage:
+    """
+    Sets a set's cover image (admin only), replacing any it had. Works while the set's
+    still recording too. HEIC and sideways phone photos get converted like gallery uploads.
+
+    Args:
+        set_id: The set's id.
+        file: The image.
+        db: Database session.
+
+    Returns:
+        DjSetImage: The new image. Its id is new, which is what busts the site's caches.
+
+    Raises:
+        HTTPException: 401 without a valid admin token, 404 if there's no such set, 413 if
+            the file's too big, 400 if it isn't an image.
+
+    Side effects:
+        Saves the image and a thumbnail under DJ_SETS_DIR/images, and deletes the old ones.
+    """
+    dj_set = get_any_set(db, set_id)
+    content = file.file.read(MAX_SET_IMAGE_BYTES + 1)
+    if len(content) > MAX_SET_IMAGE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"{file.filename} is over {MAX_SET_IMAGE_BYTES // BYTES_PER_MB} MB -- shrink it or pick a smaller one",
+        )
+    stored = store_photo(set_images_dir(), f"set_{set_id}", content, file.filename or "cover")
+    fields = asdict(stored)
+    # the image row has no column for it
+    fields.pop("file_size")
+
+    if dj_set.image is not None:
+        delete_set_image_files(dj_set.image)
+        dj_set.image = None
+        # the old row has to be gone before the new one goes in, set_id is unique
+        db.flush()
+    image = DjSetImage(**fields)
+    dj_set.image = image
+    db.commit()
+    db.refresh(image)
+    logger.info(f"dj sets: set {set_id} has a new cover image ({image.id})")
+    return image
+
+
+@router.delete("/sets/{set_id}/image", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
+def delete_set_image(set_id: int, db: Session = Depends(get_db)) -> None:
+    """
+    Takes a set's cover image off (admin only). Does nothing if it hasn't got one.
+
+    Args:
+        set_id: The set's id.
+        db: Database session.
+
+    Raises:
+        HTTPException: 401 without a valid admin token, 404 if there's no such set.
+
+    Side effects:
+        Deletes the image and its thumbnail from disk.
+    """
+    dj_set = get_any_set(db, set_id)
+    if dj_set.image is None:
+        return
+    delete_set_image_files(dj_set.image)
+    dj_set.image = None
+    db.commit()
+    logger.info(f"dj sets: removed set {set_id}'s cover image")
+
+
+@router.get("/sets/{set_id}/image")
+def get_set_image(set_id: int, thumbnail: bool = False, db: Session = Depends(get_db)) -> FileResponse:
+    """
+    A set's cover image, or its thumbnail. The site adds ?v=<image id> so each upload gets
+    its own url, which is why it can be cached for good.
+
+    Args:
+        set_id: The set's id.
+        thumbnail: Serve the thumbnail (about 400 px) instead, if there is one.
+        db: Database session.
+
+    Returns:
+        FileResponse: The image.
+
+    Raises:
+        HTTPException: 404 if there's no such set, it has no image, or the file's missing.
+    """
+    image = get_any_set(db, set_id).image
+    if image is None:
+        raise HTTPException(status_code=404, detail=f"dj set {set_id} has no cover image")
+    relative_path = image.thumbnail_path if thumbnail and image.thumbnail_path else image.file_path
+    path = set_images_dir() / relative_path
+    if not path.exists():
+        logger.error(f"dj sets: set {set_id}'s cover image is missing at {path}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"dj set {set_id}'s cover image is missing on the pi -- upload it again from the admin page",
+        )
+    return FileResponse(path, media_type=image.mime_type, headers={"Cache-Control": SET_IMAGE_CACHE_CONTROL})
