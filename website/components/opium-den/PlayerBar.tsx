@@ -49,7 +49,7 @@ export default function PlayerBar({ player }: { player: AudioPlayer }) {
   const canSeek = !track.live;
 
   return (
-    <div className="den-font fixed inset-x-0 bottom-0 z-40 border-t border-den-line bg-den-bg/90 pb-[env(safe-area-inset-bottom)] text-den-ink backdrop-blur-lg">
+    <div className="den-font fixed inset-x-0 bottom-0 z-[9998]border-t border-den-line bg-den-bg/90 pb-[env(safe-area-inset-bottom)] text-den-ink backdrop-blur-lg">
       {/* phone-only progress line along the top edge */}
       <div className="h-0.5 bg-white/[0.06] md:hidden" aria-hidden="true">
         <div className="h-full bg-den-accent" style={{ width: `${track.live ? 100 : progressPct}%` }} />
