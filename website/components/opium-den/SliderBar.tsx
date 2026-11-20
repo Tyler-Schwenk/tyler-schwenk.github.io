@@ -48,7 +48,7 @@ export default function SliderBar({
   return (
     <div className={`group relative flex items-center ${wrapperHeight} ${className}`}>
       <div className={`relative w-full rounded-full bg-white/[0.12] transition-[height] ${trackHeight}`}>
-        <div className="absolute inset-y-0 left-0 rounded-full bg-den-ink group-hover:bg-den-accent" style={{ width: `${fillPct}%` }} />
+        <div className="absolute inset-y-0 left-0 rounded-full bg-den-accent" style={{ width: `${fillPct}%` }} />
         <div
           className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-den-ink transition-opacity ${knob}`}
           style={{ left: `${fillPct}%` }}

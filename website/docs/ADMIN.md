@@ -14,7 +14,7 @@
 | Upload | `#upload` | Photos into an existing or new gallery, or a video (with the existing videos list and delete) |
 | RSVPs | `#rsvps` | Event RSVPs grouped by event, with responses and a rough headcount (responders + friends); delete a response |
 | Public Square | `#square` | Moderation: newest posts, expand to read comments, hard-delete a post (with its comments and votes) or a comment |
-| DJ sets | `#dj` | Every set the live DJ stream recorded (they're public on the Opium Den page as soon as they end): give one a title and description, play it, delete it (`pi/docs/services/dj-stream.md`) |
+| DJ sets | `#dj` | The live room's recent chat, with delete on each message. Then every set the live DJ stream recorded (they're public on the Opium Den page as soon as they end): give one a title and description, play it, delete it (`pi/docs/services/dj-stream.md`) |
 
 It's linked from the bottom of the home page ("ADMIN"). It's `noindex` and not in the
 sitemap. The open tab lives in the url hash, so `tyler-schwenk.com/admin#display` can be
@@ -61,7 +61,7 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/UploadTab.tsx` | Photo and video upload |
 | `website/app/admin/RsvpsTab.tsx` | RSVPs |
 | `website/app/admin/PublicSquareTab.tsx` | Public Square moderation |
-| `website/app/admin/DjSetsTab.tsx` | DJ sets: title and description, play, delete. Types and urls come from `website/app/opium-den/djApi.ts` |
+| `website/app/admin/DjSetsTab.tsx` | DJ tab: chat moderation, then sets (title and description, play, delete). Types and urls come from `website/app/opium-den/djApi.ts` |
 | `website/lib/useAdminAuth.ts` | The JWT in localStorage, shared with The Kitchen and the kiln page (each page passes its own storage key; the kiln page also passes its own login endpoint) |
 
 ### Auth

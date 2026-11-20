@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { djSetAudioUrl, DJ_SETS_PATH, type DjSet } from "@/app/opium-den/djApi";
+import { DJ_CHAT_PATH, djSetAudioUrl, DJ_SETS_PATH, type DjChatMessage, type DjSet } from "@/app/opium-den/djApi";
 import { adminRequest, errorMessage, jsonBody, useAdminData, useAdminFetch } from "./adminApi";
 import { formatBytes, formatDate, formatDuration, plural } from "./format";
 import { Badge, Button, Card, FlashMessage, INPUT_CLASS, Muted, Toolbar, useFlash } from "./ui";
 
 /**
- * The DJ sets tab: every set the live stream recorded, which all show on the Opium Den
- * page as soon as they end. Name and describe the keepers, delete the trainwrecks.
+ * The DJ tab: the live room's recent chat, to delete anything that shouldn't be there,
+ * and every set the live stream recorded, which all show on the Opium Den page as soon as
+ * they end. Name and describe the keepers, delete the trainwrecks.
  */
 
 // match the backend's limits (MAX_DJ_SET_*_LENGTH in schemas.py)
@@ -87,7 +88,54 @@ function DjSetCard({
 }
 
 /**
- * The DJ sets tab.
+ * The live room's recent chat (the same last few hours the room shows), newest at the
+ * bottom, with delete on each message. Deleted messages vanish from the room on its
+ * next poll.
+ */
+function ChatModeration() {
+  const adminFetch = useAdminFetch();
+  const chat = useAdminData<DjChatMessage[]>(DJ_CHAT_PATH, "couldn't load the chat");
+  const [flash, showFlash] = useFlash();
+
+  const deleteMessage = async (id: number) => {
+    try {
+      await adminRequest(adminFetch, `${DJ_CHAT_PATH}/${id}`, "couldn't delete the message", { method: "DELETE" });
+      chat.setData((current) => current?.filter((message) => message.id !== id) ?? null);
+    } catch (err) {
+      showFlash("error", errorMessage(err));
+    }
+  };
+
+  return (
+    <Card className="mb-4 p-3">
+      <Toolbar summary={`Live room chat: ${plural(chat.data?.length ?? 0, "message")}`}>
+        <Button size="sm" onClick={chat.reload}>
+          Refresh
+        </Button>
+      </Toolbar>
+      <FlashMessage flash={flash} />
+      {!chat.data && <Muted>{chat.error ?? "Loading the chat..."}</Muted>}
+      {chat.data?.length === 0 && <Muted>Nothing said in the last few hours.</Muted>}
+      <ul className="flex max-h-72 flex-col gap-1 overflow-y-auto">
+        {chat.data?.map((message) => (
+          <li key={message.id} className="flex items-start gap-2 text-sm">
+            <span className="min-w-0 flex-1 break-words">
+              <span className="font-semibold text-slate-200">{message.nickname}</span>{" "}
+              <span className="text-slate-300">{message.content}</span>{" "}
+              <span className="text-xs text-slate-500">{formatDate(message.created_at)}</span>
+            </span>
+            <Button size="sm" variant="danger" onClick={() => deleteMessage(message.id)}>
+              Delete
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+/**
+ * The DJ tab.
  */
 export default function DjSetsTab() {
   const adminFetch = useAdminFetch();
@@ -124,6 +172,7 @@ export default function DjSetsTab() {
 
   return (
     <div>
+      <ChatModeration />
       <Toolbar summary={plural(sets.data.length, "set")}>
         <Button size="sm" onClick={sets.reload}>
           Refresh

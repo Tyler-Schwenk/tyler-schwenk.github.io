@@ -4,7 +4,9 @@ import { formatDuration } from "@/app/admin/format";
 import { SKIP_BACK_S, SKIP_FORWARD_S, type AudioPlayer } from "@/lib/useAudioPlayer";
 import { useScrub } from "@/lib/useScrub";
 import SliderBar from "./SliderBar";
-import { PauseIcon, PlayIcon, SkipIcon, SpinnerIcon } from "./playerIcons";
+import { MutedIcon, PauseIcon, PlayIcon, SkipIcon, SpinnerIcon, VolumeIcon } from "./playerIcons";
+
+const VOLUME_STEP = 0.01;
 
 /**
  * the round white play/pause.
@@ -24,7 +26,7 @@ export function PlayPauseButton({ player, large = false }: { player: AudioPlayer
       type="button"
       onClick={() => player.toggle(track)}
       aria-label={playing ? "Pause" : "Play"}
-      className={`relative flex shrink-0 items-center justify-center rounded-full bg-den-ink text-den-bg transition hover:scale-105 active:scale-95 ${size}`}
+      className={`relative flex shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:scale-105 hover:brightness-110 active:scale-95 ${size}`}
     >
       {loading ? (
         <SpinnerIcon className={iconSize} />
@@ -124,6 +126,40 @@ export function PlayerProgress({ player, large = false }: { player: AudioPlayer;
       <span className="w-12 text-right">{elapsed}</span>
       {slider}
       <span className="w-12">{total}</span>
+    </div>
+  );
+}
+
+/**
+ * mute and a volume slider. desktop only in practice: phones ignore a page's volume and
+ * use their own buttons.
+ *
+ * @param {object} props
+ * @param {AudioPlayer} props.player - the shared player.
+ * @param {string} [props.className] - layout classes, like hiding it on phones.
+ * @returns {JSX.Element} the control.
+ */
+export function VolumeControl({ player, className = "" }: { player: AudioPlayer; className?: string }) {
+  const shown = player.muted ? 0 : player.volume;
+  return (
+    <div className={`items-center gap-2 ${className}`}>
+      <button
+        type="button"
+        onClick={player.toggleMute}
+        aria-label={player.muted ? "Unmute" : "Mute"}
+        className="text-den-muted transition hover:text-den-ink"
+      >
+        {shown === 0 ? <MutedIcon /> : <VolumeIcon />}
+      </button>
+      <SliderBar
+        value={shown}
+        max={1}
+        step={VOLUME_STEP}
+        onChange={player.setVolume}
+        label="Volume"
+        valueText={`${Math.round(shown * 100)}%`}
+        className="w-28"
+      />
     </div>
   );
 }

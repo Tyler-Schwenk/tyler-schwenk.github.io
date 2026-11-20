@@ -49,7 +49,7 @@ function RowMarker({
     return (
       <>
         <EqBars active className="h-3.5 w-3.5 text-den-accent group-hover:hidden" />
-        <PauseIcon className="hidden h-4 w-4 text-den-ink group-hover:block" />
+        <PauseIcon className="hidden h-4 w-4 text-den-accent group-hover:block" />
       </>
     );
   }
@@ -58,7 +58,7 @@ function RowMarker({
       <span className={`text-sm tabular-nums group-hover:hidden ${current ? "text-den-accent" : "text-den-faint"}`}>
         {index}
       </span>
-      <PlayIcon className="hidden h-4 w-4 text-den-ink group-hover:block" />
+      <PlayIcon className="hidden h-4 w-4 text-den-accent group-hover:block" />
     </>
   );
 }
@@ -105,7 +105,7 @@ function SetRow({
           <RowMarker index={index} current={current} playing={playing} loading={loading} />
         </span>
         <span className="min-w-0">
-          <span className={`block truncate transition-colors ${current ? "text-den-accent" : "text-den-ink group-hover:text-white"}`}>{title}</span>
+          <span className={`block truncate transition-colors ${current ? "text-den-accent-soft" : "text-den-ink group-hover:text-den-accent-soft"}`}>{title}</span>
           <span className="mt-0.5 block truncate text-sm text-den-faint">
             {set.title ? formatDate(set.started_at) : "untitled set"}
             {set.description && !open && <span> · {set.description}</span>}
@@ -121,7 +121,7 @@ function SetRow({
             type="button"
             onClick={() => setOpen(!open)}
             aria-expanded={open}
-            className="text-xs text-den-faint underline-offset-4 transition-colors hover:text-den-ink hover:underline"
+            className="text-xs text-den-faint underline-offset-4 transition-colors hover:text-den-accent-soft hover:underline"
           >
             {open ? "less" : "about this set"}
           </button>
@@ -157,7 +157,7 @@ export default function SetList({
 }) {
   return (
     <section className="mt-16">
-      <div className="flex items-baseline justify-between gap-3 border-b border-den-line pb-3">
+      <div className="flex items-baseline justify-between gap-3 border-b border-den-accent/40 pb-3">
         <h2 className="text-base font-semibold">Past sets</h2>
         {sets.length > 0 && <span className="text-sm text-den-faint">{summary(sets)}</span>}
       </div>

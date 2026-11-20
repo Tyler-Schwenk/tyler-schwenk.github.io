@@ -1,20 +1,12 @@
 "use client";
 
 import { formatDate } from "@/app/admin/format";
-import { DJ_LIVE_URL, djSetAudioUrl, djSetTitle, djSetTrackId, type DjSet } from "@/app/opium-den/djApi";
-import { useAudioPlayer, type PlayerTrack } from "@/lib/useAudioPlayer";
+import { djSetAudioUrl, djSetTitle, djSetTrackId, LIVE_TRACK, type DjSet } from "@/app/opium-den/djApi";
+import type { PlayerTrack } from "@/lib/useAudioPlayer";
 import { useDjStream } from "@/lib/useDjStream";
+import { useDenPlayer } from "./DenPlayerProvider";
 import LiveHero from "./LiveHero";
-import PlayerBar from "./PlayerBar";
 import SetList from "./SetList";
-
-const LIVE_TRACK: PlayerTrack = {
-  id: "live",
-  title: "Live from the den",
-  subtitle: "live now",
-  src: DJ_LIVE_URL,
-  live: true,
-};
 
 /**
  * a recorded set as something the player can play.
@@ -33,16 +25,16 @@ function setToTrack(set: DjSet): PlayerTrack {
 }
 
 /**
- * the opium den's dj booth, laid out like a streaming app: the live stream up top when
- * i'm on the decks, every past set as a track list below, and a now-playing bar pinned
- * to the bottom once something's playing. one shared player, so starting a set stops the
- * stream and vice versa. see website/docs/OPIUM_DEN.md.
+ * the opium den's dj booth, laid out like a streaming app: the way into the live room up
+ * top, and every past set as a track list below. it plays through the den's shared player
+ * (DenPlayerProvider), so starting a set stops the stream and vice versa, and the
+ * now-playing bar comes from the layout. see website/docs/OPIUM_DEN.md.
  *
  * @returns {JSX.Element} the booth.
  */
 export default function DjBooth() {
   const { status, sets, error } = useDjStream();
-  const player = useAudioPlayer();
+  const player = useDenPlayer();
   const liveIsCurrent = player.track?.id === LIVE_TRACK.id;
 
   return (
@@ -63,7 +55,6 @@ export default function DjBooth() {
           onToggle={(set) => player.toggle(setToTrack(set))}
         />
       )}
-      <PlayerBar player={player} />
     </div>
   );
 }

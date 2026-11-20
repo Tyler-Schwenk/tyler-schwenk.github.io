@@ -5,11 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { AudioPlayer } from "@/lib/useAudioPlayer";
 import EqBars from "./EqBars";
 import NowPlayingSheet from "./NowPlayingSheet";
-import { PlayerProgress, PlayPauseButton, SkipButton } from "./PlayerControls";
-import SliderBar from "./SliderBar";
-import { ChevronIcon, MutedIcon, VolumeIcon } from "./playerIcons";
+import { PlayerProgress, PlayPauseButton, SkipButton, VolumeControl } from "./PlayerControls";
+import { ChevronIcon } from "./playerIcons";
 
-const VOLUME_STEP = 0.01;
 const ART_SRC = "/images/8bit/dj_board.png";
 const ART_WIDTH_PX = 112;
 const ART_HEIGHT_PX = 52;
@@ -100,25 +98,7 @@ export default function PlayerBar({ player }: { player: AudioPlayer }) {
             </div>
           </div>
 
-          <div className="hidden items-center justify-end gap-2 md:flex">
-            <button
-              type="button"
-              onClick={player.toggleMute}
-              aria-label={player.muted ? "Unmute" : "Mute"}
-              className="text-den-muted transition hover:text-den-ink"
-            >
-              {player.muted || player.volume === 0 ? <MutedIcon /> : <VolumeIcon />}
-            </button>
-            <SliderBar
-              value={player.muted ? 0 : player.volume}
-              max={1}
-              step={VOLUME_STEP}
-              onChange={player.setVolume}
-              label="Volume"
-              valueText={`${Math.round((player.muted ? 0 : player.volume) * 100)}%`}
-              className="w-28"
-            />
-          </div>
+          <VolumeControl player={player} className="hidden justify-end md:flex" />
         </div>
 
         {player.error && (

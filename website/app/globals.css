@@ -13,18 +13,20 @@
 }
 
 /*
- * opium den theme (/opium-den, see website/docs/OPIUM_DEN.md): warm near-black, one
- * red accent kept for what's playing and what's live, hairlines instead of cards. these
- * register as tailwind colours, so it's bg-den-bg, text-den-muted, border-den-line, etc.
+ * opium den theme (/opium-den, see website/docs/OPIUM_DEN.md): a dark oxblood room, red
+ * for anything you can play and anything live, hairlines instead of cards. these register
+ * as tailwind colours, so it's bg-den-bg, text-den-muted, border-den-line, etc.
  */
 @theme {
-  --color-den-bg: #0e0a0a;
-  --color-den-raised: #181213;
-  --color-den-ink: #f3ecea;
-  --color-den-muted: #a09290;
-  --color-den-faint: #6d6160;
-  --color-den-line: rgb(255 255 255 / 0.08);
+  --color-den-bg: #1a0f11;
+  --color-den-raised: #261519;
+  --color-den-ink: #f7eeec;
+  --color-den-muted: #c4aba8;
+  --color-den-faint: #8f7471;
+  --color-den-line: rgb(255 170 170 / 0.12);
   --color-den-accent: #e5484d;
+  /* the accent as text on the dark background, softer so it doesn't vibrate */
+  --color-den-accent-soft: #f4a0a2;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -519,6 +521,9 @@ body:has(.den-page) {
 
 .den-page {
   font-family: var(--font-inter), system-ui, sans-serif;
+  /* a low red lamp over the top of the room. scrolls away with the page */
+  background-image: radial-gradient(ellipse 90% 420px at 50% 0, rgb(229 72 77 / 0.16), transparent);
+  background-repeat: no-repeat;
 }
 
 /* opium den player (components/opium-den): the bouncing equalizer next to what's playing */

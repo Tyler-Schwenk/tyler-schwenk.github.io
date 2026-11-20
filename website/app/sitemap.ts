@@ -22,6 +22,7 @@ const STATIC_ROUTES = [
   "/monitor",
   "/mic",
   "/opium-den",
+  "/opium-den/live",
   "/public-square",
   "/mallard",
   "/mallard/confirm",

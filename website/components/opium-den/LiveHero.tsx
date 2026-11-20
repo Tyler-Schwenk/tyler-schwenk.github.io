@@ -1,59 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { formatElapsed, parseBackendTime } from "@/app/admin/format";
-import type { DjStreamStatus } from "@/app/opium-den/djApi";
+import Link from "next/link";
+import { LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
 import EqBars from "./EqBars";
+import LiveStatus from "./LiveStatus";
 import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 
 const BOARD_ART_SRC = "/images/8bit/dj_board.png";
 const BOARD_ART_WIDTH_PX = 112;
 const BOARD_ART_HEIGHT_PX = 52;
-const OFF_AIR_NOTE = "streams here whenever i'm practicing on the decks";
 
 /**
- * how long the stream's been on.
- *
- * @param {string | null} startedAt - when butt connected, naive UTC.
- * @returns {string} like "on air for 23 min", or "" if the start's unknown.
- */
-function onAirFor(startedAt: string | null): string {
-  if (!startedAt) return "";
-  const started = parseBackendTime(startedAt);
-  if (Number.isNaN(started.getTime())) return "";
-  return `on air for ${formatElapsed(Date.now() - started.getTime())}`;
-}
-
-/**
- * the "live now" / "off air" line, with a pulsing dot while it's live.
- *
- * @param {object} props
- * @param {boolean} props.live - the stream's on.
- * @param {string} props.details - what follows the label, like how long it's been on.
- * @returns {JSX.Element} the status line.
- */
-function StatusLine({ live, details }: { live: boolean; details: string }) {
-  return (
-    <p className="mt-1 flex items-start gap-2 text-sm text-den-muted">
-      {live ? (
-        <span className="relative mt-1.5 flex h-2 w-2 shrink-0" aria-hidden="true">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-den-accent opacity-60 motion-reduce:animate-none" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-den-accent" />
-        </span>
-      ) : (
-        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-den-faint" aria-hidden="true" />
-      )}
-      <span className="min-w-0">
-        <span className={live ? "font-medium text-den-accent" : "text-den-ink/80"}>{live ? "Live now" : "Off air"}</span>
-        {details && <span> · {details}</span>}
-      </span>
-    </p>
-  );
-}
-
-/**
- * the top of the booth, one quiet row: the dj board art, "live from the den" with whether
- * it's on, and a play button while it is. greyed out when it's off air.
+ * the den's way into the live room. off air it's one quiet row: the dj board art greyed
+ * out, when it streams, and a small link to the room (its chat from the last set stays
+ * readable). live it lights up red with how long it's been on and who's listening, a play
+ * button to listen right here, and a link into the room for the chat.
  *
  * @param {object} props
  * @param {DjStreamStatus | null} props.status - latest status, null before the first answer.
@@ -77,40 +39,59 @@ export default function LiveHero({
   onToggle: () => void;
 }) {
   const live = Boolean(status?.live);
-  const details = live
-    ? [onAirFor(status?.started_at ?? null), `${status?.listeners ?? 0} listening`].filter(Boolean).join(" · ")
-    : OFF_AIR_NOTE;
 
   return (
-    <section className="flex items-center gap-4 border-y border-den-line py-5">
-      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-white/[0.04] sm:h-20 sm:w-20">
-        <Image
-          src={BOARD_ART_SRC}
-          alt="pixel art of the ddj-400 controller"
-          width={BOARD_ART_WIDTH_PX}
-          height={BOARD_ART_HEIGHT_PX}
-          className={`pixelated h-auto w-[80%] transition ${live ? "" : "opacity-50 grayscale"}`}
-        />
-        {live && playing && (
-          <EqBars active={!loading} className="absolute bottom-1.5 right-1.5 h-3 w-3 text-den-accent" />
-        )}
+    <section
+      className={`flex flex-wrap items-center gap-x-4 gap-y-4 ${
+        live ? "rounded-xl border border-den-accent/40 bg-den-accent/10 p-4" : "border-y border-den-line py-5"
+      }`}
+    >
+      <div className="flex min-w-0 flex-1 basis-64 items-center gap-4">
+        <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-white/[0.05] sm:h-20 sm:w-20">
+          <Image
+            src={BOARD_ART_SRC}
+            alt="pixel art of the ddj-400 controller"
+            width={BOARD_ART_WIDTH_PX}
+            height={BOARD_ART_HEIGHT_PX}
+            className={`pixelated h-auto w-[80%] transition ${live ? "" : "opacity-50 grayscale"}`}
+          />
+          {live && playing && (
+            <EqBars active={!loading} className="absolute bottom-1.5 right-1.5 h-3 w-3 text-den-accent" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-den-ink">Live from the den</h2>
+          <LiveStatus status={status} className="mt-1 text-sm" />
+          {error && !status && <p className="mt-1 text-xs text-den-faint">{error}</p>}
+        </div>
       </div>
 
-      <div className="min-w-0 flex-1">
-        <h2 className="font-semibold text-den-ink">Live from the den</h2>
-        <StatusLine live={live} details={details} />
-        {error && !status && <p className="mt-1 text-xs text-den-faint">{error}</p>}
-      </div>
+      {!live && (
+        <Link
+          href={LIVE_ROOM_PATH}
+          className="text-sm text-den-accent-soft transition-colors hover:text-den-ink"
+        >
+          Live room &rarr;
+        </Link>
+      )}
 
       {live && (
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={playing ? "Pause the live stream" : "Play the live stream"}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-den-ink text-den-bg transition hover:scale-105 active:scale-95"
-        >
-          {loading ? <SpinnerIcon /> : playing ? <PauseIcon /> : <PlayIcon />}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={playing ? "Pause the live stream" : "Play the live stream"}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:scale-105 hover:brightness-110 active:scale-95"
+          >
+            {loading ? <SpinnerIcon /> : playing ? <PauseIcon /> : <PlayIcon />}
+          </button>
+          <Link
+            href={LIVE_ROOM_PATH}
+            className="rounded-full border border-den-accent/50 px-4 py-2 text-sm font-medium text-den-ink transition-colors hover:bg-den-accent/15"
+          >
+            Join the room
+          </Link>
+        </div>
       )}
     </section>
   );

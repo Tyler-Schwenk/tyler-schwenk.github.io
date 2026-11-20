@@ -41,6 +41,8 @@ export type MenuEntry = {
   iconSrc?: string;
   /** sprite to show instead while the kiln's firing. */
   firingIconSrc?: string;
+  /** sprite to show instead while the dj stream's on air. */
+  liveIconSrc?: string;
 };
 
 /** one clickable thing in the world: a menu entry plus how and where it's drawn. */
@@ -51,8 +53,10 @@ export type WorldObject = MenuEntry & {
   floating?: boolean;
   /** skips the ground shadow -- for things that aren't standing on the ground (the roof). */
   noShadow?: boolean;
-  /** gets music notes and a LIVE! tag while the dj stream is on air (the opium den's board). */
-  djLive?: boolean;
+  /** music notes float up off it while the dj stream is on air (the opium den's board). */
+  djNotes?: boolean;
+  /** a blinking LIVE! tag sits above it while the dj stream is on air (the radio tower). */
+  liveTag?: boolean;
   desktop: Placement;
   mobile: Placement;
 };
@@ -182,8 +186,16 @@ export const WORLD_OBJECTS: WorldObject[] = [
     // the dj board sits on the cave floor, sized to fit inside the mouth the generator paints
     // (draw_cave: desktop 40px wide at (614, 118), mobile 36px at (300, 168))
     id: "opium-den", label: "ENTER THE VIRTUAL OPIUM DEN", href: "/opium-den", iconSrc: "/images/8bit/dj_board.png",
-    size: 1, noShadow: true, djLive: true,
+    size: 1, noShadow: true, djNotes: true,
     desktop: { x: 614, y: 116, widthPx: 32 }, mobile: { x: 300, y: 166, widthPx: 28 },
+  },
+  {
+    // the den's broadcast tower, on the hill just left of the cave. above the horizon on
+    // desktop, so its scale is pinned like the lightbulb's
+    id: "live-room", label: "LIVE FROM THE OPIUM DEN", href: "/opium-den/live",
+    iconSrc: "/images/8bit/radio-tower-idle.png", liveIconSrc: "/images/8bit/radio-tower-live.png",
+    size: 0.55, liveTag: true,
+    desktop: { x: 566, y: 112, scale: 0.6 }, mobile: { x: 252, y: 166 },
   },
 ];
 
@@ -198,12 +210,23 @@ export const LIST_ONLY_ENTRIES: MenuEntry[] = [
 /** every list-view row, in order: the world objects, then the list-only pages. */
 export const MENU_ENTRIES: MenuEntry[] = [...WORLD_OBJECTS, ...LIST_ONLY_ENTRIES];
 
+/** what's going on in the house right now, which some objects show with a different sprite. */
+export type WorldState = {
+  /** the kiln's firing. */
+  kilnFiring: boolean;
+  /** the dj stream's on air. */
+  djLive: boolean;
+};
+
 /**
  * picks which sprite an object shows right now.
  *
  * @param {MenuEntry} obj - the object.
- * @param {boolean} kilnFiring - whether the kiln's firing.
+ * @param {WorldState} state - whether the kiln's firing and the stream's live.
  * @returns {string | undefined} the sprite's url, undefined for an invisible hotspot.
  */
-export const currentIconSrc = (obj: MenuEntry, kilnFiring: boolean): string | undefined =>
-  kilnFiring && obj.firingIconSrc ? obj.firingIconSrc : obj.iconSrc;
+export const currentIconSrc = (obj: MenuEntry, state: WorldState): string | undefined => {
+  if (state.kilnFiring && obj.firingIconSrc) return obj.firingIconSrc;
+  if (state.djLive && obj.liveIconSrc) return obj.liveIconSrc;
+  return obj.iconSrc;
+};

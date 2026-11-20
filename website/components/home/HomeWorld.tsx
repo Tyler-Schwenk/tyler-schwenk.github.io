@@ -215,7 +215,7 @@ export default function HomeWorld() {
  * @param {object} props - component props.
  * @param {WorldObject} props.obj - what to draw and where it goes.
  * @param {boolean} props.kilnFiring - whether the kiln's firing, which picks its sprite.
- * @param {boolean} props.djLive - whether the dj stream's on air, for objects with djLive set.
+ * @param {boolean} props.djLive - whether the dj stream's on air, for objects with a live sprite, notes or tag.
  * @param {boolean} props.selected - lit up from a first touch tap.
  * @param {Function} props.onPointerDown - records the pointer type for tap-to-select.
  * @param {Function} props.onKeyDown - marks keyboard use so enter goes straight through.
@@ -250,7 +250,12 @@ function WorldObjectLink({
     onClick,
   };
   const body = (
-    <WorldObjectBody obj={obj} iconSrc={currentIconSrc(obj, kilnFiring)} live={Boolean(obj.djLive) && djLive} />
+    <WorldObjectBody
+      obj={obj}
+      iconSrc={currentIconSrc(obj, { kilnFiring, djLive })}
+      notes={Boolean(obj.djNotes) && djLive}
+      liveTag={Boolean(obj.liveTag) && djLive}
+    />
   );
 
   if (obj.lucky) {
@@ -280,10 +285,21 @@ function WorldObjectLink({
  * @param {object} props - component props.
  * @param {WorldObject} props.obj - the object to draw.
  * @param {string} [props.iconSrc] - the sprite to show. without one it's an invisible hotspot.
- * @param {boolean} props.live - show the dj stream's live notes and tag on it.
+ * @param {boolean} props.notes - music notes float up off it (the stream's live).
+ * @param {boolean} props.liveTag - the blinking LIVE! tag sits above it (the stream's live).
  * @returns {JSX.Element} shadow + sprite/hotspot + name tag.
  */
-function WorldObjectBody({ obj, iconSrc, live }: { obj: WorldObject; iconSrc?: string; live: boolean }) {
+function WorldObjectBody({
+  obj,
+  iconSrc,
+  notes,
+  liveTag,
+}: {
+  obj: WorldObject;
+  iconSrc?: string;
+  notes: boolean;
+  liveTag: boolean;
+}) {
   // pull the art down past its transparent padding so its feet land on the spot
   const footPad = iconSrc ? (FOOT_PADS[iconSrc] ?? 0) : 0;
 
@@ -310,10 +326,10 @@ function WorldObjectBody({ obj, iconSrc, live }: { obj: WorldObject; iconSrc?: s
             <span className="world-hotspot block aspect-square border-2 border-dashed border-transparent" />
           )}
         </span>
-        {live && <LiveNotes />}
+        {notes && <LiveNotes />}
       </span>
 
-      {live && (
+      {liveTag && (
         <span
           aria-hidden="true"
           className="world-live-tag absolute bottom-full left-1/2 -translate-x-1/2 mb-[2px] whitespace-nowrap pointer-events-none pixel-font text-[6px] md:text-[8px] text-white bg-[#D03030] border-2 border-black px-1 py-[1px] shadow-[2px_2px_0_rgba(0,0,0,1)]"

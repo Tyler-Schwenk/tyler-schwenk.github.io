@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { fetchDjSets, fetchDjStatus, type DjSet, type DjStreamStatus } from "@/app/opium-den/djApi";
+import { usePoll } from "@/lib/usePoll";
 
-// how quickly a visitor notices the stream going live, without hammering the pi
+// how quickly a den visitor notices the stream going live, without hammering the pi
 const POLL_INTERVAL_MS = 15000;
 
 /** what useDjStream hands back. */
@@ -17,6 +17,16 @@ export type DjStreamState = {
 };
 
 /**
+ * fetches the status and the sets together.
+ *
+ * @returns {Promise<{status: DjStreamStatus, sets: DjSet[]}>} both.
+ */
+async function fetchStreamAndSets(): Promise<{ status: DjStreamStatus; sets: DjSet[] }> {
+  const [status, sets] = await Promise.all([fetchDjStatus(), fetchDjSets()]);
+  return { status, sets };
+}
+
+/**
  * the live dj stream's status and the recorded sets, kept fresh by polling while
  * the tab is visible. sets are reloaded each poll too, so a set shows up shortly
  * after it ends.
@@ -24,28 +34,6 @@ export type DjStreamState = {
  * @returns {DjStreamState} the status, the sets, and the last error.
  */
 export function useDjStream(): DjStreamState {
-  const [status, setStatus] = useState<DjStreamStatus | null>(null);
-  const [sets, setSets] = useState<DjSet[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const refresh = useCallback(async () => {
-    try {
-      const [latestStatus, latestSets] = await Promise.all([fetchDjStatus(), fetchDjSets()]);
-      setStatus(latestStatus);
-      setSets(latestSets);
-      setError(null);
-    } catch (err) {
-      setError(`${(err as Error).message}. it'll keep trying.`);
-    }
-  }, []);
-
-  useEffect(() => {
-    refresh();
-    const timer = setInterval(() => {
-      if (!document.hidden) refresh();
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [refresh]);
-
-  return { status, sets, error };
+  const { data, error } = usePoll(fetchStreamAndSets, POLL_INTERVAL_MS);
+  return { status: data?.status ?? null, sets: data?.sets ?? null, error };
 }

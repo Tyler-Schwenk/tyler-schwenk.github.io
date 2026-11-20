@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useDjLive } from "@/lib/useDjLive";
 import { useKilnFiring } from "@/lib/useKilnFiring";
 import { MENU_ENTRIES, currentIconSrc, pickLuckyRoute, type MenuEntry } from "./worldObjects";
 
@@ -17,6 +18,7 @@ const MENU_ICON_PX = 48;
  */
 export default function MainMenuList() {
   const kilnFiring = useKilnFiring();
+  const djLive = useDjLive();
 
   return (
     <div className="bg-[#3850A0] border-4 border-black p-6 relative flex flex-col min-h-[80vh] max-h-[90vh] shadow-2xl">
@@ -41,7 +43,7 @@ export default function MainMenuList() {
               </p>
             </div>
             {MENU_ENTRIES.map((obj) => (
-              <MenuOption key={obj.id} obj={obj} iconSrc={currentIconSrc(obj, kilnFiring)} />
+              <MenuOption key={obj.id} obj={obj} iconSrc={currentIconSrc(obj, { kilnFiring, djLive })} />
             ))}
           </div>
         </div>

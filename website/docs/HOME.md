@@ -78,12 +78,18 @@ Object-level fields:
   bookshelf).
 - `floating` -- bobs in the air with no ground shadow (the lightbulb).
 - `noShadow` -- skips the ground shadow for things not standing on the ground (the roof).
-- `djLive` -- while the DJ stream is on air, pixel music notes float up off the sprite and a
-  blinking red LIVE! tag sits above it (hidden while the object's lit up, so its name tag
-  shows instead). Used by the DJ board inside the opium den cave. `useDjLive` checks
-  `/dj/status` on load and every 30 s while the tab's visible; the animation is the
-  `.world-note` / `.world-live-tag` rules in `globals.css`, held still under reduced motion.
-  See `website/docs/OPIUM_DEN.md`.
+- `firingIconSrc` / `liveIconSrc` -- a second sprite to show while the kiln's firing (the
+  kiln) or while the DJ stream's on air (the radio tower). `currentIconSrc` picks the sprite
+  for both the world and the list view. A pair of sprites should share one canvas size with
+  the feet in the same spot, so the swap doesn't jump.
+- `djNotes` -- while the DJ stream's on air, pixel music notes float up off the sprite. Used
+  by the DJ board inside the opium den cave.
+- `liveTag` -- while the DJ stream's on air, a blinking red LIVE! tag sits above the sprite
+  (hidden while the object's lit up, so its name tag shows instead). Used by the radio tower
+  on the hill next to the cave, which goes to the live room (`/opium-den/live`).
+- The live state comes from `useDjLive`, which checks `/dj/status` on load and every 30 s
+  while the tab's visible. The animations are the `.world-note` / `.world-live-tag` rules
+  in `globals.css`, held still under reduced motion. See `website/docs/OPIUM_DEN.md`.
 - `href` / `external` / `lucky` -- where it goes. `lucky` picks a random `LUCKY_ROUTES` page
   on click.
 - No `iconSrc` -- renders as an invisible square hotspot, outlined on hover (the cave).
