@@ -152,7 +152,7 @@ It's drawn rather than screenshotted so it looks the same everywhere and needs n
 ## Media
 
 All in `website/public/video/disco/`, made from the source edit (`Disco December Invite
-V1_1.mp4`, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
+V2.mp4`, gitignored in the repo root, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
 
 | File | What | Made with |
 |------|------|-----------|
@@ -171,7 +171,7 @@ shots, the floorboard lines are peeled off as long thin strokes at the floor's a
 Small loose specks are then dropped. Some floorboard stubs remain near feet.
 
 The link preview is `website/public/images/events/disco-og.jpg`, the "Disco Night is Back!"
-title card at 18.5 s.
+title card at 18.5 s, scaled to 1200 wide and center cropped to 1200x630 (`scale=1200:-2,crop=1200:630`).
 
 If the video is re-edited, the handoff has to be found again. Step through the final cloud
 shot, find a stretch where a drawing comes back around, and compare candidate frames with
