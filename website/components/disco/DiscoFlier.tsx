@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type UIEvent } from "react";
 
 import AttireClip from "./AttireClip";
 import { DISCO_ADDRESS, DISCO_DETAILS, DISCO_MORE_INFO } from "./constants";
@@ -28,6 +28,9 @@ const ATTIRE_DELAY_MS = 1900;
 const FACTS_DELAY_MS = 2200;
 const PHONES_DELAY_MS = 2600;
 const SCROLL_HINT_DELAY_MS = 3400;
+
+/** how long after the last scroll event the paused animations pick back up */
+const SCROLL_SETTLE_MS = 200;
 
 const SAVE_MESSAGES: Record<SaveResult, string> = {
   shared: "saved! see you on the dance floor",
@@ -66,6 +69,7 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
   const [status, setStatus] = useState("");
   const mapsUrl = useMapsUrl(DISCO_ADDRESS);
   const moreInfoRef = useRef<HTMLElement>(null);
+  const settleTimerRef = useRef<number | undefined>(undefined);
   const { title } = info;
   // geo: links hand off to an app, https ones open best in a new tab
   const opensInNewTab = mapsUrl.startsWith("https:");
@@ -107,8 +111,22 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
     moreInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  /**
+   * holds the animations that repaint (floor tiles, letter colors, box glow and the
+   * like) while a scroll's moving, so phones can keep the scroll smooth. it's a
+   * class flipped on the element rather than state, so scrolling never re-renders.
+   */
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const flier = event.currentTarget;
+    flier.classList.add(styles.flierScrolling);
+    window.clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = window.setTimeout(() => flier.classList.remove(styles.flierScrolling), SCROLL_SETTLE_MS);
+  };
+
+  useEffect(() => () => window.clearTimeout(settleTimerRef.current), []);
+
   return (
-    <div className={styles.flier}>
+    <div className={styles.flier} onScroll={handleScroll}>
       <StarField />
       <div className={styles.posterScreen}>
         <article className={styles.poster}>

@@ -223,6 +223,13 @@
   to { transform: scale(1); filter: brightness(1); }
 }
 
+/* while a scroll's moving, hold the animations that repaint every frame they change.
+   on a phone they compete with the scroll and make it stutter. the cheap ones
+   (spins, sweeps, sparkles, the dancers) keep going */
+.flierScrolling :is(.floorLight, .letter, .box, .speedStripes, .actDen, .ballTiles) {
+  animation-play-state: paused;
+}
+
 .starField {
   position: fixed;
   inset: 0;

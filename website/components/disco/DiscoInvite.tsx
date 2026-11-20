@@ -36,6 +36,9 @@ import styles from "./disco.module.css";
  */
 type Stage = "waiting" | "tap" | "playing" | "clouds" | "parting" | "flier";
 
+/** how long the skip button stays up after a tap on the video */
+const SKIP_SHOWN_MS = 4000;
+
 // the palette and ornament colors go on the stage as css variables so the
 // stylesheet and the canvas card read the same values from constants.ts
 const THEME_VARS = {
@@ -104,6 +107,8 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
   const [curtainUp, setCurtainUp] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartTried = useRef(false);
+  const [skipShown, setSkipShown] = useState(false);
+  const skipTimerRef = useRef<number | undefined>(undefined);
   const music = useDiscoMusic();
   const { prepare: prepareMusic, startAt: startMusicAt, stop: stopMusic } = music;
 
@@ -178,6 +183,21 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
     setStage("clouds");
   };
 
+  /**
+   * the skip button stays hidden so the video plays clean. a tap anywhere while it's
+   * playing brings it up for a few seconds, like a video player's controls.
+   */
+  const revealSkip = () => {
+    if (stage !== "playing") {
+      return;
+    }
+    setSkipShown(true);
+    window.clearTimeout(skipTimerRef.current);
+    skipTimerRef.current = window.setTimeout(() => setSkipShown(false), SKIP_SHOWN_MS);
+  };
+
+  useEffect(() => () => window.clearTimeout(skipTimerRef.current), []);
+
   // the song picks up from wherever the video was skipped
   const handleSkip = () => {
     const video = videoRef.current;
@@ -208,7 +228,7 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
   const backgroundCloudsShown = stage === "waiting" || stage === "tap";
 
   return (
-    <div className={styles.stage} style={THEME_VARS}>
+    <div className={styles.stage} style={THEME_VARS} onPointerDown={revealSkip}>
       {flierShown && <DiscoFlier info={info} isMobile={device.isMobile} onReplay={startVideo} />}
       {backgroundCloudsShown && <CloudLoop />}
 
@@ -224,7 +244,7 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
 
       <CloudCurtain up={curtainUp} parting={stage === "parting"} onParted={handleParted} />
 
-      {stage === "playing" && !curtainUp && (
+      {stage === "playing" && !curtainUp && skipShown && (
         <button type="button" className={styles.skipButton} onClick={handleSkip}>
           skip
         </button>

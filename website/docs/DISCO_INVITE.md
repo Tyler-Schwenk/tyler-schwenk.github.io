@@ -21,7 +21,7 @@ The stages live in `DiscoInvite.tsx`:
 |-------|------------------|---------------|
 | `waiting` | Cloud loop. Phones held upright also get "turn your phone sideways" | The device is known and isn't an upright phone. Then it tries to autoplay |
 | `tap` | Cloud loop with an "open your invite" button | Tapped. Used when the browser blocks autoplay with sound |
-| `playing` | The invite video, with a small skip button | The video ends, or skip goes straight to `parting` |
+| `playing` | The invite video. A tap anywhere shows a small skip button for 4 s (`SKIP_SHOWN_MS`) | The video ends, or skip goes straight to `parting` |
 | `clouds` | Cloud loop, held for `PART_DELAY_MS` | The timer runs out |
 | `parting` | The clouds split and slide apart over the flier (`PART_DURATION_MS`) | They're fully off screen |
 | `flier` | The flier | "Watch again" replays the video from the top |
@@ -133,7 +133,7 @@ bursts. The grid in `.poster` places, top to bottom:
 - **Moving parts** (`Ornaments.tsx`): blocks rise in one after another (`--rise-delay`),
   the stripes streak in then drift, the disco ball spins and throws beams, the box row
   chases, the spotlights sweep, the sparkle bursts flash, the dance floor's tiles blink,
-  and the attire clip loops and bobs. Everything holds still under `prefers-reduced-motion`.
+  and the attire clip loops and bobs. Everything holds still under `prefers-reduced-motion`. While the flier is scrolling (and for 200 ms after), the animations that repaint every frame they change (floor tiles, letter colors, box glow, title stripes, the den glow, the ball's tiles) are paused with the `flierScrolling` class, since on phones they made the scroll stutter. The cheap transform and opacity ones keep going.
 - **The dance floor** (`DanceFloor`): covers the bottom half of the poster. It's a grid
   of tiles (40 wide, 26 deep), much wider than the poster because the far end shrinks
   toward the horizon. It's tipped back with a 3D `rotateX` under `perspective`, so it runs
