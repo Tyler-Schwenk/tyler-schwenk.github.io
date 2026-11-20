@@ -10,7 +10,7 @@ const BAR_DELAYS_S = [0, 0.35, 0.15, 0.5];
  * @param {string} [props.className] - size and colour classes.
  * @returns {JSX.Element} the bars.
  */
-export default function EqBars({ active, className = "h-4 w-4 text-red-400" }: { active: boolean; className?: string }) {
+export default function EqBars({ active, className = "h-4 w-4 text-den-accent" }: { active: boolean; className?: string }) {
   return (
     <span className={`inline-flex items-end gap-[2px] ${className}`} aria-hidden="true">
       {BAR_DELAYS_S.map((delayS) => (

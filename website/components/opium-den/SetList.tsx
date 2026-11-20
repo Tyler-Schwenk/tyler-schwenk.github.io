@@ -44,21 +44,21 @@ function RowMarker({
   playing: boolean;
   loading: boolean;
 }) {
-  if (current && loading) return <SpinnerIcon className="h-4 w-4 text-red-400" />;
+  if (current && loading) return <SpinnerIcon className="h-4 w-4 text-den-accent" />;
   if (current && playing) {
     return (
       <>
-        <EqBars active className="h-4 w-4 text-red-400 group-hover:hidden" />
-        <PauseIcon className="hidden h-4 w-4 text-white group-hover:block" />
+        <EqBars active className="h-3.5 w-3.5 text-den-accent group-hover:hidden" />
+        <PauseIcon className="hidden h-4 w-4 text-den-ink group-hover:block" />
       </>
     );
   }
   return (
     <>
-      <span className={`text-sm tabular-nums group-hover:hidden ${current ? "text-red-400" : "text-red-200/50"}`}>
+      <span className={`text-sm tabular-nums group-hover:hidden ${current ? "text-den-accent" : "text-den-faint"}`}>
         {index}
       </span>
-      <PlayIcon className="hidden h-4 w-4 text-white group-hover:block" />
+      <PlayIcon className="hidden h-4 w-4 text-den-ink group-hover:block" />
     </>
   );
 }
@@ -94,34 +94,34 @@ function SetRow({
   const title = djSetTitle(set);
 
   return (
-    <li className={`rounded-xl transition-colors ${current ? "bg-red-500/10" : "hover:bg-white/5"}`}>
+    <li>
       <button
         type="button"
         onClick={onToggle}
         aria-label={`${current && playing ? "Pause" : "Play"} ${title}`}
-        className="group grid w-full grid-cols-[2rem_1fr_auto] items-center gap-3 px-3 py-3 text-left"
+        className="group grid w-full grid-cols-[1.5rem_1fr_auto] items-center gap-4 py-3.5 text-left"
       >
-        <span className="flex h-5 items-center justify-center">
+        <span className="flex h-5 items-center justify-start">
           <RowMarker index={index} current={current} playing={playing} loading={loading} />
         </span>
         <span className="min-w-0">
-          <span className={`block truncate font-medium ${current ? "text-red-300" : "text-white"}`}>{title}</span>
-          <span className="block truncate text-xs text-red-200/50">
+          <span className={`block truncate transition-colors ${current ? "text-den-accent" : "text-den-ink group-hover:text-white"}`}>{title}</span>
+          <span className="mt-0.5 block truncate text-sm text-den-faint">
             {set.title ? formatDate(set.started_at) : "untitled set"}
-            {set.description && !open && <span className="text-red-200/40"> · {set.description}</span>}
+            {set.description && !open && <span> · {set.description}</span>}
           </span>
         </span>
-        <span className="text-sm tabular-nums text-red-200/60">{formatDuration(set.duration_s)}</span>
+        <span className="text-sm tabular-nums text-den-faint">{formatDuration(set.duration_s)}</span>
       </button>
 
       {set.description && (
-        <div className="px-3 pb-3 pl-[3.75rem]">
-          {open && <p className="whitespace-pre-line text-sm leading-relaxed text-red-100/80">{set.description}</p>}
+        <div className="-mt-1.5 pb-3.5 pl-10">
+          {open && <p className="mb-1 whitespace-pre-line text-sm leading-relaxed text-den-muted">{set.description}</p>}
           <button
             type="button"
             onClick={() => setOpen(!open)}
             aria-expanded={open}
-            className="mt-1 text-xs font-semibold uppercase tracking-wide text-red-300/70 hover:text-red-200"
+            className="text-xs text-den-faint underline-offset-4 transition-colors hover:text-den-ink hover:underline"
           >
             {open ? "less" : "about this set"}
           </button>
@@ -156,17 +156,17 @@ export default function SetList({
   onToggle: (set: DjSet) => void;
 }) {
   return (
-    <section className="mt-8">
-      <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
-        <h2 className="text-xl font-semibold text-white">Past sets</h2>
-        {sets.length > 0 && <span className="text-xs text-red-200/50">{summary(sets)}</span>}
+    <section className="mt-16">
+      <div className="flex items-baseline justify-between gap-3 border-b border-den-line pb-3">
+        <h2 className="text-base font-semibold">Past sets</h2>
+        {sets.length > 0 && <span className="text-sm text-den-faint">{summary(sets)}</span>}
       </div>
       {sets.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-red-900/70 px-4 py-6 text-center text-sm text-red-200/60">
+        <p className="py-6 text-sm text-den-faint">
           no sets recorded yet. they show up here when a live session ends.
         </p>
       ) : (
-        <ol className="divide-y divide-white/5">
+        <ol className="mt-1 divide-y divide-den-line">
           {sets.map((set, i) => {
             const current = currentId === djSetTrackId(set.id);
             return (

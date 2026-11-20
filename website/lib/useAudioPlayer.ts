@@ -42,6 +42,10 @@ export type AudioPlayer = {
   toggleMute: () => void;
 };
 
+/** how far the skip buttons jump, on the page and on the lock screen. */
+export const SKIP_BACK_S = 15;
+export const SKIP_FORWARD_S = 30;
+
 // what the lock screen and notification controls show next to the title
 const MEDIA_SESSION_ARTIST = "Opium Den";
 const MEDIA_SESSION_ARTWORK = [{ src: "/images/8bit/dj_board.png", sizes: "112x52", type: "image/png" }];
@@ -75,7 +79,7 @@ function unloadAudio(audio: HTMLAudioElement): void {
  *
  * pausing the live stream hangs up instead of buffering in the background, and playing
  * it again reconnects at the live edge. hooks into the media session so phones show the
- * title and play/pause/seek on the lock screen.
+ * title, play/pause, skip back/forward and a scrubber on the lock screen.
  *
  * @returns {AudioPlayer} state and controls.
  */
@@ -229,7 +233,30 @@ export function useAudioPlayer(): AudioPlayer {
       "seekto",
       track.live ? null : (details) => seekTo(details.seekTime ?? 0)
     );
-  }, [track, play, pause, seekTo]);
+    navigator.mediaSession.setActionHandler(
+      "seekbackward",
+      track.live ? null : (details) => seekBy(-(details.seekOffset ?? SKIP_BACK_S))
+    );
+    navigator.mediaSession.setActionHandler(
+      "seekforward",
+      track.live ? null : (details) => seekBy(details.seekOffset ?? SKIP_FORWARD_S)
+    );
+  }, [track, play, pause, seekTo, seekBy]);
+
+  // keeps the lock screen's scrubber in step. only once the length's known, since the
+  // browser throws on a position past the end, and never for the stream
+  useEffect(() => {
+    if (!track || track.live || durationS <= 0 || !("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: durationS,
+        position: Math.min(currentTimeS, durationS),
+        playbackRate: 1,
+      });
+    } catch (err) {
+      console.warn("couldn't update the lock screen's position, it'll just show without a scrubber", err);
+    }
+  }, [track, durationS, currentTimeS]);
 
   return {
     track,

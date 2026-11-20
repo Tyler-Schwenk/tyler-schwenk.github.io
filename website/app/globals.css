@@ -12,6 +12,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/*
+ * opium den theme (/opium-den, see website/docs/OPIUM_DEN.md): warm near-black, one
+ * red accent kept for what's playing and what's live, hairlines instead of cards. these
+ * register as tailwind colours, so it's bg-den-bg, text-den-muted, border-den-line, etc.
+ */
+@theme {
+  --color-den-bg: #0e0a0a;
+  --color-den-raised: #181213;
+  --color-den-ink: #f3ecea;
+  --color-den-muted: #a09290;
+  --color-den-faint: #6d6160;
+  --color-den-line: rgb(255 255 255 / 0.08);
+  --color-den-accent: #e5484d;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -491,6 +506,19 @@ body {
     transform: translate(var(--note-drift), -120%);
   }
   .world-live-tag { animation: none; }
+}
+
+/*
+ * the opium den page wrapper. painting html and body too means the space the player bar
+ * pads onto the body, and ios overscroll, stay dark instead of flashing the site's white.
+ */
+html:has(.den-page),
+body:has(.den-page) {
+  background: var(--color-den-bg);
+}
+
+.den-page {
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
 
 /* opium den player (components/opium-den): the bouncing equalizer next to what's playing */

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 /**
- * icons for the opium den player. filled shapes in currentColor, 24x24, so they take
- * the text colour of whatever button they're in.
+ * icons for the opium den page and player. 24x24 in currentColor, so they take the text
+ * colour of whatever they're in.
  */
 
 /**
@@ -73,6 +73,32 @@ export function MutedIcon(props: { className?: string }) {
       <path d="M4 9.5v5a1 1 0 0 0 1 1h3l4.3 3.6a.8.8 0 0 0 1.2-.6V5.5a.8.8 0 0 0-1.2-.6L8 8.5H5a1 1 0 0 0-1 1z" />
       <path d="M16.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </Icon>
+  );
+}
+
+/**
+ * a chevron, for opening and closing the phone's now-playing sheet.
+ *
+ * @param {object} props
+ * @param {"up" | "down"} props.direction - which way it points.
+ * @param {string} [props.className] - size classes.
+ * @returns {JSX.Element} the svg.
+ */
+export function ChevronIcon({ direction, className = "h-6 w-6" }: { direction: "up" | "down"; className?: string }) {
+  const d = direction === "up" ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6";
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d={d} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** an arrow pointing up and right, for links that leave the site. */
+export function ExternalIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M8 16L16 8M9 8h7v7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

@@ -46,7 +46,7 @@ export default function DjBooth() {
   const liveIsCurrent = player.track?.id === LIVE_TRACK.id;
 
   return (
-    <div className="mt-8">
+    <div className="mt-14">
       <LiveHero
         status={status}
         error={error}

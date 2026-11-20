@@ -9,6 +9,7 @@ import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 const BOARD_ART_SRC = "/images/8bit/dj_board.png";
 const BOARD_ART_WIDTH_PX = 112;
 const BOARD_ART_HEIGHT_PX = 52;
+const OFF_AIR_NOTE = "streams here whenever i'm practicing on the decks";
 
 /**
  * how long the stream's been on.
@@ -24,8 +25,35 @@ function onAirFor(startedAt: string | null): string {
 }
 
 /**
- * the top of the booth: the dj board art with the live stream's big play button when
- * it's on, or an off air card when it's not.
+ * the "live now" / "off air" line, with a pulsing dot while it's live.
+ *
+ * @param {object} props
+ * @param {boolean} props.live - the stream's on.
+ * @param {string} props.details - what follows the label, like how long it's been on.
+ * @returns {JSX.Element} the status line.
+ */
+function StatusLine({ live, details }: { live: boolean; details: string }) {
+  return (
+    <p className="mt-1 flex items-start gap-2 text-sm text-den-muted">
+      {live ? (
+        <span className="relative mt-1.5 flex h-2 w-2 shrink-0" aria-hidden="true">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-den-accent opacity-60 motion-reduce:animate-none" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-den-accent" />
+        </span>
+      ) : (
+        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-den-faint" aria-hidden="true" />
+      )}
+      <span className="min-w-0">
+        <span className={live ? "font-medium text-den-accent" : "text-den-ink/80"}>{live ? "Live now" : "Off air"}</span>
+        {details && <span> · {details}</span>}
+      </span>
+    </p>
+  );
+}
+
+/**
+ * the top of the booth, one quiet row: the dj board art, "live from the den" with whether
+ * it's on, and a play button while it is. greyed out when it's off air.
  *
  * @param {object} props
  * @param {DjStreamStatus | null} props.status - latest status, null before the first answer.
@@ -33,7 +61,7 @@ function onAirFor(startedAt: string | null): string {
  * @param {boolean} props.playing - the live stream is what's playing right now.
  * @param {boolean} props.loading - and it's still connecting.
  * @param {() => void} props.onToggle - play or pause the live stream.
- * @returns {JSX.Element} the hero card.
+ * @returns {JSX.Element} the live row.
  */
 export default function LiveHero({
   status,
@@ -51,71 +79,39 @@ export default function LiveHero({
   const live = Boolean(status?.live);
   const details = live
     ? [onAirFor(status?.started_at ?? null), `${status?.listeners ?? 0} listening`].filter(Boolean).join(" · ")
-    : "when i'm practicing on the decks it streams here live. check back sometime, or dig through the past sets below.";
+    : OFF_AIR_NOTE;
 
   return (
-    <section
-      className={`relative overflow-hidden rounded-2xl border p-5 sm:p-6 ${
-        live
-          ? "border-red-500/60 bg-gradient-to-br from-red-600/40 via-red-950/80 to-black shadow-[0_0_40px_rgba(239,68,68,0.25)]"
-          : "border-red-900/70 bg-gradient-to-br from-red-950/70 to-black/80"
-      }`}
-    >
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <div
-          className={`relative flex aspect-square w-28 shrink-0 items-center justify-center rounded-xl bg-black/60 ring-1 ring-white/10 sm:w-36 ${
-            live ? "" : "grayscale opacity-70"
-          }`}
-        >
-          <Image
-            src={BOARD_ART_SRC}
-            alt="pixel art of the ddj-400 controller"
-            width={BOARD_ART_WIDTH_PX}
-            height={BOARD_ART_HEIGHT_PX}
-            className="pixelated w-[85%] h-auto"
-          />
-          {live && playing && <EqBars active={!loading} className="absolute bottom-2 right-2 h-4 w-4 text-red-400" />}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em]">
-            {live ? (
-              <>
-                <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75 motion-reduce:animate-none" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
-                </span>
-                <span className="text-red-300">live now</span>
-              </>
-            ) : (
-              <>
-                <span className="h-2.5 w-2.5 rounded-full bg-red-900" aria-hidden="true" />
-                <span className="text-red-300/70">off air</span>
-              </>
-            )}
-          </p>
-          <h2 className="mt-1.5 text-2xl font-semibold text-white sm:text-3xl">Live from the den</h2>
-          <p className={`mt-1 text-sm ${live ? "text-red-100/80" : "text-red-200/60 leading-relaxed"}`}>{details}</p>
-          {error && !status && <p className="mt-2 text-xs text-red-300/70">{error}</p>}
-        </div>
-
-        {live && (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label={playing ? "Pause the live stream" : "Play the live stream"}
-            className="flex h-16 w-16 shrink-0 items-center justify-center self-start rounded-full bg-white text-red-700 shadow-lg transition hover:scale-105 hover:bg-red-50 active:scale-95 sm:self-center"
-          >
-            {loading ? (
-              <SpinnerIcon className="h-7 w-7" />
-            ) : playing ? (
-              <PauseIcon className="h-7 w-7" />
-            ) : (
-              <PlayIcon className="h-7 w-7" />
-            )}
-          </button>
+    <section className="flex items-center gap-4 border-y border-den-line py-5">
+      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-white/[0.04] sm:h-20 sm:w-20">
+        <Image
+          src={BOARD_ART_SRC}
+          alt="pixel art of the ddj-400 controller"
+          width={BOARD_ART_WIDTH_PX}
+          height={BOARD_ART_HEIGHT_PX}
+          className={`pixelated h-auto w-[80%] transition ${live ? "" : "opacity-50 grayscale"}`}
+        />
+        {live && playing && (
+          <EqBars active={!loading} className="absolute bottom-1.5 right-1.5 h-3 w-3 text-den-accent" />
         )}
       </div>
+
+      <div className="min-w-0 flex-1">
+        <h2 className="font-semibold text-den-ink">Live from the den</h2>
+        <StatusLine live={live} details={details} />
+        {error && !status && <p className="mt-1 text-xs text-den-faint">{error}</p>}
+      </div>
+
+      {live && (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={playing ? "Pause the live stream" : "Play the live stream"}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-den-ink text-den-bg transition hover:scale-105 active:scale-95"
+        >
+          {loading ? <SpinnerIcon /> : playing ? <PauseIcon /> : <PlayIcon />}
+        </button>
+      )}
     </section>
   );
 }
