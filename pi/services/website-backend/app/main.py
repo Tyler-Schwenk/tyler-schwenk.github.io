@@ -6,7 +6,7 @@ Backend API providing forum (Public Square), photo gallery, and recipe box
 control the display kiosk, the kiln logger's readings and firings with
 Jude's notes and photos on them, the entrance song on the big speakers,
 who's home, the house fly kill count, each house machine's storage and
-memory for the monitor page, and the live dj stream with its recorded sets.
+memory for the monitor page, and the live dj stream with its recorded sets and room chat.
 """
 
 import asyncio
@@ -23,7 +23,7 @@ from app.config import settings
 from app.database import init_db
 from app.rate_limit import limiter
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, kiln_journal, entrance, presence, fly_kills, dj, monitor
+from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, kiln_journal, entrance, presence, fly_kills, dj, dj_chat, monitor
 
 
 @asynccontextmanager
@@ -113,4 +113,5 @@ app.include_router(entrance.router)
 app.include_router(presence.router)
 app.include_router(fly_kills.router)
 app.include_router(dj.router)
+app.include_router(dj_chat.router)
 app.include_router(monitor.router)

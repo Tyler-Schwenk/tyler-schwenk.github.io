@@ -1319,6 +1319,30 @@ Edits a set. Body `{"title": "...", "description": "..."}`, either or both; only
 
 Deletes the set and its mp3. `204`, or `404` if there's no finished set with that id.
 
+### Live room chat
+
+The chat in the Opium Den's live room (`/opium-den/live`), in `dj_chat_messages`. Anonymous like the Public Square: a nickname, no account, no IP stored. Anyone can read it; sending only works while the stream's live. The room polls `GET /dj/chat` every 3 s and gets the whole recent room each time, so a deleted message drops out for everyone on the next poll. Code: `app/routers/dj_chat.py`.
+
+A message:
+
+```json
+{"id": 42, "nickname": "kyle", "content": "this transition is crazy", "created_at": "2026-11-18T03:30:12"}
+```
+
+### GET `/dj/chat`
+
+The room's chat, oldest first: the latest 100 messages from the last 6 hours (`MAX_CHAT_MESSAGES`, `CHAT_HISTORY_WINDOW`). Readable off air too, so the last set's chat stays up for a while. `200`.
+
+### POST `/dj/chat`
+
+Sends a message. Body `{"nickname": "...", "content": "..."}`. Both are squashed onto one line (whitespace runs become single spaces) and trimmed first. Then the nickname must be 1-24 characters and the message 1-280. Rate limited per IP to 8 a minute and 120 an hour (`CHAT_SEND_RATE_LIMIT`). `201` with the stored message. `409` when the stream's off air, `422` for a blank or too-long field, `429` past the rate limit.
+
+### DELETE `/dj/chat/{message_id}`
+
+**Auth:** admin JWT.
+
+Deletes a message (the admin page's DJ tab). `204`, or `404` if there's no message with that id.
+
 ---
 
 ## Monitor

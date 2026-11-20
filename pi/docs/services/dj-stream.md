@@ -16,7 +16,8 @@ rekordbox (DDJ-400 master, also sent to the laptop's own output by PC MASTER OUT
        - while live, ffmpeg copies the stream to /mnt/ssd/dj-sets/<start time>.mp3
        - relays the stream to listeners -> GET /dj/live (through the existing tunnel)
        - serves finished sets -> GET /dj/sets, GET /dj/sets/{id}/audio
-  -> Opium Den page: live player while on air, past sets underneath
+  -> Opium Den page: past sets, and the way into the live room (/opium-den/live),
+     which has the stream, who's listening and a chat (GET/POST /dj/chat)
 ```
 
 Icecast never goes through the Cloudflare tunnel. Listeners only ever reach the backend's
@@ -39,6 +40,7 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/dj-stream/.env` | `ICECAST_SOURCE_PASSWORD`, `ICECAST_ADMIN_PASSWORD` (not in git) |
 | `pi/services/website-backend/app/dj_stream.py` | The watcher: live state, recording, listener count |
 | `pi/services/website-backend/app/routers/dj.py` | The `/dj` endpoints (see `pi/docs/api/website-backend-api.md#dj-stream`) |
+| `pi/services/website-backend/app/routers/dj_chat.py` | The live room chat, `/dj/chat` (open only while live, admin can delete) |
 
 ## Recording
 

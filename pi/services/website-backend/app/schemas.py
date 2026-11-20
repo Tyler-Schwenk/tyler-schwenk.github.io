@@ -898,3 +898,54 @@ class DjSetUpdate(BaseModel):
     """
     title: Optional[str] = Field(None, max_length=MAX_DJ_SET_TITLE_LENGTH)
     description: Optional[str] = Field(None, max_length=MAX_DJ_SET_DESCRIPTION_LENGTH)
+
+
+# DJ live room chat. short on purpose: it's a chat next to a stream, not a forum
+MAX_DJ_CHAT_NICKNAME_LENGTH = 24
+MAX_DJ_CHAT_MESSAGE_LENGTH = 280
+
+
+def _one_line(value: str) -> str:
+    """
+    Squashes whitespace runs (newlines included) to single spaces and trims the ends.
+
+    Args:
+        value: Raw text from the client.
+
+    Returns:
+        str: The text on one line.
+    """
+    return " ".join(value.split())
+
+
+class DjChatMessageCreate(BaseModel):
+    """
+    A chat message from the live room. Both fields are squashed onto one line and trimmed
+    before the length checks, so a message of only spaces is rejected as empty.
+    """
+    nickname: str = Field(..., max_length=MAX_DJ_CHAT_NICKNAME_LENGTH)
+    content: str = Field(..., max_length=MAX_DJ_CHAT_MESSAGE_LENGTH)
+
+    @field_validator("nickname", "content", mode="before")
+    @classmethod
+    def squash_to_one_line(cls, value: object) -> object:
+        """trims and flattens strings; anything else is left for the type check to reject."""
+        return _one_line(value) if isinstance(value, str) else value
+
+    @field_validator("nickname", "content")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        """rejects fields that were empty or only whitespace."""
+        if not value:
+            raise ValueError("can't be empty -- type something first")
+        return value
+
+
+class DjChatMessageRead(BaseModel):
+    """A chat message as the room shows it. created_at is naive UTC."""
+    id: int
+    nickname: str
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

@@ -3,13 +3,14 @@ SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
 galleries, photos, recipes, kiln readings, firings and their notes and photos,
-the house fly kill count, and recorded dj sets.
+the house fly kill count, recorded dj sets and the live room chat.
 """
 
 from sqlalchemy import Boolean, Column, Float, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+from app.schemas import MAX_DJ_CHAT_MESSAGE_LENGTH, MAX_DJ_CHAT_NICKNAME_LENGTH
 
 
 class User(Base):
@@ -582,3 +583,26 @@ class DjSet(Base):
     duration_s = Column(Integer, nullable=True)
     size_bytes = Column(Integer, nullable=True)
     file_path = Column(String(500), nullable=False)
+
+
+class DjChatMessage(Base):
+    """
+    DjChatMessage model: one message in the opium den's live room chat.
+
+    Anonymous like the public square: a nickname the chatter picks, no account. Messages
+    can only be sent while the stream's live (routers/dj_chat.py) and are read back over
+    a recent window, so each session's chat reads as its own room. Times are naive UTC
+    like the dj sets they sit next to.
+
+    Attributes:
+        id: Unique identifier, increasing, so clients poll for anything after the last one
+        nickname: The display name the chatter picked
+        content: The message, one line
+        created_at: When it was sent
+    """
+    __tablename__ = "dj_chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nickname = Column(String(MAX_DJ_CHAT_NICKNAME_LENGTH), nullable=False)
+    content = Column(String(MAX_DJ_CHAT_MESSAGE_LENGTH), nullable=False)
+    created_at = Column(DateTime, nullable=False, index=True)
