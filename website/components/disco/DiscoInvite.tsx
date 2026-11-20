@@ -11,6 +11,7 @@ import {
   FLOOR_PINK,
   INVITE_VIDEO_DESKTOP_SRC,
   INVITE_VIDEO_MOBILE_SRC,
+  MUSIC_HANDOFF_S,
   NIGHT_SKY_BOTTOM,
   NIGHT_SKY_TOP,
   ORNAMENT_BLUE,
@@ -20,6 +21,7 @@ import {
 } from "./constants";
 import DiscoFlier from "./DiscoFlier";
 import type { FlierCardInfo } from "./saveFlierCard";
+import { useDiscoMusic } from "./useDiscoMusic";
 import { useInviteDevice } from "./useInviteDevice";
 import styles from "./disco.module.css";
 
@@ -102,6 +104,8 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
   const [curtainUp, setCurtainUp] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const autoStartTried = useRef(false);
+  const music = useDiscoMusic();
+  const { prepare: prepareMusic, startAt: startMusicAt, stop: stopMusic } = music;
 
   /**
    * plays the video from the top. if the browser wants a tap first, asks for one.
@@ -112,6 +116,9 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
     if (!video) {
       return;
     }
+    stopMusic();
+    prepareMusic();
+    video.muted = false;
     video.currentTime = 0;
     video
       .play()
@@ -143,6 +150,20 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
     return watchVideoTime(video, CLOUD_HANDOFF_S, () => setCurtainUp(true));
   }, [stage, curtainUp]);
 
+  // just before the video fades its sound out, the song takes over in sync and
+  // plays on under the flier. if the song isn't ready, the video keeps its own sound
+  useEffect(() => {
+    const video = videoRef.current;
+    if (stage !== "playing" || !video) {
+      return;
+    }
+    return watchVideoTime(video, MUSIC_HANDOFF_S, () => {
+      if (startMusicAt(video.currentTime)) {
+        video.muted = true;
+      }
+    });
+  }, [stage, startMusicAt]);
+
   // hold on the clouds for a beat after the music ends, then part them
   useEffect(() => {
     if (stage !== "clouds") {
@@ -157,8 +178,13 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
     setStage("clouds");
   };
 
+  // the song picks up from wherever the video was skipped
   const handleSkip = () => {
-    videoRef.current?.pause();
+    const video = videoRef.current;
+    if (video && !music.playing) {
+      startMusicAt(video.currentTime);
+    }
+    video?.pause();
     setCurtainUp(true);
     setStage("parting");
   };
@@ -201,6 +227,16 @@ export default function DiscoInvite({ info }: DiscoInviteProps) {
       {stage === "playing" && !curtainUp && (
         <button type="button" className={styles.skipButton} onClick={handleSkip}>
           skip
+        </button>
+      )}
+      {flierShown && music.playing && (
+        <button
+          type="button"
+          className={`${styles.skipButton} ${styles.soundButton}`}
+          onClick={music.toggleMute}
+          aria-pressed={music.muted}
+        >
+          {music.muted ? "sound on" : "sound off"}
         </button>
       )}
       {stage === "waiting" && needsRotate && <RotatePrompt />}

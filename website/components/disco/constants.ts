@@ -63,6 +63,29 @@ export const DANCERS: readonly Dancer[] = [
 ];
 
 /**
+ * the song that plays on under the flier: get down tonight, trimmed to start where
+ * the invite video's audio does, so a time on the video is the same time in the file.
+ * the file ends at the loop's end, with the audio just before it blended into the
+ * audio just before the loop's start, so the jump back is seamless.
+ */
+export const MUSIC = {
+  src: `${MEDIA_DIR}/music.mp3`,
+  /** an 8 bar stretch of the outro vamp, found by beat matching */
+  loopStartS: 132.0863,
+  loopEndS: 149.0753,
+  /** the loop's a little quieter than the song, easing down over this long before it starts */
+  loopGain: 0.6,
+  loopFadeS: 6,
+} as const;
+
+/**
+ * when the song takes over from the video's own audio, just before the video fades
+ * its sound out (it fades from about 58.4 s). it's the same song in sync, so the swap
+ * doesn't show
+ */
+export const MUSIC_HANDOFF_S = 58.2;
+
+/**
  * the moment in the invite video where the cloud drawing matches frame 0 of the
  * loop. swapping to the loop here is invisible. after this the video's clouds
  * fade to black, but its audio keeps going, so the video plays on underneath.

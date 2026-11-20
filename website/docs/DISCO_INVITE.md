@@ -49,11 +49,39 @@ first one in the loop.
 - The curtain starts at exactly the size of the video's pillarboxed 4:3 picture
   (`--start-scale`, worked out from the stage size), so the swap doesn't show. It then
   grows to fill the screen.
-- The video keeps playing underneath because its audio runs to the end.
+- The video keeps playing underneath (muted once the music takes over) until it ends.
 - **Parting** (`cloudSeam.ts`): the loop is drawn into a canvas in two halves. Each half is
   clipped along a scalloped seam with puffs of uneven sizes, inked to match the drawing, and
   slides out to its side while zooming slightly. Under `prefers-reduced-motion` it skips
   straight to the flier.
+
+## The music
+
+The video's soundtrack is Get Down Tonight, and the song plays on under the flier
+(`useDiscoMusic.ts`, settings in `MUSIC` in `constants.ts`).
+
+- `music.mp3` is the song trimmed to start where the video's audio does (17.683 s into
+  the track), so a time on the video is the same time in the file.
+- At `MUSIC_HANDOFF_S` (58.2 s), just before the video fades its own sound out (from about
+  58.4 s), the music starts at the video's current time and the video is muted in the same
+  tick. It's the same audio in sync, so the swap doesn't show. Skip does the same from
+  wherever the video was. "Watch again" stops the music.
+- It plays on through the rest of the song, then loops an 8 bar stretch of the outro vamp
+  (`loopStartS` to `loopEndS`), easing down to `loopGain` over the `loopFadeS` before the
+  first loop. It's Web Audio (`AudioBufferSourceNode` with `loopStart`/`loopEnd`), since only
+  that loops without a gap. The file ends at the loop's end, and its last 60 ms are blended
+  into the 60 ms before the loop's start, so the jump back is seamless.
+- The audio context is created and resumed from the same call that starts the video (the tap,
+  or the autoplay attempt), and the song is decoded while the video plays. If either isn't
+  ready by the handoff, the video keeps its own sound and fades out as before.
+- iOS mutes Web Audio with the ringer switch, so it sets `navigator.audioSession.type` to
+  `"playback"` where Safari has it (17+).
+- It pauses while the tab's hidden. A "sound off" button sits in the corner over the flier.
+
+The loop was found by beat tracking the song (about 112 bpm) and comparing beat-by-beat
+spectra for spots 8 bars apart, then checking the onset timing of the beats around both
+ends. A raw waveform match doesn't work, since it's a live band and no two bars are sample
+identical. If the song file's ever re-cut, the loop points move with it.
 
 ## The flier
 
@@ -194,6 +222,7 @@ the time of the repeated frame.
 | `website/components/disco/AttireClip.tsx` | The round dance floor clip by the attire line |
 | `website/components/disco/saveFlierCard.ts` | Draws and shares or downloads the PNG |
 | `website/components/disco/useInviteDevice.ts` | Mobile and orientation detection |
+| `website/components/disco/useDiscoMusic.ts` | Plays the song on past the video and loops its outro |
 | `website/components/disco/useMapsUrl.ts` | The address link for this device's maps app |
 | `website/components/disco/constants.ts` | Media paths, timing, palette, flier details |
 | `website/components/disco/disco.module.css` | All of the invite's styles |

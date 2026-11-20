@@ -107,6 +107,15 @@
   opacity: 1;
 }
 
+/* the music toggle over the flier, styled like skip but up in the corner and
+   fixed, since the flier scrolls under it */
+.soundButton {
+  position: fixed;
+  top: 16px;
+  bottom: auto;
+  z-index: 6;
+}
+
 /* ---------- prompts over the clouds (rotate, tap to start) ---------- */
 
 .prompt {
