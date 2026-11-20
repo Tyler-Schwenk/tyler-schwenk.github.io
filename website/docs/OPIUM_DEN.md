@@ -157,7 +157,7 @@ writes and sends each one from the admin page's DJ tab (`website/docs/ADMIN.md`)
 backend, the emails and the mail setup are in `pi/docs/services/dj-stream.md#live-alerts`.
 
 - **Signup** (`AlertSignup`): an email box and "Sign up", with a line saying they'll
-  confirm by email first. Once it's sent, it turns into "check your inbox at ...". It
+  confirm by email first. Once it's sent, it turns into "check your inbox at ...", with a red line to check spam too. It
   starts as a small red text link that opens it (under the section's live row), or open
   (`startOpen`: the live room off air, and the alerts page).
 - **`/opium-den/live/alerts`** (`AlertsLanding`): one static page that reads its query on

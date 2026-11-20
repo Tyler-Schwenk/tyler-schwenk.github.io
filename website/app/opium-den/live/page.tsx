@@ -27,7 +27,7 @@ export default function LiveSectionPage() {
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">Live from the den</h1>
           <p className="mt-4 max-w-xl leading-relaxed text-den-muted">
             Whenever I&apos;m practicing on the decks it streams here live, with a chat to hang out in. Every session gets
-            recorded, so they&apos;re all below to listen back to, chat and all.
+            recorded, so they&apos;re all below to listen back to.
           </p>
         </header>
 

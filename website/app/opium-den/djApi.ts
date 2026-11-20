@@ -339,7 +339,7 @@ export const ALERTS_PAGE_PATH = `${LIVE_SECTION_PATH}/alerts`;
 export const DJ_ALERT_EMAIL_MAX_LENGTH = 254;
 export const DJ_ALERT_SUBJECT_MAX_LENGTH = 120;
 export const DJ_ALERT_BODY_MAX_LENGTH = 2000;
-export const DJ_ALERT_DEFAULT_SUBJECT = "Tyler's live in the opium den";
+export const DJ_ALERT_DEFAULT_SUBJECT = "Tyler's live in the den";
 
 /** someone signed up for live alerts, as the admin page lists them. times are naive UTC. */
 export type DjAlertSubscriber = {

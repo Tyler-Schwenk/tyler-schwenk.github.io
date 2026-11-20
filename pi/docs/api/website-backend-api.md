@@ -1420,7 +1420,7 @@ Takes someone off the list. `204`, or `404` if there's no subscriber with that i
 
 **Auth:** admin JWT.
 
-Emails every confirmed subscriber. Body `{"subject": "...", "body": "..."}`. The subject is optional (max 120, squashed onto one line; blank or missing means "Tyler's live in the opium den"). The body is required, max 2000, trimmed at the ends with its line breaks kept. Each subscriber gets their own plain text copy: the body, a link to the live room, and their unsubscribe link, with `List-Unsubscribe` / `List-Unsubscribe-Post` headers. They go out one at a time over one connection, 0.6 s apart (`SEND_INTERVAL_S`), and the request waits for all of them.
+Emails every confirmed subscriber. Body `{"subject": "...", "body": "..."}`. The subject is optional (max 120, squashed onto one line; blank or missing means "Tyler's live in the den"). The body is required, max 2000, trimmed at the ends with its line breaks kept. Each subscriber gets their own plain text copy: the body, a link to the live room, and their unsubscribe link, with `List-Unsubscribe` / `List-Unsubscribe-Post` headers. They go out one at a time over one connection, 0.6 s apart (`SEND_INTERVAL_S`), and the request waits for all of them.
 
 `200` `{"sent": 11, "failed": ["bounced@example.com"]}`: `failed` lists addresses the mail server refused (if the connection drops partway, everyone after that is in it too). `409` with nobody confirmed, `422` for a blank body or too-long field, `502` if the mail server can't be reached or logged in to (nothing was sent), `503` when mail isn't configured.
 

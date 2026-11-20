@@ -92,9 +92,14 @@ admin page's DJ tab.
   confirmed addresses get alerts, so typing in someone else's address does nothing but
   send them one email they can ignore.
 - **Sending**: admin page, DJ tab, "Live alerts". An optional subject (default "Tyler's live
-  in the opium den"), the message, Send. Everyone gets their own plain text copy: the
+  in the den"), the message, Send. Everyone gets their own plain text copy: the
   message, the live room link, and their own unsubscribe link. One-click unsubscribe
   headers are on it too, so Gmail and Apple Mail show their own unsubscribe button.
+- **Staying out of spam**: the emails say "the den", never "opium", in the subject, body
+  and sender name (`MAIL_FROM`), since drug words are a classic spam filter trigger. The
+  links still have `/opium-den/` in them, that's just the site's address. The signup also
+  tells people to check their spam, and anyone marking it "not spam" teaches their
+  provider to trust the address.
 - Emails go out one after another, 0.6 s apart, and the admin page waits for the whole
   batch: about a minute per 100 people. Cloudflare drops a request after 100 s, so past
   ~150 subscribers sending needs to move to a background job.
@@ -120,7 +125,7 @@ something like `den@tyler-schwenk.com` instead of a personal address.
    SMTP_PORT=587
    SMTP_USERNAME=resend
    SMTP_PASSWORD=<the api key, re_...>
-   MAIL_FROM=Opium Den <den@tyler-schwenk.com>
+   MAIL_FROM=The Den <den@tyler-schwenk.com>
    ```
 5. `cd ~/tyler-schwenk.github.io/pi/services/website-backend && docker compose up -d`
    (recreates the container with the new settings).

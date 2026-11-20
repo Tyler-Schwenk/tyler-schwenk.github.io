@@ -39,10 +39,10 @@ TOKEN_BYTES = 32
 
 ALERTS_PAGE_PATH = "/opium-den/live/alerts"
 LIVE_ROOM_PATH = "/opium-den/live/room"
-CONFIRM_SUBJECT = "Confirm your opium den live alerts"
-DEFAULT_ALERT_SUBJECT = "Tyler's live in the opium den"
+CONFIRM_SUBJECT = "Confirm your live alerts from the den"
+DEFAULT_ALERT_SUBJECT = "Tyler's live in the den"
 
-CONFIRM_BODY = """Someone (hopefully you) asked for an email whenever Tyler goes live in the opium den at tyler-schwenk.com.
+CONFIRM_BODY = """Someone (hopefully you) asked for an email whenever Tyler goes live in the den at tyler-schwenk.com.
 
 Confirm it here:
 {confirm_url}

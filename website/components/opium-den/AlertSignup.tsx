@@ -9,7 +9,7 @@ const EMAIL_INPUT_CLASS =
 
 /**
  * the live alerts signup: an email box that asks the backend to send a confirmation.
- * once it's sent, the form turns into "check your inbox". starts as a small red text
+ * once it's sent, the form turns into "check your inbox" (and your spam). starts as a small red text
  * link that opens it, unless `startOpen`, so it stays out of the way on busy pages.
  *
  * @param {object} props
@@ -54,9 +54,15 @@ export default function AlertSignup({ startOpen = false, className = "" }: { sta
 
   if (sentTo) {
     return (
-      <p role="status" className={`text-sm text-den-muted ${className}`}>
-        Check your inbox at <span className="text-den-ink">{sentTo}</span> and tap the link to confirm.
-      </p>
+      <div role="status" className={`text-sm text-den-muted ${className}`}>
+        <p>
+          Check your inbox at <span className="text-den-ink">{sentTo}</span> and tap the link to confirm.
+        </p>
+        {/* a plain gmail address sending a link to a personal site tends to get flagged */}
+        <p className="mt-1 text-den-accent-soft">
+          Make sure to check your spam! The email has a shady looking link from me in it.
+        </p>
+      </div>
     );
   }
 
