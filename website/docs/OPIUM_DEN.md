@@ -229,9 +229,12 @@ along the bottom of every other page.
   Recorded sets only; the stream gets play/pause.
 - **Player bar** (`PlayerBar`): pinned to the bottom of every page once anything plays.
   Cover, title, red play/pause, back 15 s / forward 30 s, a seek bar with elapsed and total
-  time, and volume. For the live stream the seek bar is a LIVE pill. The cover and title
-  open the full view. On phones it folds down to a mini player (cover, title, play/pause,
-  a thin progress line) and tapping anywhere but play/pause opens the full view. While
+  time, volume, and an X. For the live stream the seek bar is a LIVE pill. The cover and
+  title open the full view. On phones it folds down to a mini player (cover, title,
+  play/pause, the X, a thin progress line) and tapping anywhere but the buttons opens the
+  full view. The X is for when you're done listening (`stop`): it stops and unloads the
+  audio, clears the track and takes the controls off the lock screen, and the bar's gone
+  until something's played again. While
   it's up it pads the page's bottom so nothing hides under it. Dragging a seek bar only
   seeks when you let go (`useScrub`), so a drag is one range request to the Pi instead of
   dozens.

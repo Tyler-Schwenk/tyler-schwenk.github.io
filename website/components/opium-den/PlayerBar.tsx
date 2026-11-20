@@ -6,7 +6,7 @@ import type { AudioPlayer } from "@/lib/useAudioPlayer";
 import EqBars from "./EqBars";
 import { PlayerProgress, PlayPauseButton, SkipButton, VolumeControl } from "./PlayerControls";
 import SetArt from "./SetArt";
-import { ChevronIcon } from "./playerIcons";
+import { ChevronIcon, CloseIcon } from "./playerIcons";
 
 // a bit taller than the bar on either layout, plus the phone's home indicator
 const BAR_CLEARANCE = "calc(6rem + env(safe-area-inset-bottom))";
@@ -16,11 +16,12 @@ const BAR_CLEARANCE_VAR = "--den-bar-clearance";
 /**
  * the minimized player, pinned to the bottom of every page once something's playing,
  * like a streaming app: what's playing on the left, transport and progress in the middle,
- * volume on the right. the cover and title open the track's full view (a set's waveform
- * and chat, or the live room). on a phone it folds down to a mini player (cover, title,
- * play/pause, a thin progress line along the top) and tapping anywhere but play/pause
- * opens the full view. while it's up it pads the bottom of the page so nothing ends up
- * stuck underneath it, and sets --den-bar-clearance on the body for layouts that are
+ * volume and an x to close it on the right. the cover and title open the track's full
+ * view (a set's waveform and chat, or the live room). on a phone it folds down to a mini
+ * player (cover, title, play/pause, the x, a thin progress line along the top) and
+ * tapping anywhere but the buttons opens the full view. closing stops the audio and the
+ * bar goes until something's played again. while it's up it pads the bottom of the page
+ * so nothing ends up stuck underneath it, and sets --den-bar-clearance on the body for layouts that are
  * exactly one screen tall.
  *
  * @param {object} props
@@ -93,7 +94,19 @@ export default function PlayerBar({ player }: { player: AudioPlayer }) {
           </div>
         </div>
 
-        <VolumeControl player={player} className="hidden justify-end md:flex" />
+        {/* relative so the close button sits above the phone's open-the-full-view link */}
+        <div className="relative flex shrink-0 items-center justify-end gap-4">
+          <VolumeControl player={player} className="hidden md:flex" />
+          <button
+            type="button"
+            onClick={player.stop}
+            aria-label="Close the player"
+            title="Close"
+            className="-mr-1 p-1 text-den-faint transition-colors hover:text-den-ink"
+          >
+            <CloseIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {player.error && (

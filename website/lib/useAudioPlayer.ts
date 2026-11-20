@@ -47,6 +47,8 @@ export type AudioPlayer = {
   seekBy: (seconds: number) => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
+  /** done listening: stops, unloads, and clears the track, so the bar and lock screen controls go away. */
+  stop: () => void;
 };
 
 /** how far the skip buttons jump, on the page and on the lock screen. */
@@ -58,6 +60,18 @@ const MEDIA_SESSION_ARTIST = "Opium Den";
 // the site's icon, for anything without its own cover
 const FALLBACK_ARTWORK = { src: "/images/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" };
 const DEFAULT_VOLUME = 1;
+// every lock screen control this sets up, so stopping can take them all back off
+const MEDIA_SESSION_ACTIONS: MediaSessionAction[] = ["play", "pause", "seekto", "seekbackward", "seekforward"];
+
+/**
+ * takes the title and controls off the lock screen, once nothing's loaded.
+ *
+ * Side effects: clears navigator.mediaSession's metadata and action handlers.
+ */
+function clearMediaSession(): void {
+  navigator.mediaSession.metadata = null;
+  MEDIA_SESSION_ACTIONS.forEach((action) => navigator.mediaSession.setActionHandler(action, null));
+}
 
 /**
  * a fresh url for the live stream. reconnecting with the same url can get the browser's
@@ -241,8 +255,26 @@ export function useAudioPlayer(): AudioPlayer {
     if (audio) audio.muted = !audio.muted;
   }, []);
 
+  const stop = useCallback(() => {
+    const audio = audioRef.current;
+    // with the src gone, the error this fires is ignored (see onError)
+    if (audio) unloadAudio(audio);
+    trackRef.current = null;
+    startAtRef.current = null;
+    setTrack(null);
+    setPlaying(false);
+    setLoading(false);
+    setCurrentTimeS(0);
+    setDurationS(0);
+    setError(null);
+  }, []);
+
   useEffect(() => {
-    if (!track || !("mediaSession" in navigator)) return;
+    if (!("mediaSession" in navigator)) return;
+    if (!track) {
+      clearMediaSession();
+      return;
+    }
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
       artist: MEDIA_SESSION_ARTIST,
@@ -296,5 +328,6 @@ export function useAudioPlayer(): AudioPlayer {
     seekBy,
     setVolume,
     toggleMute,
+    stop,
   };
 }

@@ -102,6 +102,15 @@ export function SendIcon(props: { className?: string }) {
   );
 }
 
+/** an x, for closing the player. */
+export function CloseIcon(props: { className?: string }) {
+  return (
+    <Icon {...props}>
+      <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </Icon>
+  );
+}
+
 /** an arrow pointing up and right, for links that leave the site. */
 export function ExternalIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
