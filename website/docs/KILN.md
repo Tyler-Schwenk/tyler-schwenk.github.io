@@ -127,11 +127,17 @@ line and a flag. Markers only show on the clock-time axis, not while comparing f
 they belong to the main firing, and only inside the curve's range. Jude can edit any note
 (including its time, or making it general), flip it public or private, or delete it.
 
-**Photos**: pick any number of images and whether they're public, then they upload one at a time,
-so one bad file doesn't stop the rest. HEIC and sideways phone photos get converted on the backend.
+**Photos**: "Choose photos" (an outlined button over a hidden file input, which on a phone offers
+the camera or the photo library) picks any number of images. They show as small previews, or their
+file name where the browser can't draw them (HEIC outside Safari), with "Clear" to start over. Then
+pick whether they're public, and they upload one at a time, so one bad file doesn't stop the rest. HEIC and sideways phone photos get converted on the backend.
 New photos start private. Tiles are square thumbnails, and clicking one opens it full size (escape
 or a click closes it). Public photos load straight from their url. Private ones need the token,
 which an `img` tag can't send, so they're fetched and shown from a blob url instead.
+
+**On a phone**: Jude mostly uses this from his phone. Under 640px the form labels sit above their
+chips, the main buttons stretch across the form, and the login fields go full width. On touch
+screens (`pointer: coarse`) every chip, button and text action is at least 44px tall.
 
 ## Table
 

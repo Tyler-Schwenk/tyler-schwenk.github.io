@@ -106,8 +106,67 @@ function PhotoViewer({ photo, token, onClose }: { photo: KilnPhoto; token: strin
   );
 }
 
+/** a picked file and the object url its preview shows from. */
+type PickedFile = { file: File; previewUrl: string };
+
+/**
+ * keeps the picked files with a preview url each. urls are made when files are picked and
+ * revoked when they're replaced, cleared, or the form goes away.
+ *
+ * @returns {{ picked: PickedFile[], pick: (files: File[]) => void }} the picks and a setter.
+ */
+function usePickedFiles(): { picked: PickedFile[]; pick: (files: File[]) => void } {
+  const [picked, setPicked] = useState<PickedFile[]>([]);
+  const pickedRef = useRef<PickedFile[]>([]);
+
+  /**
+   * swaps in a new set of picks, freeing the old previews.
+   *
+   * @param {File[]} files - the new picks, or none to clear.
+   */
+  const pick = (files: File[]) => {
+    pickedRef.current.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
+    const next = files.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+    pickedRef.current = next;
+    setPicked(next);
+  };
+
+  useEffect(() => () => pickedRef.current.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl)), []);
+
+  return { picked, pick };
+}
+
+/**
+ * a small preview of a picked photo. browsers that can't draw the file (heic on desktop
+ * chrome) get its name instead, since the backend converts it fine anyway.
+ *
+ * @param {object} props - component props.
+ * @param {string} props.src - its preview url.
+ * @param {string} props.name - the file's name.
+ * @returns {JSX.Element} the preview.
+ */
+function PickedPreview({ src, name }: { src: string; name: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <li className="kiln-picked kiln-picked-name" title={name}>
+        {name}
+      </li>
+    );
+  }
+  return (
+    <li className="kiln-picked">
+      {/* a local blob, so there's nothing for next/image to optimize */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={name} onError={() => setBroken(true)} />
+    </li>
+  );
+}
+
 /**
  * the editor's upload form: pick photos, pick who sees them, send them one at a time.
+ * the file input's hidden behind a real-looking button, and the picks show as previews
+ * so it's obvious on a phone what's about to go up.
  *
  * @param {object} props - component props.
  * @param {number} props.firingId - the firing they're from.
@@ -128,41 +187,72 @@ function PhotoUpload({
   onAuthExpired: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<File[]>([]);
+  const { picked, pick } = usePickedFiles();
+  const files = picked.map(({ file }) => file);
   const [isPublic, setIsPublic] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const action = useJournalAction(onAuthExpired);
+  // action.busy drops between files, so this covers the whole batch
+  const busy = uploading || action.busy;
+
+  /** drops the picked files, so the input can pick the same ones again. */
+  const clear = () => {
+    pick([]);
+    if (inputRef.current) inputRef.current.value = "";
+  };
 
   /** sends each picked photo, carrying on past ones that fail, then says how it went. */
   const upload = async () => {
     const failed: string[] = [];
+    setUploading(true);
     for (const [index, file] of files.entries()) {
       setProgress(`Uploading ${index + 1} of ${files.length}`);
       const worked = await action.run(() => uploadKilnPhoto(firingId, file, isPublic, token));
       if (!worked) failed.push(file.name);
       onChanged();
     }
+    setUploading(false);
     setProgress(failed.length ? `Couldn't upload ${failed.join(", ")}.` : null);
-    setFiles([]);
-    if (inputRef.current) inputRef.current.value = "";
+    clear();
   };
 
   return (
     <div className="kiln-photo-upload">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
-        aria-label="Photos to add"
-      />
+      <div className="kiln-photo-pick">
+        <label className={`kiln-button kiln-button-quiet${busy ? " kiln-button-disabled" : ""}`}>
+          <input
+            ref={inputRef}
+            type="file"
+            className="sr-only"
+            accept="image/*"
+            multiple
+            disabled={busy}
+            onChange={(event) => pick(Array.from(event.target.files ?? []))}
+          />
+          {files.length > 0 ? "Choose different photos" : "Choose photos"}
+        </label>
+        {files.length > 0 ? (
+          <button type="button" className="kiln-link-button" disabled={busy} onClick={clear}>
+            Clear
+          </button>
+        ) : (
+          <span className="kiln-section-note">Take one or pick from your library</span>
+        )}
+      </div>
+      {files.length > 0 && (
+        <ul className="kiln-picked-list" aria-label="Picked photos">
+          {picked.map(({ file, previewUrl }) => (
+            <PickedPreview key={previewUrl} src={previewUrl} name={file.name} />
+          ))}
+        </ul>
+      )}
       <div className="kiln-note-form-row">
         <span className="kiln-note-form-label">Who sees them</span>
         <VisibilityChips isPublic={isPublic} onChange={setIsPublic} />
       </div>
       <div className="kiln-note-form-actions">
-        <button type="button" className="kiln-button" disabled={files.length === 0 || action.busy} onClick={upload}>
+        <button type="button" className="kiln-button" disabled={files.length === 0 || busy} onClick={upload}>
           {files.length > 1 ? `Add ${files.length} photos` : "Add photo"}
         </button>
         {progress && <span className="kiln-section-note">{progress}</span>}
