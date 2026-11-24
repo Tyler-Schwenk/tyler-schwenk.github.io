@@ -32,5 +32,3 @@ Styles are in `app/events/zine.css`, imported by both zine pages and scoped unde
 - Headline: `components/events/ZineHeadline.tsx`. The pink text gets reprinted in blue a few px off by `::after`, from the text in `data-t`.
 - Cards: white photo-print cards, each a little rotated, with tape on top. Photos are halftone duotones (grayscale screened onto pink or blue, alternating per card). Hovering a card brings back the real colors.
 - Detail page: the flier (`components/events/ZineFlier.tsx`) taped on the left with a stamp, and the when/where box, plan, rundown, link tags and RSVP button on the right. Without a flier it's one column.
-
-The look comes from the opium den UI concept `input/opium-den/ui-concepts/2-zine.html`.

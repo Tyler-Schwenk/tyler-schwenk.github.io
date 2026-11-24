@@ -19,11 +19,12 @@ rekordbox (DDJ-400 master, also sent to the laptop's own output by PC MASTER OUT
        - serves finished sets -> GET /dj/sets, GET /dj/sets/{id}/audio
        - works out each finished set's waveform (ffmpeg) -> GET /dj/sets/{id}/waveform
        - keeps the room's chat, replayed per set -> GET /dj/sets/{id}/chat
+       - keeps who was in the room, replayed per set -> GET /dj/sets/{id}/people
        - keeps each set's cover image -> PUT/GET /dj/sets/{id}/image
        - keeps the live alerts list, and emails it when the admin sends one -> /dj/alerts
   -> the live section (/opium-den/live): past sets, and the way into the live room
-     (/opium-den/live/room), which has the stream, who's listening and a chat
-     (GET/POST /dj/chat). each past set has its own page (/opium-den/live/set?id=)
+     (/opium-den/live/room), which has the stream, a character for everyone in the
+     room (POST /dj/room) and a chat (GET/POST /dj/chat). each past set has its own page (/opium-den/live/set?id=)
      with its waveform and its chat replaying
 ```
 
@@ -50,6 +51,8 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/website-backend/app/dj_waveform.py` | Works out and caches each set's waveform with ffmpeg |
 | `pi/services/website-backend/app/dj_live_meter.py` | The live meter: the set's loudness while it's on, for the live trace |
 | `pi/services/website-backend/app/routers/dj_chat.py` | The live room chat, `/dj/chat` (open only while live, admin can delete) |
+| `pi/services/website-backend/app/routers/dj_room.py` | Who's in the live room, `/dj/room` (check-ins and leaving, saved as visits) |
+| `pi/services/website-backend/app/dj_room.py` | The live room's people, in memory: timeouts, names, character numbers |
 | `pi/services/website-backend/app/routers/dj_alerts.py` | Live alerts, `/dj/alerts`: signup, confirm, unsubscribe, and the admin's list and send |
 | `pi/services/website-backend/app/mailer.py` | Sends email over SMTP, one message per recipient |
 

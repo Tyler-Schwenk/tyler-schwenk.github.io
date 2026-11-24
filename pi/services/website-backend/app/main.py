@@ -24,7 +24,7 @@ from app.config import settings
 from app.database import init_db
 from app.rate_limit import limiter
 from app.schemas import HealthCheck
-from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, kiln_journal, entrance, presence, fly_kills, dj, dj_chat, dj_alerts, monitor
+from app.routers import gallery, videos, auth, pac_tyler, rsvp, public_square, recipes, mallard, display_control, kiln, kiln_journal, entrance, presence, fly_kills, dj, dj_chat, dj_room, dj_alerts, monitor
 
 
 @asynccontextmanager
@@ -115,5 +115,6 @@ app.include_router(presence.router)
 app.include_router(fly_kills.router)
 app.include_router(dj.router)
 app.include_router(dj_chat.router)
+app.include_router(dj_room.router)
 app.include_router(dj_alerts.router)
 app.include_router(monitor.router)

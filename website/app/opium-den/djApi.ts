@@ -1,4 +1,4 @@
-import { formatDate } from "@/app/admin/format";
+import { formatDate, parseBackendTime } from "@/app/admin/format";
 import { API_BASE } from "@/lib/api";
 import type { PlayerTrack } from "@/lib/useAudioPlayer";
 
@@ -50,6 +50,20 @@ export type DjChatMessage = {
 export type DjSetChatMessage = DjChatMessage & {
   /** how far into the recording it belongs, in seconds. */
   offset_s: number;
+};
+
+/**
+ * someone's stay in the live room during a recorded set, on its timeline. older sets,
+ * from before stays were saved, have one per chatter, from their first message to the end.
+ */
+export type DjSetVisit = {
+  nickname: string;
+  /** their character number in the room. */
+  avatar: number;
+  /** when they came in, seconds into the recording. */
+  from_s: number;
+  /** when they left, seconds into the recording. */
+  to_s: number;
 };
 
 /** a set's loudness over time, evenly spread over the whole set. */
@@ -198,6 +212,18 @@ export function djSetTrack(set: DjSet): PlayerTrack {
 }
 
 /**
+ * when the live set started, if the status knows.
+ *
+ * @param {DjStreamStatus | null} status - latest status.
+ * @returns {number | null} ms since the epoch, or null off air or when it's unknown.
+ */
+export function djLiveStartedMs(status: DjStreamStatus | null): number | null {
+  if (!status?.live || !status.started_at) return null;
+  const ms = parseBackendTime(status.started_at).getTime();
+  return Number.isNaN(ms) ? null : ms;
+}
+
+/**
  * the live stream's cover: the recording set's image, if one's been uploaded.
  *
  * @param {DjStreamStatus | null} status - latest status.
@@ -280,6 +306,16 @@ export function fetchDjSetChat(setId: number): Promise<DjSetChatMessage[]> {
 }
 
 /**
+ * who was in the live room while a set was on, each stay placed on the set's timeline.
+ *
+ * @param {number} setId - the set's id.
+ * @returns {Promise<DjSetVisit[]>} in the order they came in.
+ */
+export function fetchDjSetPeople(setId: number): Promise<DjSetVisit[]> {
+  return fetchDjJson<DjSetVisit[]>(`${DJ_SETS_PATH}/${setId}/people`, "load who was in the room");
+}
+
+/**
  * a set's waveform. the first request for an older set can take a few seconds while the
  * pi works it out.
  *
@@ -345,6 +381,68 @@ export async function sendDjChat(nickname: string, content: string, ownerKey: st
   if (response.status === HTTP_FORBIDDEN) throw new ChatNameTakenError(await chatSendFailure(response));
   if (!response.ok) throw new Error(await chatSendFailure(response));
   return (await response.json()) as DjChatMessage;
+}
+
+/** the live room's who's-here endpoints: check in (POST) and leave (POST /leave). */
+export const DJ_ROOM_PATH = "/dj/room";
+
+/** someone in the live room, as /dj/room sends them. */
+export type DjRoomPerson = {
+  nickname: string;
+  /** their character number, 0 up. */
+  avatar: number;
+};
+
+/**
+ * why a room check-in failed, in words someone can act on.
+ *
+ * @param {Response} response - the failed response.
+ * @returns {Promise<string>} the reason.
+ */
+async function roomFailure(response: Response): Promise<string> {
+  const body = await response.json().catch(() => ({}));
+  if (typeof body.detail === "string") return `${body.detail}.`;
+  return `couldn't get into the room (the pi said ${response.status}). it'll keep trying.`;
+}
+
+/**
+ * puts this browser in the live room under its chat name (or keeps it there), and gets
+ * back everyone in it. the page calls it every few seconds while it's open; stopping is
+ * how you leave, or leaveDjRoom to leave right away. while the stream's live it also
+ * claims the name for the set, like a first chat message does.
+ *
+ * @param {string} nickname - the chat name.
+ * @param {string} ownerKey - this browser's secret key (the chat's).
+ * @returns {Promise<DjRoomPerson[]>} everyone in the room, in the order they came in.
+ * @throws {ChatNameTakenError} when someone else has the name.
+ * @throws {Error} with a readable reason when the room's full or the pi's unreachable.
+ */
+export async function checkInDjRoom(nickname: string, ownerKey: string): Promise<DjRoomPerson[]> {
+  const response = await fetch(`${API_BASE}${DJ_ROOM_PATH}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nickname, owner_key: ownerKey }),
+  });
+  if (response.status === HTTP_FORBIDDEN) throw new ChatNameTakenError(await roomFailure(response));
+  if (!response.ok) throw new Error(await roomFailure(response));
+  return ((await response.json()) as { people: DjRoomPerson[] }).people;
+}
+
+/**
+ * takes this browser out of the live room right away. keepalive so it still goes out
+ * while the page is closing. best effort: if it's lost, the check-ins just time out.
+ *
+ * @param {string} ownerKey - this browser's secret key.
+ */
+export function leaveDjRoom(ownerKey: string): void {
+  fetch(`${API_BASE}${DJ_ROOM_PATH}/leave`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ owner_key: ownerKey }),
+    keepalive: true,
+  }).catch(() => {
+    // it times out on the pi anyway
+  });
 }
 
 /** the live alerts endpoints: signup, confirm, unsubscribe, and the admin's list and send. */

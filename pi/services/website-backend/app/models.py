@@ -705,3 +705,29 @@ class DjChatName(Base):
     name_key = Column(String(MAX_DJ_CHAT_NICKNAME_LENGTH), nullable=False)
     owner_key_hash = Column(String(64), nullable=False)
     created_at = Column(DateTime, nullable=False)
+
+
+class DjRoomVisit(Base):
+    """
+    DjRoomVisit model: someone being in the opium den's live room during a live set, so
+    the set's page can show who was there as it replays.
+
+    One row from when a browser comes into the room (or changes its name) until it leaves
+    or stops checking in; last_seen_at moves along with each check-in
+    (routers/dj_room.py). Like the chat, visits aren't linked to a set: a set's visitors
+    are the visits overlapping its time (GET /dj/sets/{id}/people). Times are naive UTC.
+
+    Attributes:
+        id: Unique identifier
+        nickname: Their chat name
+        avatar: Their character number in the room, 0 up
+        joined_at: When they came in
+        last_seen_at: Their latest check-in, or when they left
+    """
+    __tablename__ = "dj_room_visits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nickname = Column(String(MAX_DJ_CHAT_NICKNAME_LENGTH), nullable=False)
+    avatar = Column(Integer, nullable=False)
+    joined_at = Column(DateTime, nullable=False, index=True)
+    last_seen_at = Column(DateTime, nullable=False, index=True)

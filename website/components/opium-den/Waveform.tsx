@@ -18,8 +18,6 @@ const PEAK_HEIGHT_RATIO = 0.92;
 const MIN_PEAK = 0.04;
 // flat bars drawn while the real waveform loads
 const PLACEHOLDER_PEAK = 0.12;
-// how long a message's bubble stays up on the timeline after its moment passes
-const BUBBLE_VISIBLE_S = 5;
 const PERCENT = 100;
 
 /**
@@ -161,8 +159,8 @@ export function WaveBars({
 
 /**
  * the strip under the waveform: a tick for every chat message at its moment in the set
- * (red once it's passed), tap one to jump there. the message that just went by pops up
- * as a bubble next to its tick for a few seconds, like comments on soundcloud.
+ * (red once it's passed), tap one to jump there. what was said shows over the speaker's
+ * head on the set page's stage (RoomPeople), not here.
  *
  * @param {object} props
  * @param {DjSetChatMessage[]} props.messages - the set's chat.
@@ -182,12 +180,8 @@ function ChatMarkers({
   positionS: number;
   onSeek: (seconds: number) => void;
 }) {
-  const passed = messages.filter((message) => message.offset_s <= positionS);
-  const latest = passed.at(-1);
-  const bubble = latest && positionS - latest.offset_s < BUBBLE_VISIBLE_S ? latest : null;
-
   return (
-    <div className="relative h-9">
+    <div className="relative h-4">
       {messages.map((message) => {
         const pct = percentAt(message.offset_s, durationS);
         const done = message.offset_s <= positionS;
@@ -206,20 +200,6 @@ function ChatMarkers({
           </button>
         );
       })}
-      {bubble && (
-        // shifted left by its own position, so it never hangs off either end of the strip
-        <p
-          key={bubble.id}
-          className="pointer-events-none absolute top-4 max-w-[70%] truncate border-l border-den-ink bg-den-raised px-2 py-0.5 text-xs"
-          style={{
-            left: `${percentAt(bubble.offset_s, durationS)}%`,
-            transform: `translateX(-${percentAt(bubble.offset_s, durationS)}%)`,
-          }}
-        >
-          <span className="font-den-mono text-[10px] uppercase text-den-muted">{bubble.nickname}</span>{" "}
-          <span className="text-den-ink">{bubble.content}</span>
-        </p>
-      )}
     </div>
   );
 }

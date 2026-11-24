@@ -6,7 +6,9 @@ relays it so listeners reach it through the existing tunnel without icecast ever
 public. Recording and live state live in app/dj_stream.py, waveforms in
 app/dj_waveform.py, and the live set's loudness (/dj/live/trace) in app/dj_live_meter.py.
 Each set also has its chat: the live room's messages from while it was
-recording, placed on its timeline so the set page can replay them, and can have a cover
+recording, placed on its timeline so the set page can replay them, and the people who were
+in the room (the room's saved visits, or for sets from before visits were saved, whoever
+chatted), and can have a cover
 image, uploaded while it's still recording or any time after. Reads are public; renaming,
 deleting and setting cover images are admin only.
 """
@@ -14,7 +16,7 @@ deleting and setting cover images are admin only.
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import asdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import anyio
@@ -29,13 +31,14 @@ from app.dj_stream import STATUS_TIMEOUT_S, delete_set_image_files, set_images_d
 from app.dj_waveform import WaveformError, get_waveform, waveform_path
 from app.file_streaming import ranged_file_response
 from app.image_utils import store_photo
-from app.models import DjChatMessage, DjSet, DjSetImage
+from app.models import DjChatMessage, DjRoomVisit, DjSet, DjSetImage
 from app.schemas import (
     DjLiveTrace,
     DjSetChatMessage,
     DjSetImageRead,
     DjSetRead,
     DjSetUpdate,
+    DjSetVisit,
     DjSetWaveform,
     DjStreamStatus,
 )
@@ -51,6 +54,10 @@ SET_MEDIA_TYPE = "audio/mpeg"
 # listeners hear the stream roughly 5-15 s behind the decks (see dj-stream.md), so a
 # message reacts to whatever was in the recording about this long before it was sent
 LISTENER_LAG_S = 8
+# a browser in the room checks in every 15 s, so its last check-in can be this far
+# before it actually left. a visit's end is pushed out by this, so someone who stayed to
+# the end is still there at the end of the replay
+ROOM_CHECK_IN_INTERVAL_S = 15
 # a phone photo is a few MB. room for big ones without letting one fill the ssd
 MAX_SET_IMAGE_BYTES = 40 * 1024 * 1024
 BYTES_PER_MB = 1024 * 1024
@@ -79,6 +86,67 @@ def set_audio_path(dj_set: DjSet) -> Path:
     return path
 
 
+def offset_in_set(moment: datetime, dj_set: DjSet) -> float:
+    """
+    Where in a set's recording something that happened in the room belongs: listeners
+    hear the stream LISTENER_LAG_S behind, so it lines up with what they were hearing.
+
+    Args:
+        moment: When it happened, naive UTC.
+        dj_set: The finished set.
+
+    Returns:
+        float: Seconds into the recording, kept between its start and end.
+    """
+    after_start_s = (moment - dj_set.started_at).total_seconds()
+    return min(max(after_start_s - LISTENER_LAG_S, 0), dj_set.duration_s)
+
+
+def set_chat_messages(db: Session, dj_set: DjSet) -> list[DjChatMessage]:
+    """
+    The live room's chat from while a set was on.
+
+    Args:
+        db: Database session.
+        dj_set: The finished set.
+
+    Returns:
+        list[DjChatMessage]: Oldest first.
+    """
+    # the last few seconds of the set reach listeners after it ends, and they can still
+    # react to it while the room's poll catches up on the stream being over
+    window_end = dj_set.ended_at + timedelta(seconds=LISTENER_LAG_S)
+    return (
+        db.query(DjChatMessage)
+        .filter(DjChatMessage.created_at >= dj_set.started_at, DjChatMessage.created_at <= window_end)
+        .order_by(DjChatMessage.id)
+        .all()
+    )
+
+
+def visits_from_chat(messages: list[DjChatMessage], dj_set: DjSet) -> list[DjSetVisit]:
+    """
+    Stands in for the room's visits on sets from before they were saved: everyone who
+    chatted, there from their first message to the end of the set (when they really
+    came and went wasn't kept). Characters go in the order they first spoke, and names
+    match ignoring case like the room's.
+
+    Args:
+        messages: The set's chat, oldest first.
+        dj_set: The finished set.
+
+    Returns:
+        list[DjSetVisit]: One stay per chatter.
+    """
+    first_by_name: dict[str, DjChatMessage] = {}
+    for message in messages:
+        first_by_name.setdefault(message.nickname.lower(), message)
+    return [
+        DjSetVisit(nickname=message.nickname, avatar=avatar, from_s=offset_in_set(message.created_at, dj_set), to_s=dj_set.duration_s)
+        for avatar, message in enumerate(first_by_name.values())
+    ]
+
+
 def place_on_timeline(message: DjChatMessage, dj_set: DjSet) -> DjSetChatMessage:
     """
     Works out where in a set's recording a chat message belongs.
@@ -90,14 +158,12 @@ def place_on_timeline(message: DjChatMessage, dj_set: DjSet) -> DjSetChatMessage
     Returns:
         DjSetChatMessage: The message with offset_s, kept between the set's start and end.
     """
-    sent_after_s = (message.created_at - dj_set.started_at).total_seconds()
-    offset_s = min(max(sent_after_s - LISTENER_LAG_S, 0), dj_set.duration_s)
     return DjSetChatMessage(
         id=message.id,
         nickname=message.nickname,
         content=message.content,
         created_at=message.created_at,
-        offset_s=offset_s,
+        offset_s=offset_in_set(message.created_at, dj_set),
     )
 
 
@@ -305,16 +371,44 @@ async def get_set_chat(set_id: int, db: Session = Depends(get_db)) -> list[DjSet
         HTTPException: 404 if there's no such finished set.
     """
     dj_set = get_finished_set(db, set_id)
-    # the last few seconds of the set reach listeners after it ends, and they can still
-    # react to it while the room's poll catches up on the stream being over
-    window_end = dj_set.ended_at + timedelta(seconds=LISTENER_LAG_S)
-    messages = (
-        db.query(DjChatMessage)
-        .filter(DjChatMessage.created_at >= dj_set.started_at, DjChatMessage.created_at <= window_end)
-        .order_by(DjChatMessage.id)
+    return [place_on_timeline(message, dj_set) for message in set_chat_messages(db, dj_set)]
+
+
+@router.get("/sets/{set_id}/people", response_model=list[DjSetVisit])
+async def get_set_people(set_id: int, db: Session = Depends(get_db)) -> list[DjSetVisit]:
+    """
+    Who was in the live room during a set, each stay placed on the set's timeline, so the
+    set's page can show them as it replays. From the room's saved visits; for sets from
+    before those were saved, whoever chatted stands in (visits_from_chat).
+
+    Args:
+        set_id: The set's id.
+        db: Database session.
+
+    Returns:
+        list[DjSetVisit]: In the order they came in. Someone who left and came back has a stay for each.
+
+    Raises:
+        HTTPException: 404 if there's no such finished set.
+    """
+    dj_set = get_finished_set(db, set_id)
+    visits = (
+        db.query(DjRoomVisit)
+        .filter(DjRoomVisit.joined_at <= dj_set.ended_at, DjRoomVisit.last_seen_at >= dj_set.started_at)
+        .order_by(DjRoomVisit.joined_at, DjRoomVisit.id)
         .all()
     )
-    return [place_on_timeline(message, dj_set) for message in messages]
+    if not visits:
+        return visits_from_chat(set_chat_messages(db, dj_set), dj_set)
+    return [
+        DjSetVisit(
+            nickname=visit.nickname,
+            avatar=visit.avatar,
+            from_s=offset_in_set(visit.joined_at, dj_set),
+            to_s=offset_in_set(visit.last_seen_at + timedelta(seconds=ROOM_CHECK_IN_INTERVAL_S), dj_set),
+        )
+        for visit in visits
+    ]
 
 
 @router.get("/sets/{set_id}/waveform", response_model=DjSetWaveform)

@@ -1326,6 +1326,19 @@ The live room's chat from while the set was on, so the set page can replay it as
 
 There's no link stored between a message and a set: a set's chat is every message sent between its `started_at` and `ended_at` plus `LISTENER_LAG_S` (8 s), since listeners hear the stream a few seconds behind the decks and can react to the last bit after it's over. For the same reason `offset_s` is the send time less the set's start less that lag, kept between 0 and `duration_s`. Messages deleted from the admin page are gone here too. `200`, `404` if there's no finished set with that id.
 
+### GET `/dj/sets/{set_id}/people`
+
+Who was in the live room while a finished set was on, for its page to show as it replays. `200` with a list of stays, in the order they came in:
+
+```json
+[{"nickname": "tyler", "avatar": 0, "from_s": 0.0, "to_s": 5021.0}]
+```
+
+- Stays are the `dj_room_visits` rows overlapping the set, placed on its timeline the same way as its chat (`from_s`/`to_s` are seconds into the recording, less the listener lag, kept within the set). A stay's end is pushed 15 s past its last check-in (`ROOM_CHECK_IN_INTERVAL_S`), since that's how long before leaving it could have been, so someone who stayed to the end is there at the end.
+- Someone who left and came back, or changed name, has a stay for each.
+- Sets from before stays were saved have none, so they get one per person who chatted instead (names matched ignoring case): from their first message to the end of the set, characters in the order they first spoke.
+- `404` if there's no such finished set.
+
 ### GET `/dj/sets/{set_id}/waveform`
 
 The set's loudness over time, for drawing its waveform: `{"peaks": [0.31, 0.42, ...]}`, about 1000 values (`WAVEFORM_BUCKETS`) evenly spread over the set, each 0 to 1 with 1 the loudest moment. ffmpeg works it out (RMS per slice) when the set finishes recording, and it's cached as `<set>.waveform.json` next to the mp3. A set without one gets it on its first request, which takes a few seconds for a long set. Code: `app/dj_waveform.py`. `200`, `404` if the set or its file is missing, `500` if ffmpeg can't read the mp3.
@@ -1389,6 +1402,28 @@ Sends a message. Body `{"nickname": "...", "content": "...", "owner_key": "..."}
 **Auth:** admin JWT.
 
 Deletes a message (the admin page's DJ tab). `204`, or `404` if there's no message with that id.
+
+### Live room people
+
+Who's in the Opium Den's live room right now, for the characters standing on its stage. The room's only open while the stream's live. Who's in is kept in memory (`app/dj_room.py`), so a backend restart empties it until everyone's next check-in, and it empties when a set ends. Each stay is also saved in `dj_room_visits` (name, character number, when they came in, their latest check-in), so a recorded set's page can show who was there: `GET /dj/sets/{set_id}/people`. Code: `app/routers/dj_room.py`.
+
+### POST `/dj/room`
+
+Puts this browser in the room under its chat name, or keeps it there. The page sends it every 15 s while it's open. Body `{"nickname": "...", "owner_key": "..."}`, the same name rules and browser key as `POST /dj/chat`. Rate limited per IP to 30 a minute (`ROOM_CHECK_IN_RATE_LIMIT`). `200` with the room:
+
+```json
+{"people": [{"nickname": "tyler", "avatar": 0}, {"nickname": "Kyle", "avatar": 1}]}
+```
+
+- People are in the order they came in. Anyone not heard from in 40 s is gone (`PRESENCE_TIMEOUT_S`).
+- `avatar` is their character number: the lowest one nobody else in the room has when they come in, kept while they're in (a name change keeps it too). The page turns it into a character.
+- Names are one per person in the room, ignoring case: `403` when another browser in the room has it. It also claims the name for the set in `dj_chat_names`, exactly like a first chat message, so `403` covers a name someone else used in this set's chat too.
+- Each check-in moves the stay's `last_seen_at` up to now. Coming in, or changing name, starts a new stay (a rename keeps the character).
+- `409` off air, `503` when the room's at 100 people (`MAX_ROOM_PEOPLE`), `422` for a blank or too-long name, `429` past the rate limit.
+
+### POST `/dj/room/leave`
+
+Takes this browser out of the room right away, sent as the page closes, and ends its stay now. Body `{"owner_key": "..."}`. `204`, whether or not it was in.
 
 ### Live alerts
 

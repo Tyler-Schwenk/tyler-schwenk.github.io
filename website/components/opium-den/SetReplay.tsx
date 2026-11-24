@@ -21,7 +21,9 @@ import ChatLine from "./ChatLine";
 import CoverViewer from "./CoverViewer";
 import { useCoverPlayerBar, useDenPlayer } from "./DenPlayerProvider";
 import EqBars from "./EqBars";
+import MinimizeButton from "./MinimizeButton";
 import { SkipButton, VolumeControl } from "./PlayerControls";
+import RoomPeople, { peopleAt, replayBubbles } from "./RoomPeople";
 import SetArt from "./SetArt";
 import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 import Waveform from "./Waveform";
@@ -217,17 +219,20 @@ function ReplayChat({
 /**
  * one recorded set, replayed with its chat: the set's full view. a header with its cover
  * (tap for full screen), the play button and, once it's loaded, skips and volume; the
- * set's waveform on chart paper as its seek bar (chat messages as ticks under it); and the chat filling
+ * set's waveform on chart paper as its seek bar (chat messages as ticks under it), with the
+ * live room's people standing under it as they were at that point in the set, each
+ * saying what they'd just said in a bubble; and the chat filling
  * the rest of the screen, showing only what had been said by that point in the set. one
  * screen tall like the live room. while this set's the one loaded, the player bar steps
- * aside, since this page has its controls; anything else playing keeps the bar. the set
+ * aside, since this page has its controls, and a minimize button shrinks it back to the
+ * bar; anything else playing keeps the bar. the set
  * is picked by ?id=. see website/docs/OPIUM_DEN.md.
  *
  * @returns {JSX.Element} the replay.
  */
 export default function SetReplay() {
   const setId = parseSetId(useSearchParams().get("id"));
-  const { set, messages, peaks, error, waveformError } = useDjSetReplay(setId);
+  const { set, messages, visits, peaks, error, waveformError } = useDjSetReplay(setId);
   const player = useDenPlayer();
 
   const track = set ? djSetTrack(set) : null;
@@ -243,10 +248,11 @@ export default function SetReplay() {
   return (
     <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-4xl flex-col px-4 pb-4 sm:px-8 sm:pb-6">
       {/* the home button's row: it sits fixed top-left, so this just leaves it room */}
-      <div className="flex h-20 shrink-0 items-center justify-end sm:h-24">
+      <div className="flex h-20 shrink-0 items-center justify-end gap-4 sm:h-24">
         <Link href={LIVE_SECTION_PATH} className="font-den-mono text-[11px] uppercase transition-colors hover:text-den-accent-soft">
           &larr; All sets
         </Link>
+        {current && <MinimizeButton fallbackPath={LIVE_SECTION_PATH} />}
       </div>
 
       {problem && (
@@ -298,6 +304,10 @@ export default function SetReplay() {
               messages={messages ?? []}
               onSeek={seek}
             />
+            {/* the room as it was at this point in the set: who was in, and what they'd just said */}
+            <div className="relative h-16 sm:h-[4.75rem]">
+              <RoomPeople people={peopleAt(visits, positionS)} bubbles={replayBubbles(messages ?? [], positionS)} />
+            </div>
             {waveformError && <p className="pb-2 font-den-mono text-[11px] text-den-muted">{waveformError}</p>}
             {current && player.error && <p className="pb-2 font-den-mono text-[11px] text-den-accent-soft">{player.error}</p>}
           </div>

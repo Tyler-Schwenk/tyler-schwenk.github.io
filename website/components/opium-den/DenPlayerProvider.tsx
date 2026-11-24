@@ -1,14 +1,18 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAudioPlayer, type AudioPlayer } from "@/lib/useAudioPlayer";
 import PlayerBar from "./PlayerBar";
 
-/** the player, plus which track's full view is on screen (the bar steps aside for it). */
+/**
+ * the player, which track's full view is on screen (the bar steps aside for it), and
+ * whether there's an earlier page on the site to go back to.
+ */
 type DenPlayerContextValue = {
   player: AudioPlayer;
   setCoveredTrackId: (trackId: string | null) => void;
+  hasEarlierPage: () => boolean;
 };
 
 const DenPlayerContext = createContext<DenPlayerContextValue | null>(null);
@@ -33,8 +37,16 @@ export default function DenPlayerProvider({ children }: { children: ReactNode })
   const hiddenHere = BAR_HIDDEN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const covered = player.track !== null && player.track.id === coveredTrackId;
 
+  // once the path's changed at least once, going back stays on the site
+  const firstPathRef = useRef(pathname);
+  const navigatedRef = useRef(false);
+  useEffect(() => {
+    if (pathname !== firstPathRef.current) navigatedRef.current = true;
+  }, [pathname]);
+  const hasEarlierPage = useCallback(() => navigatedRef.current, []);
+
   return (
-    <DenPlayerContext.Provider value={{ player, setCoveredTrackId }}>
+    <DenPlayerContext.Provider value={{ player, setCoveredTrackId, hasEarlierPage }}>
       {children}
       {!hiddenHere && !covered && <PlayerBar player={player} />}
     </DenPlayerContext.Provider>
@@ -76,4 +88,23 @@ export function useCoverPlayerBar(trackId: string | null): void {
     setCoveredTrackId(trackId);
     return () => setCoveredTrackId(null);
   }, [trackId, setCoveredTrackId]);
+}
+
+/**
+ * for a track's full view: shrinks it back to the player bar. goes back to whatever page
+ * you were on (scroll and all) when there is one on the site, or to the fallback when the
+ * full view's the first page you landed on. the audio keeps playing either way.
+ *
+ * @param {string} fallbackPath - where to go when there's no earlier page on the site.
+ * @returns {() => void} minimizes the full view.
+ *
+ * Side effects: navigates.
+ */
+export function useMinimizePlayer(fallbackPath: string): () => void {
+  const { hasEarlierPage } = useDenPlayerContext();
+  const router = useRouter();
+  return useCallback(() => {
+    if (hasEarlierPage()) router.back();
+    else router.push(fallbackPath);
+  }, [hasEarlierPage, router, fallbackPath]);
 }

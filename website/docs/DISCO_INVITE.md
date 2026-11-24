@@ -192,7 +192,8 @@ V2.mp4`, gitignored, 1920x1080, 29.97 fps, 60 s) with ffmpeg:
 | `attire.mp4` / `.webm` / `.jpg` | The attire clip, 360x360, 15.75 s, ~700 KB, no audio, plus its still | From `input/disco/attire1..3.mp4` (gitignored sources). Each is cropped to a square clear of the station logo in the top right (`crop=ih:ih:120:0`; `crop=1400:1400:150:50` for clip 2, to drop a black bar at the top), then `scale=360:360,fps=24`. They're joined with 0.4 s `xfade` fades; x264 crf 27 / vp9 crf 38 |
 
 The dancers are in `website/public/video/disco/dancers/` (`<name>.webp` loop, `<name>.png`
-still, 180px tall). They're cut from a 720x480 copy of the Charlie Brown Christmas dance
+still, 180px tall). The Opium Den's live room uses them too, as the characters for the
+people in it (see `OPIUM_DEN.md`), so keep their names in `DANCERS` stable. They're cut from a 720x480 copy of the Charlie Brown Christmas dance
 scene. For each kid, the loop is found by matching frames one dance cycle apart inside a
 clean stretch of one shot. Each frame is matted by keying out the pink backdrop reachable
 from the crop's edge, since the black outlines close off the faces. On the wood floor

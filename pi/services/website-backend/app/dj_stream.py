@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import SessionLocal
 from app.dj_live_meter import LiveMeter
+from app.dj_room import live_room
 from app.dj_waveform import prepare_waveform
 from app.image_utils import delete_photo_files
 from app.kiln_firings import utc_now_naive
@@ -390,12 +391,13 @@ class DjStreamWatcher:
         Wraps up after ffmpeg has exited: saves or discards the set and clears the recorder.
 
         Side effects:
-            Stops the live meter and drops its trace, updates or deletes the dj_sets row
+            Stops the live meter and drops its trace, empties the live room, updates or deletes the dj_sets row
             (and the file, if discarded), and starts working out a kept set's waveform in
             the background.
         """
         await self.meter.stop()
         self.meter.end_set()
+        live_room.clear()
         set_id = self._set_id
         if self._recorder_output is not None:
             await self._recorder_output

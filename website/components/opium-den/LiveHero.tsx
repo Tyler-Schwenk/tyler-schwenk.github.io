@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { formatDuration, parseBackendTime } from "@/app/admin/format";
-import { djLiveThumbUrl, LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
+import { formatDuration } from "@/app/admin/format";
+import { djLiveStartedMs, djLiveThumbUrl, LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
 import { useNow } from "@/lib/useNow";
 import LiveTrace, { LIVE_PEN_AT } from "./LiveTrace";
 import SetArt from "./SetArt";
@@ -22,18 +22,6 @@ const PILL_CLASS = "inline-flex items-center justify-center gap-1.5 rounded-full
  */
 function clockTime(ms: number): string {
   return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-/**
- * when the set started, if the status knows.
- *
- * @param {DjStreamStatus | null} status - latest status.
- * @returns {number | null} ms since the epoch, or null.
- */
-function startedMs(status: DjStreamStatus | null): number | null {
-  if (!status?.live || !status.started_at) return null;
-  const ms = parseBackendTime(status.started_at).getTime();
-  return Number.isNaN(ms) ? null : ms;
 }
 
 /**
@@ -90,7 +78,7 @@ export default function LiveHero({
   onToggle: () => void;
 }) {
   const live = Boolean(status?.live);
-  const startMs = startedMs(status);
+  const startMs = djLiveStartedMs(status);
   const nowMs = useNow(CLOCK_TICK_MS, live);
   const cover = djLiveThumbUrl(status);
 

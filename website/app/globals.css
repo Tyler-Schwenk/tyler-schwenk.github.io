@@ -587,6 +587,19 @@ body:has(.den-page) {
   .den-eq-bar[data-active="true"] { animation: none; transform: scaleY(0.7); }
 }
 
+/* the live room's people: a chat bubble pops up over someone's head, and new arrivals drop in */
+@keyframes den-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.92); }
+}
+
+.den-pop {
+  animation: den-pop 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .den-pop { animation: none; }
+}
+
 /* kiln page (/kiln): quiet ceramics catalog look, see website/docs/KILN.md */
 .kiln-theme {
   --kiln-surface: #ffffff;

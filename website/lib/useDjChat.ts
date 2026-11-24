@@ -30,10 +30,11 @@ export type DjChat = {
  * this browser's chat owner key: made once and kept in localStorage, so its name stays
  * its own for the rest of the set, reloads included. with storage blocked it only lasts
  * the page load, so a reload mid-set can't get the same name back until the next set.
+ * the live room's who's-here check-ins use it too.
  *
  * @returns {string} the key, a random uuid.
  */
-function ownerKey(): string {
+export function chatOwnerKey(): string {
   try {
     const stored = window.localStorage.getItem(OWNER_KEY_STORAGE_KEY);
     if (stored) return stored;
@@ -57,7 +58,7 @@ export function useDjChat(): DjChat {
 
   const send = useCallback(
     async (nickname: string, content: string) => {
-      const sent = await sendDjChat(nickname, content, ownerKey());
+      const sent = await sendDjChat(nickname, content, chatOwnerKey());
       // the next poll brings it back anyway, this just skips the wait
       setData((current) => {
         if (!current) return [sent];

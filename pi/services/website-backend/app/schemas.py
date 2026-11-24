@@ -962,6 +962,59 @@ class DjChatMessageCreate(BaseModel):
         return value
 
 
+class DjRoomCheckIn(BaseModel):
+    """
+    A browser saying it's in the live room, under this chat name. Sent every few seconds
+    while the room's open (see routers/dj_room.py). The name's squashed and trimmed like
+    a chat message's.
+    """
+    nickname: str = Field(..., max_length=MAX_DJ_CHAT_NICKNAME_LENGTH)
+    owner_key: str = Field(..., min_length=MIN_DJ_CHAT_OWNER_KEY_LENGTH, max_length=MAX_DJ_CHAT_OWNER_KEY_LENGTH)
+
+    @field_validator("nickname", mode="before")
+    @classmethod
+    def squash_to_one_line(cls, value: object) -> object:
+        """trims and flattens strings; anything else is left for the type check to reject."""
+        return _one_line(value) if isinstance(value, str) else value
+
+    @field_validator("nickname")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        """rejects a name that was empty or only whitespace."""
+        if not value:
+            raise ValueError("can't be empty -- pick a name first")
+        return value
+
+
+class DjRoomLeave(BaseModel):
+    """A browser leaving the live room."""
+    owner_key: str = Field(..., min_length=MIN_DJ_CHAT_OWNER_KEY_LENGTH, max_length=MAX_DJ_CHAT_OWNER_KEY_LENGTH)
+
+
+class DjRoomPerson(BaseModel):
+    """Someone in the live room."""
+    nickname: str
+    avatar: int = Field(..., description="their character number, 0 up, the lowest free one when they came in")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DjRoom(BaseModel):
+    """Who's in the live room right now, in the order they came in."""
+    people: list[DjRoomPerson]
+
+
+class DjSetVisit(BaseModel):
+    """
+    Someone's stay in the live room during a recorded set, placed on the set's timeline
+    like its chat, so the set's page can show who was there as it replays.
+    """
+    nickname: str
+    avatar: int = Field(..., description="their character number in the room, 0 up")
+    from_s: float = Field(..., description="when they came in, seconds into the recording")
+    to_s: float = Field(..., description="when they left, seconds into the recording")
+
+
 class DjChatMessageRead(BaseModel):
     """A chat message as the room shows it. created_at is naive UTC."""
     id: int

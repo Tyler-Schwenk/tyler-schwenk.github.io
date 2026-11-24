@@ -9,7 +9,7 @@ import {
   DJ_CHAT_NICKNAME_MAX_LENGTH,
   LIVE_SECTION_PATH,
 } from "@/app/opium-den/djApi";
-import { useChatNickname, useDjChat } from "@/lib/useDjChat";
+import type { DjChat } from "@/lib/useDjChat";
 import { useStickToBottom } from "@/lib/useStickToBottom";
 import AlertSignup from "./AlertSignup";
 import ChatLine from "./ChatLine";
@@ -33,12 +33,13 @@ function sentAt(createdAt: string): string {
 }
 
 /**
- * the "pick a name" panel. it opens above the message box the first time you send (your
- * message waits in the box and goes out as soon as there's a name), or from "change".
+ * the "change your name" panel. it opens above the message box from "change", or when
+ * a send finds your name's someone else's (your message waits in the box and goes out
+ * with the new name).
  * styled as its own labelled form so it can't be mistaken for the message box.
  *
  * @param {object} props
- * @param {string} props.initial - the current name, to edit, or "".
+ * @param {string} props.initial - the current name, to edit.
  * @param {boolean} props.hasPending - a message is waiting to send once there's a name.
  * @param {(nickname: string) => void} props.onSave - takes the new name.
  * @param {() => void} props.onCancel - closes it without changing anything.
@@ -64,10 +65,10 @@ function NamePanel({
   return (
     <form onSubmit={submit} className="mb-3 border border-den-accent bg-den-accent/5 p-3">
       <label htmlFor="den-chat-name" className="block text-sm font-semibold">
-        {initial ? "Change your name" : "Pick a name first"}
+        Change your name
       </label>
       <p className="mt-0.5 font-den-mono text-[11px] text-den-muted">
-        it shows next to your messages{hasPending ? ", and your message sends as soon as you pick one." : "."}
+        it shows over your character and next to your messages{hasPending ? ", and your message sends with it." : "."}
       </p>
       <div className="mt-2 flex gap-2">
         <input
@@ -96,13 +97,12 @@ function NamePanel({
 }
 
 /**
- * where you talk: always a message box, so typing goes where you'd expect. without a
- * name yet, sending opens the name panel instead and the message waits for it, and the
- * same happens when the name turns out to be someone else's. under the box it says who
- * you're chatting as, with a way to change it.
+ * where you talk: a message box, with who you're chatting as under it and a way to
+ * change it. if the name turns out to be someone else's when you send, the name panel
+ * opens and the message waits for the new one.
  *
  * @param {object} props
- * @param {string} props.nickname - the saved name, "" before one's picked.
+ * @param {string} props.nickname - your name (you picked one to come into the room).
  * @param {(nickname: string) => void} props.onNickname - saves a name.
  * @param {(nickname: string, content: string) => Promise<void>} props.onSend - sends; throws with a readable reason.
  * @returns {JSX.Element} the composer.
@@ -140,10 +140,6 @@ function Composer({
     event.preventDefault();
     const content = draft.trim();
     if (!content || sending) return;
-    if (!nickname) {
-      setNaming(true);
-      return;
-    }
     deliver(nickname, content);
   };
 
@@ -178,16 +174,10 @@ function Composer({
         </button>
       </form>
       <p className="mt-2 px-1 font-den-mono text-[11px] text-den-muted">
-        {nickname ? (
-          <>
-            chatting as <span className="text-den-ink">{nickname}</span> ·{" "}
-            <button type="button" onClick={() => setNaming(true)} className="underline-offset-4 hover:text-den-accent-soft hover:underline">
-              change
-            </button>
-          </>
-        ) : (
-          "you'll pick a name when you send your first message"
-        )}
+        chatting as <span className="text-den-ink">{nickname}</span> ·{" "}
+        <button type="button" onClick={() => setNaming(true)} className="underline-offset-4 hover:text-den-accent-soft hover:underline">
+          change
+        </button>
       </p>
       {error && <p className="mt-1 px-1 font-den-mono text-[11px] text-den-accent-soft">{error}</p>}
     </div>
@@ -196,17 +186,30 @@ function Composer({
 
 /**
  * the live room's chat, like a stream's side chat: the room's recent messages, following
- * the newest unless you've scrolled up to read, and a box to talk in. anyone can read it;
- * it only takes messages while the stream's live, and off air the box is swapped for the
- * live alerts signup. names are remembered in this browser.
+ * the newest unless you've scrolled up to read, and a box to talk in. it only takes
+ * messages while the stream's live, and off air the box is swapped for the live alerts
+ * signup. the room owns the chat and the name (the stage shows the same messages as
+ * bubbles), so they come in as props.
  *
  * @param {object} props
  * @param {boolean} props.live - the stream's on, so the chat's open.
+ * @param {DjChat} props.chat - the room's chat, from useDjChat.
+ * @param {string} props.nickname - your name.
+ * @param {(nickname: string) => void} props.onNickname - saves a new name.
  * @returns {JSX.Element} the chat panel.
  */
-export default function LiveChat({ live }: { live: boolean }) {
-  const { messages, error, send } = useDjChat();
-  const [nickname, setNickname] = useChatNickname();
+export default function LiveChat({
+  live,
+  chat,
+  nickname,
+  onNickname,
+}: {
+  live: boolean;
+  chat: DjChat;
+  nickname: string;
+  onNickname: (nickname: string) => void;
+}) {
+  const { messages, error, send } = chat;
   const [listRef, onListScroll] = useStickToBottom<HTMLOListElement>(messages?.at(-1)?.id);
   const empty = messages !== null && messages.length === 0;
 
@@ -243,7 +246,7 @@ export default function LiveChat({ live }: { live: boolean }) {
       {/* off air there's nothing to type into, so the box's spot offers an email for next time */}
       <div className="border-t border-den-line p-3">
         {live ? (
-          <Composer nickname={nickname} onNickname={setNickname} onSend={send} />
+          <Composer nickname={nickname} onNickname={onNickname} onSend={send} />
         ) : (
           <AlertSignup startOpen />
         )}

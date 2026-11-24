@@ -142,23 +142,56 @@ room ("Enter the room" while live, "The room" off air).
 link of its own, so it can be sent around when Tyler goes live, and it's where the live
 alert emails point.
 
-- **Layout**: built around the chat. The room is exactly one screen tall (less the player
+- **Layout**: built around the people in it and the chat. The room is exactly one screen tall (less the player
   bar when a past set's playing, via the `--den-bar-clearance` variable `PlayerBar` sets on
   the body), so the page itself never scrolls and the message box sits at the bottom where
   a thumb is. On top, a compact header panel: the set's cover, "Live room", the status
   line, the red play button, and volume on desktop. A red edge down its left while live,
-  greyed out off air. The rest of the screen is the chat panel. "Live from the den" at the top goes back to the section.
+  greyed out off air. Under it while live, the stage (below), then the chat panel filling the rest; off air it's just the chat. "Live from the den" at the top goes back to the section,
+  and while the stream's loaded a **Minimize** button next to it shrinks the room back to the player bar.
+- **Coming in** (`RoomEntry` in `LiveRoom`): while live, you pick a name before you're in.
+  Until there's one, "Who's coming in?" with a name box takes the place of the stage and
+  chat. Off air there's nothing to pick, since the room's closed.
+  It's the same name as the chat's (remembered in this browser, below), so coming back
+  skips it. If the name turns out to be someone else's it comes back here with the reason
+  and the name in the box to edit.
+- **Stage** (`LiveRoomStage` in `LiveTrace`, `RoomPeople`), only while live: the set's
+  loudness trace so far on chart paper, the same as the monitor's, raised up a little to
+  leave the room's people the floor along the bottom (they can stand over its bottom edge),
+  with the chat ticks along the top but no pinned messages. The same people show up again
+  on the set's page when it's played back (Set Page below).
+  - **People**: each one is a little dancing kid from the disco flier
+    (`public/video/disco/dancers/`, `DANCERS` in `components/disco/constants.ts`), the
+    looping webp, or its still png under reduced motion. Characters go in the order
+    Snoopy, Sally, Linus, Schroeder, Shermy, the girl with her head thrown back; the next
+    six are the same ones inverted (`invert(1) hue-rotate(180deg)`), then plain again. The
+    number comes from the Pi (the lowest one free when you came in), so a small room is
+    all different characters. They stand evenly spread, no more than 15% apart, so a small
+    room stands together in the middle. Everyone's name is over their head in small mono
+    caps, yours in red.
+  - **Bubbles** (`useLiveBubbles`): whatever someone says pops up in a speech bubble over their name for 30 s
+    (`BUBBLE_LIFETIME_MS`), as well as in the chat. The 30 s counts from when this page
+    first saw the message, not its timestamp, so a phone with its clock off still gets
+    them (messages already there on the first load count from when they were sent, so they
+    don't all pop at once). A bubble that would run into its left neighbour's goes up a
+    lane on a stem, and newer bubbles draw over older ones. Bubbles near the stage's edges
+    hang to the inside. The layer doesn't take clicks.
+  - **Coming and going** (`useDjRoom`): the page checks in with the Pi (`POST /dj/room`)
+    with your name and the chat's browser key every 15 s while the tab's visible, and
+    straight away when it's shown again, and gets everyone back. Closing the page sends a
+    leave (`POST /dj/room/leave`, `keepalive`); otherwise the Pi drops anyone it hasn't
+    heard from in 40 s. The room empties when the set ends. Every stay is saved on the Pi
+    for the set's replay. Backend side: `pi/docs/api/website-backend-api.md#live-room-people`.
 - **Chat** (`LiveChat`): anyone can read it: the last few hours of messages, so the last
   set's chat stays up for a while. It follows new messages unless you've scrolled up to
   read, and scrolling it doesn't drag the page. Sending only works while the stream's live;
   off air the message box is swapped for the live alerts signup, the header says it opens
   with the next set, and an empty room points to the past sets.
-  - There's only ever a message box, so typing always goes where you'd expect. Without a
-    name yet, the first send opens a "Pick a name first" panel above the box instead (its
-    own labelled form, a square red-outlined field, so it can't be mistaken for the
-    message box, a pill outlined in ink). The message waits in the box and sends as soon as a name is picked.
-    Under the box it says "chatting as <name> · change", or that you'll pick a name with
-    your first message.
+  - Under the message box it says "chatting as <name> · change". "change" opens a
+    "Change your name" panel above the box (its own labelled form, a square red-outlined
+    field, so it can't be mistaken for the message box, a pill outlined in ink). The room
+    owns the chat and the name (`useDjChat`, `useChatNickname`) and hands them to
+    `LiveChat`, since the stage shows the same messages.
   - The name is remembered in this browser (`localStorage`, key `den-chat-nickname`,
     falling back to just this page load when storage is blocked). Names are small mono
     caps: your own in ink, everyone else's in red.
@@ -166,8 +199,9 @@ alert emails point.
     it until the set ends, and nobody else can chat as it meanwhile (ignoring case). The
     next set, every name's free again, so a new device just takes its name back then. Each
     browser makes a random key once (`localStorage`, key `den-chat-key`) and sends it with
-    every message. Sending as a name someone else has this set says so and opens the name
-    panel again, the message still waiting in the box. Backend side:
+    every message, and the room's check-ins. Coming into the room while live claims the
+    name too, so it's yours before you've said anything. Sending as a name someone else
+    has this set says so and opens the name panel, the message still waiting in the box. Backend side:
     `pi/docs/api/website-backend-api.md#post-djchat`.
   - Messages are one line, up to 280 characters; names up to 24. Inputs are 16px on phones,
     since iOS zooms the page into anything smaller. Sending too fast (more than 8 a minute)
@@ -213,7 +247,8 @@ player bar when it's showing.
 - **Header**: the cover, the title (or date), "date · length · N messages" in mono, the red play
   button, and an "about this set" toggle when it has a description. Once this set's loaded
   in the player, back 15 s and forward 30 s sit either side of play, and volume next to
-  them on desktop. "All sets" at the top goes back to the section.
+  them on desktop. "All sets" at the top goes back to the section, and while this set's
+  loaded a **Minimize** button next to it shrinks the page back to the player bar.
 - **Cover**: when the set has one, tapping it opens it full screen (`CoverViewer`) over
   everything. A tap anywhere, the close button or Escape closes it.
 - **Waveform** (`Waveform`): the set's loudness as bars (from `GET /dj/sets/{id}/waveform`),
@@ -227,8 +262,17 @@ player bar when it's showing.
   loads it's flat faint pulsing bars, and if it fails they stop pulsing, it says so and
   still seeks.
 - **Chat markers**: under the waveform, a tick for every message at its moment, red once
-  passed. Tap one to jump there. The message that just went by pops up as a flag by its
-  tick for 5 s (`BUBBLE_VISIBLE_S`).
+  passed. Tap one to jump there.
+- **The room as it was** (`RoomPeople`, `peopleAt`, `replayBubbles`): under the waveform,
+  on the same chart paper, the live room's people stand as they were at that point in
+  the set, the same characters and name tags as live, each with a bubble for whatever
+  they said in the 30 s of the set before where playback is. People come and go as the
+  set plays, and seeking jumps straight to who was there then. Bubbles can spill up over
+  the waveform without getting in the way of seeking. Who was there comes from
+  `GET /dj/sets/{id}/people` (`useDjSetReplay`), each stay placed on the set's timeline like
+  its chat. Sets from before stays were saved get everyone who chatted instead, each from
+  their first message to the end of the set, in the order they first spoke. Before
+  playing it's whoever was there at the very start.
 - **Chat replay**: only the messages up to where playback is, so the chat fills in as the
   set plays and empties back out when you skip back, like being there. It follows the newest
   line unless you've scrolled up (`useStickToBottom`, shared with the live room). Each line
@@ -278,6 +322,10 @@ along the bottom of every other page.
   `useCoverPlayerBar` with its track id, and the bar steps aside while they match), and on
   pages with no room for it (`/display`, the kiosk screens, and `/admin`, which has its
   own bottom nav on phones). The audio keeps playing either way.
+- **Minimizing**: a full view's Minimize button (`MinimizeButton`, via
+  `useMinimizePlayer`) goes back to the page you were on, scroll and all, so the bar comes
+  back over it. If the full view was the first page you landed on there's nothing to go
+  back to, so it goes to the live section instead.
 
 ## Files
 
@@ -291,25 +339,27 @@ along the bottom of every other page.
 | `website/app/opium-den/live/set/page.tsx` | The set page and its metadata |
 | `website/app/opium-den/live/alerts/page.tsx` | The live alerts page and its metadata |
 | `website/app/opium-den/set/page.tsx` | Forwards old `/opium-den/set?id=` links to the set page |
-| `website/components/opium-den/DenPlayerProvider.tsx` | The site's shared player (`useDenPlayer`), the player bar, and `useCoverPlayerBar` for full views |
+| `website/components/opium-den/DenPlayerProvider.tsx` | The site's shared player (`useDenPlayer`), the player bar, and `useCoverPlayerBar` and `useMinimizePlayer` for full views |
 | `website/components/opium-den/LiveSectionLink.tsx` | The den's link over to the live section, with the live status |
 | `website/components/opium-den/DjBooth.tsx` | The live section: the stats, and wires the live monitor and set list to the shared player |
 | `website/components/opium-den/LiveHero.tsx` | The section's live monitor, the way into the room: the on air readout, buttons and time axis |
-| `website/components/opium-den/LiveTrace.tsx` | The monitor's chart paper: the set so far traced as the room's chat, with the latest messages pinned on |
+| `website/components/opium-den/LiveTrace.tsx` | The monitor's chart paper: the set so far traced with the room's chat, the latest messages pinned on; and the live room's stage (`LiveRoomStage`) |
+| `website/components/opium-den/RoomPeople.tsx` | The live room's people, live and replayed: characters, name tags, chat bubbles, who was in at a point in a set |
 | `website/components/opium-den/LiveStatus.tsx` | The "Live now / Off air" line, shared by the den's link and the room |
 | `website/components/opium-den/LiveRoom.tsx` | The live room: header and chat |
-| `website/components/opium-den/LiveChat.tsx` | The room's chat panel: messages, name step, message box |
+| `website/components/opium-den/LiveChat.tsx` | The room's chat panel: messages, message box, name change |
 | `website/components/opium-den/SetList.tsx` | Every past set, to scale, with the half-hour ruler |
 | `website/components/opium-den/SetTrace.tsx` | One set's waveform drawn to scale in the list, with its chat ticks; a seek bar |
 | `website/components/opium-den/SetArt.tsx` | A set's cover, or the placeholder tile |
 | `website/components/opium-den/CoverViewer.tsx` | A cover full screen, from the set page |
 | `website/components/opium-den/SetReplay.tsx` | The set page: header, waveform, chat replay |
-| `website/components/opium-den/Waveform.tsx` | The set page's waveform seek bar with chat markers and the passing message's flag, plus the shared bars (`WaveBars`) and helpers |
+| `website/components/opium-den/Waveform.tsx` | The set page's waveform seek bar with chat markers, plus the shared bars (`WaveBars`) and helpers |
 | `website/components/opium-den/ChatLine.tsx` | One chat line, shared by the room and the replay |
 | `website/lib/useDjSetTraces.ts` | Loads each listed set's waveform and chat once, for the to-scale list |
 | `website/lib/useNow.ts` | The current time, ticking, for the monitor's elapsed clock |
-| `website/lib/useDjSetReplay.ts` | Loads a set, its chat and its waveform for the set page |
+| `website/lib/useDjSetReplay.ts` | Loads a set, its chat, who was in the room and its waveform for the set page |
 | `website/lib/useStickToBottom.ts` | Keeps a chat list on its newest line unless you've scrolled up |
+| `website/components/opium-den/MinimizeButton.tsx` | A full view's Minimize button, back to the page you were on with the bar |
 | `website/components/opium-den/PlayerBar.tsx` | The minimized player along the bottom (mini player on phones) |
 | `website/components/opium-den/PlayerControls.tsx` | Play/pause, skip, progress and volume, shared by the bar, the room and the set page |
 | `website/components/opium-den/SliderBar.tsx` | Seek and volume slider, and `RangeOverlay` (the invisible range input the slider and waveform sit under) |
@@ -319,7 +369,8 @@ along the bottom of every other page.
 | `website/lib/useScrub.ts` | Holds a slider's drag position and commits it on release |
 | `website/lib/usePoll.ts` | Fetch now and every so often while the tab's visible; used by the hooks below and the room's status |
 | `website/lib/useDjStream.ts` | Polls `/dj/status` and `/dj/sets` for the live section |
-| `website/lib/useDjChat.ts` | Polls `/dj/chat`, sends messages, remembers the nickname |
+| `website/lib/useDjChat.ts` | Polls `/dj/chat`, sends messages, remembers the nickname and the browser's key |
+| `website/lib/useDjRoom.ts` | Keeps you in the live room (check-ins to `/dj/room`) and gets who's in it |
 | `website/components/opium-den/AlertSignup.tsx` | The live alerts signup: a link that opens an email box |
 | `website/components/opium-den/AlertsLanding.tsx` | The alerts page: confirms or unsubscribes from an email's link, or the signup |
 | `website/app/opium-den/djApi.ts` | Types, fetchers, urls and limits for the `/dj` endpoints (chat, covers, live alerts), the live section's paths, and sets and the stream as player tracks (`djSetTrack`, `djLiveTrack`), shared with the admin tab |
