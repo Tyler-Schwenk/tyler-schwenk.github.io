@@ -61,8 +61,9 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/UploadTab.tsx` | Photo and video upload |
 | `website/app/admin/RsvpsTab.tsx` | RSVPs |
 | `website/app/admin/PublicSquareTab.tsx` | Public Square moderation |
-| `website/app/admin/DjSetsTab.tsx` | DJ tab: the on-air set's cover, live alerts, chat moderation, then sets (cover, title and description, play, delete). Covers are picked or dropped like gallery photos and upload straight away. Types and urls come from `website/app/opium-den/djApi.ts` |
-| `website/app/admin/DjAlertsPanel.tsx` | The DJ tab's live alerts: subject (blank for the default), message, send (asks first, then says how many it reached and any it couldn't), and the signup list with confirmed/unconfirmed and remove |
+| `website/app/admin/DjSetsTab.tsx` | DJ tab: the on-air set's cover, live alerts, chat moderation, the live room's uploaded pictures, then sets (cover, title and description, play, delete). Covers are picked or dropped like gallery photos and upload straight away. Types and urls come from `website/app/opium-den/djApi.ts` |
+| `website/app/admin/DjAlertsPanel.tsx` | The DJ tab's live alerts: subject (blank for the default), message, send (asks first, then says how many it reached and any it couldn't), and the signup list with confirmed/unconfirmed and remove. Sent while a set's recording, the subject and message also become its title and description |
+| `website/app/admin/RoomPhotosPanel.tsx` | The DJ tab's room pictures: every picture uploaded to stand in the live room as, newest first, with Remove (takes it off whoever's using it and out of replays) |
 | `website/lib/useAdminAuth.ts` | The JWT in localStorage, shared with The Kitchen and the kiln page (each page passes its own storage key; the kiln page also passes its own login endpoint) |
 
 ### Auth

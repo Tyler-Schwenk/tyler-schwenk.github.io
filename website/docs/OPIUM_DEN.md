@@ -149,24 +149,35 @@ alert emails point.
   line, the red play button, and volume on desktop. A red edge down its left while live,
   greyed out off air. Under it while live, the stage (below), then the chat panel filling the rest; off air it's just the chat. "Live from the den" at the top goes back to the section,
   and while the stream's loaded a **Minimize** button next to it shrinks the room back to the player bar.
-- **Coming in** (`RoomEntry` in `LiveRoom`): while live, you pick a name before you're in.
-  Until there's one, "Who's coming in?" with a name box takes the place of the stage and
-  chat. Off air there's nothing to pick, since the room's closed.
-  It's the same name as the chat's (remembered in this browser, below), so coming back
-  skips it. If the name turns out to be someone else's it comes back here with the reason
-  and the name in the box to edit.
+- **Coming in** (`RoomEntry`): while live, you pick a name and a look before you're in.
+  Until there's a name, "Who's coming in?" takes the place of the stage and chat. Off air
+  there's nothing to pick, since the room's closed.
+  - The name is the chat's (remembered in this browser, below), so coming back skips it.
+  - **Who you'll be**: a grid of the twelve characters (below). The ones someone else in
+    the room already is are greyed out and say "taken", kept up to date every 5 s from
+    `GET /dj/room` while you choose. The picked one dances; the rest are still frames.
+    Picking nobody gets whoever's free. The last tile, "your own", uploads a picture on
+    the spot (`POST /dj/room/photos`); it then shows as a "your pic" tile, picked. The
+    look is remembered in this browser too (`useRoomLook`, `localStorage` key
+    `den-room-look`: `{"avatar": n}` or `{"photoId": n}`).
+  - "change" under the chat's message box brings it back (with cancel and Save) to change
+    either. If the Pi turns you away (your name or character got taken, or your picture
+    was removed) it comes back with the reason and what you had, to edit.
 - **Stage** (`LiveRoomStage` in `LiveTrace`, `RoomPeople`), only while live: the set's
   loudness trace so far on chart paper, the same as the monitor's, raised up a little to
   leave the room's people the floor along the bottom (they can stand over its bottom edge),
   with the chat ticks along the top but no pinned messages. The same people show up again
   on the set's page when it's played back (Set Page below).
-  - **People**: each one is a little dancing kid from the disco flier
-    (`public/video/disco/dancers/`, `DANCERS` in `components/disco/constants.ts`), the
-    looping webp, or its still png under reduced motion. Characters go in the order
-    Snoopy, Sally, Linus, Schroeder, Shermy, the girl with her head thrown back; the next
-    six are the same ones inverted (`invert(1) hue-rotate(180deg)`), then plain again. The
-    number comes from the Pi (the lowest one free when you came in), so a small room is
-    all different characters. They stand evenly spread, no more than 15% apart, so a small
+  - **People** (`RoomAvatar`, `roomCharacters.ts`): each one is a little dancing kid from
+    the disco flier (`public/video/disco/dancers/`, `DANCERS` in
+    `components/disco/constants.ts`), the looping webp, or its still png under reduced
+    motion. Characters go in the order Snoopy, Sally, Linus, Schroeder, Shermy, Head back
+    (the girl with her head thrown back); the next six are the same ones dark (inverted,
+    `invert(1) hue-rotate(180deg)`), so twelve in all (`ROOM_CHARACTER_COUNT`, which the
+    Pi's `DJ_ROOM_CHARACTER_COUNT` has to match). The number comes from the Pi: the one
+    picked, or the lowest one free, so a small room is all different characters. Past
+    twelve the list starts over. Someone who uploaded a picture stands in as it instead,
+    in a round frame. They stand evenly spread, no more than 15% apart, so a small
     room stands together in the middle. Everyone's name is over their head in small mono
     caps, yours in red.
   - **Bubbles** (`useLiveBubbles`): whatever someone says pops up in a speech bubble over their name for 30 s
@@ -177,7 +188,7 @@ alert emails point.
     lane on a stem, and newer bubbles draw over older ones. Bubbles near the stage's edges
     hang to the inside. The layer doesn't take clicks.
   - **Coming and going** (`useDjRoom`): the page checks in with the Pi (`POST /dj/room`)
-    with your name and the chat's browser key every 15 s while the tab's visible, and
+    with your name, look and the chat's browser key every 15 s while the tab's visible, and
     straight away when it's shown again, and gets everyone back. Closing the page sends a
     leave (`POST /dj/room/leave`, `keepalive`); otherwise the Pi drops anyone it hasn't
     heard from in 40 s. The room empties when the set ends. Every stay is saved on the Pi
@@ -187,11 +198,10 @@ alert emails point.
   read, and scrolling it doesn't drag the page. Sending only works while the stream's live;
   off air the message box is swapped for the live alerts signup, the header says it opens
   with the next set, and an empty room points to the past sets.
-  - Under the message box it says "chatting as <name> · change". "change" opens a
-    "Change your name" panel above the box (its own labelled form, a square red-outlined
-    field, so it can't be mistaken for the message box, a pill outlined in ink). The room
-    owns the chat and the name (`useDjChat`, `useChatNickname`) and hands them to
-    `LiveChat`, since the stage shows the same messages.
+  - Under the message box it says "chatting as <name> · change". "change" goes back to
+    the way in (above) to change your name or look; so does sending as a name that turns
+    out to be someone else's. The room owns the chat and the name (`useDjChat`,
+    `useChatNickname`) and hands them to `LiveChat`, since the stage shows the same messages.
   - The name is remembered in this browser (`localStorage`, key `den-chat-nickname`,
     falling back to just this page load when storage is blocked). Names are small mono
     caps: your own in ink, everyone else's in red.
@@ -265,7 +275,7 @@ player bar when it's showing.
   passed. Tap one to jump there.
 - **The room as it was** (`RoomPeople`, `peopleAt`, `replayBubbles`): under the waveform,
   on the same chart paper, the live room's people stand as they were at that point in
-  the set, the same characters and name tags as live, each with a bubble for whatever
+  the set, the same characters (or pictures) and name tags as live, each with a bubble for whatever
   they said in the 30 s of the set before where playback is. People come and go as the
   set plays, and seeking jumps straight to who was there then. Bubbles can spill up over
   the waveform without getting in the way of seeking. Who was there comes from
@@ -344,6 +354,11 @@ along the bottom of every other page.
 | `website/components/opium-den/DjBooth.tsx` | The live section: the stats, and wires the live monitor and set list to the shared player |
 | `website/components/opium-den/LiveHero.tsx` | The section's live monitor, the way into the room: the on air readout, buttons and time axis |
 | `website/components/opium-den/LiveTrace.tsx` | The monitor's chart paper: the set so far traced with the room's chat, the latest messages pinned on; and the live room's stage (`LiveRoomStage`) |
+| `website/components/opium-den/RoomEntry.tsx` | The live room's way in: name, character picker, picture upload |
+| `website/components/opium-den/RoomAvatar.tsx` | How someone looks in the room: their character or their picture |
+| `website/components/opium-den/roomCharacters.ts` | The room's twelve characters, and which one an avatar number is |
+| `website/lib/useRoomLook.ts` | Remembers the character or picture you picked, in this browser |
+| `website/app/admin/RoomPhotosPanel.tsx` | The DJ tab's list of uploaded room pictures, with Remove |
 | `website/components/opium-den/RoomPeople.tsx` | The live room's people, live and replayed: characters, name tags, chat bubbles, who was in at a point in a set |
 | `website/components/opium-den/LiveStatus.tsx` | The "Live now / Off air" line, shared by the den's link and the room |
 | `website/components/opium-den/LiveRoom.tsx` | The live room: header and chat |

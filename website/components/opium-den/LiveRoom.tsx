@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import {
-  DJ_CHAT_NICKNAME_MAX_LENGTH,
   djLiveStartedMs,
   djLiveThumbUrl,
   djLiveTrack,
@@ -16,6 +15,7 @@ import type { AudioPlayer } from "@/lib/useAudioPlayer";
 import { useChatNickname, useDjChat } from "@/lib/useDjChat";
 import { useDjRoom } from "@/lib/useDjRoom";
 import { useNow } from "@/lib/useNow";
+import { useRoomLook } from "@/lib/useRoomLook";
 import { usePoll } from "@/lib/usePoll";
 import { useCoverPlayerBar, useDenPlayer } from "./DenPlayerProvider";
 import EqBars from "./EqBars";
@@ -23,6 +23,7 @@ import LiveChat from "./LiveChat";
 import LiveStatus from "./LiveStatus";
 import { LiveRoomStage } from "./LiveTrace";
 import MinimizeButton from "./MinimizeButton";
+import RoomEntry from "./RoomEntry";
 import RoomPeople, { useLiveBubbles } from "./RoomPeople";
 import SetArt from "./SetArt";
 import { VolumeControl } from "./PlayerControls";
@@ -32,60 +33,6 @@ import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 const ROOM_STATUS_POLL_INTERVAL_MS = 5000;
 // the stage's clock: the set's trace creeping along, and chat bubbles going after their 30 s
 const STAGE_TICK_MS = 1000;
-
-/**
- * the way in: everyone in the room has a name, shown over their character and next to
- * their messages, so you pick one before you're in. also where you land when the name
- * you had turns out to be someone else's.
- *
- * @param {object} props
- * @param {string} props.initial - the name to start from (a taken one, to edit), or "".
- * @param {string | null} props.problem - why the last name didn't work, if it didn't.
- * @param {(nickname: string) => void} props.onEnter - takes the name.
- * @returns {JSX.Element} the form.
- */
-function RoomEntry({ initial, problem, onEnter }: { initial: string; problem: string | null; onEnter: (nickname: string) => void }) {
-  const [draft, setDraft] = useState(initial);
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const name = draft.trim();
-    if (name) onEnter(name);
-  };
-  return (
-    <form
-      onSubmit={submit}
-      className="den-grid mt-3 flex min-h-0 flex-1 flex-col items-center justify-center border border-den-ink px-4 py-10 text-center sm:mt-4"
-    >
-      <label htmlFor="den-room-name" className="text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">
-        Who&apos;s coming in?
-      </label>
-      <p className="mt-2 max-w-sm text-balance text-sm text-den-muted">
-        Pick a name. It goes over your little guy on the stage and next to everything you say in the chat.
-      </p>
-      <div className="mt-5 flex w-full max-w-sm gap-2">
-        <input
-          id="den-room-name"
-          autoFocus
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="your name"
-          autoComplete="nickname"
-          maxLength={DJ_CHAT_NICKNAME_MAX_LENGTH}
-          // 16px on phones: ios zooms the page into anything smaller
-          className="min-w-0 flex-1 rounded-full border border-den-ink bg-den-bg px-4 py-2 text-base text-den-ink placeholder:text-den-faint focus:border-den-accent focus:outline-none sm:text-sm"
-        />
-        <button
-          type="submit"
-          disabled={!draft.trim()}
-          className="shrink-0 rounded-full bg-den-ink px-5 py-2 text-sm font-semibold text-den-bg transition hover:bg-den-accent disabled:opacity-40"
-        >
-          Come in &rarr;
-        </button>
-      </div>
-      {problem && <p className="mt-3 font-den-mono text-[11px] text-den-accent-soft">{problem}</p>}
-    </form>
-  );
-}
 
 /**
  * the round signal-red play button for the stream.
@@ -118,7 +65,8 @@ function StreamButton({ player, status }: { player: AudioPlayer; status: DjStrea
  * stage (the set's loudness trace, with a little dancing character for everyone in the
  * room standing along the bottom, name over their head and a bubble when they talk), and
  * the chat filling the rest of the screen with its box at the bottom. while live you pick
- * a name to come in (RoomEntry); after that this page keeps you in the room while it's
+ * a name and a look to come in (RoomEntry: a free character or your own picture), and
+ * "change" in the chat brings it back; after that this page keeps you in the room while it's
  * open (useDjRoom), and your stay's saved so the set's page can show you there later. the room is exactly one screen tall (less the player bar when a past set's
  * playing, via --den-bar-clearance), so on a phone the message box sits where your thumb
  * is. while the stream's what's playing, the player bar steps aside since this page has
@@ -138,11 +86,19 @@ export default function LiveRoom() {
   const [nickname, setNickname] = useChatNickname();
   const chat = useDjChat();
   // the room's only open while the set's on, so off air nobody checks in
-  const room = useDjRoom(live ? nickname : "");
+  const [look, setLook] = useRoomLook();
+  const [changing, setChanging] = useState(false);
+  const room = useDjRoom(live ? nickname : "", look);
   const nowMs = useNow(STAGE_TICK_MS, live);
   const bubbles = useLiveBubbles(chat.messages, nowMs);
   const startMs = djLiveStartedMs(status);
-  const needsName = live && (!nickname || room.nameTaken !== null);
+  // in you come once you've a name the pi takes; "change" in the chat brings the way in back
+  const showEntry = live && (!nickname || room.turnedAway !== null || changing);
+  const enter = (name: string, nextLook: typeof look) => {
+    setNickname(name);
+    setLook(nextLook);
+    setChanging(false);
+  };
 
   return (
     <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-4xl flex-col px-4 pb-4 sm:px-8 sm:pb-6">
@@ -172,9 +128,16 @@ export default function LiveRoom() {
         {live && <StreamButton player={player} status={status} />}
       </header>
 
-      {needsName ? (
-        // keyed so a taken name comes back into the box to edit
-        <RoomEntry key={nickname} initial={nickname} problem={room.nameTaken} onEnter={setNickname} />
+      {showEntry ? (
+        // keyed so being turned away starts it over from what you had, with the reason
+        <RoomEntry
+          key={room.turnedAway ?? "entry"}
+          initialName={nickname}
+          initialLook={look}
+          problem={room.turnedAway}
+          onEnter={enter}
+          onCancel={nickname && room.turnedAway === null ? () => setChanging(false) : undefined}
+        />
       ) : (
         <>
           {live && startMs !== null && (
@@ -186,7 +149,7 @@ export default function LiveRoom() {
           )}
           {live && room.error && <p className="mt-1 font-den-mono text-[11px] text-den-muted">{room.error}</p>}
           <div className="mt-3 min-h-0 flex-1 sm:mt-4">
-            <LiveChat live={live} chat={chat} nickname={nickname} onNickname={setNickname} />
+            <LiveChat live={live} chat={chat} nickname={nickname} onChangeIdentity={() => setChanging(true)} />
           </div>
         </>
       )}

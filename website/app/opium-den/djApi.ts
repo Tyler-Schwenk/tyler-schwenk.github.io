@@ -58,8 +58,10 @@ export type DjSetChatMessage = DjChatMessage & {
  */
 export type DjSetVisit = {
   nickname: string;
-  /** their character number in the room. */
+  /** their number in the room. under ROOM_CHARACTER_COUNT it's their character. */
   avatar: number;
+  /** the photo they stood in as, null for a character. */
+  photo_id: number | null;
   /** when they came in, seconds into the recording. */
   from_s: number;
   /** when they left, seconds into the recording. */
@@ -383,15 +385,48 @@ export async function sendDjChat(nickname: string, content: string, ownerKey: st
   return (await response.json()) as DjChatMessage;
 }
 
-/** the live room's who's-here endpoints: check in (POST) and leave (POST /leave). */
+/** the live room's who's-here endpoints: who's in (GET), check in (POST), leave (POST /leave), photos (/photos). */
 export const DJ_ROOM_PATH = "/dj/room";
+
+/** room photos: upload (POST), one photo (GET /{id}), and the admin's list (GET) and remove (DELETE /{id}). */
+export const DJ_ROOM_PHOTOS_PATH = `${DJ_ROOM_PATH}/photos`;
 
 /** someone in the live room, as /dj/room sends them. */
 export type DjRoomPerson = {
   nickname: string;
-  /** their character number, 0 up. */
+  /** unique in the room. under ROOM_CHARACTER_COUNT it's their character; photos get numbers from there up. */
   avatar: number;
+  /** the photo they're standing in as, null for a character. */
+  photo_id: number | null;
 };
+
+/** how someone wants to look in the room: a character they picked, or a photo they uploaded. null leaves it to the pi. */
+export type DjRoomLook = { avatar: number } | { photoId: number } | null;
+
+/** an uploaded room photo, as the upload and the admin's list send it. */
+export type DjRoomPhoto = {
+  id: number;
+  created_at: string;
+};
+
+/**
+ * a room photo's url. ids are never reused, so it's cached for good.
+ *
+ * @param {number} photoId - the photo.
+ * @returns {string} absolute url.
+ */
+export function djRoomPhotoUrl(photoId: number): string {
+  return `${API_BASE}${DJ_ROOM_PHOTOS_PATH}/${photoId}`;
+}
+
+/**
+ * who's in the live room right now, without coming in (for the way in's picker).
+ *
+ * @returns {Promise<DjRoomPerson[]>} everyone in it, in the order they came in. empty off air.
+ */
+export async function fetchDjRoom(): Promise<DjRoomPerson[]> {
+  return (await fetchDjJson<{ people: DjRoomPerson[] }>(DJ_ROOM_PATH, "see who's in the room")).people;
+}
 
 /**
  * why a room check-in failed, in words someone can act on.
@@ -406,26 +441,50 @@ async function roomFailure(response: Response): Promise<string> {
 }
 
 /**
- * puts this browser in the live room under its chat name (or keeps it there), and gets
- * back everyone in it. the page calls it every few seconds while it's open; stopping is
- * how you leave, or leaveDjRoom to leave right away. while the stream's live it also
- * claims the name for the set, like a first chat message does.
+ * puts this browser in the live room under its chat name and look (or keeps it there),
+ * and gets back everyone in it. the page calls it every few seconds while it's open;
+ * stopping is how you leave, or leaveDjRoom to leave right away. it also claims the name
+ * for the set, like a first chat message does. the room's only open while live.
  *
  * @param {string} nickname - the chat name.
  * @param {string} ownerKey - this browser's secret key (the chat's).
+ * @param {DjRoomLook} look - the character or photo asked for, or null to keep whatever they had.
  * @returns {Promise<DjRoomPerson[]>} everyone in the room, in the order they came in.
- * @throws {ChatNameTakenError} when someone else has the name.
- * @throws {Error} with a readable reason when the room's full or the pi's unreachable.
+ * @throws {ChatNameTakenError} when someone else has the name or the character, or the photo's gone.
+ * @throws {Error} with a readable reason when the room's full or closed, or the pi's unreachable.
  */
-export async function checkInDjRoom(nickname: string, ownerKey: string): Promise<DjRoomPerson[]> {
+export async function checkInDjRoom(nickname: string, ownerKey: string, look: DjRoomLook): Promise<DjRoomPerson[]> {
   const response = await fetch(`${API_BASE}${DJ_ROOM_PATH}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nickname, owner_key: ownerKey }),
+    body: JSON.stringify({
+      nickname,
+      owner_key: ownerKey,
+      avatar: look && "avatar" in look ? look.avatar : null,
+      photo_id: look && "photoId" in look ? look.photoId : null,
+    }),
   });
   if (response.status === HTTP_FORBIDDEN) throw new ChatNameTakenError(await roomFailure(response));
   if (!response.ok) throw new Error(await roomFailure(response));
   return ((await response.json()) as { people: DjRoomPerson[] }).people;
+}
+
+/**
+ * uploads a picture to stand in the live room as. only works while live.
+ *
+ * @param {File} file - the picture.
+ * @param {string} ownerKey - this browser's secret key, which owns it.
+ * @returns {Promise<DjRoomPhoto>} the stored photo, with its id.
+ * @throws {Error} with a readable reason when it's too big, isn't a picture, or the room's closed.
+ */
+export async function uploadDjRoomPhoto(file: File, ownerKey: string): Promise<DjRoomPhoto> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("owner_key", ownerKey);
+  const response = await fetch(`${API_BASE}${DJ_ROOM_PHOTOS_PATH}`, { method: "POST", body: form });
+  if (response.status === HTTP_TOO_MANY_REQUESTS) throw new Error("that's a lot of pictures -- wait a minute and try again.");
+  if (!response.ok) throw new Error(await roomFailure(response));
+  return (await response.json()) as DjRoomPhoto;
 }
 
 /**

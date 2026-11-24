@@ -31,7 +31,7 @@ from app.dj_stream import STATUS_TIMEOUT_S, delete_set_image_files, set_images_d
 from app.dj_waveform import WaveformError, get_waveform, waveform_path
 from app.file_streaming import ranged_file_response
 from app.image_utils import store_photo
-from app.models import DjChatMessage, DjRoomVisit, DjSet, DjSetImage
+from app.models import DjChatMessage, DjRoomVisit, DjRoomVisitPhoto, DjSet, DjSetImage
 from app.schemas import (
     DjLiveTrace,
     DjSetChatMessage,
@@ -378,8 +378,9 @@ async def get_set_chat(set_id: int, db: Session = Depends(get_db)) -> list[DjSet
 async def get_set_people(set_id: int, db: Session = Depends(get_db)) -> list[DjSetVisit]:
     """
     Who was in the live room during a set, each stay placed on the set's timeline, so the
-    set's page can show them as it replays. From the room's saved visits; for sets from
-    before those were saved, whoever chatted stands in (visits_from_chat).
+    set's page can show them as it replays, as the character or photo they were. From the
+    room's saved visits; for sets from before those were saved, whoever chatted stands in
+    (visits_from_chat).
 
     Args:
         set_id: The set's id.
@@ -400,10 +401,15 @@ async def get_set_people(set_id: int, db: Session = Depends(get_db)) -> list[DjS
     )
     if not visits:
         return visits_from_chat(set_chat_messages(db, dj_set), dj_set)
+    visit_photos = (
+        db.query(DjRoomVisitPhoto).filter(DjRoomVisitPhoto.visit_id.in_([visit.id for visit in visits])).all()
+    )
+    photo_by_visit = {row.visit_id: row.photo_id for row in visit_photos}
     return [
         DjSetVisit(
             nickname=visit.nickname,
             avatar=visit.avatar,
+            photo_id=photo_by_visit.get(visit.id),
             from_s=offset_in_set(visit.joined_at, dj_set),
             to_s=offset_in_set(visit.last_seen_at + timedelta(seconds=ROOM_CHECK_IN_INTERVAL_S), dj_set),
         )

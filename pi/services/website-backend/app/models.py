@@ -731,3 +731,54 @@ class DjRoomVisit(Base):
     avatar = Column(Integer, nullable=False)
     joined_at = Column(DateTime, nullable=False, index=True)
     last_seen_at = Column(DateTime, nullable=False, index=True)
+
+
+class DjRoomPhoto(Base):
+    """
+    DjRoomPhoto model: a picture someone uploaded to stand in the live room as, instead of
+    one of the dancing characters.
+
+    Uploaded from the room's way in while a set's live (routers/dj_room.py) and owned by
+    the uploading browser's key, so only that browser can come in as it. The admin can
+    remove one from the DJ tab, which takes it off whoever's using it and out of replays.
+    Files live under DJ_SETS_DIR/room-photos. Rows are never reused, since the site caches
+    a photo by its id for good.
+
+    Attributes:
+        id: Unique identifier, never reused
+        owner_key_hash: sha256 hex of the uploading browser's key
+        file_path: The image, relative to the room photos folder
+        thumbnail_path: Its thumbnail (what the room shows), null if making one failed
+        width: Width in pixels
+        height: Height in pixels
+        mime_type: Its content type, like image/jpeg
+        created_at: When it was uploaded, naive UTC
+    """
+    __tablename__ = "dj_room_photos"
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_key_hash = Column(String(64), nullable=False, index=True)
+    file_path = Column(String(500), nullable=False)
+    thumbnail_path = Column(String(500), nullable=True)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+
+class DjRoomVisitPhoto(Base):
+    """
+    DjRoomVisitPhoto model: the photo someone stood in the room as during one visit, so
+    replays show it. Its own table rather than a column on dj_room_visits, since
+    create_all makes new tables on startup but never adds columns to existing ones. A
+    visit without a row here was one of the characters (its avatar number).
+
+    Attributes:
+        visit_id: The visit
+        photo_id: The photo
+    """
+    __tablename__ = "dj_room_visit_photos"
+
+    visit_id = Column(Integer, ForeignKey("dj_room_visits.id"), primary_key=True)
+    photo_id = Column(Integer, ForeignKey("dj_room_photos.id"), nullable=False, index=True)

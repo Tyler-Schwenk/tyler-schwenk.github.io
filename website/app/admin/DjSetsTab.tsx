@@ -14,6 +14,7 @@ import {
 import { usePoll } from "@/lib/usePoll";
 import { adminRequest, errorMessage, jsonBody, useAdminData, useAdminFetch } from "./adminApi";
 import DjAlertsPanel from "./DjAlertsPanel";
+import RoomPhotosPanel from "./RoomPhotosPanel";
 import { formatBytes, formatDate, formatDuration, plural } from "./format";
 import { Badge, Button, Card, DropZone, FlashMessage, INPUT_CLASS, Muted, Toolbar, useFlash } from "./ui";
 
@@ -301,6 +302,7 @@ export default function DjSetsTab() {
       <OnAirCard />
       <DjAlertsPanel onLabelledSet={sets.reload} />
       <ChatModeration />
+      <RoomPhotosPanel />
       <Toolbar summary={plural(sets.data.length, "set")}>
         <Button size="sm" onClick={sets.reload}>
           Refresh

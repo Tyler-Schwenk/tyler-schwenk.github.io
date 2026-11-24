@@ -3,19 +3,11 @@
 import { useState } from "react";
 import { parseBackendTime } from "@/app/admin/format";
 import type { DjChatMessage, DjRoomPerson, DjSetChatMessage, DjSetVisit } from "@/app/opium-den/djApi";
-import { DANCERS, type Dancer } from "@/components/disco/constants";
+import RoomAvatar from "./RoomAvatar";
 
 // how long a message stays up over its sender's head, live and in a replay
 const BUBBLE_LIFETIME_MS = 30000;
 const BUBBLE_LIFETIME_S = 30;
-// the order characters are handed out in, by the disco flier's dancer names. past the
-// end it starts over inverted (snoopy in black, and so on), then plain again
-const CHARACTER_ORDER = ["snoopy", "sally", "linus", "schroeder", "shermy", "headback"];
-const CHARACTERS: readonly Dancer[] = CHARACTER_ORDER.map((name) => {
-  const dancer = DANCERS.find((candidate) => candidate.name === name);
-  if (!dancer) throw new Error(`no disco dancer called ${name} -- check DANCERS in components/disco/constants.ts`);
-  return dancer;
-});
 // the widest a person's spot gets, as % of the stage, so a small room stands together in the middle
 const MAX_SPACING_PCT = 15;
 // past these, a bubble hangs off to one side of its person instead of centering, so it stays on the stage
@@ -128,7 +120,7 @@ export function peopleAt(visits: DjSetVisit[], positionS: number): DjRoomPerson[
   for (const visit of visits) {
     const key = visit.nickname.toLowerCase();
     if (visit.from_s <= positionS && positionS <= visit.to_s && !present.has(key)) {
-      present.set(key, { nickname: visit.nickname, avatar: visit.avatar });
+      present.set(key, { nickname: visit.nickname, avatar: visit.avatar, photo_id: visit.photo_id });
     }
   }
   return [...present.values()];
@@ -156,31 +148,7 @@ function stackBubbles(bubbles: (RoomBubble | undefined)[], spots: number[]): (Bu
 }
 
 /**
- * a person's character: one of the disco flier's dancing kids, looping its dance (a still
- * frame under reduced motion). every other lap through the list they're drawn inverted.
- *
- * @param {object} props
- * @param {number} props.avatar - their character number from the pi.
- * @returns {JSX.Element} the figure.
- */
-function Character({ avatar }: { avatar: number }) {
-  const dancer = CHARACTERS[avatar % CHARACTERS.length];
-  const inverted = Math.floor(avatar / CHARACTERS.length) % 2 === 1;
-  return (
-    <picture className="block">
-      <source srcSet={dancer.stillSrc} media="(prefers-reduced-motion: reduce)" />
-      <img
-        src={dancer.animSrc}
-        alt=""
-        decoding="async"
-        className={`h-11 w-auto max-w-none sm:h-14 ${inverted ? "[filter:invert(1)_hue-rotate(180deg)]" : ""}`}
-      />
-    </picture>
-  );
-}
-
-/**
- * one person on the stage: their character with their name over their head, and over
+ * one person on the stage: their character (or photo) with their name over their head, and over
  * that, a bubble with whatever they last said, for 30 s. a raised bubble hangs on a stem.
  *
  * @param {object} props
@@ -239,7 +207,7 @@ function Person({
           {person.nickname}
         </span>
       </div>
-      <Character avatar={person.avatar} />
+      <RoomAvatar avatar={person.avatar} photoId={person.photo_id} />
     </div>
   );
 }

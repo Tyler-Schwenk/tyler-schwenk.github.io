@@ -1331,11 +1331,11 @@ There's no link stored between a message and a set: a set's chat is every messag
 Who was in the live room while a finished set was on, for its page to show as it replays. `200` with a list of stays, in the order they came in:
 
 ```json
-[{"nickname": "tyler", "avatar": 0, "from_s": 0.0, "to_s": 5021.0}]
+[{"nickname": "tyler", "avatar": 0, "photo_id": null, "from_s": 0.0, "to_s": 5021.0}]
 ```
 
 - Stays are the `dj_room_visits` rows overlapping the set, placed on its timeline the same way as its chat (`from_s`/`to_s` are seconds into the recording, less the listener lag, kept within the set). A stay's end is pushed 15 s past its last check-in (`ROOM_CHECK_IN_INTERVAL_S`), since that's how long before leaving it could have been, so someone who stayed to the end is there at the end.
-- Someone who left and came back, or changed name, has a stay for each.
+- Someone who left and came back, or changed name or look, has a stay for each. `photo_id` is the picture they stood in as, or `null` for a character (or if it's been removed).
 - Sets from before stays were saved have none, so they get one per person who chatted instead (names matched ignoring case): from their first message to the end of the set, characters in the order they first spoke.
 - `404` if there's no such finished set.
 
@@ -1405,25 +1405,52 @@ Deletes a message (the admin page's DJ tab). `204`, or `404` if there's no messa
 
 ### Live room people
 
-Who's in the Opium Den's live room right now, for the characters standing on its stage. The room's only open while the stream's live. Who's in is kept in memory (`app/dj_room.py`), so a backend restart empties it until everyone's next check-in, and it empties when a set ends. Each stay is also saved in `dj_room_visits` (name, character number, when they came in, their latest check-in), so a recorded set's page can show who was there: `GET /dj/sets/{set_id}/people`. Code: `app/routers/dj_room.py`.
+Who's in the Opium Den's live room right now, for the characters standing on its stage. The room's only open while the stream's live. Who's in is kept in memory (`app/dj_room.py`), so a backend restart empties it until everyone's next check-in, and it empties when a set ends. Each stay is also saved in `dj_room_visits` (name, avatar number, when they came in, their latest check-in), plus `dj_room_visit_photos` when they were a picture, so a recorded set's page can show who was there: `GET /dj/sets/{set_id}/people`. Code: `app/routers/dj_room.py`.
+
+**Avatar numbers.** Unique in the room. `0`-`11` are the site's twelve characters (`DJ_ROOM_CHARACTER_COUNT`, matching `ROOM_CHARACTER_COUNT` in `website/components/opium-den/roomCharacters.ts`): someone can ask for a free one, or gets the lowest free one. Someone standing in as their own picture gets a number from `12` up, so they don't use up a character. Past twelve people without pictures, numbers keep going and the site starts the characters over.
+
+### GET `/dj/room`
+
+Who's in right now, without coming in, so the way in can grey out taken characters. `200` with the room, same shape as below. Empty off air.
 
 ### POST `/dj/room`
 
-Puts this browser in the room under its chat name, or keeps it there. The page sends it every 15 s while it's open. Body `{"nickname": "...", "owner_key": "..."}`, the same name rules and browser key as `POST /dj/chat`. Rate limited per IP to 30 a minute (`ROOM_CHECK_IN_RATE_LIMIT`). `200` with the room:
+Puts this browser in the room under its chat name and look, or keeps it there. The page sends it every 15 s while it's open. Body `{"nickname": "...", "owner_key": "...", "avatar": 4, "photo_id": null}`, the same name rules and browser key as `POST /dj/chat`. `avatar` (0-11) asks for a character; `photo_id` asks to stand in as one of this browser's uploaded pictures and wins over `avatar`; with neither they keep what they had, or get the lowest free character. Rate limited per IP to 30 a minute (`ROOM_CHECK_IN_RATE_LIMIT`). `200` with the room:
 
 ```json
-{"people": [{"nickname": "tyler", "avatar": 0}, {"nickname": "Kyle", "avatar": 1}]}
+{"people": [{"nickname": "tyler", "avatar": 4, "photo_id": null}, {"nickname": "Kyle", "avatar": 12, "photo_id": 3}]}
 ```
 
 - People are in the order they came in. Anyone not heard from in 40 s is gone (`PRESENCE_TIMEOUT_S`).
-- `avatar` is their character number: the lowest one nobody else in the room has when they come in, kept while they're in (a name change keeps it too). The page turns it into a character.
+- `avatar` is their number (see above), kept while they're in unless they pick another look. `photo_id` is the picture they're standing in as, or `null`.
+- `403` when the character asked for is someone else's in the room, or the picture's been removed or isn't this browser's.
 - Names are one per person in the room, ignoring case: `403` when another browser in the room has it. It also claims the name for the set in `dj_chat_names`, exactly like a first chat message, so `403` covers a name someone else used in this set's chat too.
-- Each check-in moves the stay's `last_seen_at` up to now. Coming in, or changing name, starts a new stay (a rename keeps the character).
+- Each check-in moves the stay's `last_seen_at` up to now. Coming in, or changing name or look, starts a new stay.
 - `409` off air, `503` when the room's at 100 people (`MAX_ROOM_PEOPLE`), `422` for a blank or too-long name, `429` past the rate limit.
 
 ### POST `/dj/room/leave`
 
 Takes this browser out of the room right away, sent as the page closes, and ends its stay now. Body `{"owner_key": "..."}`. `204`, whether or not it was in.
+
+### POST `/dj/room/photos`
+
+Uploads a picture to stand in the room as, from the way in. Only while live. Multipart: `file` (the image) and `owner_key` (the browser's key, which owns it: only that browser can come in as it). Converted like gallery uploads (HEIC, sideways phone photos), saved with a thumbnail under `DJ_SETS_DIR/room-photos` (`dj_room_photos`, ids never reused). Max 15 MB (`MAX_ROOM_PHOTO_BYTES`). Rate limited per IP to 6 a minute and 30 an hour (`ROOM_PHOTO_RATE_LIMIT`). `201` `{"id": 3, "created_at": "..."}`, `400` if it isn't an image, `409` off air, `413` too big, `429` past the limit.
+
+### GET `/dj/room/photos/{photo_id}`
+
+The picture's thumbnail (the full image if it has none), cached for good since ids are never reused. `404` if it's gone.
+
+### GET `/dj/room/photos`
+
+**Auth:** admin JWT.
+
+The latest 200 uploads, newest first (`[{"id": 3, "created_at": "..."}]`), for the DJ tab's room pictures list.
+
+### DELETE `/dj/room/photos/{photo_id}`
+
+**Auth:** admin JWT.
+
+Removes a picture: off whoever's standing in as it now (their next check-in asking for it gets `403`, so they pick again), out of every replay (those stays show their character number instead), and off the disk. `204`, or `404` if there's no such picture.
 
 ### Live alerts
 

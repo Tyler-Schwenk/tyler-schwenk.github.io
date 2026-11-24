@@ -3,12 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { parseBackendTime } from "@/app/admin/format";
-import {
-  ChatNameTakenError,
-  DJ_CHAT_MESSAGE_MAX_LENGTH,
-  DJ_CHAT_NICKNAME_MAX_LENGTH,
-  LIVE_SECTION_PATH,
-} from "@/app/opium-den/djApi";
+import { ChatNameTakenError, DJ_CHAT_MESSAGE_MAX_LENGTH, LIVE_SECTION_PATH } from "@/app/opium-den/djApi";
 import type { DjChat } from "@/lib/useDjChat";
 import { useStickToBottom } from "@/lib/useStickToBottom";
 import AlertSignup from "./AlertSignup";
@@ -16,11 +11,8 @@ import ChatLine from "./ChatLine";
 import { SendIcon } from "./playerIcons";
 
 // 16px text on phones: ios zooms the whole page into any input smaller than that
-const INPUT_BASE_CLASS =
-  "min-w-0 flex-1 border bg-den-bg py-2 text-base text-den-ink placeholder:text-den-faint focus:outline-none sm:text-sm";
-// the message box is a pill in ink; the name field is square and outlined in red, so the two never look alike
-const MESSAGE_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-full border-den-ink px-4 focus:border-den-accent`;
-const NAME_INPUT_CLASS = `${INPUT_BASE_CLASS} border-den-accent px-3`;
+const MESSAGE_INPUT_CLASS =
+  "min-w-0 flex-1 rounded-full border border-den-ink bg-den-bg px-4 py-2 text-base text-den-ink placeholder:text-den-faint focus:border-den-accent focus:outline-none sm:text-sm";
 
 /**
  * when a message was sent, in the reader's local time.
@@ -33,91 +25,26 @@ function sentAt(createdAt: string): string {
 }
 
 /**
- * the "change your name" panel. it opens above the message box from "change", or when
- * a send finds your name's someone else's (your message waits in the box and goes out
- * with the new name).
- * styled as its own labelled form so it can't be mistaken for the message box.
- *
- * @param {object} props
- * @param {string} props.initial - the current name, to edit.
- * @param {boolean} props.hasPending - a message is waiting to send once there's a name.
- * @param {(nickname: string) => void} props.onSave - takes the new name.
- * @param {() => void} props.onCancel - closes it without changing anything.
- * @returns {JSX.Element} the form.
- */
-function NamePanel({
-  initial,
-  hasPending,
-  onSave,
-  onCancel,
-}: {
-  initial: string;
-  hasPending: boolean;
-  onSave: (nickname: string) => void;
-  onCancel: () => void;
-}) {
-  const [draft, setDraft] = useState(initial);
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const name = draft.trim();
-    if (name) onSave(name);
-  };
-  return (
-    <form onSubmit={submit} className="mb-3 border border-den-accent bg-den-accent/5 p-3">
-      <label htmlFor="den-chat-name" className="block text-sm font-semibold">
-        Change your name
-      </label>
-      <p className="mt-0.5 font-den-mono text-[11px] text-den-muted">
-        it shows over your character and next to your messages{hasPending ? ", and your message sends with it." : "."}
-      </p>
-      <div className="mt-2 flex gap-2">
-        <input
-          id="den-chat-name"
-          autoFocus
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder="your name"
-          autoComplete="nickname"
-          maxLength={DJ_CHAT_NICKNAME_MAX_LENGTH}
-          className={NAME_INPUT_CLASS}
-        />
-        <button
-          type="submit"
-          disabled={!draft.trim()}
-          className="min-h-10 shrink-0 bg-den-accent px-4 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-40"
-        >
-          {hasPending ? "Send" : "Save"}
-        </button>
-      </div>
-      <button type="button" onClick={onCancel} className="mt-2 font-den-mono text-[11px] text-den-muted transition-colors hover:text-den-accent-soft">
-        cancel
-      </button>
-    </form>
-  );
-}
-
-/**
- * where you talk: a message box, with who you're chatting as under it and a way to
- * change it. if the name turns out to be someone else's when you send, the name panel
- * opens and the message waits for the new one.
+ * where you talk: a message box, with who you're chatting as under it and "change",
+ * which goes back to the room's way in to change your name or look. if the name turns
+ * out to be someone else's when you send, it goes there too.
  *
  * @param {object} props
  * @param {string} props.nickname - your name (you picked one to come into the room).
- * @param {(nickname: string) => void} props.onNickname - saves a name.
+ * @param {() => void} props.onChangeIdentity - opens the way in to change your name or look.
  * @param {(nickname: string, content: string) => Promise<void>} props.onSend - sends; throws with a readable reason.
  * @returns {JSX.Element} the composer.
  */
 function Composer({
   nickname,
-  onNickname,
+  onChangeIdentity,
   onSend,
 }: {
   nickname: string;
-  onNickname: (nickname: string) => void;
+  onChangeIdentity: () => void;
   onSend: (nickname: string, content: string) => Promise<void>;
 }) {
   const [draft, setDraft] = useState("");
-  const [naming, setNaming] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -129,8 +56,8 @@ function Composer({
       setError(null);
     } catch (err) {
       setError((err as Error).message);
-      // the name's someone else's: straight back to picking one, the message still waiting
-      if (err instanceof ChatNameTakenError) setNaming(true);
+      // the name's someone else's: back to the way in to pick another
+      if (err instanceof ChatNameTakenError) onChangeIdentity();
     } finally {
       setSending(false);
     }
@@ -143,18 +70,8 @@ function Composer({
     deliver(nickname, content);
   };
 
-  const saveName = (name: string) => {
-    onNickname(name);
-    setNaming(false);
-    const content = draft.trim();
-    if (content) deliver(name, content);
-  };
-
   return (
     <div>
-      {naming && (
-        <NamePanel initial={nickname} hasPending={Boolean(draft.trim())} onSave={saveName} onCancel={() => setNaming(false)} />
-      )}
       <form onSubmit={submitMessage} className="flex gap-2">
         <input
           value={draft}
@@ -175,7 +92,7 @@ function Composer({
       </form>
       <p className="mt-2 px-1 font-den-mono text-[11px] text-den-muted">
         chatting as <span className="text-den-ink">{nickname}</span> ·{" "}
-        <button type="button" onClick={() => setNaming(true)} className="underline-offset-4 hover:text-den-accent-soft hover:underline">
+        <button type="button" onClick={onChangeIdentity} className="underline-offset-4 hover:text-den-accent-soft hover:underline">
           change
         </button>
       </p>
@@ -195,19 +112,19 @@ function Composer({
  * @param {boolean} props.live - the stream's on, so the chat's open.
  * @param {DjChat} props.chat - the room's chat, from useDjChat.
  * @param {string} props.nickname - your name.
- * @param {(nickname: string) => void} props.onNickname - saves a new name.
+ * @param {() => void} props.onChangeIdentity - opens the way in to change your name or look.
  * @returns {JSX.Element} the chat panel.
  */
 export default function LiveChat({
   live,
   chat,
   nickname,
-  onNickname,
+  onChangeIdentity,
 }: {
   live: boolean;
   chat: DjChat;
   nickname: string;
-  onNickname: (nickname: string) => void;
+  onChangeIdentity: () => void;
 }) {
   const { messages, error, send } = chat;
   const [listRef, onListScroll] = useStickToBottom<HTMLOListElement>(messages?.at(-1)?.id);
@@ -246,7 +163,7 @@ export default function LiveChat({
       {/* off air there's nothing to type into, so the box's spot offers an email for next time */}
       <div className="border-t border-den-line p-3">
         {live ? (
-          <Composer nickname={nickname} onNickname={onNickname} onSend={send} />
+          <Composer nickname={nickname} onChangeIdentity={onChangeIdentity} onSend={send} />
         ) : (
           <AlertSignup startOpen />
         )}

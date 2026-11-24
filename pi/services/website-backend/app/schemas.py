@@ -962,14 +962,22 @@ class DjChatMessageCreate(BaseModel):
         return value
 
 
+# how many characters there are to pick from in the live room (app/dj_room.py's ROOM_CHARACTER_COUNT)
+DJ_ROOM_CHARACTER_COUNT = 12
+
+
 class DjRoomCheckIn(BaseModel):
     """
-    A browser saying it's in the live room, under this chat name. Sent every few seconds
-    while the room's open (see routers/dj_room.py). The name's squashed and trimmed like
-    a chat message's.
+    A browser saying it's in the live room, under this chat name and look. Sent every few
+    seconds while the room's open (see routers/dj_room.py). The name's squashed and
+    trimmed like a chat message's. avatar asks for a character, photo_id for one of this
+    browser's uploaded photos (it wins over avatar); with neither they keep whatever
+    they had, or get the lowest free character.
     """
     nickname: str = Field(..., max_length=MAX_DJ_CHAT_NICKNAME_LENGTH)
     owner_key: str = Field(..., min_length=MIN_DJ_CHAT_OWNER_KEY_LENGTH, max_length=MAX_DJ_CHAT_OWNER_KEY_LENGTH)
+    avatar: Optional[int] = Field(None, ge=0, lt=DJ_ROOM_CHARACTER_COUNT)
+    photo_id: Optional[int] = Field(None, ge=1)
 
     @field_validator("nickname", mode="before")
     @classmethod
@@ -994,7 +1002,8 @@ class DjRoomLeave(BaseModel):
 class DjRoomPerson(BaseModel):
     """Someone in the live room."""
     nickname: str
-    avatar: int = Field(..., description="their character number, 0 up, the lowest free one when they came in")
+    avatar: int = Field(..., description="unique in the room. under 12 it's their character; photos get 12 up")
+    photo_id: Optional[int] = Field(None, description="the photo they're standing in as, null for a character")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -1004,13 +1013,22 @@ class DjRoom(BaseModel):
     people: list[DjRoomPerson]
 
 
+class DjRoomPhotoRead(BaseModel):
+    """A photo someone uploaded to stand in the live room as."""
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class DjSetVisit(BaseModel):
     """
     Someone's stay in the live room during a recorded set, placed on the set's timeline
     like its chat, so the set's page can show who was there as it replays.
     """
     nickname: str
-    avatar: int = Field(..., description="their character number in the room, 0 up")
+    avatar: int = Field(..., description="their number in the room. under 12 it's their character")
+    photo_id: Optional[int] = Field(None, description="the photo they stood in as, null for a character (or if it's been removed)")
     from_s: float = Field(..., description="when they came in, seconds into the recording")
     to_s: float = Field(..., description="when they left, seconds into the recording")
 

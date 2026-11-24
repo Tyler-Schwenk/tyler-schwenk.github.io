@@ -51,8 +51,8 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/website-backend/app/dj_waveform.py` | Works out and caches each set's waveform with ffmpeg |
 | `pi/services/website-backend/app/dj_live_meter.py` | The live meter: the set's loudness while it's on, for the live trace |
 | `pi/services/website-backend/app/routers/dj_chat.py` | The live room chat, `/dj/chat` (open only while live, admin can delete) |
-| `pi/services/website-backend/app/routers/dj_room.py` | Who's in the live room, `/dj/room` (check-ins and leaving, saved as visits) |
-| `pi/services/website-backend/app/dj_room.py` | The live room's people, in memory: timeouts, names, character numbers |
+| `pi/services/website-backend/app/routers/dj_room.py` | Who's in the live room, `/dj/room` (check-ins and leaving, saved as visits; uploaded pictures under `DJ_SETS_DIR/room-photos`) |
+| `pi/services/website-backend/app/dj_room.py` | The live room's people, in memory: timeouts, names, characters and pictures |
 | `pi/services/website-backend/app/routers/dj_alerts.py` | Live alerts, `/dj/alerts`: signup, confirm, unsubscribe, and the admin's list and send |
 | `pi/services/website-backend/app/mailer.py` | Sends email over SMTP, one message per recipient |
 
