@@ -23,7 +23,7 @@ import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 const ROOM_STATUS_POLL_INTERVAL_MS = 5000;
 
 /**
- * the round red play button for the stream.
+ * the round signal-red play button for the stream.
  *
  * @param {object} props
  * @param {AudioPlayer} props.player - the site's shared player.
@@ -49,7 +49,7 @@ function StreamButton({ player, status }: { player: AudioPlayer; status: DjStrea
 /**
  * the opium den's live room, the live stream's full view, built around the chat: a
  * compact header (the set's cover, "live room", how long it's been on and who's
- * listening, the play button, volume on desktop), and the chat filling the rest of the
+ * listening, the play button, volume on desktop, a red edge while on air), and the chat filling the rest of the
  * screen with its box at the bottom. the room is exactly one screen tall (less the player
  * bar when a past set's playing, via --den-bar-clearance), so on a phone the message box
  * sits where your thumb is. while the stream's what's playing, the player bar steps aside
@@ -67,27 +67,27 @@ export default function LiveRoom() {
   const streaming = live && liveLoaded && player.playing;
 
   return (
-    <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-3xl flex-col px-4 pb-4 sm:px-5 sm:pb-6">
+    <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-4xl flex-col px-4 pb-4 sm:px-8 sm:pb-6">
       {/* the home button's row: it sits fixed top-left, so this just leaves it room */}
       <div className="flex h-20 shrink-0 items-center justify-end sm:h-24">
-        <Link href={LIVE_SECTION_PATH} className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
+        <Link href={LIVE_SECTION_PATH} className="font-den-mono text-[11px] uppercase transition-colors hover:text-den-accent-soft">
           &larr; Live from the den
         </Link>
       </div>
 
       <header
-        className={`flex shrink-0 items-center gap-3 rounded-xl border p-3 sm:gap-4 sm:p-4 ${
-          live ? "border-den-accent/40 bg-den-accent/10" : "border-den-line"
+        className={`flex shrink-0 items-center gap-3 border bg-den-raised p-3 sm:gap-4 sm:p-4 ${
+          live ? "border-den-ink shadow-[inset_3px_0_0_var(--color-den-accent)]" : "border-den-line"
         }`}
       >
         <div className="relative shrink-0">
-          <SetArt src={djLiveThumbUrl(status)} dim={!live} className="h-12 w-12 rounded-md sm:h-14 sm:w-14" />
+          <SetArt src={djLiveThumbUrl(status)} dim={!live} className="h-12 w-12 sm:h-14 sm:w-14" />
           {streaming && <EqBars active={!player.loading} className="absolute bottom-1 right-1 h-2.5 w-2.5 text-den-accent" />}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-semibold sm:text-lg">Live room</h1>
-          <LiveStatus status={status} className="mt-0.5 text-xs sm:text-sm" />
-          {error && !status && <p className="mt-0.5 text-xs text-den-faint">{error}</p>}
+          <h1 className="truncate text-xl font-extrabold tracking-[-0.04em] sm:text-3xl">Live room</h1>
+          <LiveStatus status={status} className="mt-1 text-[11px]" />
+          {error && !status && <p className="mt-0.5 font-den-mono text-[11px] text-den-muted">{error}</p>}
         </div>
         {live && liveLoaded && <VolumeControl player={player} className="hidden md:flex" />}
         {live && <StreamButton player={player} status={status} />}

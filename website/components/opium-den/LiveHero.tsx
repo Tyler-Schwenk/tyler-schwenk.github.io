@@ -1,18 +1,75 @@
 "use client";
 
 import Link from "next/link";
+import { formatDuration, parseBackendTime } from "@/app/admin/format";
 import { djLiveThumbUrl, LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
-import EqBars from "./EqBars";
-import LiveStatus from "./LiveStatus";
+import { useNow } from "@/lib/useNow";
+import LiveTrace, { LIVE_PEN_AT } from "./LiveTrace";
 import SetArt from "./SetArt";
 import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
 
+const CLOCK_TICK_MS = 1000;
+const MS_PER_S = 1000;
+const PERCENT = 100;
+// the pill buttons in the monitor's header
+const PILL_CLASS = "inline-flex items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition";
+
 /**
- * the top of the live section, the way into the live room. off air it's one quiet row:
- * a greyed-out cover, when it streams, and a small link to the room (its chat from the
- * last set stays readable). live it lights up red with the set's cover (once one's
- * uploaded), how long it's been on and who's listening, a play button to listen right
- * here, and a link into the room for the chat.
+ * a moment as a short clock time, like "8:04 PM".
+ *
+ * @param {number} ms - the moment.
+ * @returns {string} the time.
+ */
+function clockTime(ms: number): string {
+  return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+/**
+ * when the set started, if the status knows.
+ *
+ * @param {DjStreamStatus | null} status - latest status.
+ * @returns {number | null} ms since the epoch, or null.
+ */
+function startedMs(status: DjStreamStatus | null): number | null {
+  if (!status?.live || !status.started_at) return null;
+  const ms = parseBackendTime(status.started_at).getTime();
+  return Number.isNaN(ms) ? null : ms;
+}
+
+/**
+ * the time axis under the paper: when it started, halfway, and "now" at the pen.
+ *
+ * @param {object} props
+ * @param {number | null} props.startMs - when the set started, null off air.
+ * @param {number} props.nowMs - now.
+ * @returns {JSX.Element} the axis.
+ */
+function TimeAxis({ startMs, nowMs }: { startMs: number | null; nowMs: number }) {
+  if (startMs === null) {
+    return <div className="h-7 border-t border-den-line" aria-hidden="true" />;
+  }
+  const halfway = startMs + (nowMs - startMs) / 2;
+  return (
+    <div className="relative h-7 border-t border-den-line font-den-mono text-[11px] text-den-muted" aria-hidden="true">
+      <span className="absolute left-3 top-1.5">{clockTime(startMs)}</span>
+      <span className="absolute top-1.5 hidden -translate-x-1/2 sm:block" style={{ left: `${(LIVE_PEN_AT / 2) * PERCENT}%` }}>
+        {clockTime(halfway)}
+      </span>
+      <span className="absolute top-1.5 -translate-x-1/2 text-den-accent-soft" style={{ left: `${LIVE_PEN_AT * PERCENT}%` }}>
+        now
+      </span>
+    </div>
+  );
+}
+
+/**
+ * the top of the live section, the way into the live room, drawn like a seismograph's
+ * monitor. a header reads out the stream (on air, when it started, how long it's been
+ * going, who's listening) with the set's cover once one's uploaded, a red listen button
+ * to play it right here and a way into the room. under it, chart paper with the set so
+ * far traced out as the room's chat (LiveTrace), and a time axis. off air the readout
+ * says so, the paper's a flat line, and there's a link to the room, whose chat from the
+ * last set stays readable for a while.
  *
  * @param {object} props
  * @param {DjStreamStatus | null} props.status - latest status, null before the first answer.
@@ -20,7 +77,7 @@ import { PauseIcon, PlayIcon, SpinnerIcon } from "./playerIcons";
  * @param {boolean} props.playing - the live stream is what's playing right now.
  * @param {boolean} props.loading - and it's still connecting.
  * @param {() => void} props.onToggle - play or pause the live stream.
- * @returns {JSX.Element} the live row.
+ * @returns {JSX.Element} the monitor.
  */
 export default function LiveHero({
   status,
@@ -36,51 +93,72 @@ export default function LiveHero({
   onToggle: () => void;
 }) {
   const live = Boolean(status?.live);
+  const startMs = startedMs(status);
+  const nowMs = useNow(CLOCK_TICK_MS, live);
+  const cover = djLiveThumbUrl(status);
 
   return (
-    <section
-      className={`flex flex-wrap items-center gap-x-4 gap-y-4 ${
-        live ? "rounded-xl border border-den-accent/40 bg-den-accent/10 p-4" : "border-y border-den-line py-5"
-      }`}
-    >
-      <div className="flex min-w-0 flex-1 basis-64 items-center gap-4">
-        <div className="relative shrink-0">
-          <SetArt src={djLiveThumbUrl(status)} dim={!live} className="h-16 w-16 rounded-md sm:h-20 sm:w-20" />
-          {live && playing && (
-            <EqBars active={!loading} className="absolute bottom-1.5 right-1.5 h-3 w-3 text-den-accent" />
+    <section className="border border-den-ink bg-den-raised">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-den-line px-3 py-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-3">
+          {live && cover && <SetArt src={cover} className="h-9 w-9" />}
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 font-den-mono text-[11px] uppercase">
+            {live ? (
+              <>
+                <span className="inline-flex items-center gap-2 font-medium text-den-accent-soft">
+                  <span className="den-rec-blink h-2 w-2 rounded-full bg-den-accent" aria-hidden="true" />
+                  On air
+                </span>
+                {startMs !== null && <span>started {clockTime(startMs)}</span>}
+                {startMs !== null && (
+                  <span>
+                    elapsed <b className="font-medium">{formatDuration((nowMs - startMs) / MS_PER_S)}</b>
+                  </span>
+                )}
+                {status && status.listeners > 0 && <span>{status.listeners} listening</span>}
+              </>
+            ) : (
+              <>
+                <span className="inline-flex items-center gap-2 text-den-muted">
+                  <span className="h-2 w-2 rounded-full bg-den-faint" aria-hidden="true" />
+                  Off air
+                </span>
+                <span className="normal-case text-den-muted">streams here whenever i&apos;m practicing on the decks</span>
+              </>
+            )}
+          </p>
+        </div>
+
+        <div className="flex w-full gap-2 sm:w-auto">
+          {live ? (
+            <>
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label={playing ? "Pause the live stream" : "Play the live stream"}
+                className={`${PILL_CLASS} flex-1 border-den-accent bg-den-accent text-white hover:brightness-110 active:scale-95 sm:flex-none`}
+              >
+                {loading ? <SpinnerIcon className="h-4 w-4" /> : playing ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
+                {playing ? "Pause" : "Listen"}
+              </button>
+              <Link
+                href={LIVE_ROOM_PATH}
+                className={`${PILL_CLASS} flex-1 border-den-ink bg-den-ink text-den-bg hover:bg-den-ink/85 sm:flex-none`}
+              >
+                Enter the room &rarr;
+              </Link>
+            </>
+          ) : (
+            <Link href={LIVE_ROOM_PATH} className={`${PILL_CLASS} flex-1 border-den-ink hover:bg-den-ink hover:text-den-bg sm:flex-none`}>
+              The room &rarr;
+            </Link>
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-den-ink">{live ? "On air" : "The live room"}</h2>
-          <LiveStatus status={status} className="mt-1 text-sm" />
-          {error && !status && <p className="mt-1 text-xs text-den-faint">{error}</p>}
-        </div>
+        {error && !status && <p className="w-full font-den-mono text-[11px] text-den-muted">{error}</p>}
       </div>
 
-      {!live && (
-        <Link href={LIVE_ROOM_PATH} className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
-          Live room &rarr;
-        </Link>
-      )}
-
-      {live && (
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label={playing ? "Pause the live stream" : "Play the live stream"}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-den-accent text-white transition hover:scale-105 hover:brightness-110 active:scale-95"
-          >
-            {loading ? <SpinnerIcon /> : playing ? <PauseIcon /> : <PlayIcon />}
-          </button>
-          <Link
-            href={LIVE_ROOM_PATH}
-            className="rounded-full border border-den-accent/50 px-4 py-2 text-sm font-medium text-den-ink transition-colors hover:bg-den-accent/15"
-          >
-            Join the room
-          </Link>
-        </div>
-      )}
+      <LiveTrace live={live} startMs={startMs} nowMs={nowMs} />
+      <TimeAxis startMs={live ? startMs : null} nowMs={nowMs} />
     </section>
   );
 }

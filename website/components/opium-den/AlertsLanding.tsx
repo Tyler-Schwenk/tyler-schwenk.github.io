@@ -77,8 +77,10 @@ export default function AlertsLanding() {
 
   return (
     <main className="mx-auto w-full max-w-xl px-4 pb-16 pt-24 sm:px-5 sm:pt-28">
-      <h1 className="text-2xl font-semibold">{heading}</h1>
-      <div className="mt-2 h-px w-12 bg-den-accent" />
+      <h1 className="border-b border-den-ink pb-2 text-[2.5rem] font-extrabold leading-none tracking-[-0.045em]">
+        {heading}
+        <span className="text-den-accent">.</span>
+      </h1>
 
       {action && outcome.state === "working" && <p className="mt-6 text-den-muted">one sec...</p>}
       {action && outcome.state !== "working" && <p className="mt-6 text-den-muted">{outcome.message}</p>}
@@ -93,11 +95,11 @@ export default function AlertsLanding() {
         <AlertSignup startOpen={!action} className="mt-8" />
       ) : null}
 
-      <p className="mt-10 flex gap-5 text-sm">
-        <Link href={LIVE_ROOM_PATH} className="text-den-accent-soft transition-colors hover:text-den-ink">
+      <p className="mt-10 flex gap-5 font-den-mono text-[11px] uppercase">
+        <Link href={LIVE_ROOM_PATH} className="border-b border-den-accent transition-colors hover:text-den-accent-soft">
           Live room &rarr;
         </Link>
-        <Link href={LIVE_SECTION_PATH} className="text-den-accent-soft transition-colors hover:text-den-ink">
+        <Link href={LIVE_SECTION_PATH} className="border-b border-den-accent transition-colors hover:text-den-accent-soft">
           Past sets &rarr;
         </Link>
       </p>

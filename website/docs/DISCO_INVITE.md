@@ -91,7 +91,7 @@ The flier has two parts:
 1. **The poster** fills exactly the first screen, so one screenshot gets all the main
    info. A "more info" hint sits under it and scrolls down when tapped.
 2. **More info** below it: the longer details from `DISCO_MORE_INFO` in `constants.ts`
-   (an array of headings, each with an optional line of text, so add entries there), then the save and watch again buttons.
+   (an array of headings, each with an optional line of text, so add entries there), then the save and watch again buttons, and an "All events" link back to `/events`.
 
 **Fitting the screen**: `.flier` is the scroller and fills the visible viewport, so
 `.posterScreen` at `height: 100%` is one visible screen even with phone browser bars.

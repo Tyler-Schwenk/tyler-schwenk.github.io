@@ -766,6 +766,8 @@
   color: var(--c1);
   font: inherit;
   font-size: 1rem;
+  /* it's on the link back to all events too */
+  text-decoration: none;
   cursor: pointer;
 }
 

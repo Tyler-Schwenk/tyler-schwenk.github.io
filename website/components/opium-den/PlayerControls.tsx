@@ -75,8 +75,8 @@ export function PlayerProgress({ player }: { player: AudioPlayer }) {
 
   if (player.track?.live) {
     return (
-      <div className="flex items-center justify-center gap-2 text-xs font-medium text-den-accent">
-        <span className="h-1.5 w-1.5 rounded-full bg-den-accent" aria-hidden="true" />
+      <div className="flex items-center justify-center gap-2 font-den-mono text-[11px] font-medium uppercase text-den-accent-soft">
+        <span className="den-rec-blink h-1.5 w-1.5 rounded-full bg-den-accent" aria-hidden="true" />
         Live
       </div>
     );
@@ -85,7 +85,7 @@ export function PlayerProgress({ player }: { player: AudioPlayer }) {
   const elapsed = formatDuration(scrub.value);
   const total = player.durationS > 0 ? formatDuration(player.durationS) : "--:--";
   return (
-    <div className="flex items-center gap-2 text-[11px] tabular-nums text-den-faint">
+    <div className="flex items-center gap-2 font-den-mono text-[11px] tabular-nums text-den-faint">
       <span className="w-12 text-right">{elapsed}</span>
       <SliderBar
         value={scrub.value}

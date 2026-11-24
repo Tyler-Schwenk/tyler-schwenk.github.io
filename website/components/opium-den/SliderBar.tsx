@@ -104,7 +104,7 @@ export default function SliderBar({
 
   return (
     <div className={`group relative flex h-4 items-center ${className}`}>
-      <div className="relative h-1 w-full rounded-full bg-white/[0.12] transition-[height] group-hover:h-1.5">
+      <div className="relative h-1 w-full rounded-full bg-den-ink/15 transition-[height] group-hover:h-1.5">
         <div className="absolute inset-y-0 left-0 rounded-full bg-den-accent" style={{ width: `${fillPct}%` }} />
         <div
           className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-den-ink opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"

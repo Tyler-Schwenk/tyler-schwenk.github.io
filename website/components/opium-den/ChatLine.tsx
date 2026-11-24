@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import type { DjChatMessage } from "@/app/opium-den/djApi";
 
 /**
- * one chat line, shared by the live room and a set's replay: the name in red (yours in
- * white), then the message.
+ * one chat line, shared by the live room and a set's replay: the name in small mono caps,
+ * red (yours in ink), then the message.
  *
  * @param {object} props
  * @param {Pick<DjChatMessage, "nickname" | "content">} props.message - who said what.
@@ -26,8 +26,10 @@ export default function ChatLine({
   return (
     <li className="break-words text-sm leading-relaxed" title={hint}>
       {lead}
-      <span className={`font-semibold ${own ? "text-den-ink" : "text-den-accent-soft"}`}>{message.nickname}</span>{" "}
-      <span className="text-den-ink/90">{message.content}</span>
+      <span className={`font-den-mono text-[11px] font-medium uppercase ${own ? "text-den-ink" : "text-den-accent-soft"}`}>
+        {message.nickname}
+      </span>{" "}
+      <span className="text-den-ink">{message.content}</span>
     </li>
   );
 }

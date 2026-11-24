@@ -5,12 +5,12 @@ import { DJ_ALERT_EMAIL_MAX_LENGTH, signUpForDjAlerts } from "@/app/opium-den/dj
 
 // 16px text on phones: ios zooms the whole page into any input smaller than that
 const EMAIL_INPUT_CLASS =
-  "min-w-0 flex-1 rounded-md border border-den-line bg-den-bg px-3 py-2 text-base text-den-ink placeholder:text-den-faint focus:border-den-accent/60 focus:outline-none sm:text-sm";
+  "min-w-0 flex-1 border border-den-ink bg-den-raised px-3 py-2 text-base text-den-ink placeholder:text-den-faint focus:border-den-accent focus:outline-none sm:text-sm";
 
 /**
  * the live alerts signup: an email box that asks the backend to send a confirmation.
- * once it's sent, the form turns into "check your inbox" (and your spam). starts as a small red text
- * link that opens it, unless `startOpen`, so it stays out of the way on busy pages.
+ * once it's sent, the form turns into "check your inbox" (and your spam). starts as a small mono
+ * link with a red underline that opens it, unless `startOpen`, so it stays out of the way on busy pages.
  *
  * @param {object} props
  * @param {boolean} [props.startOpen] - show the form straight away instead of the link.
@@ -45,7 +45,7 @@ export default function AlertSignup({ startOpen = false, className = "" }: { sta
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`text-sm text-den-accent-soft underline-offset-4 transition-colors hover:text-den-ink hover:underline ${className}`}
+        className={`border-b border-den-accent font-den-mono text-[11px] uppercase transition-colors hover:text-den-accent-soft ${className}`}
       >
         Get an email when I go live
       </button>
@@ -68,10 +68,10 @@ export default function AlertSignup({ startOpen = false, className = "" }: { sta
 
   return (
     <form onSubmit={submit} className={className}>
-      <label htmlFor="den-alert-email" className="block text-sm font-medium">
+      <label htmlFor="den-alert-email" className="block text-sm font-semibold">
         Get an email when I go live
       </label>
-      <p className="mt-0.5 text-xs text-den-muted">
+      <p className="mt-0.5 font-den-mono text-[11px] text-den-muted">
         you&apos;ll confirm by email first, and every email has an unsubscribe link.
       </p>
       <div className="mt-2 flex gap-2">
@@ -90,7 +90,7 @@ export default function AlertSignup({ startOpen = false, className = "" }: { sta
         <button
           type="submit"
           disabled={!email.trim() || sending}
-          className="min-h-10 shrink-0 rounded-md bg-den-accent px-4 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-40"
+          className="min-h-10 shrink-0 bg-den-ink px-4 text-sm font-medium text-den-bg transition hover:bg-den-accent disabled:opacity-40"
         >
           {sending ? "Sending..." : "Sign up"}
         </button>

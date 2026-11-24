@@ -54,7 +54,7 @@ export function placeholderPeaks(count: number): number[] {
  *
  * @returns {[RefObject<HTMLDivElement | null>, number]} the ref to attach and its width in px (0 until measured).
  */
-function useElementWidth(): [RefObject<HTMLDivElement | null>, number] {
+export function useElementWidth(): [RefObject<HTMLDivElement | null>, number] {
   const ref = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
   useEffect(() => {
@@ -67,6 +67,30 @@ function useElementWidth(): [RefObject<HTMLDivElement | null>, number] {
   return [ref, width];
 }
 
+/** what useHoverFraction hands back: where the mouse is, and the handlers for a RangeOverlay. */
+export type HoverFraction = {
+  /** how far across the mouse is, 0 to 1, or null when it's not over it. */
+  fraction: number | null;
+  onPointerMove: (event: PointerEvent<HTMLInputElement>) => void;
+  onPointerLeave: () => void;
+};
+
+/**
+ * tracks where the mouse is over a seekable waveform, so it can show where a click would
+ * land. mouse only: touch has no hover, and a drag already shows its own position.
+ *
+ * @returns {HoverFraction} the position and the handlers to put on the range input.
+ */
+export function useHoverFraction(): HoverFraction {
+  const [fraction, setFraction] = useState<number | null>(null);
+  const onPointerMove = (event: PointerEvent<HTMLInputElement>) => {
+    if (event.pointerType !== "mouse") return;
+    const box = event.currentTarget.getBoundingClientRect();
+    setFraction(Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)));
+  };
+  return { fraction, onPointerMove, onPointerLeave: () => setFraction(null) };
+}
+
 /**
  * how far along the timeline a moment is, as a css percentage.
  *
@@ -74,7 +98,7 @@ function useElementWidth(): [RefObject<HTMLDivElement | null>, number] {
  * @param {number} durationS - the whole set.
  * @returns {number} 0 to 100.
  */
-function percentAt(seconds: number, durationS: number): number {
+export function percentAt(seconds: number, durationS: number): number {
   return durationS > 0 ? Math.min(PERCENT, Math.max(0, (seconds / durationS) * PERCENT)) : 0;
 }
 
@@ -132,9 +156,9 @@ export function WaveBars({
 }
 
 /**
- * the strip under the waveform: a dot for every chat message at its moment in the set
+ * the strip under the waveform: a tick for every chat message at its moment in the set
  * (red once it's passed), tap one to jump there. the message that just went by pops up
- * as a bubble next to its dot for a few seconds, like comments on soundcloud.
+ * as a bubble next to its tick for a few seconds, like comments on soundcloud.
  *
  * @param {object} props
  * @param {DjSetChatMessage[]} props.messages - the set's chat.
@@ -199,7 +223,7 @@ function ChatMarkers({
 /**
  * a recorded set's waveform as its seek bar, soundcloud style: click or drag anywhere to
  * jump there (it plays from that spot), hover to see the time you'd land on, and the
- * set's chat sits along the bottom as dots. a real range input lies over it, so keyboards
+ * set's chat sits along the bottom as ticks. a real range input lies over it, so keyboards
  * and screen readers seek it like any slider. draws flat pulsing bars while the waveform
  * loads, and stays usable without one.
  *
@@ -228,18 +252,13 @@ export default function Waveform({
   onSeek: (seconds: number) => void;
 }) {
   const [boxRef, widthPx] = useElementWidth();
-  const [hoverFraction, setHoverFraction] = useState<number | null>(null);
+  const hover = useHoverFraction();
+  const hoverFraction = hover.fraction;
   const scrub = useScrub(positionS, onSeek);
 
   const barCount = Math.floor(widthPx / BAR_PITCH_PX);
   const bars = barCount > 0 ? resamplePeaks(peaks ?? placeholderPeaks(barCount), barCount) : [];
   const playedFraction = percentAt(scrub.value, durationS) / PERCENT;
-
-  const trackHover = (event: PointerEvent<HTMLInputElement>) => {
-    if (event.pointerType !== "mouse") return;
-    const box = event.currentTarget.getBoundingClientRect();
-    setHoverFraction(Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)));
-  };
 
   return (
     <div>
@@ -275,8 +294,8 @@ export default function Waveform({
           max={durationS}
           onChange={scrub.move}
           onRelease={scrub.release}
-          onPointerMove={trackHover}
-          onPointerLeave={() => setHoverFraction(null)}
+          onPointerMove={hover.onPointerMove}
+          onPointerLeave={hover.onPointerLeave}
           label="Seek"
           valueText={`${formatDuration(scrub.value)} of ${formatDuration(durationS)}`}
         />

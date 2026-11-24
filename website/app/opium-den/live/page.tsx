@@ -10,31 +10,42 @@ export const metadata = pageMetadata({
 });
 
 /**
- * the live section: everything dj. the live room's way in (with alerts), and every
- * recorded set, each opening out to its waveform and chat. the frame and look come from
- * app/opium-den/layout.tsx, the player from the root layout. see website/docs/OPIUM_DEN.md.
+ * the live section: everything dj, laid out like a seismograph. the live monitor (the
+ * live room's way in, with alerts), and every recorded set drawn to scale, each opening
+ * out to its waveform and chat. the frame and look come from app/opium-den/layout.tsx,
+ * the player from the root layout. see website/docs/OPIUM_DEN.md.
  *
  * @returns {JSX.Element} the live section's page.
  */
 export default function LiveSectionPage() {
   return (
     <main>
-      <div className="mx-auto w-full max-w-2xl px-5 pb-16 pt-24 sm:pt-28">
-        <header>
-          <Link href="/opium-den" className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-16 pt-24 sm:px-8 sm:pt-28">
+        <div className="flex justify-between border-b border-den-ink pb-2.5 font-den-mono text-[11px] uppercase">
+          <Link href="/opium-den" className="transition-colors hover:text-den-accent-soft">
             &larr; Opium Den
           </Link>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">Live from the den</h1>
-          <p className="mt-4 max-w-xl leading-relaxed text-den-muted">
-            Whenever I&apos;m practicing on the decks it streams here live, with a chat to hang out in. Every session gets
-            recorded, so they&apos;re all below to listen back to.
-          </p>
-        </header>
+          <span className="hidden text-den-muted sm:inline">every set recorded, with its chat</span>
+        </div>
 
-        <DjBooth />
+        <DjBooth
+          intro={
+            <>
+              <h1 className="text-[3.25rem] font-extrabold leading-[0.88] tracking-[-0.055em] sm:text-7xl lg:text-[6.5rem]">
+                Live from
+                <br />
+                the den<span className="text-den-accent">.</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-den-muted sm:text-[17px]">
+                Whenever I&apos;m practicing on the decks it streams here live, with a chat to hang out in. Every session
+                gets recorded, and they&apos;re all laid out below, to scale.
+              </p>
+            </>
+          }
+        />
 
-        <footer className="mt-16 border-t border-den-line pt-6">
-          <Link href="/opium-den" className="text-sm text-den-faint transition-colors hover:text-den-accent-soft">
+        <footer className="mt-16 border-t border-den-ink pt-4">
+          <Link href="/opium-den" className="font-den-mono text-[11px] uppercase text-den-muted transition-colors hover:text-den-accent-soft">
             Back to the den
           </Link>
         </footer>

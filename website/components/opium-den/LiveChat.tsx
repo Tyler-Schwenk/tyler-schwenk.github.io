@@ -18,9 +18,9 @@ import { SendIcon } from "./playerIcons";
 // 16px text on phones: ios zooms the whole page into any input smaller than that
 const INPUT_BASE_CLASS =
   "min-w-0 flex-1 border bg-den-bg py-2 text-base text-den-ink placeholder:text-den-faint focus:outline-none sm:text-sm";
-// the message box is a pill; the name field is squarer and outlined in red, so the two never look alike
-const MESSAGE_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-full border-den-line px-4 focus:border-den-accent/60`;
-const NAME_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-md border-den-accent/50 px-3 focus:border-den-accent`;
+// the message box is a pill in ink; the name field is square and outlined in red, so the two never look alike
+const MESSAGE_INPUT_CLASS = `${INPUT_BASE_CLASS} rounded-full border-den-ink px-4 focus:border-den-accent`;
+const NAME_INPUT_CLASS = `${INPUT_BASE_CLASS} border-den-accent px-3`;
 
 /**
  * when a message was sent, in the reader's local time.
@@ -62,11 +62,11 @@ function NamePanel({
     if (name) onSave(name);
   };
   return (
-    <form onSubmit={submit} className="mb-3 rounded-lg border border-den-accent/40 bg-den-accent/10 p-3">
-      <label htmlFor="den-chat-name" className="block text-sm font-medium">
+    <form onSubmit={submit} className="mb-3 border border-den-accent bg-den-accent/5 p-3">
+      <label htmlFor="den-chat-name" className="block text-sm font-semibold">
         {initial ? "Change your name" : "Pick a name first"}
       </label>
-      <p className="mt-0.5 text-xs text-den-muted">
+      <p className="mt-0.5 font-den-mono text-[11px] text-den-muted">
         it shows next to your messages{hasPending ? ", and your message sends as soon as you pick one." : "."}
       </p>
       <div className="mt-2 flex gap-2">
@@ -83,12 +83,12 @@ function NamePanel({
         <button
           type="submit"
           disabled={!draft.trim()}
-          className="min-h-10 shrink-0 rounded-md bg-den-accent px-4 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-40"
+          className="min-h-10 shrink-0 bg-den-accent px-4 text-sm font-medium text-white transition hover:brightness-110 disabled:opacity-40"
         >
           {hasPending ? "Send" : "Save"}
         </button>
       </div>
-      <button type="button" onClick={onCancel} className="mt-2 text-xs text-den-faint transition-colors hover:text-den-accent-soft">
+      <button type="button" onClick={onCancel} className="mt-2 font-den-mono text-[11px] text-den-muted transition-colors hover:text-den-accent-soft">
         cancel
       </button>
     </form>
@@ -177,10 +177,10 @@ function Composer({
           <SendIcon className="h-4 w-4" />
         </button>
       </form>
-      <p className="mt-2 px-1 text-xs text-den-faint">
+      <p className="mt-2 px-1 font-den-mono text-[11px] text-den-muted">
         {nickname ? (
           <>
-            chatting as <span className="text-den-ink/80">{nickname}</span> ·{" "}
+            chatting as <span className="text-den-ink">{nickname}</span> ·{" "}
             <button type="button" onClick={() => setNaming(true)} className="underline-offset-4 hover:text-den-accent-soft hover:underline">
               change
             </button>
@@ -189,7 +189,7 @@ function Composer({
           "you'll pick a name when you send your first message"
         )}
       </p>
-      {error && <p className="mt-1 px-1 text-xs text-den-accent-soft">{error}</p>}
+      {error && <p className="mt-1 px-1 font-den-mono text-[11px] text-den-accent-soft">{error}</p>}
     </div>
   );
 }
@@ -211,10 +211,10 @@ export default function LiveChat({ live }: { live: boolean }) {
   const empty = messages !== null && messages.length === 0;
 
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-xl border border-den-line bg-den-raised/70">
-      <header className="flex items-baseline justify-between border-b border-den-line px-4 py-3">
-        <h2 className="text-sm font-semibold">Chat</h2>
-        <span className="text-xs text-den-faint">{live ? "open while the set's on" : "opens when the next set starts"}</span>
+    <section className="flex h-full min-h-0 flex-col border border-den-ink bg-den-raised">
+      <header className="flex items-baseline justify-between border-b border-den-line px-4 py-2.5 font-den-mono text-[11px] uppercase">
+        <h2 className="font-medium">Chat</h2>
+        <span className="text-den-muted">{live ? "open while the set's on" : "opens when the next set starts"}</span>
       </header>
 
       <ol
@@ -227,17 +227,17 @@ export default function LiveChat({ live }: { live: boolean }) {
         {messages?.map((message) => (
           <ChatLine key={message.id} message={message} own={message.nickname === nickname} hint={sentAt(message.created_at)} />
         ))}
-        {empty && live && <li className="text-sm text-den-faint">nobody&apos;s said anything yet. say hi.</li>}
+        {empty && live && <li className="font-den-mono text-xs text-den-muted">nobody&apos;s said anything yet. say hi.</li>}
         {empty && !live && (
-          <li className="text-sm text-den-faint">
+          <li className="font-den-mono text-xs text-den-muted">
             the room&apos;s quiet.{" "}
-            <Link href={LIVE_SECTION_PATH} className="text-den-accent-soft underline-offset-4 hover:underline">
+            <Link href={LIVE_SECTION_PATH} className="border-b border-den-accent text-den-ink hover:text-den-accent-soft">
               the past sets
             </Link>{" "}
             are all recorded, chat and all.
           </li>
         )}
-        {messages === null && <li className="text-sm text-den-faint">{error ?? "loading the chat..."}</li>}
+        {messages === null && <li className="font-den-mono text-xs text-den-muted">{error ?? "loading the chat..."}</li>}
       </ol>
 
       {/* off air there's nothing to type into, so the box's spot offers an email for next time */}

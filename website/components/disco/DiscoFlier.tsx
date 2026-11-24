@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type UIEvent } from "react";
 
 import AttireClip from "./AttireClip";
@@ -60,7 +61,7 @@ interface DiscoFlierProps {
  * the screen, so one screenshot gets all the main info: laid out like an old disco
  * flier, with a tilted title, a hanging disco ball, the light-up floor, spotlights
  * and sparkles from the snoopy clips, and the details set off to either side. the address opens in the person's maps app.
- * below it, past a scroll hint, the longer details and the save and replay buttons.
+ * below it, past a scroll hint, the longer details, the save and replay buttons, and a link back to all events.
  * @param {DiscoFlierProps} props - the event title, device type, and the replay handler.
  * @returns {JSX.Element} the full screen, scrollable flier.
  */
@@ -233,6 +234,9 @@ export default function DiscoFlier({ info, isMobile, onReplay }: DiscoFlierProps
           <button type="button" className={styles.secondaryButton} onClick={onReplay}>
             Watch again
           </button>
+          <Link href="/events" className={styles.secondaryButton}>
+            All events
+          </Link>
         </div>
         <p className={styles.saveStatus} role="status">
           {status}

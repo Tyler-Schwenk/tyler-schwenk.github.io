@@ -46,10 +46,10 @@ function ListenRow({ link }: { link: ListenLink }) {
       >
         {/* stacked on phones so long names don't get cut off, side by side once there's room */}
         <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-          <span className="truncate text-den-ink transition-colors group-hover:text-den-accent-soft">{link.name}</span>
-          <span className="truncate text-sm text-den-faint">{link.source}</span>
+          <span className="truncate font-medium text-den-ink transition-colors group-hover:text-den-accent-soft">{link.name}</span>
+          <span className="truncate font-den-mono text-[11px] uppercase text-den-muted">{link.source}</span>
         </span>
-        <ExternalIcon className="h-4 w-4 shrink-0 text-den-faint transition-colors group-hover:text-den-accent-soft" />
+        <ExternalIcon className="h-4 w-4 shrink-0 text-den-muted transition-colors group-hover:text-den-accent-soft" />
       </a>
     </li>
   );
@@ -65,15 +65,23 @@ function ListenRow({ link }: { link: ListenLink }) {
 export default function OpiumDenPage() {
   return (
     <main>
-      <div className="mx-auto w-full max-w-2xl px-5 pb-16 pt-24 sm:pt-28">
-        <header>
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Opium Den</h1>
-          <p className="mt-4 max-w-xl leading-relaxed text-den-muted">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-24 sm:px-8 sm:pt-28">
+        <div className="flex justify-between border-b border-den-ink pb-2.5 font-den-mono text-[11px] uppercase">
+          <Link href="/" className="transition-colors hover:text-den-accent-soft">
+            &larr; Main menu
+          </Link>
+          <span className="text-den-muted">a music project</span>
+        </div>
+        <header className="mt-10 sm:mt-12">
+          <h1 className="text-[3.25rem] font-extrabold leading-[0.88] tracking-[-0.055em] sm:text-7xl">
+            Opium Den<span className="text-den-accent">.</span>
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-den-muted sm:text-[17px]">
             This is an open ended project, I am not sure what will result from it but the motivation is to create a better alternative to spotify. I would love to hear your feedback below
           </p>
 
           <details className="group mt-4">
-            <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-sm text-den-accent-soft transition-colors hover:text-den-ink [&::-webkit-details-marker]:hidden">
+            <summary className="inline-flex cursor-pointer list-none items-center gap-1 border-b border-den-accent font-den-mono text-[11px] uppercase transition-colors hover:text-den-accent-soft [&::-webkit-details-marker]:hidden">
               what is this
               <ChevronIcon direction="down" className="h-4 w-4 transition-transform group-open:rotate-180" />
             </summary>
@@ -117,7 +125,7 @@ export default function OpiumDenPage() {
         <LiveSectionLink />
 
         <section className="mt-16">
-          <h2 className="border-b border-den-accent/40 pb-3 text-base font-semibold">Listen</h2>
+          <h2 className="border-b border-den-ink pb-2 text-[2rem] font-extrabold leading-none tracking-[-0.045em]">Listen</h2>
           <ul className="mt-1 divide-y divide-den-line">
             {LISTEN_LINKS.map((link) => (
               <ListenRow key={link.name} link={link} />
@@ -125,8 +133,8 @@ export default function OpiumDenPage() {
           </ul>
         </section>
 
-        <footer className="mt-16 border-t border-den-line pt-6">
-          <Link href="/" className="text-sm text-den-faint transition-colors hover:text-den-accent-soft">
+        <footer className="mt-16 border-t border-den-ink pt-4">
+          <Link href="/" className="font-den-mono text-[11px] uppercase text-den-muted transition-colors hover:text-den-accent-soft">
             Back to main menu
           </Link>
         </footer>

@@ -32,7 +32,8 @@ export function liveDetails(status: DjStreamStatus | null): string {
 }
 
 /**
- * the "live now" / "off air" line with its dot, pulsing while it's live.
+ * the "live now" / "off air" line with its dot, blinking like a recorder's lamp while
+ * it's live. set in mono, like the rest of the den's readouts.
  *
  * @param {object} props
  * @param {DjStreamStatus | null} props.status - latest status, null before the first answer.
@@ -41,7 +42,7 @@ export function liveDetails(status: DjStreamStatus | null): string {
  */
 export default function LiveStatus({
   status,
-  className = "text-sm",
+  className = "text-xs",
 }: {
   status: DjStreamStatus | null;
   className?: string;
@@ -49,17 +50,14 @@ export default function LiveStatus({
   const live = Boolean(status?.live);
   const details = liveDetails(status);
   return (
-    <p className={`flex items-start gap-2 text-den-muted ${className}`}>
+    <p className={`flex items-start gap-2 font-den-mono text-den-muted ${className}`}>
       {live ? (
-        <span className="relative mt-[0.4em] flex h-2 w-2 shrink-0" aria-hidden="true">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-den-accent opacity-60 motion-reduce:animate-none" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-den-accent" />
-        </span>
+        <span className="den-rec-blink mt-[0.4em] h-2 w-2 shrink-0 rounded-full bg-den-accent" aria-hidden="true" />
       ) : (
         <span className="mt-[0.4em] h-2 w-2 shrink-0 rounded-full bg-den-faint" aria-hidden="true" />
       )}
       <span className="min-w-0">
-        <span className={live ? "font-medium text-den-accent-soft" : "text-den-ink/80"}>{live ? "Live now" : "Off air"}</span>
+        <span className={`uppercase ${live ? "font-medium text-den-accent-soft" : "text-den-ink"}`}>{live ? "Live now" : "Off air"}</span>
         {details && <span> · {details}</span>}
       </span>
     </p>

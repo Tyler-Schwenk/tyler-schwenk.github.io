@@ -15,7 +15,7 @@ const BAR_CLEARANCE_VAR = "--den-bar-clearance";
 
 /**
  * the minimized player, pinned to the bottom of every page once something's playing,
- * like a streaming app: what's playing on the left, transport and progress in the middle,
+ * as a black strip like a recorder's transport: what's playing on the left, transport and progress in the middle,
  * volume and an x to close it on the right. the cover and title open the track's full
  * view (a set's waveform and chat, or the live room). on a phone it folds down to a mini
  * player (cover, title, play/pause, the x, a thin progress line along the top) and
@@ -49,9 +49,10 @@ export default function PlayerBar({ player }: { player: AudioPlayer }) {
   const canSeek = !track.live;
 
   return (
-    <div className="den-font fixed inset-x-0 bottom-0 z-[9998]border-t border-den-line bg-den-bg/90 pb-[env(safe-area-inset-bottom)] text-den-ink backdrop-blur-lg">
+    // .den-invert: ink on black, the den's colours flipped, wherever on the site it shows
+    <div className="den-font den-invert fixed inset-x-0 bottom-0 z-[9998] border-t border-den-line bg-den-bg pb-[env(safe-area-inset-bottom)] text-den-ink">
       {/* phone-only progress line along the top edge */}
-      <div className="h-0.5 bg-white/[0.06] md:hidden" aria-hidden="true">
+      <div className="h-0.5 bg-den-ink/10 md:hidden" aria-hidden="true">
         <div className="h-full bg-den-accent" style={{ width: `${track.live ? 100 : progressPct}%` }} />
       </div>
 
@@ -63,13 +64,13 @@ export default function PlayerBar({ player }: { player: AudioPlayer }) {
           href={track.href}
           className="group pointer-events-none flex min-w-0 flex-1 items-center gap-3 md:pointer-events-auto"
         >
-          <SetArt src={track.artSrc} className="h-11 w-11 rounded" />
+          <SetArt src={track.artSrc} className="h-11 w-11" />
           <span className="min-w-0">
             <span className="flex items-center gap-2 text-sm font-medium">
               {player.playing && !player.loading && <EqBars active className="h-3 w-3 shrink-0 text-den-accent" />}
               <span className="truncate transition-colors group-hover:text-den-accent-soft">{track.title}</span>
             </span>
-            <span className="block truncate text-xs text-den-faint">{track.subtitle}</span>
+            <span className="block truncate font-den-mono text-[11px] uppercase text-den-faint">{track.subtitle}</span>
           </span>
         </Link>
 

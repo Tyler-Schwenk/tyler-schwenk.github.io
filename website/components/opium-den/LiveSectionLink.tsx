@@ -9,8 +9,8 @@ import LiveStatus from "./LiveStatus";
 const STATUS_POLL_INTERVAL_MS = 15000;
 
 /**
- * the den's way over to the live section, where the dj sets live: one row with the live
- * status, lit up red while the stream's on. the whole row's the link.
+ * the den's way over to the live section, where the dj sets live: one panel with the live
+ * status, with a red edge while the stream's on. the whole panel's the link.
  *
  * @returns {JSX.Element} the link.
  */
@@ -21,21 +21,19 @@ export default function LiveSectionLink() {
   return (
     <Link
       href={LIVE_SECTION_PATH}
-      className={`group mt-14 flex items-center gap-4 transition-colors ${
-        live
-          ? "rounded-xl border border-den-accent/40 bg-den-accent/10 p-4 hover:bg-den-accent/15"
-          : "border-y border-den-line py-5"
+      className={`group mt-14 flex items-center gap-4 border border-den-ink bg-den-raised p-4 transition-colors hover:bg-den-bg ${
+        live ? "shadow-[inset_3px_0_0_var(--color-den-accent)]" : ""
       }`}
     >
       {/* a div, not a span: LiveStatus is a paragraph */}
       <div className="min-w-0 flex-1">
-        <span className="block font-semibold text-den-ink transition-colors group-hover:text-den-accent-soft">
+        <span className="block text-2xl font-extrabold tracking-[-0.04em] text-den-ink transition-colors group-hover:text-den-accent-soft">
           Live from the den
         </span>
         <span className="mt-0.5 block text-sm text-den-muted">my dj sets, live and recorded, with their chat</span>
-        <LiveStatus status={status} className="mt-2 text-sm" />
+        <LiveStatus status={status} className="mt-2 text-[11px]" />
       </div>
-      <span className="shrink-0 text-xl text-den-accent-soft transition-transform group-hover:translate-x-1" aria-hidden="true">
+      <span className="shrink-0 text-xl text-den-accent transition-transform group-hover:translate-x-1" aria-hidden="true">
         &rarr;
       </span>
     </Link>

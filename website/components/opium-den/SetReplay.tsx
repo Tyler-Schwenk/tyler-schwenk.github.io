@@ -39,7 +39,7 @@ function parseSetId(raw: string | null): number | null {
 }
 
 /**
- * the round red play button for this set.
+ * the round signal-red play button for this set.
  *
  * @param {object} props
  * @param {AudioPlayer} props.player - the den's shared player.
@@ -81,7 +81,7 @@ function SetCover({ set, playing, loading }: { set: DjSet; playing: boolean; loa
   const [viewing, setViewing] = useState(false);
   const close = useCallback(() => setViewing(false), []);
   const thumb = djSetThumbUrl(set);
-  const art = <SetArt src={thumb} className="h-12 w-12 rounded-md sm:h-14 sm:w-14" />;
+  const art = <SetArt src={thumb} className="h-12 w-12 sm:h-14 sm:w-14" />;
   const bars = playing && <EqBars active={!loading} className="absolute bottom-1 right-1 h-2.5 w-2.5 text-den-accent" />;
 
   if (set.image_id == null) {
@@ -100,7 +100,7 @@ function SetCover({ set, playing, loading }: { set: DjSet; playing: boolean; loa
         type="button"
         onClick={() => setViewing(true)}
         aria-label={`Show the cover for ${title} full screen`}
-        className="relative shrink-0 cursor-zoom-in rounded-md transition hover:brightness-110"
+        className="relative shrink-0 cursor-zoom-in transition hover:brightness-110"
       >
         {art}
         {bars}
@@ -133,14 +133,14 @@ function setMeta(set: DjSet, messages: DjSetChatMessage[] | null): string {
  */
 function ReplayEmptyNote({ messages, started }: { messages: DjSetChatMessage[]; started: boolean }) {
   if (messages.length === 0) {
-    return <li className="text-sm text-den-faint">nobody chatted during this one.</li>;
+    return <li className="font-den-mono text-xs text-den-muted">nobody chatted during this one.</li>;
   }
   const first = formatDuration(messages[0].offset_s);
   return (
-    <li className="text-sm text-den-faint">
+    <li className="font-den-mono text-xs text-den-muted">
       {started
         ? `the first message comes in at ${first}.`
-        : `the chat replays along with the set, the first message comes in at ${first}. press play, or tap a dot on the waveform.`}
+        : `the chat replays along with the set, the first message comes in at ${first}. press play, or tap a tick under the waveform.`}
     </li>
   );
 }
@@ -173,11 +173,11 @@ function ReplayChat({
   const [listRef, onListScroll] = useStickToBottom<HTMLOListElement>(visible.at(-1)?.id);
 
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-xl border border-den-line bg-den-raised/70">
-      <header className="flex items-baseline justify-between border-b border-den-line px-4 py-3">
-        <h2 className="text-sm font-semibold">Chat replay</h2>
+    <section className="flex h-full min-h-0 flex-col border border-den-ink bg-den-raised">
+      <header className="flex items-baseline justify-between border-b border-den-line px-4 py-2.5 font-den-mono text-[11px] uppercase">
+        <h2 className="font-medium">Chat replay</h2>
         {messages && messages.length > 0 && (
-          <span className="text-xs tabular-nums text-den-faint">
+          <span className="tabular-nums text-den-muted">
             {visible.length} of {messages.length}
           </span>
         )}
@@ -200,14 +200,14 @@ function ReplayChat({
                 type="button"
                 onClick={() => onSeek(message.offset_s)}
                 aria-label={`Jump to ${formatDuration(message.offset_s)}`}
-                className="mr-2 text-xs tabular-nums text-den-faint transition-colors hover:text-den-accent-soft"
+                className="mr-2 font-den-mono text-[11px] tabular-nums text-den-muted transition-colors hover:text-den-accent-soft"
               >
                 {formatDuration(message.offset_s)}
               </button>
             }
           />
         ))}
-        {messages === null && <li className="text-sm text-den-faint">loading the chat...</li>}
+        {messages === null && <li className="font-den-mono text-xs text-den-muted">loading the chat...</li>}
         {messages && visible.length === 0 && <ReplayEmptyNote messages={messages} started={started} />}
       </ol>
     </section>
@@ -217,7 +217,7 @@ function ReplayChat({
 /**
  * one recorded set, replayed with its chat: the set's full view. a header with its cover
  * (tap for full screen), the play button and, once it's loaded, skips and volume; the
- * set's waveform as its seek bar (chat messages as dots along it); and the chat filling
+ * set's waveform on chart paper as its seek bar (chat messages as ticks under it); and the chat filling
  * the rest of the screen, showing only what had been said by that point in the set. one
  * screen tall like the live room. while this set's the one loaded, the player bar steps
  * aside, since this page has its controls; anything else playing keeps the bar. the set
@@ -241,32 +241,32 @@ export default function SetReplay() {
   const problem = setId === null ? "that link doesn't point at a set." : error;
 
   return (
-    <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-3xl flex-col px-4 pb-4 sm:px-5 sm:pb-6">
+    <main className="mx-auto flex h-[calc(100dvh-var(--den-bar-clearance,0px))] w-full max-w-4xl flex-col px-4 pb-4 sm:px-8 sm:pb-6">
       {/* the home button's row: it sits fixed top-left, so this just leaves it room */}
       <div className="flex h-20 shrink-0 items-center justify-end sm:h-24">
-        <Link href={LIVE_SECTION_PATH} className="text-sm text-den-accent-soft transition-colors hover:text-den-ink">
+        <Link href={LIVE_SECTION_PATH} className="font-den-mono text-[11px] uppercase transition-colors hover:text-den-accent-soft">
           &larr; All sets
         </Link>
       </div>
 
       {problem && (
-        <p className="rounded-xl border border-den-line p-4 text-sm text-den-muted">
+        <p className="border border-den-ink bg-den-raised p-4 text-sm text-den-muted">
           {problem}{" "}
-          <Link href={LIVE_SECTION_PATH} className="text-den-accent-soft underline-offset-4 hover:underline">
+          <Link href={LIVE_SECTION_PATH} className="border-b border-den-accent text-den-ink hover:text-den-accent-soft">
             all the past sets
           </Link>{" "}
           are in the live section.
         </p>
       )}
-      {!problem && !set && <p className="text-sm text-den-faint">loading the set...</p>}
+      {!problem && !set && <p className="font-den-mono text-xs text-den-muted">loading the set...</p>}
 
       {set && track && (
         <>
           <header className="flex shrink-0 items-center gap-3 sm:gap-4">
             <SetCover set={set} playing={current && player.playing} loading={player.loading} />
             <div className="min-w-0 flex-1">
-              <h1 className="truncate font-semibold sm:text-lg">{djSetTitle(set)}</h1>
-              <p className="mt-0.5 truncate text-xs text-den-muted sm:text-sm">{setMeta(set, messages)}</p>
+              <h1 className="truncate text-xl font-extrabold tracking-[-0.04em] sm:text-3xl">{djSetTitle(set)}</h1>
+              <p className="mt-1 truncate font-den-mono text-[11px] uppercase text-den-muted">{setMeta(set, messages)}</p>
             </div>
             {current && <VolumeControl player={player} className="hidden md:flex" />}
             <div className="flex shrink-0 items-center gap-1 sm:gap-3">
@@ -278,7 +278,7 @@ export default function SetReplay() {
 
           {set.description && (
             <details className="group mt-2 shrink-0">
-              <summary className="inline-flex cursor-pointer list-none text-xs text-den-faint transition-colors hover:text-den-accent-soft [&::-webkit-details-marker]:hidden">
+              <summary className="inline-flex cursor-pointer list-none font-den-mono text-[11px] text-den-muted transition-colors hover:text-den-accent-soft [&::-webkit-details-marker]:hidden">
                 <span className="group-open:hidden">about this set</span>
                 <span className="hidden group-open:inline">less</span>
               </summary>
@@ -288,7 +288,8 @@ export default function SetReplay() {
             </details>
           )}
 
-          <div className="mt-4 shrink-0">
+          {/* the waveform on chart paper, like the trace it is */}
+          <div className="den-grid mt-4 shrink-0 border border-den-ink px-3 pt-3">
             <Waveform
               peaks={peaks}
               loading={peaks === null && waveformError === null}
@@ -297,11 +298,11 @@ export default function SetReplay() {
               messages={messages ?? []}
               onSeek={seek}
             />
-            {waveformError && <p className="text-xs text-den-faint">{waveformError}</p>}
-            {current && player.error && <p className="text-xs text-den-accent-soft">{player.error}</p>}
+            {waveformError && <p className="pb-2 font-den-mono text-[11px] text-den-muted">{waveformError}</p>}
+            {current && player.error && <p className="pb-2 font-den-mono text-[11px] text-den-accent-soft">{player.error}</p>}
           </div>
 
-          <div className="mt-1 min-h-0 flex-1">
+          <div className="mt-3 min-h-0 flex-1">
             <ReplayChat messages={messages} positionS={positionS} started={current} onSeek={seek} />
           </div>
         </>
