@@ -122,8 +122,6 @@
   background: var(--zine-pink); color: var(--zine-paper); border: 3px solid var(--zine-ink);
   display: grid; place-items: center; font: 400 22px/1 var(--zine-font-display);
 }
-.zine-card .zine-stamp { width: 104px; height: 104px; font-size: 18px; right: -18px; top: -18px; }
-.zine-card .zine-stamp small { font-size: 9px; }
 .zine-note {
   position: absolute; left: -24px; top: 30%; z-index: 3;
   font: 26px/1 var(--zine-font-hand); color: var(--zine-pink);
@@ -221,7 +219,6 @@
   .zine-board, .zine-board.big { grid-template-columns: 1fr; gap: 48px; padding: 0 6px; }
   .zine-card:nth-child(3n+2) { transform: rotate(1.2deg); }
   .zine-note { left: -8px; }
-  .zine-card .zine-stamp { right: -6px; }
   .zine-spread, .zine-spread.solo { grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 30px; }
   .zine-photo .zine-stamp { width: 112px; height: 112px; font-size: 20px; right: -8px; top: -20px; }
   .zine-facts { grid-template-columns: 1fr; }

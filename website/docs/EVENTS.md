@@ -17,7 +17,7 @@ A static route beats `[slug]`, so an event with its own folder under `app/events
 
 `EventEntry` fields that matter for the pages:
 
-- `past` - puts it on the "Already happened" board and stamps it "been & gone". Upcoming events sit on the big "Coming up" board in array order (pinned regulars first, then soonest), and the first one gets a "next up!" scribble.
+- `past` - puts it on the "Already happened" board. Upcoming events sit on the big board right under the headline, in array order (soonest first, with the recurring Climbers for Palestine meetup always last), and the first one gets a "next up!" scribble.
 - `coverImage` - the card photo on `/events`. Falls back to `flierImage`. Use it for events with no flier, or when the flier is a bad thumbnail. Not shown on the detail page.
 - `flierImage` - taped down on the detail page; tapping it opens it full screen. Also the event's link preview image.
 - `schedule`, `highlights`, `links`, `rsvpLink` / `rsvpNote`, `additionalImages` - optional blocks on the detail page, each skipped when empty.

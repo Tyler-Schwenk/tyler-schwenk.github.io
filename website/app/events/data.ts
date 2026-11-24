@@ -34,7 +34,19 @@ const DJ_SET_URL =
   "https://soundcloud.com/tommypips/01-dare-u-mastered/s-mx54M3H05nq?ref=clipboard&p=a&c=1&si=35b9cc96db6146089a2d14a5250edd1b&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing";
 
 export const EVENTS: EventEntry[] = [
-  // Upcoming — pinned recurring first, then soonest upcoming
+  // upcoming: soonest first, the recurring climbers meetup always last
+  {
+    slug: "disco",
+    title: "Disco December",
+    dateText: "December 12 - 8 PM",
+    locationText: "5375 Hewlett Dr, San Diego",
+    summary: "Disco night is back. Dancefloor DJs + an ambient den. Bell bottoms + dancing shoes.",
+    type: "info",
+    coverImage: {
+      src: "/images/events/disco-og.jpg",
+      alt: "Disco Night is Back, over an old news clip of a packed disco dancefloor",
+    },
+  },
   {
     slug: "climbers-for-palestine-meetup",
     title: "Climbers for Palestine Meetups",
@@ -56,18 +68,6 @@ export const EVENTS: EventEntry[] = [
         href: "https://chat.whatsapp.com/Dr2rt7Z9Myt19BRtcGPm50",
       },
     ],
-  },
-  {
-    slug: "disco",
-    title: "Disco December",
-    dateText: "December 12 - 8 PM",
-    locationText: "5375 Hewlett Dr, San Diego",
-    summary: "Disco night is back. Dancefloor DJs + an ambient den. Bell bottoms + dancing shoes.",
-    type: "info",
-    coverImage: {
-      src: "/images/events/disco-og.jpg",
-      alt: "Disco Night is Back, over an old news clip of a packed disco dancefloor",
-    },
   },
   // Past — most recent first
   {

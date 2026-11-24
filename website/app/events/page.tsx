@@ -38,20 +38,9 @@ export default function EventsPage() {
             </span>
           </div>
           <ZineHeadline lines={HEADLINE_LINES} />
-          <div className="zine-issue">
-            <p>
-              Parties, meetups, and fundraisers we&apos;re throwing or showing up to. Everything that&apos;s coming up is
-              pinned below. Tap one for the flier and the details.
-            </p>
-            <span className="zine-hand">come hang out,<br />bring friends</span>
-          </div>
 
           {upcomingEvents.length > 0 && (
-            <section className="zine-section">
-              <div className="zine-sechead">
-                <h2>Coming up</h2>
-                <span className="zine-hand">the regulars up top, then soonest first</span>
-              </div>
+            <section className="zine-section" aria-label="Coming up">
               <div className="zine-board big">
                 {upcomingEvents.map((event, i) => (
                   <EventCard key={event.slug} event={event} index={i} isNext={i === 0} />
@@ -97,14 +86,6 @@ function EventCard({ event, index, isNext }: { event: EventEntry; index: number;
     <Link href={`/events/${event.slug}`} className="zine-card">
       <span className="zine-tape" />
       {isNext && <span className="zine-note">next up!</span>}
-      {event.past && (
-        <span className="zine-stamp blue">
-          <span>
-            <small>thanks!</small>
-            Been &amp;<br />gone
-          </span>
-        </span>
-      )}
       <div className="zine-card-photo">
         <div className={`zine-duo ${ink}`}>
           {photo ? (
