@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Instrument_Serif, Inter, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono, Ultra, Shrikhand } from "next/font/google";
+import { Instrument_Sans, Instrument_Serif, Inter, Inter_Tight, Press_Start_2P, Caveat, Newsreader, DM_Sans, Geist_Mono, Archivo_Black, JetBrains_Mono, Libre_Caslon_Display, Libre_Caslon_Text, IBM_Plex_Mono, Ultra, Shrikhand, Bowlby_One, Courier_Prime, Gochi_Hand } from "next/font/google";
 import "./globals.css";
 import DenPlayerProvider from "@/components/opium-den/DenPlayerProvider";
 import { DEFAULT_PREVIEW_IMAGE, SITE_NAME, SITE_URL } from "@/lib/siteMetadata";
@@ -120,6 +120,38 @@ const discoScript = Shrikhand({
   preload: false,
 });
 
+// the events pages (/events and the plain event pages) are a two-ink riso zine:
+// a fat poster face for headlines, a typewriter for body text, and handwriting
+// for the scribbled notes (see website/docs/EVENTS.md).
+const zineDisplay = Bowlby_One({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-zine-display",
+  preload: false,
+});
+
+const zineMono = Courier_Prime({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  variable: "--font-zine-mono",
+  preload: false,
+});
+
+const zineHand = Gochi_Hand({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-zine-hand",
+  preload: false,
+});
+
+// the opium den's seismograph look (website/docs/OPIUM_DEN.md): a tight grotesque for
+// everything, with jetbrains mono (--font-neo-mono above) for times and labels
+const denSans = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-den-sans",
+  preload: false,
+});
+
 const DEFAULT_TITLE = "Tyler Schwenk - Personal Website";
 const TITLE_TEMPLATE = "%s | Tyler Schwenk";
 const DEFAULT_DESCRIPTION =
@@ -189,7 +221,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
       </head>
-      <body className={`${kilnDisplay.variable} ${kilnText.variable} ${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${caslonDisplay.variable} ${caslonText.variable} ${plexMono.variable} ${discoDisplay.variable} ${discoScript.variable} font-sans antialiased`}>
+      <body className={`${kilnDisplay.variable} ${kilnText.variable} ${inter.variable} ${pressStart2P.variable} ${caveat.variable} ${newsreader.variable} ${dmSans.variable} ${geistMono.variable} ${archivoBlack.variable} ${jetbrainsMono.variable} ${caslonDisplay.variable} ${caslonText.variable} ${plexMono.variable} ${discoDisplay.variable} ${discoScript.variable} ${zineDisplay.variable} ${zineMono.variable} ${zineHand.variable} ${denSans.variable} font-sans antialiased`}>
         <DenPlayerProvider>{children}</DenPlayerProvider>
       </body>
     </html>

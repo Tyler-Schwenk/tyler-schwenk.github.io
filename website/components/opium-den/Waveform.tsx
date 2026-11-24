@@ -7,12 +7,13 @@ import { useScrub } from "@/lib/useScrub";
 import { RangeOverlay } from "./SliderBar";
 
 // one bar plus its gap, on screen. the waveform gets as many bars as fit
-const BAR_PITCH_PX = 3;
+export const BAR_PITCH_PX = 3;
 // how much of each pitch is bar rather than gap
-const BAR_FILL_RATIO = 0.6;
-// the viewbox is 100 tall: bars grow up from here, and their faint reflection hangs below
-const BASELINE_Y = 70;
-const REFLECTION_GAP_Y = 1;
+const BAR_FILL_RATIO = 0.66;
+// the viewbox is 100 tall and the bars are mirrored about its middle, like a seismograph trace
+const MID_Y = 50;
+// the loudest bar's share of the height, so peaks don't touch the edges
+const PEAK_HEIGHT_RATIO = 0.92;
 // so quiet stretches still show as a sliver instead of nothing
 const MIN_PEAK = 0.04;
 // flat bars drawn while the real waveform loads
@@ -28,13 +29,24 @@ const PERCENT = 100;
  * @param {number} count - how many bars to draw.
  * @returns {number[]} count peaks.
  */
-function resamplePeaks(peaks: number[], count: number): number[] {
+export function resamplePeaks(peaks: number[], count: number): number[] {
   if (peaks.length === 0) return [];
   return Array.from({ length: count }, (_, i) => {
     const start = Math.floor((i * peaks.length) / count);
     const end = Math.max(start + 1, Math.floor(((i + 1) * peaks.length) / count));
     return Math.max(...peaks.slice(start, end));
   });
+}
+
+/**
+ * bars for a waveform that's still loading (or failed): flat and quiet, so the shape of
+ * the thing is there without pretending to be the set.
+ *
+ * @param {number} count - how many bars.
+ * @returns {number[]} count flat peaks.
+ */
+export function placeholderPeaks(count: number): number[] {
+  return new Array<number>(count).fill(PLACEHOLDER_PEAK);
 }
 
 /**
@@ -67,56 +79,53 @@ function percentAt(seconds: number, durationS: number): number {
 }
 
 /**
- * the bars themselves, as one svg stretched over the box. played bars are red, the
- * stretch up to where the mouse is hovering is a fainter red (where a click would land),
- * the rest is grey.
+ * the bars themselves, as one svg stretched over its box, mirrored about the middle like
+ * a seismograph trace. played bars are signal red, the stretch up to where the mouse is
+ * hovering is a fainter red (where a click would land), the rest is ink. shared by the
+ * set page's waveform and the live section's to-scale set list.
  *
  * @param {object} props
  * @param {number[]} props.bars - one peak per bar, 0 to 1.
  * @param {number} props.playedFraction - how much has played, 0 to 1.
- * @param {number | null} props.hoverFraction - where the mouse is, or null.
- * @param {boolean} props.placeholder - still loading, so pulse.
+ * @param {number | null} [props.hoverFraction] - where the mouse is, or null.
+ * @param {boolean} [props.placeholder] - no real waveform (loading or failed), so faint. pulse it with the className while loading.
+ * @param {string} [props.className] - placement, absolute and filling the parent by default.
  * @returns {JSX.Element} the svg.
  */
-function Bars({
+export function WaveBars({
   bars,
   playedFraction,
-  hoverFraction,
-  placeholder,
+  hoverFraction = null,
+  placeholder = false,
+  className = "absolute inset-0 h-full w-full",
 }: {
   bars: number[];
   playedFraction: number;
-  hoverFraction: number | null;
-  placeholder: boolean;
+  hoverFraction?: number | null;
+  placeholder?: boolean;
+  className?: string;
 }) {
   const playedBars = playedFraction * bars.length;
   const hoverBars = (hoverFraction ?? 0) * bars.length;
   const inset = (1 - BAR_FILL_RATIO) / 2;
-  const reflectionRoom = PERCENT - BASELINE_Y - REFLECTION_GAP_Y;
 
   return (
     <svg
       viewBox={`0 0 ${bars.length} ${PERCENT}`}
       preserveAspectRatio="none"
       aria-hidden="true"
-      className={`absolute inset-0 h-full w-full ${placeholder ? "animate-pulse" : ""}`}
+      className={className}
     >
       {bars.map((peak, i) => {
-        const height = Math.max(peak, MIN_PEAK);
-        const tone =
-          i < playedBars ? "fill-den-accent" : i < hoverBars ? "fill-den-accent/45" : "fill-white/25";
-        return (
-          <g key={i} className={tone}>
-            <rect x={i + inset} width={BAR_FILL_RATIO} y={BASELINE_Y - height * BASELINE_Y} height={height * BASELINE_Y} />
-            <rect
-              x={i + inset}
-              width={BAR_FILL_RATIO}
-              y={BASELINE_Y + REFLECTION_GAP_Y}
-              height={height * reflectionRoom}
-              opacity={0.45}
-            />
-          </g>
-        );
+        const half = Math.max(peak, MIN_PEAK) * PEAK_HEIGHT_RATIO * MID_Y;
+        const tone = placeholder
+          ? "fill-den-ink/20"
+          : i < playedBars
+            ? "fill-den-accent"
+            : i < hoverBars
+              ? "fill-den-accent/45"
+              : "fill-den-ink";
+        return <rect key={i} className={tone} x={i + inset} width={BAR_FILL_RATIO} y={MID_Y - half} height={half * 2} />;
       })}
     </svg>
   );
@@ -162,12 +171,10 @@ function ChatMarkers({
             onClick={() => onSeek(message.offset_s)}
             title={`${formatDuration(message.offset_s)}  ${message.nickname}: ${message.content}`}
             aria-label={`Jump to ${message.nickname}'s message at ${formatDuration(message.offset_s)}`}
-            className="group absolute top-0 flex h-3 w-3 -translate-x-1/2 items-center justify-center"
+            className="group absolute top-0 flex h-3 w-3 -translate-x-1/2 justify-center"
             style={{ left: `${pct}%` }}
           >
-            <span
-              className={`h-1.5 w-1.5 rounded-full transition group-hover:scale-150 ${done ? "bg-den-accent" : "bg-white/30"}`}
-            />
+            <span className={`h-full w-px transition-transform group-hover:scale-x-[3] ${done ? "bg-den-accent" : "bg-den-ink"}`} />
           </button>
         );
       })}
@@ -175,14 +182,14 @@ function ChatMarkers({
         // shifted left by its own position, so it never hangs off either end of the strip
         <p
           key={bubble.id}
-          className="pointer-events-none absolute top-3.5 max-w-[70%] truncate rounded-full border border-den-line bg-den-raised px-2.5 py-0.5 text-xs"
+          className="pointer-events-none absolute top-4 max-w-[70%] truncate border-l border-den-ink bg-den-raised px-2 py-0.5 text-xs"
           style={{
             left: `${percentAt(bubble.offset_s, durationS)}%`,
             transform: `translateX(-${percentAt(bubble.offset_s, durationS)}%)`,
           }}
         >
-          <span className="font-semibold text-den-accent-soft">{bubble.nickname}</span>{" "}
-          <span className="text-den-ink/90">{bubble.content}</span>
+          <span className="font-den-mono text-[10px] uppercase text-den-muted">{bubble.nickname}</span>{" "}
+          <span className="text-den-ink">{bubble.content}</span>
         </p>
       )}
     </div>
@@ -225,8 +232,7 @@ export default function Waveform({
   const scrub = useScrub(positionS, onSeek);
 
   const barCount = Math.floor(widthPx / BAR_PITCH_PX);
-  const source = peaks ?? new Array<number>(barCount).fill(PLACEHOLDER_PEAK);
-  const bars = barCount > 0 ? resamplePeaks(source, barCount) : [];
+  const bars = barCount > 0 ? resamplePeaks(peaks ?? placeholderPeaks(barCount), barCount) : [];
   const playedFraction = percentAt(scrub.value, durationS) / PERCENT;
 
   const trackHover = (event: PointerEvent<HTMLInputElement>) => {
@@ -238,23 +244,29 @@ export default function Waveform({
   return (
     <div>
       <div ref={boxRef} className="relative h-20 sm:h-24">
-        <Bars bars={bars} playedFraction={playedFraction} hoverFraction={hoverFraction} placeholder={loading} />
+        <WaveBars
+          bars={bars}
+          playedFraction={playedFraction}
+          hoverFraction={hoverFraction}
+          placeholder={!peaks}
+          className={`absolute inset-0 h-full w-full ${loading ? "animate-pulse" : ""}`}
+        />
 
         {hoverFraction !== null && (
           <div
-            className="pointer-events-none absolute inset-y-0 w-px bg-den-ink/60"
+            className="pointer-events-none absolute inset-y-0 w-px bg-den-accent"
             style={{ left: `${hoverFraction * PERCENT}%` }}
           >
-            <span className="absolute left-1 top-0 rounded bg-den-bg/90 px-1.5 py-0.5 text-[11px] tabular-nums text-den-ink">
+            <span className="absolute left-1 top-0 bg-den-raised/90 px-1.5 py-0.5 font-den-mono text-[11px] tabular-nums text-den-accent-soft">
               {formatDuration(hoverFraction * durationS)}
             </span>
           </div>
         )}
 
-        <span className="pointer-events-none absolute bottom-0 left-0 rounded bg-den-bg/80 px-1.5 py-0.5 text-[11px] tabular-nums text-den-accent-soft">
+        <span className="pointer-events-none absolute bottom-0 left-0 bg-den-raised/80 px-1.5 py-0.5 font-den-mono text-[11px] tabular-nums text-den-accent-soft">
           {formatDuration(scrub.value)}
         </span>
-        <span className="pointer-events-none absolute bottom-0 right-0 rounded bg-den-bg/80 px-1.5 py-0.5 text-[11px] tabular-nums text-den-faint">
+        <span className="pointer-events-none absolute bottom-0 right-0 bg-den-raised/80 px-1.5 py-0.5 font-den-mono text-[11px] tabular-nums text-den-muted">
           {formatDuration(durationS)}
         </span>
 

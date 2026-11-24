@@ -19,7 +19,8 @@ export type EventEntry = {
   type: EventType;
   past?: boolean;
   flierImage?: EventFlier;
-  smallImage?: boolean;
+  /** photo for the event's card on /events when it has no flier (or a better one than its flier) */
+  coverImage?: EventFlier;
   schedule?: string;
   highlights?: string[];
   links?: EventLink[];
@@ -63,6 +64,10 @@ export const EVENTS: EventEntry[] = [
     locationText: "5375 Hewlett Dr, San Diego",
     summary: "Disco night is back. Dancefloor DJs + an ambient den. Bell bottoms + dancing shoes.",
     type: "info",
+    coverImage: {
+      src: "/images/events/disco-og.jpg",
+      alt: "Disco Night is Back, over an old news clip of a packed disco dancefloor",
+    },
   },
   // Past — most recent first
   {
@@ -92,7 +97,6 @@ export const EVENTS: EventEntry[] = [
       src: "/images/events/fuckice.png",
       alt: "Fuck Ice punk concert flier",
     },
-    smallImage: true,
     highlights: [
       "$10 suggested donation at the door - all proceeds go to Al Otro Lado",
     ],

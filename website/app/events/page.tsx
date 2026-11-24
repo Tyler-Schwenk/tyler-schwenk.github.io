@@ -2,8 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import PageWrapper from "@/components/PageWrapper";
+import ZineHeadline from "@/components/events/ZineHeadline";
 import { EVENTS, EventEntry } from "./data";
 import { ogCard, pageMetadata } from "@/lib/siteMetadata";
+import "./zine.css";
 
 export const metadata = pageMetadata({
   title: "Upcoming Events",
@@ -12,13 +14,14 @@ export const metadata = pageMetadata({
   image: ogCard("events", "pixel art megaphone"),
 });
 
-const PAGE_TITLE = "Upcoming Events";
-const PAST_SECTION_TITLE = "Past Events";
+const HEADLINE_LINES = ["Upcoming", "events"];
+const CARD_IMAGE_SIZES = "(max-width: 760px) 100vw, 400px";
 
 /**
- * Renders the upcoming events landing page.
+ * the events landing page, laid out as a riso zine: upcoming events pinned to a
+ * big board up top, past ones on a smaller board under them.
  *
- * @returns {JSX.Element} The events overview page.
+ * @returns {JSX.Element} the events overview page.
  */
 export default function EventsPage() {
   const upcomingEvents = EVENTS.filter((e) => !e.past);
@@ -26,28 +29,46 @@ export default function EventsPage() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 py-16">
-        <div className="container mx-auto px-6 max-w-5xl">
-          <header className="mb-12 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide">
-              {PAGE_TITLE}
-            </h1>
-          </header>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {upcomingEvents.map((event) => (
-              <EventCard key={event.slug} event={event} />
-            ))}
+      <div className="zine">
+        <div className="zine-wrap">
+          <div className="zine-top">
+            <span>tyler&apos;s house &middot; events</span>
+            <span className="zine-top-extra">
+              {upcomingEvents.length} coming up &middot; {pastEvents.length} already happened &middot; free, take one
+            </span>
+          </div>
+          <ZineHeadline lines={HEADLINE_LINES} />
+          <div className="zine-issue">
+            <p>
+              Parties, meetups, and fundraisers we&apos;re throwing or showing up to. Everything that&apos;s coming up is
+              pinned below. Tap one for the flier and the details.
+            </p>
+            <span className="zine-hand">come hang out,<br />bring friends</span>
           </div>
 
+          {upcomingEvents.length > 0 && (
+            <section className="zine-section">
+              <div className="zine-sechead">
+                <h2>Coming up</h2>
+                <span className="zine-hand">the regulars up top, then soonest first</span>
+              </div>
+              <div className="zine-board big">
+                {upcomingEvents.map((event, i) => (
+                  <EventCard key={event.slug} event={event} index={i} isNext={i === 0} />
+                ))}
+              </div>
+            </section>
+          )}
+
           {pastEvents.length > 0 && (
-            <section className="mt-20">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-400 tracking-wide mb-8 text-center">
-                {PAST_SECTION_TITLE}
-              </h2>
-              <div className="grid gap-6 md:grid-cols-2">
-                {pastEvents.map((event) => (
-                  <EventCard key={event.slug} event={event} />
+            <section className="zine-section">
+              <div className="zine-sechead blue">
+                <h2>Already happened</h2>
+                <span className="zine-hand">the archive, newest first. thanks for coming</span>
+              </div>
+              <div className="zine-board">
+                {pastEvents.map((event, i) => (
+                  <EventCard key={event.slug} event={event} index={i} isNext={false} />
                 ))}
               </div>
             </section>
@@ -59,64 +80,47 @@ export default function EventsPage() {
 }
 
 /**
- * Renders a single event preview card.
+ * one event taped to the board: its cover or flier as a halftone duotone (hover shows
+ * the real colors), the name scribbled under it, then when, where and the summary.
  *
- * @param {object} props - Component props.
- * @param {EventEntry} props.event - Event data.
- * @returns {JSX.Element} The event preview card.
+ * @param {object} props - component props.
+ * @param {EventEntry} props.event - the event.
+ * @param {number} props.index - its place on the board, which alternates the ink.
+ * @param {boolean} props.isNext - gets a "next up!" scribble, for the first upcoming event.
+ * @returns {JSX.Element} the card, linking to the event's page.
  */
-function EventCard({ event }: { event: EventEntry }) {
-  const detailHref = `/events/${event.slug}`;
+function EventCard({ event, index, isNext }: { event: EventEntry; index: number; isNext: boolean }) {
+  const photo = event.coverImage ?? event.flierImage;
+  const ink = index % 2 ? "pink" : "";
 
   return (
-    <div className="bg-slate-900/70 border border-slate-700 rounded-2xl overflow-hidden shadow-xl flex flex-col">
-      {event.flierImage ? (
-        <div className={`relative w-full ${event.smallImage ? "h-40 md:h-48" : "h-64 md:h-72"}`}>
-          <Image
-            src={event.flierImage.src}
-            alt={event.flierImage.alt}
-            fill
-            className="object-cover"
-            sizes="(min-width: 768px) 50vw, 100vw"
-            priority={false}
-          />
-        </div>
-      ) : (
-        <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 px-6 py-10">
-          <p className="text-indigo-200 uppercase tracking-[0.2em] text-xs">
-            Event
-          </p>
-          <h2 className="text-2xl font-semibold text-white mt-3">
-            {event.title}
-          </h2>
-        </div>
+    <Link href={`/events/${event.slug}`} className="zine-card">
+      <span className="zine-tape" />
+      {isNext && <span className="zine-note">next up!</span>}
+      {event.past && (
+        <span className="zine-stamp blue">
+          <span>
+            <small>thanks!</small>
+            Been &amp;<br />gone
+          </span>
+        </span>
       )}
-
-      <div className="p-6 flex-1 flex flex-col gap-4">
-        <div>
-          <h3 className="text-xl font-semibold text-white">
-            {event.title}
-          </h3>
-          <p className="text-slate-300 mt-2">{event.summary}</p>
+      <div className="zine-card-photo">
+        <div className={`zine-duo ${ink}`}>
+          {photo ? (
+            <Image src={photo.src} alt={photo.alt} fill sizes={CARD_IMAGE_SIZES} />
+          ) : (
+            <div className="zine-duo-ph" />
+          )}
         </div>
-
-        <div className="text-sm text-slate-300 space-y-1">
-          <p>
-            <span className="text-slate-400">Date:</span> {event.dateText}
-          </p>
-          <p>
-            <span className="text-slate-400">Location:</span>{" "}
-            {event.locationText}
-          </p>
-        </div>
-
-        <Link
-          href={detailHref}
-          className="mt-auto inline-flex items-center justify-center rounded-full border border-indigo-400 px-4 py-2 text-sm font-semibold text-indigo-100 hover:bg-indigo-500/30 transition"
-        >
-          Open event
-        </Link>
+        <span className="zine-go" aria-hidden="true">&rarr;</span>
       </div>
-    </div>
+      <h3>{event.title}</h3>
+      <div className="zine-meta">
+        <span>{event.dateText}</span>
+        <span>@ {event.locationText}</span>
+      </div>
+      {event.summary && <p>{event.summary}</p>}
+    </Link>
   );
 }
