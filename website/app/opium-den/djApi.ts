@@ -472,6 +472,8 @@ export type DjAlertSendResult = {
   sent: number;
   /** addresses the mail server refused. */
   failed: string[];
+  /** the recording set the alert's subject and message were made the title and description of, if one was. */
+  labelled_set_id: number | null;
 };
 
 /**

@@ -1111,6 +1111,11 @@ class DjAlertSend(BaseModel):
 
 
 class DjAlertSendResult(BaseModel):
-    """How an alert went: how many took it, and any address the mail server refused."""
+    """
+    How an alert went: how many took it, any address the mail server refused, and the
+    live set it labelled (its subject and message became that set's title and
+    description), if one was recording.
+    """
     sent: int
     failed: list[str]
+    labelled_set_id: Optional[int] = None

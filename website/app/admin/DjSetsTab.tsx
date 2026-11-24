@@ -299,7 +299,7 @@ export default function DjSetsTab() {
   return (
     <div>
       <OnAirCard />
-      <DjAlertsPanel />
+      <DjAlertsPanel onLabelledSet={sets.reload} />
       <ChatModeration />
       <Toolbar summary={plural(sets.data.length, "set")}>
         <Button size="sm" onClick={sets.reload}>

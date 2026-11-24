@@ -109,6 +109,9 @@ admin page's DJ tab.
   in the den"), the message, Send. Everyone gets their own plain text copy: the
   message, the live room link, and their own unsubscribe link. One-click unsubscribe
   headers are on it too, so Gmail and Apple Mail show their own unsubscribe button.
+  Sent while a set's recording, the subject and message also become that set's title
+  and description (a blank subject keeps the title), and the set list reloads to show
+  it. Change them there any time after.
 - **Staying out of spam**: the emails say "the den", never "opium", in the subject, body
   and sender name (`MAIL_FROM`), since drug words are a classic spam filter trigger. The
   links still have `/opium-den/` in them, that's just the site's address. The signup also

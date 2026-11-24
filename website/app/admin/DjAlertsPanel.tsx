@@ -16,7 +16,9 @@ import { Badge, Button, Card, Field, FlashMessage, INPUT_CLASS, Muted, Toolbar, 
 /**
  * The live alerts panel on the DJ tab: write an email and send it to everyone who's
  * signed up and confirmed. Nothing goes out on its own; this is the only way an alert
- * is sent. Under it, who's signed up, with remove.
+ * is sent. Sending while a set's recording also makes the subject and message that set's
+ * title and description (the backend does it), editable in the list below like any set.
+ * Under it, who's signed up, with remove.
  */
 
 const SUBSCRIBERS_PATH = `${DJ_ALERTS_PATH}/subscribers`;
@@ -27,7 +29,8 @@ const SUBSCRIBERS_PATH = `${DJ_ALERTS_PATH}/subscribers`;
  * @returns Like "Sent to 12." or "Sent to 11. Couldn't send to: a@b.com".
  */
 function sendSummary(result: DjAlertSendResult): string {
-  const sent = `Sent to ${plural(result.sent, "person", "people")}.`;
+  const labelled = result.labelled_set_id !== null ? " It's the live set's title and description now too." : "";
+  const sent = `Sent to ${plural(result.sent, "person", "people")}.${labelled}`;
   return result.failed.length ? `${sent} Couldn't send to: ${result.failed.join(", ")}` : sent;
 }
 
@@ -64,8 +67,9 @@ function SubscriberList({
 
 /**
  * The live alerts panel.
+ * @param props.onLabelledSet - Called after a send that relabelled the live set, so the set list can reload.
  */
-export default function DjAlertsPanel() {
+export default function DjAlertsPanel({ onLabelledSet }: { onLabelledSet: () => void }) {
   const adminFetch = useAdminFetch();
   const subscribers = useAdminData<DjAlertSubscriber[]>(SUBSCRIBERS_PATH, "couldn't load alert signups");
   const [subject, setSubject] = useState("");
@@ -88,6 +92,7 @@ export default function DjAlertsPanel() {
         jsonBody("POST", { subject: subject.trim() || null, body: body.trim() })
       );
       if (result) showFlash(result.failed.length ? "error" : "success", sendSummary(result));
+      if (result?.labelled_set_id != null) onLabelledSet();
       setSubject("");
       setBody("");
     } catch (err) {
