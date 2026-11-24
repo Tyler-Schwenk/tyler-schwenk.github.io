@@ -6,7 +6,8 @@ status every few seconds. When the mount goes live it starts ffmpeg copying the 
 into an mp3 under DJ_SETS_DIR and adds a dj_sets row. When the source goes away, ffmpeg
 sees the stream end (or gets stopped), and the row gets its end time, length and size.
 Sessions shorter than MIN_SET_DURATION_S, like a bump of the mixer tripping butt's auto
-start, get thrown away.
+start, get thrown away. While a set records, the live meter (app/dj_live_meter.py) measures
+its loudness for the site's live trace.
 
 There's one watcher per process (`watcher`), started from main.py's lifespan. The server
 runs a single uvicorn worker, so that's one recorder. See pi/docs/services/dj-stream.md.
@@ -14,6 +15,7 @@ runs a single uvicorn worker, so that's one recorder. See pi/docs/services/dj-st
 
 import asyncio
 import logging
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -22,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import SessionLocal
+from app.dj_live_meter import LiveMeter
 from app.dj_waveform import prepare_waveform
 from app.image_utils import delete_photo_files
 from app.kiln_firings import utc_now_naive
@@ -43,6 +46,9 @@ ICECAST_START_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
 SET_FILENAME_FORMAT = "%Y-%m-%d_%H-%M-%S.mp3"
 # cover images sit next to the recordings, so they're on the same ssd and mount
 SET_IMAGES_SUBDIR = "images"
+# a meter that died mid-set is started again, but no more often than this, so one that
+# can't run doesn't respawn every poll
+METER_RETRY_S = 30.0
 
 
 def stream_url() -> str:
@@ -203,6 +209,7 @@ class DjStreamWatcher:
         live: Whether icecast had our mount on air at the last poll.
         started_at: When butt connected (naive UTC), None when not live.
         listeners: How many people the public relay (/dj/live) is serving.
+        meter: The live set's loudness, for /dj/live/trace.
     """
 
     def __init__(self) -> None:
@@ -215,6 +222,7 @@ class DjStreamWatcher:
         self._icecast_unreachable = False
         # held so the finished set's waveform analysis isn't garbage collected mid-run
         self._waveform_task: asyncio.Task | None = None
+        self.meter = LiveMeter()
 
     @property
     def recording_set_id(self) -> int | None:
@@ -274,6 +282,23 @@ class DjStreamWatcher:
             await self._start_recording()
         elif not self.live and self._recorder is not None:
             await self._stop_recording()
+        elif self._recorder is not None:
+            await self._restart_meter_if_down()
+
+    async def _restart_meter_if_down(self) -> None:
+        """
+        Starts the live meter again if it's died mid-set, at most every METER_RETRY_S.
+
+        Side effects:
+            May spawn the meter's ffmpeg.
+        """
+        if self.meter.running or not self.meter.in_set:
+            return
+        last = self.meter.last_started
+        if last is not None and time.monotonic() - last < METER_RETRY_S:
+            return
+        logger.info("dj stream: the live meter stopped mid-set, starting it again")
+        await self.meter.start(stream_url())
 
     async def _fetch_source(self, client: httpx.AsyncClient) -> dict | None:
         """
@@ -338,6 +363,8 @@ class DjStreamWatcher:
         self._recorder = process
         self._recorder_output = asyncio.create_task(log_ffmpeg_output(process, path.name))
         logger.info(f"dj stream: live, recording to {path.name}")
+        self.meter.begin_set()
+        await self.meter.start(stream_url())
 
     async def _stop_recording(self) -> None:
         """
@@ -363,9 +390,12 @@ class DjStreamWatcher:
         Wraps up after ffmpeg has exited: saves or discards the set and clears the recorder.
 
         Side effects:
-            Updates or deletes the dj_sets row (and the file, if discarded), and starts
-            working out a kept set's waveform in the background.
+            Stops the live meter and drops its trace, updates or deletes the dj_sets row
+            (and the file, if discarded), and starts working out a kept set's waveform in
+            the background.
         """
+        await self.meter.stop()
+        self.meter.end_set()
         set_id = self._set_id
         if self._recorder_output is not None:
             await self._recorder_output

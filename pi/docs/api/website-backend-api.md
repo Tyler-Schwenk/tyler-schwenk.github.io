@@ -1296,6 +1296,10 @@ Whether it's on air. Refreshed every 3 s from icecast, so it's cheap to poll. `2
 
 `started_at` is when butt connected (null when off air). `listeners` counts people on `/dj/live`. `set_id` is the set being recorded and `image_id` its cover, if one's been uploaded yet (both null when nothing's recording), so the live room can show the cover mid-set.
 
+### GET `/dj/live/trace`
+
+The live set's loudness so far, for drawing it while it's on: `{"live": true, "interval_s": 1.0, "peaks": [0.31, 0.42, ...]}`. Oldest first, each bar covering `interval_s` seconds back to back from when the recording started (a few seconds after `/dj/status`'s `started_at`), each 0 to 1 with 1 the loudest moment so far. One level a second, squeezed to at most 600 bars (`MAX_TRACE_BARS`, each the loudest of its stretch) once the set's longer than that, so `interval_s` grows with it. Measured as it streams by the live meter (a second ffmpeg on the icecast stream, RMS like the waveform), so it's cheap to poll. Off air it's `{"live": false, "interval_s": 0, "peaks": []}`, and in a set's first second or two, or while the meter's restarting, `peaks` can be empty or stop short. Code: `app/dj_live_meter.py`. Public. `200`.
+
 ### GET `/dj/live`
 
 The live stream itself, `audio/mpeg`, endless until the set ends or the listener leaves. Point an `<audio>` element at it. `503` when it's off air, when 25 people are already listening, or when icecast won't serve it.

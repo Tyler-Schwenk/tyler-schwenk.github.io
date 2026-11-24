@@ -4,7 +4,8 @@ DJ router -- the live dj stream and its recorded sets, for the Opium Den's live 
 The stream itself comes from icecast on the pi's LAN (pi/services/dj-stream). /dj/live
 relays it so listeners reach it through the existing tunnel without icecast ever being
 public. Recording and live state live in app/dj_stream.py, waveforms in
-app/dj_waveform.py. Each set also has its chat: the live room's messages from while it was
+app/dj_waveform.py, and the live set's loudness (/dj/live/trace) in app/dj_live_meter.py.
+Each set also has its chat: the live room's messages from while it was
 recording, placed on its timeline so the set page can replay them, and can have a cover
 image, uploaded while it's still recording or any time after. Reads are public; renaming,
 deleting and setting cover images are admin only.
@@ -29,7 +30,15 @@ from app.dj_waveform import WaveformError, get_waveform, waveform_path
 from app.file_streaming import ranged_file_response
 from app.image_utils import store_photo
 from app.models import DjChatMessage, DjSet, DjSetImage
-from app.schemas import DjSetChatMessage, DjSetImageRead, DjSetRead, DjSetUpdate, DjSetWaveform, DjStreamStatus
+from app.schemas import (
+    DjLiveTrace,
+    DjSetChatMessage,
+    DjSetImageRead,
+    DjSetRead,
+    DjSetUpdate,
+    DjSetWaveform,
+    DjStreamStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +158,22 @@ async def get_stream_status(db: Session = Depends(get_db)) -> DjStreamStatus:
         recording = db.get(DjSet, stream_status.set_id)
         stream_status.image_id = recording.image_id if recording else None
     return stream_status
+
+
+@router.get("/live/trace", response_model=DjLiveTrace)
+async def get_live_trace() -> DjLiveTrace:
+    """
+    The live set's loudness so far, a bar per stretch of it, for the live monitor's trace.
+    Measured as it streams (app/dj_live_meter.py), so it's cheap to poll. Off air, or in
+    the first second or two of a set, there are no bars yet.
+
+    Returns:
+        DjLiveTrace: whether it's live, how long each bar covers, and the bars.
+    """
+    if not watcher.live:
+        return DjLiveTrace(live=False, interval_s=0, peaks=[])
+    interval_s, peaks = watcher.meter.trace()
+    return DjLiveTrace(live=True, interval_s=interval_s, peaks=peaks)
 
 
 @router.get("/live")

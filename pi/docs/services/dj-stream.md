@@ -14,6 +14,7 @@ rekordbox (DDJ-400 master, also sent to the laptop's own output by PC MASTER OUT
   -> website backend (website-backend-api):
        - polls icecast's status every 3 s -> GET /dj/status
        - while live, ffmpeg copies the stream to /mnt/ssd/dj-sets/<start time>.mp3
+       - while live, a second ffmpeg (the meter) measures its loudness -> GET /dj/live/trace
        - relays the stream to listeners -> GET /dj/live (through the existing tunnel)
        - serves finished sets -> GET /dj/sets, GET /dj/sets/{id}/audio
        - works out each finished set's waveform (ffmpeg) -> GET /dj/sets/{id}/waveform
@@ -47,6 +48,7 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/website-backend/app/dj_stream.py` | The watcher: live state, recording, listener count |
 | `pi/services/website-backend/app/routers/dj.py` | The `/dj` endpoints (see `pi/docs/api/website-backend-api.md#dj-stream`) |
 | `pi/services/website-backend/app/dj_waveform.py` | Works out and caches each set's waveform with ffmpeg |
+| `pi/services/website-backend/app/dj_live_meter.py` | The live meter: the set's loudness while it's on, for the live trace |
 | `pi/services/website-backend/app/routers/dj_chat.py` | The live room chat, `/dj/chat` (open only while live, admin can delete) |
 | `pi/services/website-backend/app/routers/dj_alerts.py` | Live alerts, `/dj/alerts`: signup, confirm, unsubscribe, and the admin's list and send |
 | `pi/services/website-backend/app/mailer.py` | Sends email over SMTP, one message per recipient |
@@ -73,6 +75,15 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
   it to low-rate mono and measures each slice's loudness, a few seconds for a long set)
   and saves it next to the mp3 as `<start time>.waveform.json`. If that fails, or the set
   is older than this, it's done on the first request for it instead.
+- While a set's on, a second ffmpeg, the live meter, listens to icecast too and prints the
+  stream's loudness every second, measured the same way as the waveform (same filter,
+  same parsing in `dj_waveform.py`), so the live trace and the finished set look alike.
+  The levels are kept in memory for that set and served at `GET /dj/live/trace`, squeezed
+  to at most 600 bars, for the live section's monitor. It's its own ffmpeg, not part of the
+  recorder, so if it fails the recording carries on; the watcher starts it again (at most
+  every 30 s, `METER_RETRY_S`), and each level is placed by its stream time plus when that
+  ffmpeg started, so a restart leaves a gap instead of shifting what came after. When the
+  set ends the levels are dropped: the recording's own waveform takes over.
 - The live room's chat is never thrown away. A set's chat is whatever was sent while it was
   on air, matched by time, so the set page can replay it (see
   `pi/docs/api/website-backend-api.md#get-djsetsset_idchat`).

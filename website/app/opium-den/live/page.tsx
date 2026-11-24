@@ -10,9 +10,9 @@ export const metadata = pageMetadata({
 });
 
 /**
- * the live section: everything dj, laid out like a seismograph. the live monitor (the
- * live room's way in, with alerts), and every recorded set drawn to scale, each opening
- * out to its waveform and chat. the frame and look come from app/opium-den/layout.tsx,
+ * the live section: everything dj. the live monitor (the live room's way in, with
+ * alerts), and every recorded set drawn to scale, each opening out to its waveform and
+ * chat. the frame and look come from app/opium-den/layout.tsx,
  * the player from the root layout. see website/docs/OPIUM_DEN.md.
  *
  * @returns {JSX.Element} the live section's page.
@@ -38,7 +38,7 @@ export default function LiveSectionPage() {
               </h1>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-den-muted sm:text-[17px]">
                 Whenever I&apos;m practicing on the decks it streams here live, with a chat to hang out in. Every session
-                gets recorded, and they&apos;re all laid out below, to scale.
+                gets recorded, so they&apos;re all below to listen back to.
               </p>
             </>
           }

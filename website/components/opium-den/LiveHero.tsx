@@ -37,17 +37,14 @@ function startedMs(status: DjStreamStatus | null): number | null {
 }
 
 /**
- * the time axis under the paper: when it started, halfway, and "now" at the pen.
+ * the time axis under the paper while live: when it started, halfway, and "now" at the pen.
  *
  * @param {object} props
- * @param {number | null} props.startMs - when the set started, null off air.
+ * @param {number} props.startMs - when the set started.
  * @param {number} props.nowMs - now.
  * @returns {JSX.Element} the axis.
  */
-function TimeAxis({ startMs, nowMs }: { startMs: number | null; nowMs: number }) {
-  if (startMs === null) {
-    return <div className="h-7 border-t border-den-line" aria-hidden="true" />;
-  }
+function TimeAxis({ startMs, nowMs }: { startMs: number; nowMs: number }) {
   const halfway = startMs + (nowMs - startMs) / 2;
   return (
     <div className="relative h-7 border-t border-den-line font-den-mono text-[11px] text-den-muted" aria-hidden="true">
@@ -67,9 +64,9 @@ function TimeAxis({ startMs, nowMs }: { startMs: number | null; nowMs: number })
  * monitor. a header reads out the stream (on air, when it started, how long it's been
  * going, who's listening) with the set's cover once one's uploaded, a red listen button
  * to play it right here and a way into the room. under it, chart paper with the set so
- * far traced out as the room's chat (LiveTrace), and a time axis. off air the readout
- * says so, the paper's a flat line, and there's a link to the room, whose chat from the
- * last set stays readable for a while.
+ * far traced out, its sound with the room's chat on it (LiveTrace), and a time axis. off air the readout
+ * says so, the paper asks people to sign up for live alerts, and there's a link to the
+ * room, whose chat from the last set stays readable for a while.
  *
  * @param {object} props
  * @param {DjStreamStatus | null} props.status - latest status, null before the first answer.
@@ -158,7 +155,7 @@ export default function LiveHero({
       </div>
 
       <LiveTrace live={live} startMs={startMs} nowMs={nowMs} />
-      <TimeAxis startMs={live ? startMs : null} nowMs={nowMs} />
+      {live && startMs !== null && <TimeAxis startMs={startMs} nowMs={nowMs} />}
     </section>
   );
 }

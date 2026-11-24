@@ -986,6 +986,17 @@ class DjSetWaveform(BaseModel):
     peaks: list[float] = Field(..., description="evenly spread over the set, each 0 to 1 (1 is the loudest moment)")
 
 
+class DjLiveTrace(BaseModel):
+    """
+    The live set's loudness so far, measured as it streams, for drawing it while it's on.
+    The first bar starts when the recording did (a few seconds after started_at in
+    /dj/status), and they run back to back from there.
+    """
+    live: bool
+    interval_s: float = Field(..., description="how many seconds of the set each bar covers")
+    peaks: list[float] = Field(..., description="oldest first, each 0 to 1 (1 is the loudest moment so far). empty off air")
+
+
 # DJ live alerts: emails the admin sends by hand when going live
 # the longest an email address can be (RFC 5321's limit on a forward path)
 MAX_EMAIL_LENGTH = 254

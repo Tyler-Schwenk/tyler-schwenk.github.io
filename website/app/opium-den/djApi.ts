@@ -58,6 +58,15 @@ export type DjSetWaveform = {
   peaks: number[];
 };
 
+/** the live set's loudness so far, measured as it streams. */
+export type DjLiveTrace = {
+  live: boolean;
+  /** how many seconds of the set each bar covers. */
+  interval_s: number;
+  /** oldest first, each 0 to 1, 1 being the loudest moment so far. empty off air. */
+  peaks: number[];
+};
+
 /** the live stream, for an <audio> element. */
 export const DJ_LIVE_URL = `${API_BASE}/dj/live`;
 
@@ -279,6 +288,16 @@ export function fetchDjSetChat(setId: number): Promise<DjSetChatMessage[]> {
  */
 export function fetchDjSetWaveform(setId: number): Promise<DjSetWaveform> {
   return fetchDjJson<DjSetWaveform>(`${DJ_SETS_PATH}/${setId}/waveform`, "load this set's waveform");
+}
+
+/**
+ * the live set's loudness so far, for the live monitor's trace. the bars start when the
+ * recording did and run back to back.
+ *
+ * @returns {Promise<DjLiveTrace>} the trace.
+ */
+export function fetchDjLiveTrace(): Promise<DjLiveTrace> {
+  return fetchDjJson<DjLiveTrace>("/dj/live/trace", "load the live trace");
 }
 
 /**

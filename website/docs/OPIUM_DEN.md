@@ -52,8 +52,7 @@ mirrored about the middle like a seismograph trace.
   white. `.den-font` is just the font, for the player bar, which also shows on the rest of
   the site.
 - **Covers** (`SetArt`): each set can have a cover image, uploaded from the admin page. It
-  shows square and cropped to fill: in the set list (mostly greyscale until hovered or
-  playing), the player bar, the live monitor and room (the set being recorded), the set
+  shows square and cropped to fill, in full colour: in the set list, the player bar, the live monitor and room (the set being recorded), the set
   page, and the phone's lock screen. Without one it's a grey tile with a faint record on
   it. The pixel DJ board is only on the home page now.
 - The intro's "what is this" is a `<details>` disclosure styled as a mono link.
@@ -74,24 +73,30 @@ tab's visible). Then the Listen links.
 and every session is recorded and shows up here as a past set once it ends. The pipeline
 (rekordbox, butt, icecast, recording) is in `pi/docs/services/dj-stream.md`.
 
-- **Header**: an "Opium Den" back link, "Live from the den." and a line on what it is, with
-  three stats beside it: how many sets, how many hours, and how many chat messages across
-  them all (shown once every set's chat has loaded).
-- **Live monitor** (`LiveHero`): the way into the room, drawn like a seismograph's monitor.
+- **Header**: an "Opium Den" back link, "Live from the den." and a line on what it is.
+- **Live monitor** (`LiveHero`): the way into the room.
   A header reads out the stream in mono: "On air" with a blinking dot, when it started,
   how long it's been going (ticking every second, `useNow`), and how many are listening
   (only once someone is), with the set's cover once one's uploaded. Then a red **Listen**
   button to play it right there and **Enter the room**, which goes to
   `/opium-den/live/room`. Under that, chart paper (`LiveTrace`) with the set so far traced
-  from the left edge to the pen, which is "now": the stream has no waveform until it's
-  recorded, so the trace is the room's chat activity (how many messages came in during
-  each slice of the set so far), with the latest three messages pinned on where they were
-  said, each in its own lane (one on phones). The room's chat is polled every 15 s, only
-  while live. A time axis runs under it: the start, halfway, and "now". Off air the
-  readout says when it streams, the paper's a flat line, and there's a link to the room.
-- **Live alerts link**: "Get an email when I go live" under the monitor opens the signup in
-  place (see Live Alerts below).
-- **Every set, to scale** (`SetList`, `SetTrace`): newest first. Each row is the set's cover,
+  from the left edge to the pen, which is "now": its sound, measured by the Pi as it
+  streams (`GET /dj/live/trace`, polled every 10 s), drawn with the same mirrored bars as a
+  finished set (`WaveBars`) and as far across as the levels cover. A tick along the top
+  marks each chat message, and the latest three are pinned on where they were said, each
+  in its own lane (one on phones). The room's chat is polled every 15 s. Both are only
+  fetched while live. Without a trace yet (the first seconds of a set, or a Pi that hasn't
+  got the endpoint) it's just the baseline. A time axis runs under it: the start, halfway,
+  and "now". Off air the readout says when it streams and there's a link to the room, and
+  the paper says "Off air right now." with a big **Get notified when we go live** button
+  (`AlertSignup prominent`) that opens the live alerts signup in place, since that's the
+  main thing to do then.
+- **Live alerts link**: while live, a small "Get an email when I go live" under the monitor
+  opens the signup in place (see Live Alerts below). Off air the monitor has the big one
+  instead.
+- **Past sets** (`SetList`, `SetTrace`): three stats under the heading (how many sets, how
+  many hours, and how many chat messages across them all, shown once every set's chat has
+  loaded), then the sets, newest first. Each row is the set's cover,
   the title (or "untitled set"), the date and how many chat messages, and the start of the
   description (with "more" when it's long enough to be cut off). Beside it on desktop (under
   it on phones), the set's waveform drawn to scale: the longest set runs 88% of the row
@@ -188,8 +193,8 @@ backend, the emails and the mail setup are in `pi/docs/services/dj-stream.md#liv
 - **Signup** (`AlertSignup`): an email box and "Sign up", with a line saying they'll
   confirm by email first. Once it's sent, it turns into "check your inbox at ...", with a
   red line to check spam too. It starts as a small mono link with a red underline that opens
-  it (under the section's live monitor), or open
-  (`startOpen`: the live room off air, and the alerts page).
+  it (under the section's live monitor while live), as a big pill (`prominent`: the live
+  monitor off air), or open (`startOpen`: the live room off air, and the alerts page).
 - **`/opium-den/live/alerts`** (`AlertsLanding`): one static page that reads its query on
   the client. `?confirm=<token>` confirms ("You're on the list"), `?unsubscribe=<token>`
   unsubscribes ("You're off the list", with the signup link in case they change their

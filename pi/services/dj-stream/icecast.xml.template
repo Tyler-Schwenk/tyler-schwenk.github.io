@@ -1,14 +1,14 @@
 <!--
   icecast config for the live dj stream. entrypoint.sh fills in the passwords.
-  the only listeners are the website backend (its recorder and its public relay at
-  /dj/live), so the limits are small. see pi/docs/services/dj-stream.md
+  the only listeners are the website backend (its recorder, its live meter, and its
+  public relay at /dj/live), so the limits are small. see pi/docs/services/dj-stream.md
 -->
 <icecast>
     <location>fart-pi</location>
     <admin>admin@localhost</admin>
 
     <limits>
-        <!-- the backend's recorder plus its relay, which caps listeners itself -->
+        <!-- the backend's recorder and live meter, plus its relay, which caps listeners itself -->
         <clients>40</clients>
         <sources>2</sources>
         <queue-size>524288</queue-size>

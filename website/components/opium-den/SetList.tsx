@@ -19,6 +19,37 @@ const META_COLUMN = "md:grid-cols-[20rem_minmax(0,1fr)]";
 const TRACE_SCALE = "[--den-trace-scale:78%] md:[--den-trace-scale:88%]";
 // past about this many characters (or with a line break) a description won't fit its two lines, so it gets a "more"
 const DESCRIPTION_CLAMP_CHARS = 110;
+const S_PER_H = 3600;
+
+/**
+ * the stat cells under the heading: how many sets, how many hours, how many chat
+ * messages. the messages count waits until every set's chat is in, so it doesn't count up.
+ *
+ * @param {object} props
+ * @param {DjSet[]} props.sets - the sets.
+ * @param {Record<number, DjSetTrace>} props.traces - their chat, by set id.
+ * @returns {JSX.Element} the cells.
+ */
+function Stats({ sets, traces }: { sets: DjSet[]; traces: Record<number, DjSetTrace> }) {
+  const hours = (sets.reduce((sum, set) => sum + set.duration_s, 0) / S_PER_H).toFixed(1);
+  const chats = sets.map((set) => traces[set.id]?.messages);
+  const messages = chats.every(Boolean) ? chats.reduce((sum, chat) => sum + (chat?.length ?? 0), 0) : null;
+  const cells: [string, string | number | null][] = [
+    ["sets", sets.length],
+    ["hours", hours],
+    ["chat msgs", messages],
+  ];
+  return (
+    <dl className="grid max-w-md grid-cols-3 border-l border-t border-den-line border-t-den-ink">
+      {cells.map(([label, value]) => (
+        <div key={label} className="border-b border-r border-den-line px-3.5 py-3">
+          <dd className="text-3xl font-semibold leading-none tracking-[-0.04em] tabular-nums">{value ?? "–"}</dd>
+          <dt className="mt-1.5 font-den-mono text-[11px] uppercase text-den-muted">{label}</dt>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 /**
  * what sits over a row's cover: nothing until you hover (then play), bouncing bars for
@@ -125,13 +156,7 @@ function SetRow({
           aria-label={`${current && playing ? "Pause" : "Play"} ${title}`}
           className="group/art relative"
         >
-          {/* black and white until it's hovered or playing, so the one playing stands out */}
-          <SetArt
-            src={djSetThumbUrl(set)}
-            className={`h-[3.25rem] w-[3.25rem] transition md:h-16 md:w-16 ${
-              current ? "" : "grayscale-[85%] group-hover/art:grayscale-0"
-            }`}
-          />
+          <SetArt src={djSetThumbUrl(set)} className="h-[3.25rem] w-[3.25rem] md:h-16 md:w-16" />
           <span
             className={`absolute inset-0 flex items-center justify-center bg-den-ink/55 text-den-bg transition-opacity group-hover/art:opacity-100 ${
               overlayShown ? "opacity-100" : "opacity-0 pointer-coarse:bg-den-ink/30 pointer-coarse:opacity-100"
@@ -185,10 +210,11 @@ function SetRow({
 }
 
 /**
- * every recorded set, newest first, each drawn to scale as its waveform like the traces
- * on a seismograph's drum: the longest set runs nearly the width of the row and the rest
- * are cut to match, so you can see at a glance which went long, and the chat ticks above
- * each show where people were talking. a half-hour ruler runs along the top on desktop.
+ * past sets: the section's stats (sets, hours, chat messages), then every recorded set,
+ * newest first, each drawn to scale as its waveform: the longest set runs nearly the
+ * width of the row and the rest are cut to match, so you can see at a glance which went
+ * long, and the chat ticks above each show where people were talking. a half-hour ruler
+ * runs along the top on desktop.
  *
  * @param {object} props
  * @param {DjSet[]} props.sets - the sets.
@@ -224,9 +250,12 @@ export default function SetList({
 
   return (
     <section className={`mt-20 ${TRACE_SCALE}`}>
-      <h2 className="text-[2.5rem] font-extrabold leading-none tracking-[-0.045em] sm:text-[2.75rem]">Every set, to scale</h2>
+      <h2 className="text-[2.5rem] font-extrabold leading-none tracking-[-0.045em] sm:text-[2.75rem]">Past sets</h2>
+      <div className="mt-5">
+        <Stats sets={sets} traces={traces} />
+      </div>
       {/* the ruler lines up over the traces, past the meta column */}
-      <div className={`mt-3 grid gap-7 border-b border-den-ink pb-1 ${META_COLUMN}`}>
+      <div className={`mt-8 grid gap-7 border-b border-den-ink pb-1 ${META_COLUMN}`}>
         <span className="hidden md:block" />
         {longestS > 0 && <TimeRuler longestS={longestS} />}
       </div>

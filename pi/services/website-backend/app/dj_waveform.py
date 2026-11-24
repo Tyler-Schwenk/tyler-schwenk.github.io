@@ -7,6 +7,9 @@ reads those levels, turns them from dB into amplitudes and scales them so the lo
 chunk is 1. A two hour set takes a few seconds on the pi, so the result is cached as json
 next to the mp3 (`<set>.waveform.json`) and only worked out once per set: when the set
 finishes recording, or the first time someone asks for it.
+
+The live meter (app/dj_live_meter.py) measures the stream the same way while it's on, with
+rms_filter and parse_rms_line, so the live trace and the finished waveform look alike.
 """
 
 import asyncio
@@ -49,6 +52,50 @@ def waveform_path(audio_path: Path) -> Path:
     return audio_path.with_suffix(WAVEFORM_SUFFIX)
 
 
+def rms_filter(samples_per_chunk: int, print_target: str) -> str:
+    """
+    The ffmpeg audio filter that cuts mono audio into equal chunks and prints each one's
+    RMS level.
+
+    Args:
+        samples_per_chunk: How many samples (at ANALYSIS_SAMPLE_RATE_HZ) go in a chunk.
+        print_target: ametadata's print options after the key, like ":file=-" to print to
+            stdout, or "" to print to ffmpeg's log (stderr).
+
+    Returns:
+        str: The -af filter chain.
+    """
+    return (
+        f"aresample={ANALYSIS_SAMPLE_RATE_HZ},"
+        f"asetnsamples=n={samples_per_chunk},"
+        "astats=metadata=1:reset=1:measure_overall=RMS_level:measure_perchannel=none,"
+        f"ametadata=print:key={RMS_METADATA_KEY}{print_target}"
+    )
+
+
+def parse_rms_line(line: str) -> float | None:
+    """
+    Reads one chunk's RMS level from a line ffmpeg's ametadata printed.
+
+    Args:
+        line: One line of output. The level can be anywhere in it, since printed to the
+            log it comes after a "[Parsed_ametadata_3 @ 0x...]" prefix.
+
+    Returns:
+        float | None: The level as a linear amplitude (0 for silence), or None when the
+            line isn't a level.
+    """
+    prefix = f"{RMS_METADATA_KEY}="
+    start = line.find(prefix)
+    if start < 0:
+        return None
+    try:
+        db = float(line[start + len(prefix):].strip())  # "-inf" parses to -inf, which comes out as 0
+    except ValueError:
+        return None
+    return 10 ** (db / DB_PER_AMPLITUDE_DECADE) if math.isfinite(db) else 0.0
+
+
 def parse_rms_levels(ffmpeg_output: str) -> list[float]:
     """
     Pulls the per-chunk RMS levels out of ffmpeg's ametadata print.
@@ -60,14 +107,8 @@ def parse_rms_levels(ffmpeg_output: str) -> list[float]:
     Returns:
         list[float]: Each chunk's level as a linear amplitude (0 for silence), in order.
     """
-    levels = []
-    prefix = f"{RMS_METADATA_KEY}="
-    for line in ffmpeg_output.splitlines():
-        if not line.startswith(prefix):
-            continue
-        db = float(line[len(prefix):])  # "-inf" parses to -inf, which comes out as 0
-        levels.append(10 ** (db / DB_PER_AMPLITUDE_DECADE) if math.isfinite(db) else 0.0)
-    return levels
+    levels = (parse_rms_line(line) for line in ffmpeg_output.splitlines())
+    return [level for level in levels if level is not None]
 
 
 def normalize_peaks(levels: list[float]) -> list[float]:
@@ -101,12 +142,7 @@ async def analyze(audio_path: Path, duration_s: int) -> list[float]:
         WaveformError: ffmpeg failed or printed no levels.
     """
     samples_per_bucket = max(1, math.ceil(duration_s * ANALYSIS_SAMPLE_RATE_HZ / WAVEFORM_BUCKETS))
-    audio_filter = (
-        f"aresample={ANALYSIS_SAMPLE_RATE_HZ},"
-        f"asetnsamples=n={samples_per_bucket},"
-        "astats=metadata=1:reset=1:measure_overall=RMS_level:measure_perchannel=none,"
-        f"ametadata=print:key={RMS_METADATA_KEY}:file=-"
-    )
+    audio_filter = rms_filter(samples_per_bucket, ":file=-")
     process = await asyncio.create_subprocess_exec(
         "ffmpeg", "-nostdin", "-loglevel", "error",
         "-i", str(audio_path),

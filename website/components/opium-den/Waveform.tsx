@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from "react";
 import { formatDuration } from "@/app/admin/format";
 import type { DjSetChatMessage } from "@/app/opium-den/djApi";
 import { useScrub } from "@/lib/useScrub";
@@ -114,6 +114,7 @@ export function percentAt(seconds: number, durationS: number): number {
  * @param {number | null} [props.hoverFraction] - where the mouse is, or null.
  * @param {boolean} [props.placeholder] - no real waveform (loading or failed), so faint. pulse it with the className while loading.
  * @param {string} [props.className] - placement, absolute and filling the parent by default.
+ * @param {CSSProperties} [props.style] - inline placement, like a width that changes with the data.
  * @returns {JSX.Element} the svg.
  */
 export function WaveBars({
@@ -122,12 +123,14 @@ export function WaveBars({
   hoverFraction = null,
   placeholder = false,
   className = "absolute inset-0 h-full w-full",
+  style,
 }: {
   bars: number[];
   playedFraction: number;
   hoverFraction?: number | null;
   placeholder?: boolean;
   className?: string;
+  style?: CSSProperties;
 }) {
   const playedBars = playedFraction * bars.length;
   const hoverBars = (hoverFraction ?? 0) * bars.length;
@@ -139,6 +142,7 @@ export function WaveBars({
       preserveAspectRatio="none"
       aria-hidden="true"
       className={className}
+      style={style}
     >
       {bars.map((peak, i) => {
         const half = Math.max(peak, MIN_PEAK) * PEAK_HEIGHT_RATIO * MID_Y;

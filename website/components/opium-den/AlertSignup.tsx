@@ -11,13 +11,24 @@ const EMAIL_INPUT_CLASS =
  * the live alerts signup: an email box that asks the backend to send a confirmation.
  * once it's sent, the form turns into "check your inbox" (and your spam). starts as a small mono
  * link with a red underline that opens it, unless `startOpen`, so it stays out of the way on busy pages.
+ * `prominent` makes that link a big ink pill instead, for when signing up is the main thing
+ * to do, like the live monitor off air.
  *
  * @param {object} props
  * @param {boolean} [props.startOpen] - show the form straight away instead of the link.
+ * @param {boolean} [props.prominent] - the link's a big pill button, "get notified when we go live".
  * @param {string} [props.className] - extra classes for the outer element.
  * @returns {JSX.Element} the signup.
  */
-export default function AlertSignup({ startOpen = false, className = "" }: { startOpen?: boolean; className?: string }) {
+export default function AlertSignup({
+  startOpen = false,
+  prominent = false,
+  className = "",
+}: {
+  startOpen?: boolean;
+  prominent?: boolean;
+  className?: string;
+}) {
   const [open, setOpen] = useState(startOpen);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -39,6 +50,18 @@ export default function AlertSignup({ startOpen = false, className = "" }: { sta
       setSending(false);
     }
   };
+
+  if (!open && prominent) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`rounded-full bg-den-ink px-6 py-3 text-base font-semibold text-den-bg transition hover:bg-den-accent active:scale-95 ${className}`}
+      >
+        Get notified when we go live &rarr;
+      </button>
+    );
+  }
 
   if (!open) {
     return (
