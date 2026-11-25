@@ -113,7 +113,8 @@ in, each section only shows if it has something public in it.
 **Logging in**: "Jude's login" at the very bottom of the page opens a username and password form.
 It's a separate login from the admin page's, made on the backend with
 `scripts/create_kiln_editor.py` (see [the API docs](../../pi/docs/api/website-backend-api.md#kiln-journal)),
-and its token can only write notes and photos. The token's kept in localStorage under
+and its token can only write notes and photos. Removing the login with that script's `--remove`
+logs it out everywhere straight away. The token's kept in localStorage under
 `kiln-editor-token` and lasts 30 days, so a phone stays logged in. If a write comes back 401, the
 page logs out and shows the login again. Logging in or out reloads the notes and photos, to add or
 drop the private ones.

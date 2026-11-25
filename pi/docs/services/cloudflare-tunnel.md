@@ -17,6 +17,7 @@ See [docs/FORTYLER/custom-domain-setup.md](../FORTYLER/custom-domain-setup.md) f
 - Docker and Docker Compose
 - Website Backend API running on Pi
 - Network: Both containers on website-backend_default network
+- The container keeps the name `cloudflared-tunnel`: the backend looks it up by that name (its `TUNNEL_HOST` setting) to know which requests came through the tunnel and can have their `CF-Connecting-IP` header believed for rate limits. Renaming it means setting `TUNNEL_HOST` to match, or every tunnel visitor shares one rate limit
 
 ## Benefits
 

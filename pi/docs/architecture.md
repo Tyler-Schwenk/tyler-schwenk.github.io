@@ -346,6 +346,7 @@ Visitor's Browser → Cloudflare Edge → Tunnel → Pi → Website Backend API
 **Remote Access:**
 - Private access (SSH, Beszel, direct API) is home LAN, plus our tailnet and friends we've shared fart-pi with, as allowed by our tailnet ACLs; Raspberry Pi Connect for a remote shell
 - Public access via Cloudflare Tunnel — gallery/video reads are public; Public Square reads AND writes (post/comment/vote) are public and rate-limited per IP; admin-only writes (gallery/video management, Public Square moderation) require a JWT
+- The visitor IP for rate limits comes from `CF-Connecting-IP` only on requests from the cloudflared container, so LAN and tailnet clients can't fake it (see "Client IP" in `pi/docs/api/website-backend-api.md`)
 - No ports exposed directly to internet
 - No router port forwarding
 

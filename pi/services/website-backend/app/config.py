@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     KILN_WEATHER_LATITUDE: float = 32.8
     KILN_WEATHER_LONGITUDE: float = -117.2
 
+    # The cloudflared container's name on the docker network (container_name in
+    # pi/services/cloudflared/docker-compose.yml). Only requests from it get their
+    # CF-Connecting-IP header believed for rate limits and vote dedup (app/rate_limit.py)
+    TUNNEL_HOST: str = "cloudflared-tunnel"
+
     # CORS
     CORS_ORIGINS: str = ""
     

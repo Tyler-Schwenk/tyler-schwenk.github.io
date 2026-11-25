@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.dependencies import KILN_EDITOR_SCOPE, is_kiln_editor, require_kiln_editor
+from app.dependencies import KILN_EDITOR_SCOPE, is_kiln_editor, kiln_editor_subject, require_kiln_editor
 from app.image_utils import delete_photo_files, store_photo
 from app.kiln_firings import utc_naive
 from app.models import KilnEditor, KilnFiring, KilnNote, KilnPhoto
@@ -114,7 +114,7 @@ def login(
             detail="wrong username or password -- check both, or ask Tyler to reset it",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = create_access_token(f"kiln-editor:{editor.username}", scope=KILN_EDITOR_SCOPE)
+    token = create_access_token(kiln_editor_subject(editor.username), scope=KILN_EDITOR_SCOPE)
     return {"access_token": token, "token_type": "bearer"}
 
 

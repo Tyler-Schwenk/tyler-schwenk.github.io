@@ -11,8 +11,9 @@ Three kinds of token, all JWTs signed with JWT_SECRET (see app/routers/auth.py):
 Public endpoints that show more to some logins (is_admin, is_kiln_editor) treat a bad
 token as no token, so a stale login never breaks the public page.
 
-Admin and kiln tokens are checked against the secret only. Guest dj tokens also look the
-guest up, so turning a login off (scripts/create_dj_guest.py --disable) works straight away.
+Admin tokens are checked against the secret only. Kiln editor and guest dj tokens also
+look their login up, so removing a kiln login (scripts/create_kiln_editor.py --remove) or
+turning a guest off (scripts/create_dj_guest.py --disable) works straight away.
 """
 
 from dataclasses import dataclass
@@ -25,10 +26,12 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import DjGuest
+from app.models import DjGuest, KilnEditor
 
-# the scope claim on kiln editor tokens. admin tokens have no scope at all
+# the scope claim on kiln editor tokens, and how their subject starts (the username
+# follows). admin tokens have no scope at all
 KILN_EDITOR_SCOPE = "kiln"
+KILN_EDITOR_SUBJECT_PREFIX = "kiln-editor:"
 # the scope claim on guest dj tokens, and how their subject starts (the guest's id follows)
 DJ_GUEST_SCOPE = "dj"
 DJ_GUEST_SUBJECT_PREFIX = "dj-guest:"
@@ -77,17 +80,53 @@ def decode_token(token: str) -> dict:
     return payload
 
 
-def _can_edit_kiln(payload: dict) -> bool:
+def kiln_editor_subject(username: str) -> str:
+    """
+    The `sub` claim for a kiln editor's token.
+
+    Args:
+        username: The editor's username, lowercase.
+
+    Returns:
+        str: Like "kiln-editor:jude".
+    """
+    return f"{KILN_EDITOR_SUBJECT_PREFIX}{username}"
+
+
+def _kiln_editor_exists(db: Session, payload: dict) -> bool:
+    """
+    Says whether the kiln login a token belongs to is still there, so removing it with
+    scripts/create_kiln_editor.py --remove turns its tokens off straight away.
+
+    Args:
+        db: Database session.
+        payload: Verified token claims with the kiln scope.
+
+    Returns:
+        bool: True if the subject names a kiln editor that still exists.
+    """
+    subject = str(payload["sub"])
+    username = subject.removeprefix(KILN_EDITOR_SUBJECT_PREFIX)
+    if subject == username:
+        return False
+    return db.query(KilnEditor.id).filter(KilnEditor.username == username).first() is not None
+
+
+def _can_edit_kiln(db: Session, payload: dict) -> bool:
     """
     Says whether a token's claims allow writing kiln notes and photos.
 
     Args:
+        db: Database session, for looking the kiln login up.
         payload: Verified token claims.
 
     Returns:
-        bool: True for admin tokens (no scope) and kiln editor tokens.
+        bool: True for admin tokens (no scope), and kiln editor tokens whose login still exists.
     """
-    return payload.get("scope") in (None, KILN_EDITOR_SCOPE)
+    scope = payload.get("scope")
+    if scope is None:
+        return True
+    return scope == KILN_EDITOR_SCOPE and _kiln_editor_exists(db, payload)
 
 
 def require_admin(
@@ -112,23 +151,31 @@ def require_admin(
 
 def require_kiln_editor(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
 ) -> None:
     """
     Lets the kiln editor or the admin through.
 
     Args:
         credentials: HTTP Authorization header parsed by HTTPBearer.
+        db: Database session, for looking the kiln login up.
 
     Raises:
-        HTTPException: 401 if the token is invalid or expired, 403 if it's scoped to
-            something other than the kiln.
+        HTTPException: 401 if the token is invalid or expired, or its kiln login's been
+            removed, 403 if it's scoped to something other than the kiln.
     """
     payload = decode_token(credentials.credentials)
-    if not _can_edit_kiln(payload):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="this login can't edit the kiln page -- log in with the kiln login",
-        )
+    scope = payload.get("scope")
+    if scope is None:
+        return
+    if scope == KILN_EDITOR_SCOPE:
+        if not _kiln_editor_exists(db, payload):
+            raise _unauthorized("this kiln login's been removed -- ask Tyler if that's a mistake")
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="this login can't edit the kiln page -- log in with the kiln login",
+    )
 
 
 def is_admin(
@@ -157,6 +204,7 @@ def is_admin(
 
 def is_kiln_editor(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer_scheme),
+    db: Session = Depends(get_db),
 ) -> bool:
     """
     Says whether a request to a public endpoint comes from the kiln editor or admin.
@@ -166,9 +214,11 @@ def is_kiln_editor(
 
     Args:
         credentials: The Authorization header, if one was sent.
+        db: Database session, for looking the kiln login up.
 
     Returns:
-        bool: True if a valid kiln editor or admin token was sent.
+        bool: True if a valid admin token, or a kiln editor token whose login still
+            exists, was sent.
     """
     if credentials is None:
         return False
@@ -176,7 +226,7 @@ def is_kiln_editor(
         payload = decode_token(credentials.credentials)
     except HTTPException:
         return False
-    return _can_edit_kiln(payload)
+    return _can_edit_kiln(db, payload)
 
 
 @dataclass(frozen=True)

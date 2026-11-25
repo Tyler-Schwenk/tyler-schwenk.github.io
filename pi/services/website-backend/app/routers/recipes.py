@@ -132,6 +132,42 @@ def _save_recipe_photo(recipe_id: int, file_content: bytes, filename: str) -> Re
     return RecipePhoto(recipe_id=recipe_id, filename=filename, **asdict(stored))
 
 
+async def _add_recipe_photos(db: Session, recipe_id: int, files: List[UploadFile], first_order: int) -> None:
+    """
+    Saves a batch of uploaded photos for a recipe, all or nothing: if one is too big or
+    isn't an image, the ones already written to disk are deleted again and the session is
+    rolled back, so a failed upload leaves no files without rows.
+
+    Args:
+        db: Database session. The photos are added to it; the caller commits.
+        recipe_id: Recipe the photos belong to.
+        files: The uploads. Ones without a filename (empty form fields) are skipped.
+        first_order: display_order for the first upload, counting up from there.
+
+    Raises:
+        HTTPException: 413 if one's too big, 400 if one isn't a decodable image.
+
+    Side effects:
+        Writes each photo and its thumbnail under RECIPE_PHOTOS_DIR.
+    """
+    saved: List[RecipePhoto] = []
+    try:
+        for offset, upload in enumerate(files):
+            if not upload.filename:
+                continue
+            file_content = await read_upload_capped(upload, MAX_RECIPE_PHOTO_BYTES)
+            photo = _save_recipe_photo(recipe_id, file_content, upload.filename)
+            photo.display_order = first_order + offset
+            saved.append(photo)
+            db.add(photo)
+    except Exception:
+        photos_dir = Path(settings.RECIPE_PHOTOS_DIR)
+        for photo in saved:
+            delete_photo_files(photos_dir, photo.file_path, photo.thumbnail_path)
+        db.rollback()
+        raise
+
+
 @router.get("", response_model=List[RecipeRead])
 async def list_recipes(
     search: Optional[str] = None,
@@ -274,15 +310,7 @@ async def create_recipe(
     recipe.tags = _get_or_create_tags(db, _split_tag_names(tags))
     db.add(recipe)
     db.flush()
-
-    for order, upload in enumerate(files):
-        if not upload.filename:
-            continue
-        file_content = await read_upload_capped(upload, MAX_RECIPE_PHOTO_BYTES)
-        photo = _save_recipe_photo(recipe.id, file_content, upload.filename)
-        photo.display_order = order
-        db.add(photo)
-
+    await _add_recipe_photos(db, recipe.id, files, first_order=0)
     db.commit()
     db.refresh(recipe)
     return recipe
@@ -389,14 +417,7 @@ async def add_recipe_photos(
         )
 
     next_order = max((p.display_order for p in recipe.photos), default=-1) + 1
-    for offset, upload in enumerate(files):
-        if not upload.filename:
-            continue
-        file_content = await read_upload_capped(upload, MAX_RECIPE_PHOTO_BYTES)
-        photo = _save_recipe_photo(recipe.id, file_content, upload.filename)
-        photo.display_order = next_order + offset
-        db.add(photo)
-
+    await _add_recipe_photos(db, recipe.id, files, first_order=next_order)
     db.commit()
     db.refresh(recipe)
     return recipe

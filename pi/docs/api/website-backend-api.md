@@ -639,7 +639,7 @@ Submit an RSVP from a public event page. No auth.
 
 **Response:** `201 Created` - The stored RSVP object (includes `id` and `created_at`).
 
-**Rate limit:** 5 per minute and 30 per hour, per client IP (resolved via `CF-Connecting-IP` behind the Cloudflare Tunnel). Exceeding it returns `429 Too Many Requests`.
+**Rate limit:** 5 per minute and 30 per hour, per client IP (see [Client IP](#client-ip)). Exceeding it returns `429 Too Many Requests`.
 
 **Errors:** `422 Unprocessable Entity` if `contact_value` doesn't match `contact_type`.
 
@@ -1083,6 +1083,15 @@ history. Running it again for the same username resets the password. Usernames a
 
 ```bash
 docker exec -it website-backend-api python scripts/create_kiln_editor.py --username jude
+```
+
+**Removing a login**: `--remove` deletes it. Every kiln token is checked against its login on each
+request, so anyone still logged in as it gets `401` on their next write straight away, and reads
+drop back to the public view. Resetting the password doesn't log anyone out; remove the login and
+make it again for that.
+
+```bash
+docker exec -it website-backend-api python scripts/create_kiln_editor.py --username jude --remove
 ```
 
 ### POST `/kiln/auth/login`
@@ -1966,6 +1975,18 @@ document.getElementById('photoInput').addEventListener('change', async (e) => {
 All Public Square and Recipe limits are intentionally loose for a low-traffic personal site — tighten them in `pi/services/website-backend/app/routers/public_square.py` or `pi/services/website-backend/app/routers/recipes.py` only if abuse actually shows up.
 
 Rate limit exceeded responses include a `Retry-After` header indicating seconds until the limit resets.
+
+### Client IP
+
+"Per IP" (rate limits, and Public Square's vote dedup) means the visitor's own address. Requests
+through the Cloudflare Tunnel all arrive from the cloudflared container, so for those the address
+comes from the `CF-Connecting-IP` header, which Cloudflare sets itself. Only requests from that
+container get the header believed: the backend looks up `TUNNEL_HOST` (default
+`cloudflared-tunnel`, the container's name on the `website-backend_default` network) and compares
+it to the request's source address, looking it up again at most every 5 s when they don't match
+(the container gets a new address when it's recreated). Anything else, like the LAN or the
+tailnet, is keyed on its own address, and a `CF-Connecting-IP` it sends is ignored. Code:
+`app/rate_limit.py`.
 
 ## CORS
 

@@ -1,4 +1,4 @@
-"""Creates a kiln editor login, or resets its password if it already exists.
+"""Creates a kiln editor login, resets its password, or removes it.
 
 A kiln editor can add notes and photos to firings on the kiln page and nothing else
 (see app/dependencies.py). Run it on the Pi from inside the container:
@@ -6,7 +6,11 @@ A kiln editor can add notes and photos to firings on the kiln page and nothing e
     docker exec -it website-backend-api python scripts/create_kiln_editor.py --username jude
 
 It asks for the password, so it never ends up in shell history. Running it again for the
-same username just sets a new password.
+same username just sets a new password. --remove deletes the login, and since every kiln
+token is checked against it, anyone still logged in as it is out straight away (it doesn't
+ask for a password):
+
+    docker exec -it website-backend-api python scripts/create_kiln_editor.py --username jude --remove
 """
 
 import argparse
@@ -69,9 +73,37 @@ def set_kiln_editor(username: str, password: str) -> None:
         db.close()
 
 
+def remove_kiln_editor(username: str) -> None:
+    """
+    Deletes the login, which turns off every token it was given.
+
+    Args:
+        username: The login to remove, lowercase.
+
+    Raises:
+        SystemExit: If there's no such login.
+    """
+    init_db()
+    db = SessionLocal()
+    try:
+        editor = db.query(KilnEditor).filter(KilnEditor.username == username).first()
+        if editor is None:
+            sys.exit(f"no kiln editor called {username} -- check the spelling, nothing was removed")
+        db.delete(editor)
+        db.commit()
+        print(f"kiln editor removed: {username} (logged out everywhere)")
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="create a kiln editor login, or reset its password")
+    parser = argparse.ArgumentParser(description="create a kiln editor login, reset its password, or remove it")
     parser.add_argument("--username", required=True, help="what they'll log in with, case doesn't matter")
+    parser.add_argument("--remove", action="store_true", help="delete the login and log it out everywhere")
     args = parser.parse_args()
 
-    set_kiln_editor(args.username.strip().lower(), read_password())
+    username = args.username.strip().lower()
+    if args.remove:
+        remove_kiln_editor(username)
+    else:
+        set_kiln_editor(username, read_password())
