@@ -13,6 +13,11 @@ const DISPLAY_MERGE_THRESHOLD_METERS =
   DISPLAY_MERGE_THRESHOLD_KM * METERS_PER_KM;
 const ACTIVITY_DATASET_URL = `${API_BASE}/pac-tyler/activities`;
 const ACTIVITY_GEOJSON_URL = `${API_BASE}/pac-tyler/geojson`;
+// carto watermarks tiles fetched without a key. it's public on purpose: carto won't let
+// tiles go through our own server, so the browser has to send it. free for us up to 5M
+// requests a month; manage or restrict it at carto.com/basemaps/apikey (see PAC_TYLER_GUIDE.md)
+const CARTO_BASEMAP_KEY = "cb1_5g6a_1_0c412a861642a8ff8763f80a";
+const DARK_BASEMAP_TILE_URL = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_BASEMAP_KEY}`;
 const FILTER_MODE_ALL = "all";
 const FILTER_MODE_YEAR = "year";
 const FILTER_MODE_MONTH = "month";
@@ -1119,7 +1124,7 @@ export default function PacTylerMapClient() {
 
         // Use dark themed tiles for Pac-Man aesthetic
         L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          DARK_BASEMAP_TILE_URL,
           {
             attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',

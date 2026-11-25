@@ -131,7 +131,7 @@ interface ActivityDatasetEntry {
 ### Color Scheme
 - **Primary Gold**: `#E3B800` - Pac-Man inspired signature color
 - **Background**: `#1a1a1a` - Off-black for retro feel
-- **Dark Theme**: CartoDB dark basemap tiles
+- **Dark Theme**: CARTO's Dark Matter basemap tiles (`dark_all`), fetched with our free CARTO key (`CARTO_BASEMAP_KEY` in `components/PacTylerMapClient.tsx`). Without a key CARTO serves an "API key required" watermark instead of the map. The key is free for non-commercial use up to 5M requests a month, and CARTO emails at 80%. It's in the page on purpose: CARTO's terms don't allow fetching tiles through our own server, so the browser has to send it. To restrict it to the site's domain, revoke it or make a new one, sign in at carto.com/basemaps/apikey with Tyler's email (no password). A new key only needs swapping into that constant.
 - **Accents**: Gold shadows and borders for glow effect
 
 ### Retro Elements
