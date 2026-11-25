@@ -11,7 +11,6 @@ from stravalib.client import Client
 from stravalib.exc import RateLimitExceeded
 
 from config import (
-    BATCH_SIZE,
     JSON_INDENT,
     MAX_LATITUDE,
     MAX_LONGITUDE,

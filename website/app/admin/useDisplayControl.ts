@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { abortableDelay } from "@/lib/abortableDelay";
 import { replayControl, type ControlLog, type ControlState } from "@/app/display/kioskControl";
 import { CONTROL_CONFIG } from "@/app/display/displayConfig";
-import { AdminRequestError, adminRequest, delay, errorMessage, jsonBody, useAdminFetch, type AdminFetch } from "./adminApi";
+import { AdminRequestError, adminRequest, errorMessage, jsonBody, useAdminFetch, type AdminFetch } from "./adminApi";
 
 /** What GET /display-control/state answers (see pi/docs/api/website-backend-api.md). */
 interface KioskStateResponse {
@@ -60,7 +61,7 @@ async function followKioskState(
     } catch (err) {
       if (signal.aborted || (err instanceof AdminRequestError && err.sessionExpired)) return;
       handlers.onError(errorMessage(err));
-      await delay(STATE_RETRY_DELAY_MS, signal);
+      await abortableDelay(STATE_RETRY_DELAY_MS, signal);
     }
   }
 }

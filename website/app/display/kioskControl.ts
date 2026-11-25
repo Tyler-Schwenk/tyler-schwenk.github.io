@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { abortableDelay } from "@/lib/abortableDelay";
 import { SURFCAM_AGENT_URL } from "./surfCams";
 
 /**
@@ -530,22 +531,6 @@ export function reportPlayingPreset(name: string | null, screen: "primary" | "se
 }
 
 /**
- * Waits, unless aborted first.
- * @param ms - How long.
- * @param signal - Abort signal that cuts the wait short.
- * @returns Resolves when the time is up or the signal fires.
- */
-function delay(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    signal.addEventListener("abort", () => {
-      clearTimeout(timer);
-      resolve();
-    });
-  });
-}
-
-/**
  * Keeps something versioned on the surfcam agent current by long-polling it:
  * each request waits at the agent until the version changes (or a timeout
  * passes), so a change shows up on screen straight away.
@@ -567,7 +552,7 @@ export function useAgentLongPoll<T extends { version: number }>(path: string): T
           version = body.version;
           setLatest(body);
         } catch {
-          await delay(LONG_POLL_RETRY_DELAY_MS, abort.signal);
+          await abortableDelay(LONG_POLL_RETRY_DELAY_MS, abort.signal);
         }
       }
     };

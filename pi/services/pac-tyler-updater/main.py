@@ -8,7 +8,6 @@ bootstrap the token file.
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from dotenv import load_dotenv
@@ -18,7 +17,6 @@ from config import (
     BATCH_SIZE,
     DEFAULT_LOOKBACK_DAYS,
     DOTENV_FILE,
-    GEOJSON_FILE,
     LOOKBACK_DAYS_ENV_VAR,
     PAUSE_SPLIT_THRESHOLD_KM,
     RECENT_ACTIVITY_LOOKBACK_DAYS,

@@ -9,7 +9,6 @@ Run inside Docker container:
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 import httpx
@@ -274,7 +273,7 @@ def migrate_photos(password: str) -> None:
                     total_photos += 1
         
         print(f"\n{'='*60}")
-        print(f"Migration complete!")
+        print("Migration complete!")
         print(f"  Galleries created: {total_galleries}")
         print(f"  Photos uploaded: {total_photos}")
         print(f"{'='*60}")

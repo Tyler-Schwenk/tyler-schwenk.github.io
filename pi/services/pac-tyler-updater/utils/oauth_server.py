@@ -2,7 +2,7 @@
 
 import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
 
 from config import OAUTH_PORT

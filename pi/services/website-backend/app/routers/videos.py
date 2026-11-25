@@ -23,7 +23,7 @@ from app.dependencies import is_admin, require_admin
 from app.file_streaming import ranged_file_response
 from app.image_utils import save_upload_file
 from app.models import Video
-from app.schemas import VideoCreate, VideoUpdate, VideoRead
+from app.schemas import VideoUpdate, VideoRead
 from app.config import settings
 
 logger = logging.getLogger(__name__)

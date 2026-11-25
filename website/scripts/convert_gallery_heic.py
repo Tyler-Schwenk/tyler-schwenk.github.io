@@ -7,7 +7,6 @@ Run from the repo root: python website/scripts/convert_gallery_heic.py
 
 from PIL import Image
 import pillow_heif
-import os
 from pathlib import Path
 
 # Register HEIF opener with Pillow

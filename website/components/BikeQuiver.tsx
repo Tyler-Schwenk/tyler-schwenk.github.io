@@ -55,6 +55,7 @@ export default function BikeQuiver({ bikes }: BikeQuiverProps) {
 
     const fetchAndCompute = async () => {
       const res = await fetch(ACTIVITIES_API_URL);
+      if (!res.ok) throw new Error(`${ACTIVITIES_API_URL} answered ${res.status}`);
       const data = await res.json();
       const activities: Array<{
         name: string;
@@ -91,7 +92,10 @@ export default function BikeQuiver({ bikes }: BikeQuiverProps) {
       setComputedMiles(result);
     };
 
-    fetchAndCompute();
+    fetchAndCompute().catch((err) => {
+      // the pi being down just means no live miles; the cards still show what they have
+      console.warn(`bike quiver: couldn't load ride miles: ${err}`);
+    });
   }, [bikes]);
 
   const openBikeModal = (bike: Bike) => {

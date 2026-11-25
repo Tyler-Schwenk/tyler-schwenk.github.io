@@ -23,20 +23,27 @@ def parse_byte_range(range_header: str, file_size: int) -> tuple[int, int]:
         file_size: Size of the file being served, in bytes.
 
     Returns:
-        (start, end), both inclusive. An open end (`bytes=100-`) runs to the end of the file.
+        (start, end), both inclusive. An open end (`bytes=100-`) runs to the end of the file,
+        a suffix (`bytes=-500`) is the last that many bytes, and an end past the file is
+        cut back to its last byte (RFC 9110 says to, and some players ask for more).
 
     Raises:
         HTTPException: 416 if the header can't be read or falls outside the file.
     """
+    last_byte = file_size - 1
     try:
         raw_range = range_header.strip().replace("bytes=", "")
         start_str, end_str = raw_range.split("-")
-        start = int(start_str)
-        end = int(end_str) if end_str else file_size - 1
+        if start_str:
+            start = int(start_str)
+            end = min(int(end_str), last_byte) if end_str else last_byte
+        else:
+            start = max(file_size - int(end_str), 0)
+            end = last_byte
     except (ValueError, AttributeError):
         raise HTTPException(status_code=416, detail="Invalid Range header — expected bytes=start-end") from None
 
-    if start >= file_size or end >= file_size or start > end:
+    if start >= file_size or start > end:
         raise HTTPException(
             status_code=416,
             detail=f"Range not satisfiable — file is {file_size} bytes",

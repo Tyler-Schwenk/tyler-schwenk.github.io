@@ -83,7 +83,7 @@ def _get_or_create_tags(db: Session, tag_names: List[str]) -> List[Tag]:
     """
     tags = []
     for name in tag_names:
-        tag = db.query(Tag).filter(Tag.name.ilike(name)).first()
+        tag = db.query(Tag).filter(func.lower(Tag.name) == func.lower(name)).first()
         if not tag:
             tag = Tag(name=name)
             db.add(tag)
@@ -111,7 +111,7 @@ def _apply_recipe_filters(query, search: Optional[str], tags: Optional[str]):
     tag_names = _split_tag_names(tags)
     for name in tag_names:
         # one EXISTS-style join per required tag so the recipe must match all of them
-        query = query.filter(Recipe.tags.any(Tag.name.ilike(name)))
+        query = query.filter(Recipe.tags.any(func.lower(Tag.name) == func.lower(name)))
 
     return query
 

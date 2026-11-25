@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AdminRequestError, adminRequest, delay, errorMessage, useAdminFetch } from "./adminApi";
+import { abortableDelay } from "@/lib/abortableDelay";
+import { AdminRequestError, adminRequest, errorMessage, useAdminFetch } from "./adminApi";
 
 /** What the /entrance endpoints answer (see pi/docs/api/website-backend-api.md). */
 interface EntranceStatusResponse {
@@ -78,7 +79,7 @@ export function useEntrance(): Entrance {
           if (abort.signal.aborted || (err instanceof AdminRequestError && err.sessionExpired)) return;
           setError(errorMessage(err));
         }
-        await delay(STATUS_POLL_MS, abort.signal);
+        await abortableDelay(STATUS_POLL_MS, abort.signal);
       }
     };
     follow();
