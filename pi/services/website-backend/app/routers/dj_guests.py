@@ -10,13 +10,17 @@ scripts/create_dj_guest.py.
 Who can do what:
 
 - anyone: a guest's photo (it shows on their sets)
-- the guest dj (JWT with the "dj" scope, from POST /dj/guests/login): their own profile and photo
+- the guest dj (JWT with the "dj" scope, from POST /dj/guests/login): their own profile,
+  photo and password
+
+A guest who's forgotten their password gets a new one from Tyler (the script again).
 """
 
 import logging
 from dataclasses import asdict
 from pathlib import Path
 
+import bcrypt
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -29,7 +33,7 @@ from app.image_utils import delete_photo_files, store_photo
 from app.models import DjGuest, DjGuestPhoto
 from app.rate_limit import limiter
 from app.routers.auth import create_access_token, verify_password
-from app.schemas import DjGuestMe, DjGuestUpdate
+from app.schemas import DjGuestMe, DjGuestPasswordChange, DjGuestUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +151,38 @@ def update_me(
     db.commit()
     db.refresh(guest)
     return guest
+
+
+@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(LOGIN_RATE_LIMIT)
+def change_my_password(
+    request: Request,
+    change: DjGuestPasswordChange,
+    guest: DjGuest = Depends(require_dj_guest),
+    db: Session = Depends(get_db),
+) -> None:
+    """
+    Changes the logged-in guest dj's password. Their current one's asked for too, so a
+    phone left logged in can't be used to lock them out. Rate limited like the login,
+    since it's a password check too.
+
+    Args:
+        request: Incoming request, used by the rate limiter.
+        change: The current password and the new one (at least 8 characters).
+        guest: The guest, from their token.
+        db: Database session.
+
+    Raises:
+        HTTPException: 403 if the current password's wrong, 422 if the new one's too short.
+    """
+    if not verify_password(change.current_password, guest.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="your current password's wrong -- forgot it? ask Tyler to reset it",
+        )
+    guest.hashed_password = bcrypt.hashpw(change.new_password.encode(), bcrypt.gensalt()).decode()
+    db.commit()
+    logger.info(f"dj guests: {guest.username} changed their password")
 
 
 @router.put("/me/photo", response_model=DjGuestMe)

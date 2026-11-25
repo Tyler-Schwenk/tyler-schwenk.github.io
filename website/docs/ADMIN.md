@@ -81,6 +81,8 @@ their own login (username and password from `scripts/create_dj_guest.py`, JWT fr
 - their profile: DJ name, a bit about them (shown under "about this set" on their sets'
   pages), and a photo (shown in place of a cover on their sets without one)
 - their sets, as the DJ tab's cards (cover, title, description, play, delete)
+- changing their password (current one, then the new one twice); a forgotten one is
+  reset by Tyler with the script
 
 It's the same components inside an `AdminFetchContext` holding the guest's token, so
 every request carries their login and the backend decides what they can touch

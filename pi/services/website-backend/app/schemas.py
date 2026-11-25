@@ -890,6 +890,17 @@ class DjGuestMe(DjGuestPublic):
     mount: str
 
 
+# guest dj passwords: long enough to not be guessable, short enough to type on a phone
+MIN_DJ_GUEST_PASSWORD_LENGTH = 8
+MAX_DJ_GUEST_PASSWORD_LENGTH = 128
+
+
+class DjGuestPasswordChange(BaseModel):
+    """A guest dj changing their own password: the one they have now, and the new one."""
+    current_password: str = Field(..., max_length=MAX_DJ_GUEST_PASSWORD_LENGTH)
+    new_password: str = Field(..., min_length=MIN_DJ_GUEST_PASSWORD_LENGTH, max_length=MAX_DJ_GUEST_PASSWORD_LENGTH)
+
+
 class DjGuestUpdate(BaseModel):
     """
     A guest dj editing their profile. Only the fields sent change. The name's squashed

@@ -166,8 +166,9 @@ them. Tommy (Tracepoint) is the first.
 
 ### Changing or removing a guest
 
-- **New login password**: run `create_dj_guest.py --username tommy` again; it asks for a new
-  one. Pass `--name` or `--mount` to change those too (the mount has to match
+- **Their login password**: they change it themselves on their page ("Change your
+  password", which wants the current one). If they've forgotten it, run
+  `create_dj_guest.py --username tommy` again; it asks for a new one to give them. Pass `--name` or `--mount` to change those too (the mount has to match
   `ICECAST_GUEST_MOUNTS`).
 - **New streaming password**: change it in `ICECAST_GUEST_MOUNTS` and rebuild the
   container (step 2), then send them the new one.

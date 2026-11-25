@@ -1406,6 +1406,12 @@ Their profile. `200`, `401` if the token's bad or the login's off, `403` for the
 
 Body `{"name": "...", "bio": "..."}`, either or both. The name (max 40) is squashed onto one line and can't be blank; the bio (max 1000) keeps its line breaks, and blank or null clears it. `200` with the profile, `422` for a blank name.
 
+#### PUT `/dj/guests/me/password`
+
+**Auth:** guest DJ JWT.
+
+Body `{"current_password": "...", "new_password": "..."}`, the new one 8 to 128 characters. `204` once it's changed, `403` if the current one's wrong, `422` if the new one's too short. Rate limited like the login. Tokens already handed out keep working until they expire. A forgotten password is reset with `scripts/create_dj_guest.py` instead.
+
 #### PUT `/dj/guests/me/photo`
 
 **Auth:** guest DJ JWT.

@@ -32,7 +32,7 @@ import { useAdminAuth } from "@/lib/useAdminAuth";
 /**
  * The guest dj page (/guest-dj): where a guest dj logs in (their login from
  * scripts/create_dj_guest.py), sees whether they're on air, sends a live alert while they
- * are, and edits their profile (name, bio, photo) and their own sets. Built from the
+ * are, edits their profile (name, bio, photo) and their own sets, and changes their password. Built from the
  * admin page's DJ tab pieces, which send this page's login instead of the admin's. See
  * website/docs/ADMIN.md and pi/docs/services/dj-stream.md.
  */
@@ -42,6 +42,9 @@ const GUEST_TOKEN_STORAGE_KEY = "djGuestToken";
 const GUEST_LOGIN_PATH = `${DJ_GUESTS_PATH}/login`;
 const ME_PATH = `${DJ_GUESTS_PATH}/me`;
 const PHOTO_PATH = `${ME_PATH}/photo`;
+const PASSWORD_PATH = `${ME_PATH}/password`;
+// matches MIN_DJ_GUEST_PASSWORD_LENGTH in the backend's schemas.py
+const MIN_PASSWORD_LENGTH = 8;
 // often enough to spot going on air without sitting on refresh
 const STATUS_POLL_INTERVAL_MS = 10000;
 
@@ -226,6 +229,98 @@ function ProfileCard({ me, onChange }: { me: DjGuestMe; onChange: (me: DjGuestMe
 }
 
 /**
+ * Changing their password: the current one, then the new one twice. A forgotten one gets
+ * reset by Tyler instead (scripts/create_dj_guest.py).
+ */
+function PasswordCard() {
+  const adminFetch = useAdminFetch();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [again, setAgain] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [flash, showFlash] = useFlash();
+  const problem =
+    next && next.length < MIN_PASSWORD_LENGTH
+      ? `At least ${MIN_PASSWORD_LENGTH} characters.`
+      : again && again !== next
+        ? "The new ones don't match."
+        : null;
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!current || !next || problem || next !== again) return;
+    setSaving(true);
+    try {
+      await adminRequest(
+        adminFetch,
+        PASSWORD_PATH,
+        "couldn't change your password",
+        jsonBody("PUT", { current_password: current, new_password: next })
+      );
+      setCurrent("");
+      setNext("");
+      setAgain("");
+      showFlash("success", "Password changed. Use the new one next time you log in.");
+    } catch (err) {
+      showFlash("error", errorMessage(err));
+    }
+    setSaving(false);
+  };
+
+  return (
+    <Card className="mb-4 p-3">
+      <details>
+        <summary className="cursor-pointer text-sm font-semibold text-slate-100">Change your password</summary>
+        <form onSubmit={save} className="mt-3 flex flex-col gap-3">
+          <Field label="Current password" htmlFor="guest-current-password">
+            <input
+              id="guest-current-password"
+              type="password"
+              autoComplete="current-password"
+              className={INPUT_CLASS}
+              value={current}
+              onChange={(event) => setCurrent(event.target.value)}
+            />
+          </Field>
+          <Field label="New password" htmlFor="guest-new-password">
+            <input
+              id="guest-new-password"
+              type="password"
+              autoComplete="new-password"
+              className={INPUT_CLASS}
+              value={next}
+              onChange={(event) => setNext(event.target.value)}
+            />
+          </Field>
+          <Field label="New password again" htmlFor="guest-new-password-again">
+            <input
+              id="guest-new-password-again"
+              type="password"
+              autoComplete="new-password"
+              className={INPUT_CLASS}
+              value={again}
+              onChange={(event) => setAgain(event.target.value)}
+            />
+          </Field>
+          {problem && <Muted>{problem}</Muted>}
+          <Button
+            type="submit"
+            size="sm"
+            variant="primary"
+            className="self-end"
+            disabled={saving || !current || !next || next !== again || problem !== null}
+          >
+            {saving ? "Changing..." : "Change password"}
+          </Button>
+        </form>
+        <p className="mt-2 text-xs text-slate-500">Forgot it? Ask Tyler, he can reset it.</p>
+        <FlashMessage flash={flash} />
+      </details>
+    </Card>
+  );
+}
+
+/**
  * Everything once they're logged in.
  * @param props.onLogout - Logs out.
  */
@@ -258,6 +353,7 @@ function GuestBooth({ onLogout }: { onLogout: () => void }) {
             <OnAirCard guestId={me.id} />
             <GuestAlertsPanel name={me.name} onAir={onAir} onLabelledSet={sets.reload} />
             <ProfileCard me={me} onChange={(updated) => profile.setData(() => updated)} />
+            <PasswordCard />
             <h2 className="mb-2 text-sm font-semibold text-slate-100">Your sets</h2>
             <DjSetList sets={sets} guestId={me.id} />
           </>

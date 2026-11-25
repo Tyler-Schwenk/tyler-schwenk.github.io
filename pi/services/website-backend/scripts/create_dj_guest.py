@@ -8,8 +8,9 @@ pi/services/dj-stream/.env. Run it on the Pi from inside the container:
     docker exec -it website-backend-api python scripts/create_dj_guest.py --username tommy --name Tracepoint --mount tracepoint
 
 It asks for the password, so it never ends up in shell history. Running it again for the
-same username sets a new password (and a new name or mount, if given). --disable turns the
-login off and stops their mount counting as live; --enable turns it back on. Neither asks
+same username sets a new password, and a new name or mount if given: that's how a
+forgotten password gets reset (they can change their own from their page). --disable turns
+the login off and stops their mount counting as live; --enable turns it back on. Neither asks
 for a password.
 """
 
@@ -27,9 +28,8 @@ import bcrypt
 from app.config import settings
 from app.database import SessionLocal, init_db
 from app.models import DjGuest
-from app.schemas import MAX_DJ_GUEST_NAME_LENGTH
+from app.schemas import MAX_DJ_GUEST_NAME_LENGTH, MIN_DJ_GUEST_PASSWORD_LENGTH
 
-MIN_PASSWORD_LENGTH = 8
 # the same rule dj-stream's entrypoint.sh holds guest mounts to
 MOUNT_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
@@ -45,8 +45,8 @@ def read_password() -> str:
         SystemExit: If the two don't match or it's too short.
     """
     password = getpass.getpass("new password: ")
-    if len(password) < MIN_PASSWORD_LENGTH:
-        sys.exit(f"password's too short -- use at least {MIN_PASSWORD_LENGTH} characters")
+    if len(password) < MIN_DJ_GUEST_PASSWORD_LENGTH:
+        sys.exit(f"password's too short -- use at least {MIN_DJ_GUEST_PASSWORD_LENGTH} characters")
     if getpass.getpass("same again: ") != password:
         sys.exit("passwords didn't match -- run it again")
     return password
