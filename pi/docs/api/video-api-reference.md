@@ -41,7 +41,7 @@ GET /videos
 **Query Parameters:**
 - `skip` (integer, optional): Number to skip for pagination (default: 0)
 - `limit` (integer, optional): Max results to return (default: 100, max: 100)
-- `public_only` (boolean, optional): Only show public videos (default: true)
+- `public_only` (boolean, optional): Only show public videos (default: true). Only the admin can turn it off: without an admin token, private videos are left out either way, and getting one by id or slug answers 404. The stream and thumbnail are still served by id to anyone.
 
 **Response:** `200 OK`
 ```json

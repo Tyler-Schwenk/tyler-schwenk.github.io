@@ -8,6 +8,9 @@ Three kinds of token, all JWTs signed with JWT_SECRET (see app/routers/auth.py):
 - guest dj: `scope` is DJ_GUEST_SCOPE, `sub` is "dj-guest:<id>". Only passes their own
   profile, their own sets, and live alerts while they're on air.
 
+Public endpoints that show more to some logins (is_admin, is_kiln_editor) treat a bad
+token as no token, so a stale login never breaks the public page.
+
 Admin and kiln tokens are checked against the secret only. Guest dj tokens also look the
 guest up, so turning a login off (scripts/create_dj_guest.py --disable) works straight away.
 """
@@ -126,6 +129,30 @@ def require_kiln_editor(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="this login can't edit the kiln page -- log in with the kiln login",
         )
+
+
+def is_admin(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer_scheme),
+) -> bool:
+    """
+    Says whether a request to a public endpoint comes from the admin, so it can see
+    private things (hidden galleries and videos).
+
+    A bad or expired token just means the public view, same as is_kiln_editor.
+
+    Args:
+        credentials: The Authorization header, if one was sent.
+
+    Returns:
+        bool: True if a valid admin token (no scope) was sent.
+    """
+    if credentials is None:
+        return False
+    try:
+        payload = decode_token(credentials.credentials)
+    except HTTPException:
+        return False
+    return payload.get("scope") is None
 
 
 def is_kiln_editor(

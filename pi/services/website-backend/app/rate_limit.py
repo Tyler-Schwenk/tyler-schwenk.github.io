@@ -16,6 +16,10 @@ from slowapi.util import get_remote_address
 # the generic fallback if the fronting proxy ever changes.
 CLIENT_IP_HEADERS = ("cf-connecting-ip", "x-forwarded-for")
 
+# every password login (admin, kiln editor, guest dj) shares this. slows down password
+# guessing without getting in the way of someone mistyping
+LOGIN_RATE_LIMIT = "5/minute"
+
 
 def get_client_ip(request: Request) -> str:
     """

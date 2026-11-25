@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.dependencies import require_admin
-from app.image_utils import delete_photo_files, fix_legacy_orientation, store_photo
+from app.image_utils import delete_photo_files, fix_legacy_orientation, read_upload_capped, store_photo
 from app.models import Recipe, RecipePhoto, Tag
 from app.rate_limit import limiter
 from app.schemas import (
@@ -39,6 +39,8 @@ router = APIRouter(prefix="/recipes", tags=["Recipes"])
 # posts and event RSVPs are. Recipes carry photos so the cap is a bit looser.
 RECIPE_CREATE_RATE_LIMIT = "10/hour"
 RECIPE_PHOTO_ADD_RATE_LIMIT = "30/hour"
+# per photo. a phone photo is a few MB; this leaves room for big ones, since anyone can upload
+MAX_RECIPE_PHOTO_BYTES = 40 * 1024 * 1024
 
 
 def _split_tag_names(raw: Optional[str]) -> List[str]:
@@ -276,7 +278,7 @@ async def create_recipe(
     for order, upload in enumerate(files):
         if not upload.filename:
             continue
-        file_content = await upload.read()
+        file_content = await read_upload_capped(upload, MAX_RECIPE_PHOTO_BYTES)
         photo = _save_recipe_photo(recipe.id, file_content, upload.filename)
         photo.display_order = order
         db.add(photo)
@@ -390,7 +392,7 @@ async def add_recipe_photos(
     for offset, upload in enumerate(files):
         if not upload.filename:
             continue
-        file_content = await upload.read()
+        file_content = await read_upload_capped(upload, MAX_RECIPE_PHOTO_BYTES)
         photo = _save_recipe_photo(recipe.id, file_content, upload.filename)
         photo.display_order = next_order + offset
         db.add(photo)

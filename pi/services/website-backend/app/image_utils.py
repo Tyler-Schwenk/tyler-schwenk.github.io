@@ -36,6 +36,36 @@ WEB_SAFE_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
 EXIF_ORIENTATION_TAG = 0x0112
 DEFAULT_ORIENTATION = 1
 
+# biggest image we'll decode. a 48 MP phone photo or a phone panorama fits; a tiny file
+# claiming to be 50000x50000 (which would need gigabytes of ram to decode) doesn't.
+# checked against the header before any pixels are decoded
+MAX_UPLOAD_PIXELS = 100_000_000
+BYTES_PER_MB = 1024 * 1024
+
+
+async def read_upload_capped(upload: UploadFile, max_bytes: int) -> bytes:
+    """
+    Reads an upload into memory, refusing it if it's bigger than max_bytes, so one
+    request can't eat the pi's ram.
+
+    Args:
+        upload: The uploaded file.
+        max_bytes: The most it may be.
+
+    Returns:
+        bytes: The file's contents.
+
+    Raises:
+        HTTPException: 413 if it's over max_bytes.
+    """
+    content = await upload.read(max_bytes + 1)
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"{upload.filename or 'that file'} is over {max_bytes // BYTES_PER_MB} MB -- pick a smaller one",
+        )
+    return content
+
 
 def save_upload_file(upload_file: UploadFile, destination: Path) -> None:
     """
@@ -120,10 +150,17 @@ def decode_and_normalize_image(file_content: bytes, filename: str) -> tuple[byte
         Tuple of (content_bytes, width, height, file_extension, mime_type).
 
     Raises:
-        HTTPException: 400 if the bytes aren't a decodable image.
+        HTTPException: 400 if the bytes aren't a decodable image, or it's over
+            MAX_UPLOAD_PIXELS.
     """
     try:
         with Image.open(io.BytesIO(file_content)) as img:
+            # Image.open only reads the header, so this is checked before decoding
+            if img.width * img.height > MAX_UPLOAD_PIXELS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{filename} is {img.width}x{img.height}, over the {MAX_UPLOAD_PIXELS:,} pixel limit -- shrink it and try again",
+                )
             img_format = img.format
             orientation = img.getexif().get(EXIF_ORIENTATION_TAG, DEFAULT_ORIENTATION)
 

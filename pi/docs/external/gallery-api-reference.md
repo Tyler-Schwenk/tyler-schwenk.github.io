@@ -56,7 +56,7 @@ GET /galleries
 **Query Parameters:**
 - `skip` (integer, optional): Number to skip for pagination (default: 0)
 - `limit` (integer, optional): Max results to return (default: 100, max: 100)
-- `public_only` (boolean, optional): Only show public galleries (default: true)
+- `public_only` (boolean, optional): Only show public galleries (default: true). Ignored without an admin token: private galleries never show up for the public, and reading one by id or slug answers 404.
 
 **Response:** `200 OK`
 ```json

@@ -3,6 +3,10 @@ Videos router for video hosting and streaming.
 
 Provides endpoints for uploading videos, managing metadata, and streaming
 video content with support for range requests (seeking).
+
+Private videos (is_public false) only show up for the admin in the list and when read by
+id or slug. The stream and thumbnail are still served by id to anyone, since <video> and
+<img> tags can't send the admin token.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form, status
@@ -15,7 +19,7 @@ import json
 import logging
 
 from app.database import get_db
-from app.dependencies import require_admin
+from app.dependencies import is_admin, require_admin
 from app.file_streaming import ranged_file_response
 from app.image_utils import save_upload_file
 from app.models import Video
@@ -35,6 +39,28 @@ SUPPORTED_VIDEO_TYPES = {
 
 # ffprobe/ffmpeg can hang on a corrupt file, so cap how long we wait
 FFMPEG_TIMEOUT_S = 30
+
+VIDEO_NOT_FOUND = "Video not found"
+
+
+def visible_video(video: Optional[Video], admin: bool) -> Video:
+    """
+    Hands back a video this viewer may see, or 404s. Private ones get the same 404 as a
+    missing one for anyone but the admin, so they don't show they exist.
+
+    Args:
+        video: The video looked up, or None if there wasn't one.
+        admin: Whether the admin's asking.
+
+    Returns:
+        Video: The video.
+
+    Raises:
+        HTTPException: 404 if it's missing, or private and this isn't the admin.
+    """
+    if video is None or not (video.is_public or admin):
+        raise HTTPException(status_code=404, detail=VIDEO_NOT_FOUND)
+    return video
 
 
 def extract_video_metadata(video_path: Path) -> dict:
@@ -119,64 +145,69 @@ async def list_videos(
     skip: int = 0,
     limit: int = 100,
     public_only: bool = True,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: bool = Depends(is_admin),
 ):
     """
     List all videos.
-    
+
     Args:
         skip: Number of videos to skip (pagination)
         limit: Maximum number of videos to return
-        public_only: If True, only return public videos
+        public_only: If True, only return public videos. Only the admin can turn it
+            off; anyone else always gets just the public ones.
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         List of videos
     """
     query = db.query(Video)
-    if public_only:
+    if public_only or not admin:
         query = query.filter(Video.is_public == True)
-    
+
     videos = query.offset(skip).limit(limit).all()
     return videos
 
 
 @router.get("/{video_id}", response_model=VideoRead)
-async def get_video(video_id: int, db: Session = Depends(get_db)):
+async def get_video(video_id: int, db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
     """
     Get a specific video by ID.
-    
+
     Args:
         video_id: Video ID
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         Video metadata
+
+    Raises:
+        HTTPException: 404 if it's missing, or private and this isn't the admin.
     """
     video = db.query(Video).filter(Video.id == video_id).first()
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
-    
-    return video
+    return visible_video(video, admin)
 
 
 @router.get("/slug/{slug}", response_model=VideoRead)
-async def get_video_by_slug(slug: str, db: Session = Depends(get_db)):
+async def get_video_by_slug(slug: str, db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
     """
     Get a video by its URL slug.
-    
+
     Args:
         slug: Video slug
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         Video metadata
+
+    Raises:
+        HTTPException: 404 if it's missing, or private and this isn't the admin.
     """
     video = db.query(Video).filter(Video.slug == slug).first()
-    if not video:
-        raise HTTPException(status_code=404, detail="Video not found")
-    
-    return video
+    return visible_video(video, admin)
 
 
 @router.post("", response_model=VideoRead, status_code=status.HTTP_201_CREATED)

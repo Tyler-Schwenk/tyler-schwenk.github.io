@@ -8,7 +8,7 @@ to create your account. Token lasts 30 days. The kiln editor has its own login
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 import bcrypt
 from jose import jwt
@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.rate_limit import LOGIN_RATE_LIMIT, limiter
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -57,16 +58,20 @@ def create_access_token(subject: str, scope: Optional[str] = None) -> str:
 
 
 @router.post("/login")
+@limiter.limit(LOGIN_RATE_LIMIT)
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
     """
     Login endpoint — validates email/password and returns a 30-day JWT.
 
-    Uses the OAuth2 password form convention where `username` = email.
+    Uses the OAuth2 password form convention where `username` = email. Rate limited
+    per IP (LOGIN_RATE_LIMIT) since this login can do everything.
 
     Args:
+        request: Incoming request (the rate limiter keys on its IP).
         form_data: Form with username (email) and password fields.
         db: Database session.
 
@@ -74,7 +79,8 @@ def login(
         Dict with access_token and token_type.
 
     Raises:
-        HTTPException: 401 if credentials are wrong, 403 if account is disabled.
+        HTTPException: 401 if credentials are wrong, 403 if account is disabled, 429
+            past the rate limit.
     """
     user = db.query(User).filter(User.email == form_data.username).first()
 

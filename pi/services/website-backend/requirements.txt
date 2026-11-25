@@ -1,12 +1,14 @@
 # FastAPI and ASGI server
-fastapi==0.109.2
+fastapi==0.121.3
+# pinned on its own so we get the fixes for FileResponse range parsing (CVE-2025-62727)
+starlette==0.50.0
 uvicorn[standard]==0.27.1
 
 # Database
 sqlalchemy==2.0.25
 
 # Authentication
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.5.0
 bcrypt==4.2.1
 
 # Rate limiting
@@ -21,7 +23,7 @@ Pillow==11.1.0
 pillow-heif==1.4.0
 
 # File uploads
-python-multipart==0.0.7
+python-multipart==0.0.20
 email-validator==2.1.0.post1
 
 # HTTP client

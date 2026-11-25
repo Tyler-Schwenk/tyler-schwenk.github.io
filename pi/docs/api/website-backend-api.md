@@ -132,7 +132,7 @@ Authenticate and receive a JWT token.
 }
 ```
 
-**Rate Limit:** 5 requests per minute per IP
+**Rate Limit:** 5 requests per minute per IP, the same `LOGIN_RATE_LIMIT` (`app/rate_limit.py`) the kiln editor and guest dj logins use
 
 Store the `access_token` in your application (e.g., localStorage) and include it in subsequent requests:
 
@@ -359,7 +359,7 @@ Get all galleries, sorted by `display_order` descending (higher = shown first).
 **Query Parameters:**
 - `skip` (integer, default: 0): Number of galleries to skip (pagination)
 - `limit` (integer, default: 100): Maximum galleries to return
-- `public_only` (boolean, default: true): Only show public galleries
+- `public_only` (boolean, default: true): Only show public galleries. Only the admin can turn it off: without an admin token, private galleries are left out either way.
 
 **Response:** `200 OK`
 ```json
@@ -414,7 +414,7 @@ Get a specific gallery with all photos.
 }
 ```
 
-**Response:** `404 Not Found` if gallery doesn't exist
+**Response:** `404 Not Found` if gallery doesn't exist, or it's private and the request has no admin token (so private galleries don't show they exist)
 
 ### Get Gallery by Slug
 
@@ -424,7 +424,7 @@ Get a gallery by URL-friendly slug.
 
 **Example:** `GET /galleries/slug/summer-2026`
 
-**Response:** Same as Get Gallery by ID
+**Response:** Same as Get Gallery by ID, including the 404 for private galleries
 
 ### Create Gallery
 
@@ -548,7 +548,7 @@ Get all photos in a gallery.
 
 **Endpoint:** `GET /galleries/{gallery_id}/photos`
 
-**Response:** `200 OK` - Array of photo objects (ordered by display_order, then created_at)
+**Response:** `200 OK` - Array of photo objects (ordered by display_order, then created_at). 404 if the gallery's private and there's no admin token.
 
 ### Get Photo Metadata
 
@@ -556,7 +556,7 @@ Get information about a specific photo (not the file itself).
 
 **Endpoint:** `GET /galleries/photos/{photo_id}`
 
-**Response:** `200 OK` - Photo object
+**Response:** `200 OK` - Photo object. 404 if it's in a private gallery and there's no admin token.
 
 ### Get Photo File
 
@@ -567,7 +567,7 @@ Get the actual image file.
 **Query Parameters:**
 - `thumbnail` (boolean, default: false): If true, returns thumbnail instead of original
 
-**Response:** Image file with appropriate `Content-Type`
+**Response:** Image file with appropriate `Content-Type`. Served to anyone by id, private gallery or not, since `<img>` tags can't send the admin token.
 
 **Usage in HTML:**
 ```html
@@ -790,7 +790,9 @@ const response = await fetch(`${API_URL}/recipes`, { method: 'POST', body: formD
 
 **Response:** `201 Created` — the created recipe (same shape as Get Recipe)
 
-**Response:** `400 Bad Request` if more than 12 photos are attached, or if a file isn't a decodable image
+**Response:** `400 Bad Request` if more than 12 photos are attached, or if a file isn't a decodable image or is over 100 million pixels
+
+**Response:** `413 Content Too Large` if a photo is over 40 MB
 
 **Rate Limit:** 10 per hour per IP
 
@@ -837,7 +839,9 @@ Attach more photos to an existing recipe. Admin only.
 
 **Response:** `200 OK` — the recipe with its updated photo list
 
-**Response:** `400 Bad Request` if the total photo count would exceed 12
+**Response:** `400 Bad Request` if the total photo count would exceed 12, or a file isn't a decodable image or is over 100 million pixels
+
+**Response:** `413 Content Too Large` if a photo is over 40 MB
 
 ### Set Recipe Thumbnail
 

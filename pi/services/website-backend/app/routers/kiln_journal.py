@@ -28,7 +28,7 @@ from app.dependencies import KILN_EDITOR_SCOPE, is_kiln_editor, require_kiln_edi
 from app.image_utils import delete_photo_files, store_photo
 from app.kiln_firings import utc_naive
 from app.models import KilnEditor, KilnFiring, KilnNote, KilnPhoto
-from app.rate_limit import limiter
+from app.rate_limit import LOGIN_RATE_LIMIT, limiter
 from app.routers.auth import create_access_token, verify_password
 from app.routers.kiln import PUBLIC_READ_RATE_LIMIT
 from app.schemas import KilnNoteCreate, KilnNoteRead, KilnNoteUpdate, KilnPhotoRead, KilnPhotoUpdate
@@ -37,8 +37,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/kiln", tags=["Kiln journal"])
 
-# slows down password guessing without getting in the way of someone mistyping
-LOGIN_RATE_LIMIT = "5/minute"
 # a phone photo is a few MB. this leaves room for big ones without letting one fill the disk
 MAX_KILN_PHOTO_BYTES = 40 * 1024 * 1024
 PRIVATE_CACHE_CONTROL = "private, no-store"

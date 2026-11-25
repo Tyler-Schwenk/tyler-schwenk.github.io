@@ -2,6 +2,11 @@
 Gallery router for photo management.
 
 Provides endpoints for creating galleries and uploading/managing photos.
+
+Private galleries (is_public false) only show up for the admin: listing them, reading them
+by id or slug, and reading their photos' metadata all answer as if they don't exist
+otherwise. Photo files are still served by id to anyone, since <img> tags can't send the
+admin token.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
@@ -14,7 +19,7 @@ import logging
 import uuid
 
 from app.database import get_db
-from app.dependencies import require_admin
+from app.dependencies import is_admin, require_admin
 from app.models import Gallery, GalleryPhoto
 from app.schemas import (
     GalleryCreate, GalleryUpdate, GalleryRead, GalleryWithPhotos,
@@ -27,6 +32,29 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/galleries", tags=["Galleries"])
 
+GALLERY_NOT_FOUND = "Gallery not found"
+PHOTO_NOT_FOUND = "Photo not found"
+
+
+def visible_gallery(gallery: Optional[Gallery], admin: bool) -> Gallery:
+    """
+    Hands back a gallery this viewer may see, or 404s. Private ones get the same 404 as
+    a missing one for anyone but the admin, so they don't show they exist.
+
+    Args:
+        gallery: The gallery looked up, or None if there wasn't one.
+        admin: Whether the admin's asking.
+
+    Returns:
+        Gallery: The gallery.
+
+    Raises:
+        HTTPException: 404 if it's missing, or private and this isn't the admin.
+    """
+    if gallery is None or not (gallery.is_public or admin):
+        raise HTTPException(status_code=404, detail=GALLERY_NOT_FOUND)
+    return gallery
+
 
 # Gallery endpoints
 @router.get("", response_model=List[GalleryRead])
@@ -34,22 +62,25 @@ async def list_galleries(
     skip: int = 0,
     limit: int = 100,
     public_only: bool = True,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: bool = Depends(is_admin),
 ):
     """
     List all galleries.
-    
+
     Args:
         skip: Number of galleries to skip (pagination)
         limit: Maximum number of galleries to return
-        public_only: If True, only return public galleries
+        public_only: If True, only return public galleries. Only the admin can turn
+            it off; anyone else always gets just the public ones.
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         List of galleries with photo counts
     """
     query = db.query(Gallery)
-    if public_only:
+    if public_only or not admin:
         query = query.filter(Gallery.is_public == True)
     
     galleries = query.order_by(Gallery.display_order.desc(), Gallery.id.desc()).offset(skip).limit(limit).all()
@@ -73,41 +104,43 @@ async def list_galleries(
 
 
 @router.get("/{gallery_id}", response_model=GalleryWithPhotos)
-async def get_gallery(gallery_id: int, db: Session = Depends(get_db)):
+async def get_gallery(gallery_id: int, db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
     """
     Get a specific gallery with all its photos.
-    
+
     Args:
         gallery_id: Gallery ID
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         Gallery with all photos
+
+    Raises:
+        HTTPException: 404 if it's missing, or private and this isn't the admin.
     """
     gallery = db.query(Gallery).filter(Gallery.id == gallery_id).first()
-    if not gallery:
-        raise HTTPException(status_code=404, detail="Gallery not found")
-    
-    return gallery
+    return visible_gallery(gallery, admin)
 
 
 @router.get("/slug/{slug}", response_model=GalleryWithPhotos)
-async def get_gallery_by_slug(slug: str, db: Session = Depends(get_db)):
+async def get_gallery_by_slug(slug: str, db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
     """
     Get a gallery by its URL slug.
-    
+
     Args:
         slug: Gallery slug
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         Gallery with all photos
+
+    Raises:
+        HTTPException: 404 if it's missing, or private and this isn't the admin.
     """
     gallery = db.query(Gallery).filter(Gallery.slug == slug).first()
-    if not gallery:
-        raise HTTPException(status_code=404, detail="Gallery not found")
-    
-    return gallery
+    return visible_gallery(gallery, admin)
 
 
 @router.post("", response_model=GalleryRead, status_code=status.HTTP_201_CREATED)
@@ -295,44 +328,51 @@ async def upload_photo(
 
 
 @router.get("/{gallery_id}/photos", response_model=List[GalleryPhotoRead])
-async def list_gallery_photos(gallery_id: int, db: Session = Depends(get_db)):
+async def list_gallery_photos(gallery_id: int, db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
     """
     List all photos in a gallery.
-    
+
     Args:
         gallery_id: Gallery ID
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         List of photos ordered by display_order
+
+    Raises:
+        HTTPException: 404 if the gallery's missing, or private and this isn't the admin.
     """
     gallery = db.query(Gallery).filter(Gallery.id == gallery_id).first()
-    if not gallery:
-        raise HTTPException(status_code=404, detail="Gallery not found")
-    
+    visible_gallery(gallery, admin)
+
     photos = db.query(GalleryPhoto).filter(
         GalleryPhoto.gallery_id == gallery_id
     ).order_by(GalleryPhoto.display_order, GalleryPhoto.created_at).all()
-    
+
     return photos
 
 
 @router.get("/photos/{photo_id}", response_model=GalleryPhotoRead)
-async def get_photo(photo_id: int, db: Session = Depends(get_db)):
+async def get_photo(photo_id: int, db: Session = Depends(get_db), admin: bool = Depends(is_admin)):
     """
     Get photo metadata.
-    
+
     Args:
         photo_id: Photo ID
         db: Database session
-        
+        admin: Whether the admin's asking.
+
     Returns:
         Photo metadata
+
+    Raises:
+        HTTPException: 404 if it's missing, or in a private gallery and this isn't the admin.
     """
     photo = db.query(GalleryPhoto).filter(GalleryPhoto.id == photo_id).first()
-    if not photo:
-        raise HTTPException(status_code=404, detail="Photo not found")
-    
+    if photo is None or not (photo.gallery.is_public or admin):
+        raise HTTPException(status_code=404, detail=PHOTO_NOT_FOUND)
+
     return photo
 
 

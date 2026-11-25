@@ -31,7 +31,7 @@ from app.database import get_db
 from app.dependencies import DJ_GUEST_SCOPE, dj_guest_subject, require_dj_guest
 from app.image_utils import delete_photo_files, store_photo
 from app.models import DjGuest, DjGuestPhoto
-from app.rate_limit import limiter
+from app.rate_limit import LOGIN_RATE_LIMIT, limiter
 from app.routers.auth import create_access_token, verify_password
 from app.schemas import DjGuestMe, DjGuestPasswordChange, DjGuestUpdate
 
@@ -39,8 +39,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dj/guests", tags=["DJ"])
 
-# slows down password guessing without getting in the way of someone mistyping
-LOGIN_RATE_LIMIT = "5/minute"
 # a phone photo is a few MB. room for big ones without letting one fill the ssd
 MAX_GUEST_PHOTO_BYTES = 40 * 1024 * 1024
 BYTES_PER_MB = 1024 * 1024
