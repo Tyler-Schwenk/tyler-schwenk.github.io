@@ -866,6 +866,57 @@ class MonitorState(BaseModel):
 # DJ Stream Schemas
 MAX_DJ_SET_TITLE_LENGTH = 200
 MAX_DJ_SET_DESCRIPTION_LENGTH = 5000
+# guest djs: the name the site shows, and the bit about them
+MAX_DJ_GUEST_NAME_LENGTH = 40
+MAX_DJ_GUEST_BIO_LENGTH = 1000
+
+
+class DjGuestPublic(BaseModel):
+    """
+    A guest dj as the site shows them, on their live stream and their sets. Tyler's own
+    stream and sets have no dj (null), since it's his den.
+    """
+    id: int
+    name: str
+    bio: Optional[str] = None
+    photo_id: Optional[int] = Field(None, description="their photo, changes with every upload; null without one")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DjGuestMe(DjGuestPublic):
+    """A guest dj's own profile, for their page: plus their login and the mount their butt sends to."""
+    username: str
+    mount: str
+
+
+class DjGuestUpdate(BaseModel):
+    """
+    A guest dj editing their profile. Only the fields sent change. The name's squashed
+    onto one line and can't be blank; a blank or null bio clears it.
+    """
+    name: Optional[str] = Field(None, max_length=MAX_DJ_GUEST_NAME_LENGTH)
+    bio: Optional[str] = Field(None, max_length=MAX_DJ_GUEST_BIO_LENGTH)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def name_on_one_line(cls, value: object) -> object:
+        """trims and flattens the name; anything else is left for the type check."""
+        return " ".join(value.split()) if isinstance(value, str) else value
+
+    @field_validator("name")
+    @classmethod
+    def name_not_blank(cls, value: Optional[str]) -> Optional[str]:
+        """rejects a name that was empty or only whitespace (leave it out to keep it)."""
+        if value is not None and not value:
+            raise ValueError("can't be empty -- the site needs something to call you")
+        return value
+
+    @field_validator("bio", mode="before")
+    @classmethod
+    def trim_bio(cls, value: object) -> object:
+        """trims the bio's ends, keeping its line breaks."""
+        return value.strip() if isinstance(value, str) else value
 
 
 class DjStreamStatus(BaseModel):
@@ -879,6 +930,7 @@ class DjStreamStatus(BaseModel):
     listeners: int
     set_id: Optional[int] = None
     image_id: Optional[int] = None
+    dj: Optional[DjGuestPublic] = Field(None, description="the guest dj on air, null when it's tyler (or off air)")
 
 
 class DjSetRead(BaseModel):
@@ -891,6 +943,7 @@ class DjSetRead(BaseModel):
     duration_s: int
     size_bytes: int
     image_id: Optional[int] = Field(None, description="its cover image, changes with every upload")
+    dj: Optional[DjGuestPublic] = Field(None, description="the guest dj who played it, null for tyler's")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -1100,9 +1153,9 @@ class DjAlertSubscriberRead(BaseModel):
 
 class DjAlertSend(BaseModel):
     """
-    An alert from the admin page. The subject is squashed onto one line (an email header
-    can't hold a line break); blank or missing means the default. The body keeps its
-    line breaks, trimmed at the ends, and can't be blank.
+    An alert from the admin page or a guest dj's page. The subject is squashed onto one
+    line (an email header can't hold a line break); blank or missing means the default.
+    The body keeps its line breaks, trimmed at the ends, and can't be blank.
     """
     subject: Optional[str] = Field(None, max_length=MAX_DJ_ALERT_SUBJECT_LENGTH)
     body: str = Field(..., max_length=MAX_DJ_ALERT_BODY_LENGTH)
@@ -1130,10 +1183,16 @@ class DjAlertSend(BaseModel):
 
 class DjAlertSendResult(BaseModel):
     """
-    How an alert went: how many took it, any address the mail server refused, and the
-    live set it labelled (its subject and message became that set's title and
-    description), if one was recording.
+    How an alert went: how many took it, any address the mail server refused (left out
+    for guest djs, who aren't shown the list), and the live set it labelled (its subject
+    and message became that set's title and description), if one was recording.
     """
     sent: int
     failed: list[str]
+    failed_count: int = Field(0, description="how many the mail server refused. guests only get this, not the addresses")
     labelled_set_id: Optional[int] = None
+
+
+class DjAlertAudience(BaseModel):
+    """How many confirmed subscribers an alert would go to, for a guest dj's send button."""
+    confirmed: int

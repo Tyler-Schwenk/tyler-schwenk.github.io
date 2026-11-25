@@ -4,11 +4,12 @@ DJ alerts router -- emails telling people the dj stream's live.
 Anyone can sign up from the live room with just an email address. They get a
 confirmation email first, and only confirmed addresses get alerts, so typing in someone
 else's address does nothing but send them one email they can ignore. Alerts never go out
-on their own: the admin writes one on the admin page's DJ tab and sends it. Sending one
-while a set's recording also makes its subject and message that set's title and
-description, since they're usually the same thing (editable later like any set). Every email
-carries an unsubscribe link (to the site's /opium-den/live/alerts page) and one-click
-unsubscribe headers for mail apps.
+on their own: the admin writes one on the admin page's DJ tab and sends it, or a guest dj
+does from their /guest-dj page, once per set and only while they're on air. Guests never
+see who's on the list. Sending one while a set's recording also makes its subject and
+message that set's title and description, since they're usually the same thing (editable
+later like any set). Every email carries an unsubscribe link (to the site's
+/opium-den/live/alerts page) and one-click unsubscribe headers for mail apps.
 """
 
 import logging
@@ -20,13 +21,20 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.dependencies import require_admin
+from app.dependencies import DjActor, require_admin, require_dj_or_admin
 from app.kiln_firings import utc_now_naive
 from app.mailer import MailNotConfiguredError, MailServerError, OutgoingEmail, mail_configured, send_emails
 from app.dj_stream import watcher
 from app.models import DjAlertSubscriber, DjSet
 from app.rate_limit import limiter
-from app.schemas import DjAlertSend, DjAlertSendResult, DjAlertSignup, DjAlertSignupResult, DjAlertSubscriberRead
+from app.schemas import (
+    DjAlertAudience,
+    DjAlertSend,
+    DjAlertSendResult,
+    DjAlertSignup,
+    DjAlertSignupResult,
+    DjAlertSubscriberRead,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +52,10 @@ ALERTS_PAGE_PATH = "/opium-den/live/alerts"
 LIVE_ROOM_PATH = "/opium-den/live/room"
 CONFIRM_SUBJECT = "Confirm your live alerts from the den"
 DEFAULT_ALERT_SUBJECT = "Tyler's live in the den"
+# a guest dj's default subject, with their name in it
+GUEST_ALERT_SUBJECT = "{name}'s live in the den"
 
-CONFIRM_BODY = """Someone (hopefully you) asked for an email whenever Tyler goes live in the den at tyler-schwenk.com.
+CONFIRM_BODY = """Someone (hopefully you) asked for an email whenever there's a live set in the den at tyler-schwenk.com.
 
 Confirm it here:
 {confirm_url}
@@ -304,6 +314,45 @@ async def delete_subscriber(subscriber_id: int, db: Session = Depends(get_db)) -
     logger.info(f"dj alerts: admin removed {subscriber.email}")
 
 
+def recording_set(db: Session) -> DjSet | None:
+    """
+    The set that's recording right now.
+
+    Args:
+        db: Database session.
+
+    Returns:
+        DjSet | None: The set, or None when nothing's recording.
+    """
+    set_id = watcher.recording_set_id
+    return db.get(DjSet, set_id) if set_id is not None else None
+
+
+def guest_alert_set(db: Session, actor: DjActor) -> DjSet:
+    """
+    The set a guest dj's alert is for: theirs, on air right now, and not alerted yet.
+
+    Args:
+        db: Database session.
+        actor: The guest dj sending.
+
+    Returns:
+        DjSet: Their live set.
+
+    Raises:
+        HTTPException: 409 if they're not on air, or already sent one for this set.
+    """
+    dj_set = recording_set(db)
+    if dj_set is None or dj_set.dj is None or dj_set.dj.id != actor.guest.id:
+        raise HTTPException(
+            status_code=409,
+            detail="you can only send an alert while you're on air -- start streaming, then send it",
+        )
+    if dj_set.guest_link.alert_sent_at is not None:
+        raise HTTPException(status_code=409, detail="you've already sent an alert for this set, one per set")
+    return dj_set
+
+
 def label_live_set(db: Session, alert: DjAlertSend) -> int | None:
     """
     Makes an alert's subject and message the title and description of the set that's
@@ -317,8 +366,7 @@ def label_live_set(db: Session, alert: DjAlertSend) -> int | None:
     Returns:
         int | None: The set's id, or None when nothing's recording.
     """
-    set_id = watcher.recording_set_id
-    dj_set = db.get(DjSet, set_id) if set_id is not None else None
+    dj_set = recording_set(db)
     if dj_set is None:
         return None
     if alert.subject:
@@ -329,31 +377,89 @@ def label_live_set(db: Session, alert: DjAlertSend) -> int | None:
     return dj_set.id
 
 
-@router.post("/send", response_model=DjAlertSendResult, dependencies=[Depends(require_admin)])
-async def send_alert(alert: DjAlertSend, db: Session = Depends(get_db)) -> DjAlertSendResult:
+def confirmed_subscribers(db: Session) -> list[DjAlertSubscriber]:
     """
-    Emails every confirmed subscriber (admin only). Each gets their own copy with their
-    own unsubscribe link. Takes about SEND_INTERVAL_S per subscriber, so the request
-    stays open until they've all gone. If a set's recording, the subject and message
-    become its title and description first (label_live_set), whether or not the emails
-    then go out.
+    Everyone an alert goes to.
 
     Args:
-        alert: The subject (blank for the default) and what to say.
         db: Database session.
 
     Returns:
-        DjAlertSendResult: How many went, any address the mail server refused, and the set it labelled.
+        list[DjAlertSubscriber]: The confirmed subscribers.
+    """
+    return db.query(DjAlertSubscriber).filter(DjAlertSubscriber.confirmed_at.is_not(None)).all()
+
+
+@router.get("/audience", response_model=DjAlertAudience)
+async def get_audience(
+    actor: DjActor = Depends(require_dj_or_admin),
+    db: Session = Depends(get_db),
+) -> DjAlertAudience:
+    """
+    How many people an alert would go to (the admin or a guest dj), for the send button.
+    Just the count, so guests never see who's on the list.
+
+    Args:
+        actor: Who's asking.
+        db: Database session.
+
+    Returns:
+        DjAlertAudience: How many have confirmed.
+    """
+    return DjAlertAudience(confirmed=len(confirmed_subscribers(db)))
+
+
+@router.post("/send", response_model=DjAlertSendResult)
+async def send_alert(
+    alert: DjAlertSend,
+    actor: DjActor = Depends(require_dj_or_admin),
+    db: Session = Depends(get_db),
+) -> DjAlertSendResult:
+    """
+    Emails every confirmed subscriber (the admin, or a guest dj while they're on air,
+    once per set). Each gets their own copy with their own unsubscribe link. Takes about
+    SEND_INTERVAL_S per subscriber, so the request stays open until they've all gone. If
+    a set's recording, the subject and message become its title and description first
+    (label_live_set), whether or not the emails then go out.
+
+    Args:
+        alert: The subject (blank for the default) and what to say.
+        actor: Who's sending.
+        db: Database session.
+
+    Returns:
+        DjAlertSendResult: How many went, any address the mail server refused (only the
+            count for a guest), and the set it labelled.
 
     Raises:
-        HTTPException: 409 with nobody confirmed, 503 if mail isn't configured, 502 if
-            the mail server can't be reached.
+        HTTPException: 409 with nobody confirmed, or for a guest who's off air or already
+            sent one this set, 503 if mail isn't configured, 502 if the mail server can't
+            be reached.
     """
+    guest_set = None if actor.is_admin else guest_alert_set(db, actor)
     labelled_set_id = label_live_set(db, alert)
-    subscribers = db.query(DjAlertSubscriber).filter(DjAlertSubscriber.confirmed_at.is_not(None)).all()
+    subscribers = confirmed_subscribers(db)
     if not subscribers:
         raise HTTPException(status_code=409, detail="nobody's confirmed a signup yet, so there's no one to send to")
-    subject = alert.subject or DEFAULT_ALERT_SUBJECT
-    failed = await send_or_raise([alert_email(subscriber, subject, alert.body) for subscriber in subscribers])
-    logger.info(f"dj alerts: sent {subject!r} to {len(subscribers) - len(failed)} of {len(subscribers)}")
-    return DjAlertSendResult(sent=len(subscribers) - len(failed), failed=failed, labelled_set_id=labelled_set_id)
+    default_subject = DEFAULT_ALERT_SUBJECT if actor.is_admin else GUEST_ALERT_SUBJECT.format(name=actor.guest.name)
+    subject = alert.subject or default_subject
+    # marked before sending, so a guest can't send twice by clicking again while it's going out
+    if guest_set is not None:
+        guest_set.guest_link.alert_sent_at = utc_now_naive()
+        db.commit()
+    try:
+        failed = await send_or_raise([alert_email(subscriber, subject, alert.body) for subscriber in subscribers])
+    except HTTPException:
+        # nothing went out, so the guest gets to try again
+        if guest_set is not None:
+            guest_set.guest_link.alert_sent_at = None
+            db.commit()
+        raise
+    sender = "admin" if actor.is_admin else actor.guest.username
+    logger.info(f"dj alerts: {sender} sent {subject!r} to {len(subscribers) - len(failed)} of {len(subscribers)}")
+    return DjAlertSendResult(
+        sent=len(subscribers) - len(failed),
+        failed=failed if actor.is_admin else [],
+        failed_count=len(failed),
+        labelled_set_id=labelled_set_id,
+    )

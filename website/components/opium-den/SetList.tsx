@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatDate, formatDuration, plural } from "@/app/admin/format";
-import { djSetPagePath, djSetThumbUrl, djSetTitle, djSetTrackId, type DjSet } from "@/app/opium-den/djApi";
+import { djByline, djSetPagePath, djSetThumbUrl, djSetTitle, djSetTrackId, type DjSet } from "@/app/opium-den/djApi";
 import type { DjSetTrace } from "@/lib/useDjSetTraces";
 import EqBars from "./EqBars";
 import SetArt from "./SetArt";
@@ -144,7 +144,9 @@ function SetRow({
   const overlayShown = current && (playing || loading);
   const description = set.description ?? "";
   const clipped = description.length > DESCRIPTION_CLAMP_CHARS || description.includes("\n");
-  const meta = [set.title ? formatDate(set.started_at) : "untitled set"];
+  const byline = djByline(set.dj);
+  const meta = byline ? [byline] : [];
+  meta.push(set.title ? formatDate(set.started_at) : "untitled set");
   if (trace?.messages) meta.push(plural(trace.messages.length, "msg"));
 
   return (

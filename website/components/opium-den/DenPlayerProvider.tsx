@@ -17,8 +17,9 @@ type DenPlayerContextValue = {
 
 const DenPlayerContext = createContext<DenPlayerContextValue | null>(null);
 
-// pages with no room for the bar: the kiosk screens, and the admin page's own bottom nav
-const BAR_HIDDEN_PATH_PREFIXES = ["/display", "/admin"];
+// pages with no room for the bar: the kiosk screens, the admin page's own bottom nav, and
+// the guest dj page, which is the admin page's look
+const BAR_HIDDEN_PATH_PREFIXES = ["/display", "/admin", "/guest-dj"];
 
 /**
  * the opium den's one audio player, for the whole site. it lives in the root layout, so

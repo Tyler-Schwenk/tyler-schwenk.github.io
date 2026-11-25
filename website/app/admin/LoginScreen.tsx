@@ -5,11 +5,22 @@ import Link from "next/link";
 import { Button, Card, Field, INPUT_CLASS } from "./ui";
 
 /**
- * The admin login form (the single admin account, see
- * pi/services/website-backend/app/routers/auth.py).
+ * A login form, in the admin page's look. By default it's the admin's (the single admin
+ * account, see pi/services/website-backend/app/routers/auth.py), with an email; the guest
+ * dj page passes its own title and asks for a username instead.
  * @param props.login - Logs in; resolves to an error message, or null on success.
+ * @param props.title - The heading.
+ * @param props.usernameLabel - What the first field asks for: "Email" makes it an email field.
  */
-export default function LoginScreen({ login }: { login: (email: string, password: string) => Promise<string | null> }) {
+export default function LoginScreen({
+  login,
+  title = "Admin",
+  usernameLabel = "Email",
+}: {
+  login: (username: string, password: string) => Promise<string | null>;
+  title?: string;
+  usernameLabel?: string;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,13 +36,14 @@ export default function LoginScreen({ login }: { login: (email: string, password
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
       <Card className="w-full max-w-sm p-6 sm:p-8">
-        <h1 className="text-2xl font-bold text-white">Admin</h1>
+        <h1 className="text-2xl font-bold text-white">{title}</h1>
         <p className="mb-6 mt-1 text-sm text-slate-400">tyler-schwenk.com</p>
         <form onSubmit={submit} className="flex flex-col gap-4">
-          <Field label="Email" htmlFor="login-email">
+          <Field label={usernameLabel} htmlFor="login-email">
             <input
               id="login-email"
-              type="email"
+              type={usernameLabel === "Email" ? "email" : "text"}
+              autoCapitalize="none"
               autoComplete="username"
               className={INPUT_CLASS}
               value={email}

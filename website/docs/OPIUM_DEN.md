@@ -14,8 +14,8 @@ The opium den is the music section. It has two parts sharing one layout and look
     long it's been on, who's listening, and a chat.
   - `/opium-den/live/set?id=<set id>`: a past set's full view, with its waveform and its
     chat replaying as it plays.
-  - `/opium-den/live/alerts`: signing up for an email when Tyler goes live, and where those
-    emails' confirm and unsubscribe links land.
+  - `/opium-den/live/alerts`: signing up for an email when we go live (Tyler or a guest
+    DJ), and where those emails' confirm and unsubscribe links land.
 - `/opium-den/set?id=` is where set pages used to be. It forwards to the same set under
   `/opium-den/live/set`, since links to it were already shared.
 
@@ -73,6 +73,21 @@ tab's visible). Then the Listen links.
 and every session is recorded and shows up here as a past set once it ends. The pipeline
 (rekordbox, butt, icecast, recording) is in `pi/docs/services/dj-stream.md`.
 
+**Guest DJs**: friends (Tommy, aka Tracepoint) can stream here too, one DJ at a time.
+Tyler's own stream and sets carry no DJ name, same as ever; a guest's (`dj` on the status
+and the set, `DjGuest` in `djApi.ts`) are named wherever they show (`djByline`):
+
+- the status line (`LiveStatus`): "Live now · Tracepoint on the decks · on air for ..."
+- the live monitor's readout: "dj Tracepoint"
+- set rows and the set page's header line, first: "Tracepoint · Nov 18, ..."
+- the player: "Tracepoint live now" under the stream, "Tracepoint · date" under a set
+- their photo stands in for the cover (`djSetThumbUrl`, `djLiveThumbUrl`) on their sets
+  and their live stream until one's uploaded; it isn't zoomable like a real cover
+- their bio shows under "about this set" on their sets' pages, after the description,
+  with their name in front
+
+They manage their profile and sets from `/guest-dj` (`website/docs/ADMIN.md#guest-dj-page`).
+
 - **Header**: an "Opium Den" back link, "Live from the den." and a line on what it is.
 - **Live monitor** (`LiveHero`): the way into the room.
   A header reads out the stream in mono: "On air" with a blinking dot, when it started,
@@ -91,7 +106,7 @@ and every session is recorded and shows up here as a past set once it ends. The 
   the paper says "Off air right now." with a big **Get notified when we go live** button
   (`AlertSignup prominent`) that opens the live alerts signup in place, since that's the
   main thing to do then.
-- **Live alerts link**: while live, a small "Get an email when I go live" under the monitor
+- **Live alerts link**: while live, a small "Get an email when we go live" under the monitor
   opens the signup in place (see Live Alerts below). Off air the monitor has the big one
   instead.
 - **Past sets** (`SetList`, `SetTrace`): three stats under the heading (how many sets, how
@@ -230,8 +245,9 @@ The backend side (`/dj/chat`, limits, moderation) is in
 
 ## Live Alerts
 
-People can sign up for an email when Tyler goes live. Alerts are never automatic: Tyler
-writes and sends each one from the admin page's DJ tab (`website/docs/ADMIN.md`). The
+People can sign up for an email when we go live ("Get an email when we go live"). Alerts
+are never automatic: Tyler writes and sends each one from the admin page's DJ tab, or a
+guest DJ from their `/guest-dj` page while they're on (`website/docs/ADMIN.md`). The
 backend, the emails and the mail setup are in `pi/docs/services/dj-stream.md#live-alerts`.
 
 - **Signup** (`AlertSignup`): an email box and "Sign up", with a line saying they'll
@@ -388,7 +404,7 @@ along the bottom of every other page.
 | `website/lib/useDjRoom.ts` | Keeps you in the live room (check-ins to `/dj/room`) and gets who's in it |
 | `website/components/opium-den/AlertSignup.tsx` | The live alerts signup: a link that opens an email box |
 | `website/components/opium-den/AlertsLanding.tsx` | The alerts page: confirms or unsubscribes from an email's link, or the signup |
-| `website/app/opium-den/djApi.ts` | Types, fetchers, urls and limits for the `/dj` endpoints (chat, covers, live alerts), the live section's paths, and sets and the stream as player tracks (`djSetTrack`, `djLiveTrack`), shared with the admin tab |
+| `website/app/opium-den/djApi.ts` | Types, fetchers, urls and limits for the `/dj` endpoints (chat, covers, live alerts, guest DJs), the live section's paths, and sets and the stream as player tracks (`djSetTrack`, `djLiveTrack`), shared with the admin tab |
 
 Times and lengths are formatted with `parseBackendTime`, `formatDate`, `formatDuration`
 and `formatElapsed` from `website/app/admin/format.ts`.

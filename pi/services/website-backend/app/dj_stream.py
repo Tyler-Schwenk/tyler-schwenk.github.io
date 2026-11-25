@@ -1,9 +1,11 @@
 """
 The live dj stream: watches icecast, records each session, and counts who's listening.
 
-butt on the dj laptop sends to icecast (pi/services/dj-stream). This polls icecast's
-status every few seconds. When the mount goes live it starts ffmpeg copying the stream
-into an mp3 under DJ_SETS_DIR and adds a dj_sets row. When the source goes away, ffmpeg
+butt on the dj laptop sends to icecast (pi/services/dj-stream): Tyler to DJ_STREAM_MOUNT,
+each guest dj to their own mount. Icecast only takes one source at a time, so at most one
+mount is live. This polls icecast's status every few seconds. When a known mount goes live
+it starts ffmpeg copying the stream into an mp3 under DJ_SETS_DIR and adds a dj_sets row
+(plus a dj_set_guests row when it's a guest's mount). When the source goes away, ffmpeg
 sees the stream end (or gets stopped), and the row gets its end time, length and size.
 Sessions shorter than MIN_SET_DURATION_S, like a bump of the mixer tripping butt's auto
 start, get thrown away. While a set records, the live meter (app/dj_live_meter.py) measures
@@ -18,6 +20,7 @@ import logging
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 from sqlalchemy.orm import Session
@@ -29,7 +32,7 @@ from app.dj_room import live_room
 from app.dj_waveform import prepare_waveform
 from app.image_utils import delete_photo_files
 from app.kiln_firings import utc_now_naive
-from app.models import DjSet, DjSetImage
+from app.models import DjGuest, DjSet, DjSetGuest, DjSetImage
 from app.schemas import DjStreamStatus
 
 logger = logging.getLogger(__name__)
@@ -52,28 +55,60 @@ SET_IMAGES_SUBDIR = "images"
 METER_RETRY_S = 30.0
 
 
-def stream_url() -> str:
+def guest_mount_path(mount: str) -> str:
     """
-    Where the live mount is on the docker network.
+    A guest's mount as icecast names it.
+
+    Args:
+        mount: The mount as a DjGuest stores it, like "tracepoint".
 
     Returns:
-        str: Like http://dj-stream-icecast:8000/live.
+        str: Like "/tracepoint".
     """
-    return f"{settings.ICECAST_URL}{settings.DJ_STREAM_MOUNT}"
+    return f"/{mount}"
 
 
-def find_live_source(icecast_status: dict) -> dict | None:
+def known_mounts() -> dict[str, int | None]:
     """
-    Picks our mount out of icecast's status json.
+    Every mount whose stream counts as a set: Tyler's, and each active guest's.
+
+    Returns:
+        dict[str, int | None]: Mount path (like "/live") to the guest's id, None for Tyler's.
+    """
+    with SessionLocal() as db:
+        guests = db.query(DjGuest.mount, DjGuest.id).filter(DjGuest.is_active.is_(True)).all()
+    mounts: dict[str, int | None] = {guest_mount_path(mount): guest_id for mount, guest_id in guests}
+    mounts[settings.DJ_STREAM_MOUNT] = None
+    return mounts
+
+
+def source_mount(source: dict) -> str:
+    """
+    Which mount a source in icecast's status is on.
+
+    Args:
+        source: A source entry from icecast's status.
+
+    Returns:
+        str: Its path, like "/live", or "" if icecast didn't say.
+    """
+    return urlparse(str(source.get("listenurl", ""))).path
+
+
+def find_live_source(icecast_status: dict, mounts: dict[str, int | None]) -> dict | None:
+    """
+    Picks the first of our mounts that's on air out of icecast's status json. Anything
+    on a mount we don't know is ignored.
 
     Icecast leaves `source` out when nothing's connected, gives an object for one
     source, and a list for several.
 
     Args:
         icecast_status: The parsed body of /status-json.xsl.
+        mounts: The mounts that count (known_mounts).
 
     Returns:
-        The source entry for DJ_STREAM_MOUNT, or None if it's not on air.
+        The source entry, or None if none of them are on air.
     """
     sources = icecast_status.get("icestats", {}).get("source")
     if sources is None:
@@ -81,7 +116,7 @@ def find_live_source(icecast_status: dict) -> dict | None:
     if isinstance(sources, dict):
         sources = [sources]
     for source in sources:
-        if str(source.get("listenurl", "")).endswith(settings.DJ_STREAM_MOUNT):
+        if source_mount(source) in mounts:
             return source
     return None
 
@@ -207,7 +242,9 @@ class DjStreamWatcher:
     Keeps track of whether the stream is live, and records it while it is.
 
     Attributes:
-        live: Whether icecast had our mount on air at the last poll.
+        live: Whether icecast had one of our mounts on air at the last poll.
+        mount: Which mount that was, like "/live", None when not live.
+        guest_id: The guest dj whose mount it is, None for Tyler's (or when not live).
         started_at: When butt connected (naive UTC), None when not live.
         listeners: How many people the public relay (/dj/live) is serving.
         meter: The live set's loudness, for /dj/live/trace.
@@ -215,15 +252,28 @@ class DjStreamWatcher:
 
     def __init__(self) -> None:
         self.live = False
+        self.mount: str | None = None
+        self.guest_id: int | None = None
         self.started_at: datetime | None = None
         self.listeners = 0
         self._recorder: asyncio.subprocess.Process | None = None
+        # the mount being recorded, so a hand-over to another dj between polls is caught
+        self._recording_mount: str | None = None
         self._recorder_output: asyncio.Task | None = None
         self._set_id: int | None = None
         self._icecast_unreachable = False
         # held so the finished set's waveform analysis isn't garbage collected mid-run
         self._waveform_task: asyncio.Task | None = None
         self.meter = LiveMeter()
+
+    def stream_url(self) -> str:
+        """
+        Where the live mount is on the docker network.
+
+        Returns:
+            str: Like http://dj-stream-icecast:8000/live. Tyler's mount when nothing's live.
+        """
+        return f"{settings.ICECAST_URL}{self.mount or settings.DJ_STREAM_MOUNT}"
 
     @property
     def recording_set_id(self) -> int | None:
@@ -271,13 +321,20 @@ class DjStreamWatcher:
         Args:
             client: Shared http client for icecast.
         """
-        source = await self._fetch_source(client)
+        mounts = known_mounts()
+        source = await self._fetch_source(client, mounts)
         self.live = source is not None
+        self.mount = source_mount(source) if source else None
+        self.guest_id = mounts.get(self.mount) if self.mount else None
         self.started_at = parse_stream_start(source) if source else None
 
         # ffmpeg exits on its own when icecast ends the stream
         if self._recorder is not None and self._recorder.returncode is not None:
             await self._finish_recording()
+        # one dj stopped and the next started between polls: that's two sets
+        if self._recorder is not None and self.live and self.mount != self._recording_mount:
+            logger.info(f"dj stream: {self._recording_mount} handed over to {self.mount}, starting a new set")
+            await self._stop_recording()
 
         if self.live and self._recorder is None:
             await self._start_recording()
@@ -299,19 +356,20 @@ class DjStreamWatcher:
         if last is not None and time.monotonic() - last < METER_RETRY_S:
             return
         logger.info("dj stream: the live meter stopped mid-set, starting it again")
-        await self.meter.start(stream_url())
+        await self.meter.start(self.stream_url())
 
-    async def _fetch_source(self, client: httpx.AsyncClient) -> dict | None:
+    async def _fetch_source(self, client: httpx.AsyncClient, mounts: dict[str, int | None]) -> dict | None:
         """
-        Asks icecast whether our mount is on air.
+        Asks icecast whether one of our mounts is on air.
 
         Logs once when icecast becomes unreachable and once when it's back, not every poll.
 
         Args:
             client: Shared http client for icecast.
+            mounts: The mounts that count (known_mounts).
 
         Returns:
-            The mount's source entry, or None if it's off air or icecast can't be reached.
+            The live mount's source entry, or None if it's off air or icecast can't be reached.
         """
         url = f"{settings.ICECAST_URL}{ICECAST_STATUS_PATH}"
         try:
@@ -330,21 +388,22 @@ class DjStreamWatcher:
         if self._icecast_unreachable:
             logger.info("dj stream: icecast is reachable again")
             self._icecast_unreachable = False
-        return find_live_source(icecast_status)
+        return find_live_source(icecast_status, mounts)
 
     async def _start_recording(self) -> None:
         """
-        Starts ffmpeg copying the live stream to a new mp3, and adds its dj_sets row.
+        Starts ffmpeg copying the live stream to a new mp3, and adds its dj_sets row (and
+        its dj_set_guests row, when it's a guest's set).
 
         Side effects:
-            Spawns ffmpeg, creates a file under DJ_SETS_DIR, inserts a dj_sets row.
+            Spawns ffmpeg, creates a file under DJ_SETS_DIR, inserts the rows.
         """
         started_at = utc_now_naive()
         path = Path(settings.DJ_SETS_DIR) / started_at.strftime(SET_FILENAME_FORMAT)
         try:
             process = await asyncio.create_subprocess_exec(
                 "ffmpeg", "-nostdin", "-loglevel", "error", "-n",
-                "-i", stream_url(),
+                "-i", self.stream_url(),
                 # straight copy: the stream is already mp3, so no re-encode and next to no cpu
                 "-c", "copy", "-f", "mp3", str(path),
                 stdin=asyncio.subprocess.DEVNULL,
@@ -357,15 +416,18 @@ class DjStreamWatcher:
 
         with SessionLocal() as db:
             dj_set = DjSet(started_at=started_at, file_path=str(path))
+            if self.guest_id is not None:
+                dj_set.guest_link = DjSetGuest(guest_id=self.guest_id)
             db.add(dj_set)
             db.commit()
             self._set_id = dj_set.id
 
         self._recorder = process
+        self._recording_mount = self.mount
         self._recorder_output = asyncio.create_task(log_ffmpeg_output(process, path.name))
-        logger.info(f"dj stream: live, recording to {path.name}")
+        logger.info(f"dj stream: {self.mount} is live, recording to {path.name}")
         self.meter.begin_set()
-        await self.meter.start(stream_url())
+        await self.meter.start(self.stream_url())
 
     async def _stop_recording(self) -> None:
         """
@@ -402,6 +464,7 @@ class DjStreamWatcher:
         if self._recorder_output is not None:
             await self._recorder_output
         self._recorder = None
+        self._recording_mount = None
         self._recorder_output = None
         self._set_id = None
         if set_id is None:

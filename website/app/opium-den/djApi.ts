@@ -4,10 +4,32 @@ import type { PlayerTrack } from "@/lib/useAudioPlayer";
 
 /**
  * types, fetchers and urls for the backend's /dj endpoints: the live stream, the
- * recorded sets (with their replayed chat, waveforms and cover images) and the live
- * room's chat, plus the live section's site paths (see
+ * recorded sets (with their replayed chat, waveforms and cover images), guest djs and the
+ * live room's chat, plus the live section's site paths (see
  * pi/docs/api/website-backend-api.md#dj-stream).
  */
+
+/** a guest dj, as their stream and sets carry them. tyler's own have none. */
+export type DjGuest = {
+  id: number;
+  /** what the site calls them, like "Tracepoint". */
+  name: string;
+  /** a bit about them, plain text with line breaks. */
+  bio: string | null;
+  /** their photo, null without one. changes with every upload. */
+  photo_id: number | null;
+};
+
+/** a guest dj's own profile, as their page gets it: plus their login and the mount their butt sends to. */
+export type DjGuestMe = DjGuest & {
+  username: string;
+  /** without the slash, like "tracepoint". */
+  mount: string;
+};
+
+// match the backend's limits (MAX_DJ_GUEST_*_LENGTH in schemas.py)
+export const DJ_GUEST_NAME_MAX_LENGTH = 40;
+export const DJ_GUEST_BIO_MAX_LENGTH = 1000;
 
 /** whether the stream's on air, as /dj/status sends it. */
 export type DjStreamStatus = {
@@ -22,6 +44,8 @@ export type DjStreamStatus = {
   set_id?: number | null;
   /** that set's cover image, null until one's uploaded. */
   image_id?: number | null;
+  /** the guest dj on air, null when it's tyler. optional like the two above. */
+  dj?: DjGuest | null;
 };
 
 /** a finished recorded set. times are naive UTC. */
@@ -36,6 +60,8 @@ export type DjSet = {
   size_bytes: number;
   /** its cover image, null when it hasn't got one. changes with every upload. optional like DjStreamStatus's. */
   image_id?: number | null;
+  /** the guest dj who played it, null for tyler's. optional like image_id. */
+  dj?: DjGuest | null;
 };
 
 /** a message in the live room's chat. created_at is naive UTC. */
@@ -165,14 +191,52 @@ export function djSetImageUrl(setId: number, imageId: number, thumbnail = false)
   return `${API_BASE}${djSetImagePath(setId)}?v=${imageId}${size}`;
 }
 
+/** the guest dj endpoints: login, their own profile (/me) and photos (/{id}/photo). */
+export const DJ_GUESTS_PATH = "/dj/guests";
+
 /**
- * a set's cover thumbnail, if it has a cover.
+ * a guest dj's photo. the photo id goes in the query so each upload gets its own url,
+ * cached for good like set covers.
+ *
+ * @param {number} guestId - the guest's id.
+ * @param {number} photoId - the photo's id.
+ * @param {boolean} [thumbnail] - the ~400 px version.
+ * @returns {string} absolute url.
+ */
+export function djGuestPhotoUrl(guestId: number, photoId: number, thumbnail = false): string {
+  const size = thumbnail ? "&thumbnail=true" : "";
+  return `${API_BASE}${DJ_GUESTS_PATH}/${guestId}/photo?v=${photoId}${size}`;
+}
+
+/**
+ * a guest dj's photo thumbnail, which stands in for a cover on their sets without one.
+ *
+ * @param {DjGuest | null | undefined} dj - the guest, if it's a guest's.
+ * @returns {string | null} the url, or null for tyler's or a guest without a photo.
+ */
+function djGuestThumbUrl(dj: DjGuest | null | undefined): string | null {
+  return dj?.photo_id == null ? null : djGuestPhotoUrl(dj.id, dj.photo_id, true);
+}
+
+/**
+ * a set's cover thumbnail: its cover, or its guest dj's photo if it hasn't got one.
  *
  * @param {DjSet} set - the set.
  * @returns {string | null} the url, or null.
  */
 export function djSetThumbUrl(set: DjSet): string | null {
-  return set.image_id == null ? null : djSetImageUrl(set.id, set.image_id, true);
+  return set.image_id == null ? djGuestThumbUrl(set.dj) : djSetImageUrl(set.id, set.image_id, true);
+}
+
+/**
+ * who played a set or the stream, for a byline. tyler's are his own den's, so they
+ * don't get one.
+ *
+ * @param {DjGuest | null | undefined} dj - the guest dj, if it's a guest's.
+ * @returns {string | null} like "Tracepoint", or null for tyler's.
+ */
+export function djByline(dj: DjGuest | null | undefined): string | null {
+  return dj?.name ?? null;
 }
 
 /**
@@ -202,10 +266,12 @@ export function djSetTitle(set: DjSet): string {
  * @returns {PlayerTrack} the track, keyed so the list and the set page agree it's the same one.
  */
 export function djSetTrack(set: DjSet): PlayerTrack {
+  const when = set.title ? formatDate(set.started_at) : "untitled set";
+  const byline = djByline(set.dj);
   return {
     id: djSetTrackId(set.id),
     title: djSetTitle(set),
-    subtitle: set.title ? formatDate(set.started_at) : "untitled set",
+    subtitle: byline ? `${byline} · ${when}` : when,
     src: djSetAudioUrl(set.id),
     live: false,
     href: djSetPagePath(set.id),
@@ -226,13 +292,15 @@ export function djLiveStartedMs(status: DjStreamStatus | null): number | null {
 }
 
 /**
- * the live stream's cover: the recording set's image, if one's been uploaded.
+ * the live stream's cover: the recording set's image if one's been uploaded, or else the
+ * guest dj's photo when it's a guest on.
  *
  * @param {DjStreamStatus | null} status - latest status.
  * @returns {string | null} the thumbnail url, or null.
  */
 export function djLiveThumbUrl(status: DjStreamStatus | null): string | null {
-  if (status?.set_id == null || status.image_id == null) return null;
+  if (status?.set_id == null) return null;
+  if (status.image_id == null) return djGuestThumbUrl(status.dj);
   return djSetImageUrl(status.set_id, status.image_id, true);
 }
 
@@ -243,10 +311,11 @@ export function djLiveThumbUrl(status: DjStreamStatus | null): string | null {
  * @returns {PlayerTrack} the track. always LIVE_TRACK_ID, whatever set's on.
  */
 export function djLiveTrack(status: DjStreamStatus | null): PlayerTrack {
+  const byline = djByline(status?.dj);
   return {
     id: LIVE_TRACK_ID,
     title: "Live from the den",
-    subtitle: "live now",
+    subtitle: byline ? `${byline} live now` : "live now",
     src: DJ_LIVE_URL,
     live: true,
     href: LIVE_ROOM_PATH,
@@ -517,6 +586,16 @@ export const DJ_ALERT_SUBJECT_MAX_LENGTH = 120;
 export const DJ_ALERT_BODY_MAX_LENGTH = 2000;
 export const DJ_ALERT_DEFAULT_SUBJECT = "Tyler's live in the den";
 
+/**
+ * a guest dj's default alert subject (GUEST_ALERT_SUBJECT in routers/dj_alerts.py).
+ *
+ * @param {string} name - the guest's name.
+ * @returns {string} like "Tracepoint's live in the den".
+ */
+export function djGuestAlertSubject(name: string): string {
+  return `${name}'s live in the den`;
+}
+
 /** someone signed up for live alerts, as the admin page lists them. times are naive UTC. */
 export type DjAlertSubscriber = {
   id: number;
@@ -529,8 +608,10 @@ export type DjAlertSubscriber = {
 /** how sending an alert went. */
 export type DjAlertSendResult = {
   sent: number;
-  /** addresses the mail server refused. */
+  /** addresses the mail server refused. always empty for a guest dj, who only gets the count. */
   failed: string[];
+  /** how many the mail server refused. optional: a backend from before guest djs leaves it out. */
+  failed_count?: number;
   /** the recording set the alert's subject and message were made the title and description of, if one was. */
   labelled_set_id: number | null;
 };

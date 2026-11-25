@@ -1,7 +1,7 @@
 "use client";
 
 import { formatElapsed, parseBackendTime } from "@/app/admin/format";
-import type { DjStreamStatus } from "@/app/opium-den/djApi";
+import { djByline, type DjStreamStatus } from "@/app/opium-den/djApi";
 
 const OFF_AIR_NOTE = "streams here whenever i'm practicing on the decks";
 
@@ -19,16 +19,18 @@ function onAirFor(startedAt: string | null): string {
 }
 
 /**
- * what follows "live now" or "off air": how long it's been on and who's listening, or
- * when it streams. the listener count only shows once someone's actually tuned in.
+ * what follows "live now" or "off air": who's on (only a guest dj gets named), how long
+ * it's been on and who's listening, or when it streams. the listener count only shows
+ * once someone's actually tuned in.
  *
  * @param {DjStreamStatus | null} status - latest status.
  * @returns {string} the details, maybe "".
  */
 export function liveDetails(status: DjStreamStatus | null): string {
   if (!status?.live) return OFF_AIR_NOTE;
+  const byline = djByline(status.dj);
   const listening = status.listeners > 0 ? `${status.listeners} listening` : "";
-  return [onAirFor(status.started_at), listening].filter(Boolean).join(" · ");
+  return [byline && `${byline} on the decks`, onAirFor(status.started_at), listening].filter(Boolean).join(" · ");
 }
 
 /**

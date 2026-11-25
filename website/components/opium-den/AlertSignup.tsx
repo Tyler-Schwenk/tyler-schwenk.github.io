@@ -70,7 +70,7 @@ export default function AlertSignup({
         onClick={() => setOpen(true)}
         className={`border-b border-den-accent font-den-mono text-[11px] uppercase transition-colors hover:text-den-accent-soft ${className}`}
       >
-        Get an email when I go live
+        Get an email when we go live
       </button>
     );
   }
@@ -92,7 +92,7 @@ export default function AlertSignup({
   return (
     <form onSubmit={submit} className={className}>
       <label htmlFor="den-alert-email" className="block text-sm font-semibold">
-        Get an email when I go live
+        Get an email when we go live
       </label>
       <p className="mt-0.5 font-den-mono text-[11px] text-den-muted">
         you&apos;ll confirm by email first, and every email has an unsubscribe link.

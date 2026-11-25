@@ -10,6 +10,7 @@ services:
     environment:
       - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD}
       - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD}
+      - ICECAST_GUEST_MOUNTS=${ICECAST_GUEST_MOUNTS:-}
     networks:
       - website-backend_default
 

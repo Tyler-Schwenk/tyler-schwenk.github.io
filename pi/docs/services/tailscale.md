@@ -69,12 +69,15 @@ The default policy allows everything to everything, and that includes people we'
   },
   "acls": [
     {"action": "accept", "src": ["autogroup:member"], "dst": ["*:*"]},
-    {"action": "accept", "src": ["autogroup:shared"], "dst": ["fart-pi:8000,8090"]}
+    {"action": "accept", "src": ["autogroup:shared"], "dst": ["fart-pi:8000,8090"]},
+    {"action": "accept", "src": ["<guest dj's tailscale login>"], "dst": ["fart-pi:8010"]}
   ]
 }
 ```
 
 The first rule keeps our own devices fully connected to each other; the second gives friends only the listed ports. Add ports there as we decide to share more services.
+
+The third is for guest DJs (Tommy), who stream to icecast on 8010 (`pi/docs/services/dj-stream.md#guest-djs`). It names their own login, exactly as it shows in the admin console's Users list (like `tommy@gmail.com`, or `tommy@github` for a GitHub login), so other friends don't get 8010. If a rule naming one login doesn't let them through, put 8010 in the `autogroup:shared` rule instead: icecast still wants a password per mount, so another friend could reach the port but couldn't stream.
 
 ## Common commands
 

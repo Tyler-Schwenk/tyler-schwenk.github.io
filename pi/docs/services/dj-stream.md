@@ -3,7 +3,8 @@
 Whatever's playing out of rekordbox on the DJ laptop streams live to the Opium Den's live
 section (`tyler-schwenk.com/opium-den/live`), and every session gets recorded and listed
 there as a past set. Streaming starts by itself when there's sound and stops after a stretch of
-silence, so practicing is all it takes to go live.
+silence, so practicing is all it takes to go live. Guest DJs (Tommy, aka Tracepoint) can
+stream from their own place too, with their own login (see Guest DJs below).
 
 ## How it fits together
 
@@ -11,8 +12,9 @@ silence, so practicing is all it takes to go live.
 rekordbox (DDJ-400 master, also sent to the laptop's own output by PC MASTER OUT)
   -> butt on the laptop: captures that output, mp3 192 kbps, auto start/stop on signal
   -> icecast on fart-pi (dj-stream-icecast, host port 8010, LAN + tailnet only)
+     tyler sends to /live, each guest dj to their own mount; one at a time
   -> website backend (website-backend-api):
-       - polls icecast's status every 3 s -> GET /dj/status
+       - polls icecast's status every 3 s -> GET /dj/status (and whose mount is live)
        - while live, ffmpeg copies the stream to /mnt/ssd/dj-sets/<start time>.mp3
        - while live, a second ffmpeg (the meter) measures its loudness -> GET /dj/live/trace
        - relays the stream to listeners -> GET /dj/live (through the existing tunnel)
@@ -21,7 +23,8 @@ rekordbox (DDJ-400 master, also sent to the laptop's own output by PC MASTER OUT
        - keeps the room's chat, replayed per set -> GET /dj/sets/{id}/chat
        - keeps who was in the room, replayed per set -> GET /dj/sets/{id}/people
        - keeps each set's cover image -> PUT/GET /dj/sets/{id}/image
-       - keeps the live alerts list, and emails it when the admin sends one -> /dj/alerts
+       - keeps the live alerts list, and emails it when the admin (or a guest dj) sends one -> /dj/alerts
+       - guest djs' logins, profiles and photos -> /dj/guests
   -> the live section (/opium-den/live): past sets, and the way into the live room
      (/opium-den/live/room), which has the stream, a character for everyone in the
      room (POST /dj/room) and a chat (GET/POST /dj/chat). each past set has its own page (/opium-den/live/set?id=)
@@ -44,9 +47,9 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/dj-stream/docker-compose.yml` | The icecast container, on the backend's docker network |
 | `pi/services/dj-stream/Dockerfile` | Debian's `icecast2` package, run as the `icecast2` user |
 | `pi/services/dj-stream/icecast.xml.template` | Icecast config; passwords filled in at start |
-| `pi/services/dj-stream/entrypoint.sh` | Checks the passwords are hex, writes the config to `/tmp`, starts icecast |
-| `pi/services/dj-stream/.env` | `ICECAST_SOURCE_PASSWORD`, `ICECAST_ADMIN_PASSWORD` (not in git) |
-| `pi/services/website-backend/app/dj_stream.py` | The watcher: live state, recording, listener count |
+| `pi/services/dj-stream/entrypoint.sh` | Checks the passwords are hex, writes the config (and a mount per guest DJ) to `/tmp`, starts icecast |
+| `pi/services/dj-stream/.env` | `ICECAST_SOURCE_PASSWORD`, `ICECAST_ADMIN_PASSWORD`, `ICECAST_GUEST_MOUNTS` (not in git) |
+| `pi/services/website-backend/app/dj_stream.py` | The watcher: live state (and whose mount), recording, listener count |
 | `pi/services/website-backend/app/routers/dj.py` | The `/dj` endpoints (see `pi/docs/api/website-backend-api.md#dj-stream`) |
 | `pi/services/website-backend/app/dj_waveform.py` | Works out and caches each set's waveform with ffmpeg |
 | `pi/services/website-backend/app/dj_live_meter.py` | The live meter: the set's loudness while it's on, for the live trace |
@@ -55,6 +58,9 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/website-backend/app/dj_room.py` | The live room's people, in memory: timeouts, names, characters and pictures |
 | `pi/services/website-backend/app/routers/dj_alerts.py` | Live alerts, `/dj/alerts`: signup, confirm, unsubscribe, and the admin's list and send |
 | `pi/services/website-backend/app/mailer.py` | Sends email over SMTP, one message per recipient |
+| `pi/services/website-backend/app/routers/dj_guests.py` | Guest DJs, `/dj/guests`: their login, profile and photo |
+| `pi/services/website-backend/scripts/create_dj_guest.py` | Makes a guest DJ's login, resets its password, turns it off or on |
+| `website/app/guest-dj/page.tsx` | The guest DJ page (`/guest-dj`): on air or not, alerts, profile, their sets |
 
 ## Recording
 
@@ -94,19 +100,96 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 Listeners hear the stream roughly 5-15 s behind the decks (butt's buffer, icecast's
 burst, the browser's buffer). The relay caps listeners at 25 (`MAX_LIVE_LISTENERS`).
 
+## Guest DJs
+
+Friends can stream to the den from their own laptop and place, and the site says it's
+them. Tommy (Tracepoint) is the first.
+
+- **Getting in**: icecast's port 8010 is LAN and tailnet only, so a guest reaches it over
+  Tailscale. We share fart-pi with them (machine sharing, like with Kyle) and let their
+  login reach 8010 in our ACLs (`pi/docs/services/tailscale.md#acls`). Nothing else changes:
+  icecast still never goes through the tunnel.
+- **Their own mount**: each guest streams to their own mount (`/tracepoint`) with its own
+  password, set in `ICECAST_GUEST_MOUNTS` in `pi/services/dj-stream/.env`. Only that
+  password works on their mount, and it doesn't work on `/live`, so a guest can't pass for
+  Tyler and their password can be changed without touching his.
+- **Knowing who's on**: the watcher matches the live mount against the guests' logins
+  (`dj_guests.mount`), and tags the set (`dj_set_guests`). The site shows their name on the
+  stream, the set list, the set page and the player, their photo where a set has no cover,
+  and their bio under "about this set". Tyler's sets have no DJ on them, same as before.
+- **One at a time**: icecast takes one source (`<sources>1</sources>`). If someone's on,
+  the other DJ's butt gets "too many sources connected" and keeps retrying, so they go on
+  the moment the first one stops. Their page says who's on meanwhile. A hand-over between
+  two polls still makes two sets.
+- **Their page**: `tyler-schwenk.com/guest-dj`. They log in with their own username and
+  password, see whether they're on air (or who is), give the live set a cover, send a live
+  alert, edit their name, bio and photo, and title, describe, cover or delete their own sets.
+  It's the admin page's DJ tab pieces, limited to theirs.
+- **Alerts**: a guest can email the alerts list once per set, only while they're on air.
+  The default subject is "<name>'s live in the den". They see how many people it goes to,
+  never who.
+- **Auto start**: butt going live whenever there's sound means a guest's practice goes
+  public and gets recorded too, just like Tyler's. If they'd rather not, they start butt by
+  hand.
+
+### Adding a guest
+
+1. **Tailscale**: they make a free Tailscale account and install it on their DJ laptop. In
+   our admin console, fart-pi -> Share -> invite link, send it to them, they accept it.
+   Add the ACL rule for their login on port 8010 (`pi/docs/services/tailscale.md#acls`).
+   From their laptop, `curl http://fart-pi.taila4ff35.ts.net:8010/status-json.xsl` should
+   answer.
+2. **Their mount**: on fart-pi, add them to `pi/services/dj-stream/.env`, space separated
+   if there's already someone:
+   ```
+   ICECAST_GUEST_MOUNTS=tracepoint:<openssl rand -hex 16>
+   ```
+   Mount names are lowercase letters, digits and dashes, and can't be `live`. Then
+   `cd ~/tyler-schwenk.github.io/pi/services/dj-stream && docker compose up -d --build`.
+   `docker logs dj-stream-icecast` says `guest mount /tracepoint is set up`.
+3. **Their login**, with the same mount:
+   ```bash
+   docker exec -it website-backend-api python scripts/create_dj_guest.py --username tommy --name Tracepoint --mount tracepoint
+   ```
+   It asks for the password. They can change their name later from their page.
+4. **Send them** their username and password for `tyler-schwenk.com/guest-dj`, and their
+   butt settings: the same as Tyler's below (DJ laptop setup), except
+   - Address `fart-pi.taila4ff35.ts.net` (or `100.91.171.58`), Tailscale on
+   - Password: their mount's password from `ICECAST_GUEST_MOUNTS`
+   - Icecast mountpoint: their mount (`tracepoint`), user `source`
+
+   Their rekordbox and butt audio setup is the same as Tyler's (PC MASTER OUT, or a virtual
+   cable). Other DJ software works too, as long as butt can capture what it plays.
+5. **Check it**: they play something, their page flips to "You're on air" within a few
+   seconds, the live section says "Tracepoint on the decks", and once they've stopped for a
+   minute the set's in the list with their name on it.
+
+### Changing or removing a guest
+
+- **New login password**: run `create_dj_guest.py --username tommy` again; it asks for a new
+  one. Pass `--name` or `--mount` to change those too (the mount has to match
+  `ICECAST_GUEST_MOUNTS`).
+- **New streaming password**: change it in `ICECAST_GUEST_MOUNTS` and rebuild the
+  container (step 2), then send them the new one.
+- **Turning them off**: `create_dj_guest.py --username tommy --disable` turns their login
+  off straight away and stops their mount counting as live (their sets stay up). To stop
+  icecast taking their stream at all, take them out of `ICECAST_GUEST_MOUNTS` and rebuild,
+  and revoke the Tailscale share. `--enable` turns the login back on.
+
 ## Live alerts
 
 People can ask for an email when the stream's live. Nothing goes out on its own (butt
 starts the stream for any practice): each alert is written and sent by hand from the
-admin page's DJ tab.
+admin page's DJ tab, or by a guest DJ from their page while they're on air (Guest DJs above).
 
 - **Signing up**: in the live room off air (the box sits where the message box goes), the
-  "Get an email when I go live" link under the live section's live row, or `/opium-den/live/alerts` on its
+  "Get an email when we go live" link under the live section's live row, or `/opium-den/live/alerts` on its
   own, which is a link worth sending people. They get a confirmation email, and only
   confirmed addresses get alerts, so typing in someone else's address does nothing but
   send them one email they can ignore.
-- **Sending**: admin page, DJ tab, "Live alerts". An optional subject (default "Tyler's live
-  in the den"), the message, Send. Everyone gets their own plain text copy: the
+- **Sending**: admin page, DJ tab, "Live alerts" (or a guest's `/guest-dj`). An optional
+  subject (default "Tyler's live in the den", or "<name>'s live in the den" for a guest),
+  the message, Send. Everyone gets their own plain text copy: the
   message, the live room link, and their own unsubscribe link. One-click unsubscribe
   headers are on it too, so Gmail and Apple Mail show their own unsubscribe button.
   Sent while a set's recording, the subject and message also become that set's title
@@ -251,6 +334,17 @@ If UFW is enabled on fart-pi, let the laptop reach 8010 from the LAN:
   `pi/services/dj-stream/.env`.
 - From the laptop: `curl http://192.168.1.116:8010/status-json.xsl` should answer.
 - Icecast's own logs: `docker exec dj-stream-icecast cat /var/log/icecast2/error.log`.
+
+**A guest's butt can't connect**
+- "too many sources connected" in butt's log: someone else is on air. It keeps retrying
+  and gets on once they stop.
+- A 401: their password or mountpoint doesn't match their entry in `ICECAST_GUEST_MOUNTS`
+  (the mountpoint is just `tracepoint`, no slash).
+- Can't reach it at all: their laptop's Tailscale is off, the share wasn't accepted, or our
+  ACLs don't let their login reach 8010. From their laptop,
+  `curl http://fart-pi.taila4ff35.ts.net:8010/status-json.xsl` should answer.
+- Connected but the site stays off air: their login's mount has to match the icecast mount
+  exactly, and the login has to be on (`create_dj_guest.py --username tommy --enable`).
 
 **Container exits right away**
 - `docker logs dj-stream-icecast`. The entrypoint says which password is empty or not hex.

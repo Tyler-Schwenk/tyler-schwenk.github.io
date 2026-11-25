@@ -9,8 +9,9 @@ Each set also has its chat: the live room's messages from while it was
 recording, placed on its timeline so the set page can replay them, and the people who were
 in the room (the room's saved visits, or for sets from before visits were saved, whoever
 chatted), and can have a cover
-image, uploaded while it's still recording or any time after. Reads are public; renaming,
-deleting and setting cover images are admin only.
+image, uploaded while it's still recording or any time after. A guest dj's sets (and the
+live status while they're on) say who played them. Reads are public; renaming, deleting
+and setting cover images are for the admin, or a guest dj on their own sets.
 """
 
 import logging
@@ -26,13 +27,14 @@ from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import require_admin
-from app.dj_stream import STATUS_TIMEOUT_S, delete_set_image_files, set_images_dir, stream_url, watcher
+from app.dependencies import DjActor, require_dj_or_admin
+from app.dj_stream import STATUS_TIMEOUT_S, delete_set_image_files, set_images_dir, watcher
 from app.dj_waveform import WaveformError, get_waveform, waveform_path
 from app.file_streaming import ranged_file_response
 from app.image_utils import store_photo
 from app.models import DjChatMessage, DjRoomVisit, DjRoomVisitPhoto, DjSet, DjSetImage
 from app.schemas import (
+    DjGuestPublic,
     DjLiveTrace,
     DjSetChatMessage,
     DjSetImageRead,
@@ -187,6 +189,28 @@ def get_finished_set(db: Session, set_id: int) -> DjSet:
     return dj_set
 
 
+def check_can_edit(actor: DjActor, dj_set: DjSet) -> None:
+    """
+    Makes sure whoever's asking can change a set: the admin can change any, a guest dj
+    only their own.
+
+    Args:
+        actor: Who's asking.
+        dj_set: The set.
+
+    Raises:
+        HTTPException: 403 if it's a guest and the set isn't theirs.
+    """
+    if actor.is_admin:
+        return
+    owner = dj_set.dj
+    if owner is None or owner.id != actor.guest.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"dj set {dj_set.id} isn't one of yours, so you can't change it",
+        )
+
+
 def get_any_set(db: Session, set_id: int) -> DjSet:
     """
     Looks up a set, finished or still recording.
@@ -216,13 +240,16 @@ async def get_stream_status(db: Session = Depends(get_db)) -> DjStreamStatus:
         db: Database session, for the recording set's cover image.
 
     Returns:
-        DjStreamStatus: live, since when, how many are listening through /dj/live, and the
-            set being recorded with its cover image's id.
+        DjStreamStatus: live, since when, how many are listening through /dj/live, the
+            set being recorded with its cover image's id, and the guest dj on (null for Tyler).
     """
     stream_status = watcher.status()
-    if stream_status.set_id is not None:
-        recording = db.get(DjSet, stream_status.set_id)
-        stream_status.image_id = recording.image_id if recording else None
+    if stream_status.set_id is None:
+        return stream_status
+    recording = db.get(DjSet, stream_status.set_id)
+    if recording is not None:
+        stream_status.image_id = recording.image_id
+        stream_status.dj = DjGuestPublic.model_validate(recording.dj) if recording.dj else None
     return stream_status
 
 
@@ -263,17 +290,19 @@ async def listen_live() -> StreamingResponse:
 
     # no read timeout: a live stream can go quiet between tracks without being over
     client = httpx.AsyncClient(timeout=httpx.Timeout(STATUS_TIMEOUT_S, read=None))
+    # whichever dj's mount is live right now
+    upstream_url = watcher.stream_url()
     try:
-        upstream = await client.send(client.build_request("GET", stream_url()), stream=True)
+        upstream = await client.send(client.build_request("GET", upstream_url), stream=True)
     except httpx.HTTPError as err:
         await client.aclose()
-        logger.warning(f"dj live: couldn't open the icecast stream at {stream_url()} ({err})")
+        logger.warning(f"dj live: couldn't open the icecast stream at {upstream_url} ({err})")
         raise HTTPException(status_code=503, detail="couldn't reach the stream on the pi -- try again in a bit") from err
 
     if upstream.status_code != status.HTTP_200_OK:
         await upstream.aclose()
         await client.aclose()
-        logger.warning(f"dj live: icecast answered {upstream.status_code} for {stream_url()}")
+        logger.warning(f"dj live: icecast answered {upstream.status_code} for {upstream_url}")
         raise HTTPException(status_code=503, detail="the stream just ended or hasn't started yet -- try again in a bit")
 
     async def relay() -> AsyncIterator[bytes]:
@@ -446,23 +475,32 @@ async def get_set_waveform(set_id: int, db: Session = Depends(get_db)) -> DjSetW
     return DjSetWaveform(peaks=peaks)
 
 
-@router.patch("/sets/{set_id}", response_model=DjSetRead, dependencies=[Depends(require_admin)])
-async def update_set(set_id: int, update: DjSetUpdate, db: Session = Depends(get_db)) -> DjSet:
+@router.patch("/sets/{set_id}", response_model=DjSetRead)
+async def update_set(
+    set_id: int,
+    update: DjSetUpdate,
+    actor: DjActor = Depends(require_dj_or_admin),
+    db: Session = Depends(get_db),
+) -> DjSet:
     """
-    Edits a set's title and description (admin only). Only the fields sent change.
+    Edits a set's title and description (the admin, or a guest dj on their own set).
+    Only the fields sent change.
 
     Args:
         set_id: The set's id.
         update: The new title and/or description; blank or null clears one.
+        actor: Who's asking.
         db: Database session.
 
     Returns:
         DjSet: The updated set.
 
     Raises:
-        HTTPException: 401 without a valid admin token, 404 if there's no such finished set.
+        HTTPException: 401 without a valid token, 403 if it's not their set, 404 if
+            there's no such finished set.
     """
     dj_set = get_finished_set(db, set_id)
+    check_can_edit(actor, dj_set)
     for field in update.model_fields_set:
         value = (getattr(update, field) or "").strip()
         setattr(dj_set, field, value or None)
@@ -471,23 +509,30 @@ async def update_set(set_id: int, update: DjSetUpdate, db: Session = Depends(get
     return dj_set
 
 
-@router.delete("/sets/{set_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
-async def delete_set(set_id: int, db: Session = Depends(get_db)) -> None:
+@router.delete("/sets/{set_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_set(
+    set_id: int,
+    actor: DjActor = Depends(require_dj_or_admin),
+    db: Session = Depends(get_db),
+) -> None:
     """
-    Deletes a set and its recording (admin only).
+    Deletes a set and its recording (the admin, or a guest dj on their own set).
 
     Args:
         set_id: The set's id.
+        actor: Who's asking.
         db: Database session.
 
     Raises:
-        HTTPException: 401 without a valid admin token, 404 if there's no such finished set.
+        HTTPException: 401 without a valid token, 403 if it's not their set, 404 if
+            there's no such finished set.
 
     Side effects:
         Removes the mp3, its cached waveform and its cover image from disk. Its chat stays,
         like the rest of the room's history.
     """
     dj_set = get_finished_set(db, set_id)
+    check_can_edit(actor, dj_set)
     path = Path(dj_set.file_path)
     path.unlink(missing_ok=True)
     waveform_path(path).unlink(missing_ok=True)
@@ -497,32 +542,36 @@ async def delete_set(set_id: int, db: Session = Depends(get_db)) -> None:
     logger.info(f"dj sets: deleted set {set_id} ({path.name})")
 
 
-@router.put(
-    "/sets/{set_id}/image",
-    response_model=DjSetImageRead,
-    dependencies=[Depends(require_admin)],
-)
-def upload_set_image(set_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)) -> DjSetImage:
+@router.put("/sets/{set_id}/image", response_model=DjSetImageRead)
+def upload_set_image(
+    set_id: int,
+    file: UploadFile = File(...),
+    actor: DjActor = Depends(require_dj_or_admin),
+    db: Session = Depends(get_db),
+) -> DjSetImage:
     """
-    Sets a set's cover image (admin only), replacing any it had. Works while the set's
-    still recording too. HEIC and sideways phone photos get converted like gallery uploads.
+    Sets a set's cover image (the admin, or a guest dj on their own set), replacing any
+    it had. Works while the set's still recording too. HEIC and sideways phone photos get
+    converted like gallery uploads.
 
     Args:
         set_id: The set's id.
         file: The image.
+        actor: Who's asking.
         db: Database session.
 
     Returns:
         DjSetImage: The new image. Its id is new, which is what busts the site's caches.
 
     Raises:
-        HTTPException: 401 without a valid admin token, 404 if there's no such set, 413 if
-            the file's too big, 400 if it isn't an image.
+        HTTPException: 401 without a valid token, 403 if it's not their set, 404 if
+            there's no such set, 413 if the file's too big, 400 if it isn't an image.
 
     Side effects:
         Saves the image and a thumbnail under DJ_SETS_DIR/images, and deletes the old ones.
     """
     dj_set = get_any_set(db, set_id)
+    check_can_edit(actor, dj_set)
     content = file.file.read(MAX_SET_IMAGE_BYTES + 1)
     if len(content) > MAX_SET_IMAGE_BYTES:
         raise HTTPException(
@@ -547,22 +596,30 @@ def upload_set_image(set_id: int, file: UploadFile = File(...), db: Session = De
     return image
 
 
-@router.delete("/sets/{set_id}/image", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
-def delete_set_image(set_id: int, db: Session = Depends(get_db)) -> None:
+@router.delete("/sets/{set_id}/image", status_code=status.HTTP_204_NO_CONTENT)
+def delete_set_image(
+    set_id: int,
+    actor: DjActor = Depends(require_dj_or_admin),
+    db: Session = Depends(get_db),
+) -> None:
     """
-    Takes a set's cover image off (admin only). Does nothing if it hasn't got one.
+    Takes a set's cover image off (the admin, or a guest dj on their own set). Does
+    nothing if it hasn't got one.
 
     Args:
         set_id: The set's id.
+        actor: Who's asking.
         db: Database session.
 
     Raises:
-        HTTPException: 401 without a valid admin token, 404 if there's no such set.
+        HTTPException: 401 without a valid token, 403 if it's not their set, 404 if
+            there's no such set.
 
     Side effects:
         Deletes the image and its thumbnail from disk.
     """
     dj_set = get_any_set(db, set_id)
+    check_can_edit(actor, dj_set)
     if dj_set.image is None:
         return
     delete_set_image_files(dj_set.image)

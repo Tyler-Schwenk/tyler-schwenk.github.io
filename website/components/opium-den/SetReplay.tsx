@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { formatDate, formatDuration, plural } from "@/app/admin/format";
 import {
+  djByline,
   djSetImageUrl,
   djSetThumbUrl,
   djSetTitle,
@@ -113,14 +114,16 @@ function SetCover({ set, playing, loading }: { set: DjSet; playing: boolean; loa
 }
 
 /**
- * the header line under the title, like "Nov 18, 8:55 PM · 1:12:40 · 23 messages".
+ * the header line under the title, like "Nov 18, 8:55 PM · 1:12:40 · 23 messages", with
+ * the guest dj first when it's one of theirs ("Tracepoint · Nov 18, ...").
  *
  * @param {DjSet} set - the set.
  * @param {DjSetChatMessage[] | null} messages - its chat, null while it loads.
  * @returns {string} the line.
  */
 function setMeta(set: DjSet, messages: DjSetChatMessage[] | null): string {
-  const parts = [formatDate(set.started_at), formatDuration(set.duration_s)];
+  const byline = djByline(set.dj);
+  const parts = [...(byline ? [byline] : []), formatDate(set.started_at), formatDuration(set.duration_s)];
   if (messages) parts.push(plural(messages.length, "message"));
   return parts.join(" · ");
 }
@@ -282,15 +285,20 @@ export default function SetReplay() {
             </div>
           </header>
 
-          {set.description && (
+          {(set.description || set.dj?.bio) && (
             <details className="group mt-2 shrink-0">
               <summary className="inline-flex cursor-pointer list-none font-den-mono text-[11px] text-den-muted transition-colors hover:text-den-accent-soft [&::-webkit-details-marker]:hidden">
                 <span className="group-open:hidden">about this set</span>
                 <span className="hidden group-open:inline">less</span>
               </summary>
-              <p className="mt-1 max-h-32 overflow-y-auto whitespace-pre-line text-sm leading-relaxed text-den-muted">
-                {set.description}
-              </p>
+              <div className="mt-1 max-h-32 overflow-y-auto whitespace-pre-line text-sm leading-relaxed text-den-muted">
+                {set.description && <p>{set.description}</p>}
+                {set.dj?.bio && (
+                  <p className={set.description ? "mt-2" : ""}>
+                    <span className="font-den-mono text-[11px] uppercase text-den-ink">{set.dj.name}</span> {set.dj.bio}
+                  </p>
+                )}
+              </div>
             </details>
           )}
 

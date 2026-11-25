@@ -14,7 +14,7 @@
 | Upload | `#upload` | Photos into an existing or new gallery, or a video (with the existing videos list and delete) |
 | RSVPs | `#rsvps` | Event RSVPs grouped by event, with responses and a rough headcount (responders + friends); delete a response |
 | Public Square | `#square` | Moderation: newest posts, expand to read comments, hard-delete a post (with its comments and votes) or a comment |
-| DJ sets | `#dj` | While the stream's live, an "On air now" card to give the set being recorded its cover image. Live alerts: write an email and send it to everyone who signed up and confirmed, and the list of who has (remove anyone). The live room's recent chat, with delete on each message. Then every set the live DJ stream recorded (they're public in the Opium Den's live section as soon as they end): add, replace or remove its cover, give it a title and description, play it, delete it (`pi/docs/services/dj-stream.md`) |
+| DJ sets | `#dj` | While the stream's live, an "On air now" card to give the set being recorded its cover image. Live alerts: write an email and send it to everyone who signed up and confirmed, and the list of who has (remove anyone). The live room's recent chat, with delete on each message. Then every set the live DJ stream recorded (they're public in the Opium Den's live section as soon as they end), guest DJs' marked with their name: add, replace or remove its cover, give it a title and description, play it, delete it (`pi/docs/services/dj-stream.md`) |
 
 It's linked from the bottom of the home page ("ADMIN"). It's `noindex` and not in the
 sitemap. The open tab lives in the url hash, so `tyler-schwenk.com/admin#display` can be
@@ -49,7 +49,7 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/icons.tsx` | Line icons for the tabs and chevrons |
 | `website/app/admin/format.ts` | `slugify`, `formatBytes`, `parseBackendTime` and `formatDate` (backend timestamps are UTC without a zone), `formatDuration` (`m:ss`, `h:mm:ss` past an hour), `formatElapsed`, `plural` |
 | `website/app/admin/types.ts` | Shapes of the backend responses the page reads |
-| `website/app/admin/LoginScreen.tsx` | The login form |
+| `website/app/admin/LoginScreen.tsx` | The login form; the guest DJ page passes its own title and asks for a username |
 | `website/app/admin/DisplayTab.tsx` | The kiosk remote (below) |
 | `website/app/admin/useDisplayControl.ts` | Long-polls the kiosk's state and replays it; `sendKeys`, `playingPreset` |
 | `website/app/admin/PresetBrowser.tsx` | Searchable list of every milkdrop preset, to jump to one |
@@ -61,10 +61,31 @@ Dark slate with an orange accent, matching the gallery pages.
 | `website/app/admin/UploadTab.tsx` | Photo and video upload |
 | `website/app/admin/RsvpsTab.tsx` | RSVPs |
 | `website/app/admin/PublicSquareTab.tsx` | Public Square moderation |
-| `website/app/admin/DjSetsTab.tsx` | DJ tab: the on-air set's cover, live alerts, chat moderation, the live room's uploaded pictures, then sets (cover, title and description, play, delete). Covers are picked or dropped like gallery photos and upload straight away. Types and urls come from `website/app/opium-den/djApi.ts` |
-| `website/app/admin/DjAlertsPanel.tsx` | The DJ tab's live alerts: subject (blank for the default), message, send (asks first, then says how many it reached and any it couldn't), and the signup list with confirmed/unconfirmed and remove. Sent while a set's recording, the subject and message also become its title and description |
+| `website/app/admin/DjSetsTab.tsx` | DJ tab: the on-air set's cover, live alerts, chat moderation, the live room's uploaded pictures, then sets (cover, title and description, play, delete). Covers are picked or dropped like gallery photos and upload straight away. Types and urls come from `website/app/opium-den/djApi.ts`. Exports `OnAirCard`, `DjSetList` and `useDjSets` for the guest DJ page, which pass a guest's id to show only theirs |
+| `website/app/admin/DjAlertsPanel.tsx` | The DJ tab's live alerts: subject (blank for the default), message, send (asks first, then says how many it reached and any it couldn't), and the signup list with confirmed/unconfirmed and remove. Sent while a set's recording, the subject and message also become its title and description. `GuestAlertsPanel` is the guest DJ page's: the same form, only the count of who's signed up, usable only while they're on air |
+| `website/app/guest-dj/page.tsx`, `layout.tsx` | The guest DJ page (below) |
 | `website/app/admin/RoomPhotosPanel.tsx` | The DJ tab's room pictures: every picture uploaded to stand in the live room as, newest first, with Remove (takes it off whoever's using it and out of replays) |
 | `website/lib/useAdminAuth.ts` | The JWT in localStorage, shared with The Kitchen and the kiln page (each page passes its own storage key; the kiln page also passes its own login endpoint) |
+
+## Guest DJ page
+
+`/guest-dj` is the admin page's DJ tab cut down for a guest DJ (Tommy, aka Tracepoint):
+their own login (username and password from `scripts/create_dj_guest.py`, JWT from
+`POST /dj/guests/login`, kept under `djGuestToken`), then one page with
+
+- whether they're on air, someone else is (one DJ at a time, so they wait), or nobody is,
+  with their mountpoint for butt
+- while they're on air, the "On air now" card for the live set's cover
+- live alerts (`GuestAlertsPanel`): how many it'll go to, and the form, usable only while
+  they're on air, once per set (the backend enforces both)
+- their profile: DJ name, a bit about them (shown under "about this set" on their sets'
+  pages), and a photo (shown in place of a cover on their sets without one)
+- their sets, as the DJ tab's cards (cover, title, description, play, delete)
+
+It's the same components inside an `AdminFetchContext` holding the guest's token, so
+every request carries their login and the backend decides what they can touch
+(`pi/docs/api/website-backend-api.md#guest-djs`). Kept out of search engines; the player
+bar stays off it like on `/admin`. Setup: `pi/docs/services/dj-stream.md#guest-djs`.
 
 ### Auth
 

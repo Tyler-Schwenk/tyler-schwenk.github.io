@@ -3,15 +3,16 @@ SQLAlchemy database models.
 
 Defines database schema for users, Public Square posts/comments/votes,
 galleries, photos, recipes, kiln readings, firings and their notes and photos,
-the house fly kill count, recorded dj sets and their cover images, the live room chat and who holds
-each chat name this session, and who wants an email when the stream goes live.
+the house fly kill count, recorded dj sets and their cover images, guest djs (their logins,
+photos and sets), the live room chat and who holds each chat name this session, and who
+wants an email when the stream goes live.
 """
 
 from sqlalchemy import Boolean, Column, Float, Integer, String, Table, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
-from app.schemas import MAX_DJ_CHAT_MESSAGE_LENGTH, MAX_DJ_CHAT_NICKNAME_LENGTH, MAX_EMAIL_LENGTH
+from app.schemas import MAX_DJ_CHAT_MESSAGE_LENGTH, MAX_DJ_CHAT_NICKNAME_LENGTH, MAX_DJ_GUEST_NAME_LENGTH, MAX_EMAIL_LENGTH
 
 
 class User(Base):
@@ -574,6 +575,7 @@ class DjSet(Base):
         size_bytes: File size, null while recording
         file_path: The mp3, as a container path under DJ_SETS_DIR
         image: Its cover image (DjSetImage), None until one's uploaded
+        guest_link: Which guest dj played it (DjSetGuest), None for Tyler's own sets
     """
     __tablename__ = "dj_sets"
 
@@ -587,11 +589,17 @@ class DjSet(Base):
     file_path = Column(String(500), nullable=False)
 
     image = relationship("DjSetImage", uselist=False, cascade="all, delete-orphan")
+    guest_link = relationship("DjSetGuest", uselist=False, cascade="all, delete-orphan")
 
     @property
     def image_id(self) -> int | None:
         """the cover image's id, or None. it changes with every upload, so it doubles as a cache buster."""
         return self.image.id if self.image else None
+
+    @property
+    def dj(self) -> "DjGuest | None":
+        """the guest dj who played it, or None for tyler's own."""
+        return self.guest_link.guest if self.guest_link else None
 
 
 class DjSetImage(Base):
@@ -625,6 +633,101 @@ class DjSetImage(Base):
     height = Column(Integer, nullable=True)
     mime_type = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class DjGuest(Base):
+    """
+    DjGuest model: a guest dj who can stream to the den, and their login.
+
+    Each one has their own icecast mount and password (ICECAST_GUEST_MOUNTS in
+    pi/services/dj-stream/.env), so the stream watcher knows whose set it is by which
+    mount's live. Their login gets tokens with the "dj" scope: they can edit their own
+    profile and sets, and send live alerts while they're on air, nothing else (see
+    app/dependencies.py). Kept out of the users table so it can never pass for the admin.
+    Created with scripts/create_dj_guest.py.
+
+    Attributes:
+        id: Unique identifier
+        username: What they log in with, lowercase
+        hashed_password: bcrypt hash, never the password itself
+        name: What the site calls them, like "Tracepoint"
+        mount: Their icecast mount without the slash, like "tracepoint"
+        bio: A bit about them, shown on their sets; null for none
+        is_active: False turns their login off and stops their mount counting as live
+        created_at: When the login was made
+        photo: Their photo (DjGuestPhoto), None until they upload one
+    """
+    __tablename__ = "dj_guests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    name = Column(String(MAX_DJ_GUEST_NAME_LENGTH), nullable=False)
+    mount = Column(String(50), unique=True, nullable=False)
+    bio = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    photo = relationship("DjGuestPhoto", uselist=False, cascade="all, delete-orphan")
+
+    @property
+    def photo_id(self) -> int | None:
+        """the photo's id, or None. it changes with every upload, so it doubles as a cache buster."""
+        return self.photo.id if self.photo else None
+
+
+class DjGuestPhoto(Base):
+    """
+    DjGuestPhoto model: a guest dj's photo, uploaded from their page. The site shows it
+    in place of a cover on their sets that haven't got one.
+
+    One per guest: uploading another replaces it (new row, new id). Files live under
+    DJ_SETS_DIR/guest-photos, a folder per guest.
+
+    Attributes:
+        id: Unique identifier, new for every upload
+        guest_id: Whose photo it is
+        file_path: The image, relative to the guest photos folder
+        thumbnail_path: Its thumbnail, null if making one failed
+        width: Width in pixels
+        height: Height in pixels
+        mime_type: Its content type, like image/jpeg
+        created_at: When it was uploaded
+    """
+    __tablename__ = "dj_guest_photos"
+    # cached by id for good, like set covers, so an id must never come back
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    guest_id = Column(Integer, ForeignKey("dj_guests.id"), nullable=False, unique=True, index=True)
+    file_path = Column(String(500), nullable=False)
+    thumbnail_path = Column(String(500), nullable=True)
+    width = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class DjSetGuest(Base):
+    """
+    DjSetGuest model: a set a guest dj played. Its own table rather than a column on
+    dj_sets, since create_all never adds columns to existing tables. A set without a row
+    here is Tyler's. Added by the stream watcher when it starts recording a guest's mount.
+
+    Attributes:
+        set_id: The set
+        guest_id: The guest dj who played it
+        alert_sent_at: When the guest sent a live alert for it (naive UTC), null until
+            then. Guests get one per set
+        guest: The guest dj (DjGuest)
+    """
+    __tablename__ = "dj_set_guests"
+
+    set_id = Column(Integer, ForeignKey("dj_sets.id"), primary_key=True)
+    guest_id = Column(Integer, ForeignKey("dj_guests.id"), nullable=False, index=True)
+    alert_sent_at = Column(DateTime, nullable=True)
+
+    guest = relationship("DjGuest")
 
 
 class DjChatMessage(Base):

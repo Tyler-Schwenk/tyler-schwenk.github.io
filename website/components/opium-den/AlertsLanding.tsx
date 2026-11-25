@@ -41,7 +41,7 @@ function readAction(params: URLSearchParams): LinkAction {
 async function runAction(action: NonNullable<LinkAction>): Promise<string> {
   if (action.kind === "confirm") {
     const email = await confirmDjAlerts(action.token);
-    return `${email} will get an email when I go live.`;
+    return `${email} will get an email when we go live.`;
   }
   await unsubscribeFromDjAlerts(action.token);
   return "no more live alerts. changed your mind? sign up again any time.";

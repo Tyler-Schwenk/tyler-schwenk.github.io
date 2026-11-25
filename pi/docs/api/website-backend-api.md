@@ -1267,7 +1267,9 @@ Takes back their newest kill, for misclicks. `200` with the new tally, or `409` 
 
 ## DJ Stream
 
-The live DJ stream and its recorded sets, for the Opium Den's live section (`/opium-den/live`). butt on the DJ laptop sends to icecast on fart-pi; the backend watches icecast, records each session into `dj_sets` (mp3s in `/mnt/ssd/dj-sets`), and relays the stream publicly. Sets under 2 minutes are thrown away. All times are naive UTC. See `pi/docs/services/dj-stream.md`.
+The live DJ stream and its recorded sets, for the Opium Den's live section (`/opium-den/live`). butt on the DJ laptop sends to icecast on fart-pi (Tyler to `/live`, each guest DJ to their own mount); the backend watches icecast, records each session into `dj_sets` (mp3s in `/mnt/ssd/dj-sets`), and relays the stream publicly. Sets under 2 minutes are thrown away. All times are naive UTC. See `pi/docs/services/dj-stream.md`.
+
+Two logins can change sets: the admin (any set) and a guest DJ (their own; see Guest DJs below). Endpoints marked **admin or guest DJ JWT** answer `403` to a guest for a set that isn't theirs.
 
 A set:
 
@@ -1280,21 +1282,22 @@ A set:
   "ended_at": "2026-11-18T04:20:41",
   "duration_s": 4112,
   "size_bytes": 98689024,
-  "image_id": 7
+  "image_id": 7,
+  "dj": {"id": 1, "name": "Tracepoint", "bio": "deep cuts", "photo_id": 4}
 }
 ```
 
-`title` and `description` are null until they're set from the admin page; without a title the site shows the date. `image_id` is the set's cover image (see `PUT /dj/sets/{set_id}/image`), null without one.
+`title` and `description` are null until they're set from the admin page (or the guest's page); without a title the site shows the date. `image_id` is the set's cover image (see `PUT /dj/sets/{set_id}/image`), null without one. `dj` is the guest DJ who played it, null for Tyler's own sets; `photo_id` is their photo (`GET /dj/guests/{id}/photo`), null without one.
 
 ### GET `/dj/status`
 
 Whether it's on air. Refreshed every 3 s from icecast, so it's cheap to poll. `200`:
 
 ```json
-{"live": true, "started_at": "2026-11-18T03:12:05", "listeners": 2, "set_id": 12, "image_id": 9}
+{"live": true, "started_at": "2026-11-18T03:12:05", "listeners": 2, "set_id": 12, "image_id": 9, "dj": null}
 ```
 
-`started_at` is when butt connected (null when off air). `listeners` counts people on `/dj/live`. `set_id` is the set being recorded and `image_id` its cover, if one's been uploaded yet (both null when nothing's recording), so the live room can show the cover mid-set.
+`started_at` is when butt connected (null when off air). `listeners` counts people on `/dj/live`. `set_id` is the set being recorded and `image_id` its cover, if one's been uploaded yet (both null when nothing's recording), so the live room can show the cover mid-set. `dj` is the guest DJ on air, shaped like a set's, null when it's Tyler (or nothing's recording).
 
 ### GET `/dj/live/trace`
 
@@ -1302,7 +1305,7 @@ The live set's loudness so far, for drawing it while it's on: `{"live": true, "i
 
 ### GET `/dj/live`
 
-The live stream itself, `audio/mpeg`, endless until the set ends or the listener leaves. Point an `<audio>` element at it. `503` when it's off air, when 25 people are already listening, or when icecast won't serve it.
+The live stream itself, `audio/mpeg`, endless until the set ends or the listener leaves, from whichever DJ's mount is live. Point an `<audio>` element at it. `503` when it's off air, when 25 people are already listening, or when icecast won't serve it.
 
 ### GET `/dj/sets`
 
@@ -1345,15 +1348,15 @@ The set's loudness over time, for drawing its waveform: `{"peaks": [0.31, 0.42, 
 
 ### PATCH `/dj/sets/{set_id}`
 
-**Auth:** admin JWT.
+**Auth:** admin or guest DJ JWT.
 
-Edits a set. Body `{"title": "...", "description": "..."}`, either or both; only the fields sent change. Title max 200 characters, description max 5000. Blank or null clears a field. `200` with the set, `404` if there's no finished set with that id.
+Edits a set. Body `{"title": "...", "description": "..."}`, either or both; only the fields sent change. Title max 200 characters, description max 5000. Blank or null clears a field. `200` with the set, `403` for a guest on someone else's set, `404` if there's no finished set with that id.
 
 ### DELETE `/dj/sets/{set_id}`
 
-**Auth:** admin JWT.
+**Auth:** admin or guest DJ JWT.
 
-Deletes the set, its mp3, its cached waveform and its cover image. Its chat stays in `dj_chat_messages`. `204`, or `404` if there's no finished set with that id.
+Deletes the set, its mp3, its cached waveform and its cover image. Its chat stays in `dj_chat_messages`. `204`, `403` for a guest on someone else's set, or `404` if there's no finished set with that id.
 
 ### Set cover images
 
@@ -1363,19 +1366,61 @@ Every upload gets a new image id that's never reused (the table's `AUTOINCREMENT
 
 #### PUT `/dj/sets/{set_id}/image`
 
-**Auth:** admin JWT.
+**Auth:** admin or guest DJ JWT.
 
-Multipart form with `file`, the image (max 40 MB). Replaces any cover it had, old files and all. `200` with `{"id": 9, "set_id": 12, "width": 1200, "height": 1200}`, `400` if it isn't an image, `404` if there's no set with that id, `413` if it's too big.
+Multipart form with `file`, the image (max 40 MB). Replaces any cover it had, old files and all. `200` with `{"id": 9, "set_id": 12, "width": 1200, "height": 1200}`, `400` if it isn't an image, `403` for a guest on someone else's set, `404` if there's no set with that id, `413` if it's too big.
 
 #### DELETE `/dj/sets/{set_id}/image`
 
-**Auth:** admin JWT.
+**Auth:** admin or guest DJ JWT.
 
-Takes the cover off and deletes its files. `204`, also when it had none. `404` if there's no set with that id.
+Takes the cover off and deletes its files. `204`, also when it had none. `403` for a guest on someone else's set, `404` if there's no set with that id.
 
 #### GET `/dj/sets/{set_id}/image`
 
 The cover, or with `?thumbnail=true` its thumbnail. Public, `Cache-Control: public, max-age=31536000, immutable`. The `v` query the site adds is ignored here. `404` if there's no set with that id, it has no cover, or the file's missing.
+
+### Guest DJs
+
+Friends who stream to the den from their own laptops, in `dj_guests`. Each has their own icecast mount and password, so the stream watcher knows whose set it is from which mount's live, and links the set to them in `dj_set_guests` (its own table, like covers). Their login (made with `scripts/create_dj_guest.py`, used on the site's `/guest-dj` page) gets a JWT with the `dj` scope and `sub` `dj-guest:<id>`. It can edit their own profile, their own sets (title, description, cover, delete) and send live alerts while they're on air; `require_admin` turns it away everywhere else. Each request with it looks the guest up, so turning a login off (`--disable`) works straight away. Setup is in `pi/docs/services/dj-stream.md#guest-djs`. Code: `app/routers/dj_guests.py`, `app/dependencies.py`.
+
+A guest's own profile (`/dj/guests/me`) is the public shape plus `username` and `mount`:
+
+```json
+{"id": 1, "name": "Tracepoint", "bio": "deep cuts", "photo_id": 4, "username": "tommy", "mount": "tracepoint"}
+```
+
+#### POST `/dj/guests/login`
+
+Form fields `username` (case doesn't matter) and `password`, like `/auth/login`. `200` `{"access_token": "...", "token_type": "bearer"}`, `401` for a wrong username or password, `403` if the login's turned off. Rate limited to 5 a minute per IP.
+
+#### GET `/dj/guests/me`
+
+**Auth:** guest DJ JWT.
+
+Their profile. `200`, `401` if the token's bad or the login's off, `403` for the admin (who has no profile).
+
+#### PATCH `/dj/guests/me`
+
+**Auth:** guest DJ JWT.
+
+Body `{"name": "...", "bio": "..."}`, either or both. The name (max 40) is squashed onto one line and can't be blank; the bio (max 1000) keeps its line breaks, and blank or null clears it. `200` with the profile, `422` for a blank name.
+
+#### PUT `/dj/guests/me/photo`
+
+**Auth:** guest DJ JWT.
+
+Multipart form with `file`, max 40 MB, converted like gallery uploads and saved under `/mnt/ssd/dj-sets/guest-photos/guest_<id>/` with a thumbnail. Replaces any photo they had; every upload gets a new, never reused `photo_id`. The site shows it in place of a cover on their sets that haven't got one. `200` with the profile, `400` if it isn't an image, `413` if it's too big.
+
+#### DELETE `/dj/guests/me/photo`
+
+**Auth:** guest DJ JWT.
+
+Takes their photo off and deletes its files. `200` with the profile, also when they had none.
+
+#### GET `/dj/guests/{guest_id}/photo`
+
+The photo, or with `?thumbnail=true` its thumbnail. Public, cached for good like set covers (the site adds `?v=<photo_id>`). `404` if there's no such guest, no photo, or the file's missing.
 
 ### Live room chat
 
@@ -1454,7 +1499,7 @@ Removes a picture: off whoever's standing in as it now (their next check-in aski
 
 ### Live alerts
 
-Emails telling people the stream's live, in `dj_alert_subscribers`. Anyone signs up with an address; they get a confirmation email, and only confirmed addresses get alerts. Nothing is sent automatically: the admin writes each alert on the admin page's DJ tab and sends it with `POST /dj/alerts/send`. Mail goes out over SMTP (`SMTP_*` and `MAIL_FROM` in `.env`); with `SMTP_HOST` or `MAIL_FROM` empty, signup and send answer `503`. Setup is in `pi/docs/services/dj-stream.md#live-alerts`. Code: `app/routers/dj_alerts.py`, `app/mailer.py`.
+Emails telling people the stream's live, in `dj_alert_subscribers`. Anyone signs up with an address; they get a confirmation email, and only confirmed addresses get alerts. Nothing is sent automatically: the admin writes each alert on the admin page's DJ tab, or a guest DJ on their `/guest-dj` page, and sends it with `POST /dj/alerts/send`. Guests only ever see how many are signed up, never who. Mail goes out over SMTP (`SMTP_*` and `MAIL_FROM` in `.env`); with `SMTP_HOST` or `MAIL_FROM` empty, signup and send answer `503`. Setup is in `pi/docs/services/dj-stream.md#live-alerts`. Code: `app/routers/dj_alerts.py`, `app/mailer.py`.
 
 Each subscriber has a random `token` that's in both their confirm and unsubscribe links. The links go to the site's `/opium-den/live/alerts?confirm=<token>` and `?unsubscribe=<token>`, and that page makes the POST below, so a mail scanner opening the link doesn't confirm or unsubscribe anyone.
 
@@ -1482,15 +1527,21 @@ Everyone signed up, newest first: `[{"id": 3, "email": "kyle@example.com", "crea
 
 Takes someone off the list. `204`, or `404` if there's no subscriber with that id.
 
+### GET `/dj/alerts/audience`
+
+**Auth:** admin or guest DJ JWT.
+
+How many an alert would go to, for the send button: `{"confirmed": 11}`. `200`.
+
 ### POST `/dj/alerts/send`
 
-**Auth:** admin JWT.
+**Auth:** admin or guest DJ JWT.
 
-Emails every confirmed subscriber. Body `{"subject": "...", "body": "..."}`. The subject is optional (max 120, squashed onto one line; blank or missing means "Tyler's live in the den"). The body is required, max 2000, trimmed at the ends with its line breaks kept. Each subscriber gets their own plain text copy: the body, a link to the live room, and their unsubscribe link, with `List-Unsubscribe` / `List-Unsubscribe-Post` headers. They go out one at a time over one connection, 0.6 s apart (`SEND_INTERVAL_S`), and the request waits for all of them.
+Emails every confirmed subscriber. A guest DJ can only send while their own set's recording, and once per set (`dj_set_guests.alert_sent_at`, marked as the send starts and cleared again if the mail server can't be reached). Body `{"subject": "...", "body": "..."}`. The subject is optional (max 120, squashed onto one line; blank or missing means "Tyler's live in the den", or "<name>'s live in the den" for a guest). The body is required, max 2000, trimmed at the ends with its line breaks kept. Each subscriber gets their own plain text copy: the body, a link to the live room, and their unsubscribe link, with `List-Unsubscribe` / `List-Unsubscribe-Post` headers. They go out one at a time over one connection, 0.6 s apart (`SEND_INTERVAL_S`), and the request waits for all of them.
 
 If a set's recording, the subject and body first become its title and description (a blank subject leaves the title alone), whatever happens to the emails after. They're edited like any set's afterwards (`PATCH /dj/sets/{set_id}`).
 
-`200` `{"sent": 11, "failed": ["bounced@example.com"], "labelled_set_id": 7}`: `failed` lists addresses the mail server refused (if the connection drops partway, everyone after that is in it too). `labelled_set_id` is the recording set that got the title and description, or `null` when nothing was recording. `409` with nobody confirmed, `422` for a blank body or too-long field, `502` if the mail server can't be reached or logged in to (nothing was sent), `503` when mail isn't configured.
+`200` `{"sent": 11, "failed": ["bounced@example.com"], "failed_count": 1, "labelled_set_id": 7}`: `failed` lists addresses the mail server refused (if the connection drops partway, everyone after that is in it too), always empty for a guest, who just gets `failed_count`. `labelled_set_id` is the recording set that got the title and description, or `null` when nothing was recording. `409` with nobody confirmed, or for a guest who isn't on air or already sent one this set, `422` for a blank body or too-long field, `502` if the mail server can't be reached or logged in to (nothing was sent), `503` when mail isn't configured.
 
 ---
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   DJ_CHAT_PATH,
+  djByline,
   djSetAudioUrl,
   djSetImagePath,
   djSetImageUrl,
@@ -12,7 +13,7 @@ import {
   type DjSet,
 } from "@/app/opium-den/djApi";
 import { usePoll } from "@/lib/usePoll";
-import { adminRequest, errorMessage, jsonBody, useAdminData, useAdminFetch } from "./adminApi";
+import { adminRequest, errorMessage, jsonBody, useAdminData, useAdminFetch, type AdminData } from "./adminApi";
 import DjAlertsPanel from "./DjAlertsPanel";
 import RoomPhotosPanel from "./RoomPhotosPanel";
 import { formatBytes, formatDate, formatDuration, plural } from "./format";
@@ -23,7 +24,11 @@ import { Badge, Button, Card, DropZone, FlashMessage, INPUT_CLASS, Muted, Toolba
  * set on air right now (give it a cover while it's going), the live room's recent chat,
  * to delete anything that shouldn't be there, and every set the live stream recorded,
  * which all show in the live section as soon as they end. Name, describe and cover the
- * keepers, delete the trainwrecks.
+ * keepers, delete the trainwrecks. Guest djs' sets are marked with their name.
+ *
+ * The on air card and the set list are shared with the guest dj page (/guest-dj), which
+ * shows them for just that guest's sets. Both go through useAdminFetch, so they send
+ * whichever login the page provides.
  */
 
 // match the backend's limits (MAX_DJ_SET_*_LENGTH in schemas.py)
@@ -115,22 +120,26 @@ function DjSetCover({
 }
 
 /**
- * The set being recorded right now, if the stream's live: when it started, and its
- * cover, so it can have one while it's still going (the live room shows it). Title and
- * description wait until it's finished and in the list below.
+ * The set being recorded right now, if the stream's live: when it started, who's on (for
+ * a guest's), and its cover, so it can have one while it's still going (the live room
+ * shows it). Title and description wait until it's finished and in the list below.
+ * @param props.guestId - Only show it when it's this guest dj's set (the guest page); leave out for any set.
  */
-function OnAirCard() {
+export function OnAirCard({ guestId }: { guestId?: number }) {
   const { data: status } = usePoll(fetchDjStatus, STATUS_POLL_INTERVAL_MS);
   // what was just uploaded here, so it shows before the next status poll catches up
   const [changed, setChanged] = useState<{ setId: number; imageId: number | null } | null>(null);
   if (!status?.live || status.set_id == null) return null;
+  if (guestId !== undefined && status.dj?.id !== guestId) return null;
 
   const setId = status.set_id;
   const imageId = changed?.setId === setId ? changed.imageId : (status.image_id ?? null);
+  const byline = djByline(status.dj);
   return (
     <Card className="mb-4 flex flex-col gap-3 border-orange-500/50 p-3">
       <div className="flex flex-wrap items-center gap-1.5 text-sm">
         <Badge tone="orange">On air now</Badge>
+        {byline && guestId === undefined && <Badge tone="grey">{byline}</Badge>}
         {status.started_at && <span className="text-slate-400">since {formatDate(status.started_at)}</span>}
       </div>
       <DjSetCover setId={setId} imageId={imageId} onChange={(id) => setChanged({ setId, imageId: id })} />
@@ -141,17 +150,20 @@ function OnAirCard() {
 /**
  * One set: its cover, title and description boxes, a player, and delete.
  * @param props.set - The set.
+ * @param props.showDj - Mark a guest's set with their name (the admin's list, which has everyone's).
  * @param props.onSave - Saves the title and description. Resolves once saved.
  * @param props.onCoverChange - Called with the new cover's id, or null once it's removed.
  * @param props.onDelete - Deletes it (after confirming).
  */
 function DjSetCard({
   set,
+  showDj,
   onSave,
   onCoverChange,
   onDelete,
 }: {
   set: DjSet;
+  showDj: boolean;
   onSave: (edit: DjSetEdit) => Promise<void>;
   onCoverChange: (imageId: number | null) => void;
   onDelete: () => void;
@@ -160,6 +172,7 @@ function DjSetCard({
   const [description, setDescription] = useState(set.description ?? "");
   const [saving, setSaving] = useState(false);
   const changed = title.trim() !== (set.title ?? "") || description.trim() !== (set.description ?? "");
+  const byline = showDj ? djByline(set.dj) : null;
 
   const save = async () => {
     setSaving(true);
@@ -171,6 +184,7 @@ function DjSetCard({
     <Card className="flex flex-col gap-3 p-3">
       <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
         <span>{formatDate(set.started_at)}</span>
+        {byline && <Badge tone="orange">{byline}</Badge>}
         <Badge tone="grey">{formatDuration(set.duration_s)}</Badge>
         <Badge tone="grey">{formatBytes(set.size_bytes)}</Badge>
       </div>
@@ -207,6 +221,82 @@ function DjSetCard({
         Delete
       </Button>
     </Card>
+  );
+}
+
+/**
+ * Every finished set, loaded with the page's login. One load shared by the list and
+ * whatever needs to reload it (a sent alert relabels the live set).
+ * @returns The sets, newest first, with reload and local patching.
+ */
+export function useDjSets(): AdminData<DjSet[]> {
+  return useAdminData<DjSet[]>(DJ_SETS_PATH, "couldn't load DJ sets");
+}
+
+/**
+ * The recorded sets as editable cards: title, description, cover, delete.
+ * @param props.sets - From useDjSets.
+ * @param props.guestId - Only this guest dj's sets (the guest page); leave out for everyone's, marked by dj.
+ */
+export function DjSetList({ sets, guestId }: { sets: AdminData<DjSet[]>; guestId?: number }) {
+  const adminFetch = useAdminFetch();
+  const [flash, showFlash] = useFlash();
+
+  const saveSet = async (id: number, edit: DjSetEdit) => {
+    try {
+      const updated = await adminRequest<DjSet>(
+        adminFetch,
+        `${DJ_SETS_PATH}/${id}`,
+        "couldn't save the set",
+        jsonBody("PATCH", edit)
+      );
+      if (!updated) return;
+      sets.setData((current) => current?.map((set) => (set.id === id ? updated : set)) ?? null);
+      showFlash("success", "Saved.");
+    } catch (err) {
+      showFlash("error", errorMessage(err));
+    }
+  };
+
+  const deleteSet = async (id: number) => {
+    if (!window.confirm("Delete this set and its recording? This can't be undone.")) return;
+    try {
+      await adminRequest(adminFetch, `${DJ_SETS_PATH}/${id}`, "couldn't delete the set", { method: "DELETE" });
+      sets.setData((current) => current?.filter((set) => set.id !== id) ?? null);
+    } catch (err) {
+      showFlash("error", errorMessage(err));
+    }
+  };
+
+  const setCover = (id: number, imageId: number | null) => {
+    sets.setData((current) => current?.map((set) => (set.id === id ? { ...set, image_id: imageId } : set)) ?? null);
+  };
+
+  if (!sets.data) return <Muted>{sets.error ?? "Loading DJ sets..."}</Muted>;
+  const shown = guestId === undefined ? sets.data : sets.data.filter((set) => set.dj?.id === guestId);
+
+  return (
+    <div>
+      <Toolbar summary={plural(shown.length, "set")}>
+        <Button size="sm" onClick={sets.reload}>
+          Refresh
+        </Button>
+      </Toolbar>
+      <FlashMessage flash={flash} />
+      {shown.length === 0 && <Muted>No sets yet. They show up here when a live stream ends.</Muted>}
+      <div className="grid gap-2 md:grid-cols-2">
+        {shown.map((set) => (
+          <DjSetCard
+            key={set.id}
+            set={set}
+            showDj={guestId === undefined}
+            onSave={(edit) => saveSet(set.id, edit)}
+            onCoverChange={(imageId) => setCover(set.id, imageId)}
+            onDelete={() => deleteSet(set.id)}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -261,66 +351,14 @@ function ChatModeration() {
  * The DJ tab.
  */
 export default function DjSetsTab() {
-  const adminFetch = useAdminFetch();
-  const sets = useAdminData<DjSet[]>(DJ_SETS_PATH, "couldn't load DJ sets");
-  const [flash, showFlash] = useFlash();
-
-  const saveSet = async (id: number, edit: DjSetEdit) => {
-    try {
-      const updated = await adminRequest<DjSet>(
-        adminFetch,
-        `${DJ_SETS_PATH}/${id}`,
-        "couldn't save the set",
-        jsonBody("PATCH", edit)
-      );
-      if (!updated) return;
-      sets.setData((current) => current?.map((set) => (set.id === id ? updated : set)) ?? null);
-      showFlash("success", "Saved.");
-    } catch (err) {
-      showFlash("error", errorMessage(err));
-    }
-  };
-
-  const deleteSet = async (id: number) => {
-    if (!window.confirm("Delete this set and its recording? This can't be undone.")) return;
-    try {
-      await adminRequest(adminFetch, `${DJ_SETS_PATH}/${id}`, "couldn't delete the set", { method: "DELETE" });
-      sets.setData((current) => current?.filter((set) => set.id !== id) ?? null);
-    } catch (err) {
-      showFlash("error", errorMessage(err));
-    }
-  };
-
-  const setCover = (id: number, imageId: number | null) => {
-    sets.setData((current) => current?.map((set) => (set.id === id ? { ...set, image_id: imageId } : set)) ?? null);
-  };
-
-  if (!sets.data) return <Muted>{sets.error ?? "Loading DJ sets..."}</Muted>;
-
+  const sets = useDjSets();
   return (
     <div>
       <OnAirCard />
       <DjAlertsPanel onLabelledSet={sets.reload} />
       <ChatModeration />
       <RoomPhotosPanel />
-      <Toolbar summary={plural(sets.data.length, "set")}>
-        <Button size="sm" onClick={sets.reload}>
-          Refresh
-        </Button>
-      </Toolbar>
-      <FlashMessage flash={flash} />
-      {sets.data.length === 0 && <Muted>No sets yet. They show up here when a live stream ends.</Muted>}
-      <div className="grid gap-2 md:grid-cols-2">
-        {sets.data.map((set) => (
-          <DjSetCard
-            key={set.id}
-            set={set}
-            onSave={(edit) => saveSet(set.id, edit)}
-            onCoverChange={(imageId) => setCover(set.id, imageId)}
-            onDelete={() => deleteSet(set.id)}
-          />
-        ))}
-      </div>
+      <DjSetList sets={sets} />
     </div>
   );
 }

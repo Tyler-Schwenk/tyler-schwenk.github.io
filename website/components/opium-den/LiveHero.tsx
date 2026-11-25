@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { formatDuration } from "@/app/admin/format";
-import { djLiveStartedMs, djLiveThumbUrl, LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
+import { djByline, djLiveStartedMs, djLiveThumbUrl, LIVE_ROOM_PATH, type DjStreamStatus } from "@/app/opium-den/djApi";
 import { useNow } from "@/lib/useNow";
 import LiveTrace, { LIVE_PEN_AT } from "./LiveTrace";
 import SetArt from "./SetArt";
@@ -49,10 +49,11 @@ function TimeAxis({ startMs, nowMs }: { startMs: number; nowMs: number }) {
 
 /**
  * the top of the live section, the way into the live room, drawn like a seismograph's
- * monitor. a header reads out the stream (on air, when it started, how long it's been
- * going, who's listening) with the set's cover once one's uploaded, a red listen button
- * to play it right here and a way into the room. under it, chart paper with the set so
- * far traced out, its sound with the room's chat on it (LiveTrace), and a time axis. off air the readout
+ * monitor. a header reads out the stream (on air, the guest dj if it's one of them, when
+ * it started, how long it's been going, who's listening) with the set's cover once one's
+ * uploaded (or the guest's photo), a red listen button to play it right here and a way
+ * into the room. under it, chart paper with the set so far traced out, its sound with the
+ * room's chat on it (LiveTrace), and a time axis. off air the readout
  * says so, the paper asks people to sign up for live alerts, and there's a link to the
  * room, whose chat from the last set stays readable for a while.
  *
@@ -81,6 +82,7 @@ export default function LiveHero({
   const startMs = djLiveStartedMs(status);
   const nowMs = useNow(CLOCK_TICK_MS, live);
   const cover = djLiveThumbUrl(status);
+  const byline = djByline(status?.dj);
 
   return (
     <section className="border border-den-ink bg-den-raised">
@@ -94,6 +96,11 @@ export default function LiveHero({
                   <span className="den-rec-blink h-2 w-2 rounded-full bg-den-accent" aria-hidden="true" />
                   On air
                 </span>
+                {byline && (
+                  <span>
+                    dj <b className="font-medium">{byline}</b>
+                  </span>
+                )}
                 {startMs !== null && <span>started {clockTime(startMs)}</span>}
                 {startMs !== null && (
                   <span>
