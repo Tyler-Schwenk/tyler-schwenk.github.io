@@ -125,7 +125,10 @@ New notes start private. The list puts general notes first, then pinned ones in 
 pinned note shows its time, the kiln's temperature then (from the curve, if there's a reading
 within a few buckets), and a number. The same number marks its time on the chart with a dashed
 line and a flag. Markers only show on the clock-time axis, not while comparing firings, since
-they belong to the main firing, and only inside the curve's range. Jude can edit any note
+they belong to the main firing, and only inside the curve's range. Tapping or clicking a flag
+(it has a finger-sized invisible target) pops that note's number, time and text up above it,
+kept inside the chart's width, and turns the flag clay; the hover readout hides while it's open.
+Tapping the flag again, anywhere else on the chart, or anywhere outside it closes it. Jude can edit any note
 (including its time, or making it general), flip it public or private, or delete it.
 
 **Photos**: "Choose photos" (an outlined button over a hidden file input, which on a phone offers

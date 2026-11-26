@@ -28,6 +28,10 @@ const TOOLTIP_COMPARE_WIDTH_PX = 250;
 const TOOLTIP_OFFSET_PX = 14;
 const END_DOT_RADIUS_PX = 4;
 const MARKER_RADIUS_PX = 9;
+// a fingertip-sized invisible target around each marker, since the drawn circle's tiny
+const MARKER_HIT_RADIUS_PX = 20;
+const NOTE_POPUP_WIDTH_PX = 240;
+const NOTE_POPUP_GAP_PX = 6;
 const NICE_STEP_MULTIPLES = [1, 2, 2.5, 5, 10];
 
 const MINUTE_MS = 60_000;
@@ -52,8 +56,8 @@ const MAIN_SERIES_ID = 0;
 /** another firing drawn over the main one. slot picks its color. */
 export type ComparisonSeries = { id: number; label: string; slot: number; points: KilnCurvePoint[]; bucketS: number };
 
-/** a pinned note's spot on the chart, drawn as a numbered flag. */
-export type ChartMarker = { key: number; timeMs: number; label: string };
+/** a pinned note's spot on the chart, drawn as a numbered flag. tapping it pops up the body. */
+export type ChartMarker = { key: number; timeMs: number; label: string; body: string };
 
 /** a line ready to draw. slot's null for the main firing. */
 type Series = { key: string; label: string; slot: number | null; points: ChartPoint[]; runs: ChartPoint[][]; jumpMs: number };
@@ -194,6 +198,8 @@ function TooltipRow({ row }: { row: HoverRow }) {
  * @param {ComparisonSeries[]} [props.comparisons] - other firings to draw over it.
  * @param {ChartMarker[]} [props.markers] - pinned notes to flag. only drawn on clock time,
  *   since they belong to the main firing, and only the ones inside the curve's time range.
+ *   tapping or clicking a flag pops its note up above it; tapping it again, anywhere else on
+ *   the chart, or outside the chart closes it.
  * @returns {JSX.Element} the chart.
  */
 export default function TemperatureChart({
@@ -212,6 +218,7 @@ export default function TemperatureChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const [widthPx, setWidthPx] = useState(0);
   const [hoverMs, setHoverMs] = useState<number | null>(null);
+  const [openMarkerKey, setOpenMarkerKey] = useState<number | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -220,6 +227,17 @@ export default function TemperatureChart({
     observer.observe(container);
     return () => observer.disconnect();
   }, []);
+
+  // a tap anywhere outside the chart closes the open note
+  useEffect(() => {
+    if (openMarkerKey === null) return;
+    const closeIfOutside = (event: PointerEvent) => {
+      if (containerRef.current?.contains(event.target as Node)) return;
+      setOpenMarkerKey(null);
+    };
+    document.addEventListener("pointerdown", closeIfOutside);
+    return () => document.removeEventListener("pointerdown", closeIfOutside);
+  }, [openMarkerKey]);
 
   const elapsed = comparisons.length > 0;
   const [main, ...others] = useMemo(
@@ -251,6 +269,10 @@ export default function TemperatureChart({
     run.map((p, i) => `${i ? "L" : "M"}${xFor(p.timeMs).toFixed(1)} ${yFor(p.value as number).toFixed(1)}`).join("");
   const baselineY = MARGIN_TOP_PX + plotHeightPx;
   const shownMarkers = elapsed ? [] : markers.filter((marker) => marker.timeMs >= startMs && marker.timeMs <= endMs);
+  const openMarker = shownMarkers.find((marker) => marker.key === openMarkerKey) ?? null;
+  const notePopupLeftPx = openMarker
+    ? Math.max(0, Math.min(widthPx - NOTE_POPUP_WIDTH_PX, xFor(openMarker.timeMs) - NOTE_POPUP_WIDTH_PX / 2))
+    : 0;
   const lastKnown = known[known.length - 1];
   // alone, the crosshair snaps to the nearest reading. comparing, it sits where the pointer is,
   // since firings have readings at different times and can run past the main one's end
@@ -312,6 +334,7 @@ export default function TemperatureChart({
             aria-label={ariaLabel}
             onPointerMove={handlePointerMove}
             onPointerLeave={() => setHoverMs(null)}
+            onClick={() => setOpenMarkerKey(null)}
             style={{ touchAction: "pan-y" }}
           >
             {yTicks.map((tick) => (
@@ -348,12 +371,26 @@ export default function TemperatureChart({
               className={`kiln-dot ${seriesClass(null)}`}
             />
             {shownMarkers.map((marker) => (
-              <g key={marker.key} className="kiln-marker">
+              <g
+                key={marker.key}
+                className={marker.key === openMarkerKey ? "kiln-marker kiln-marker-open" : "kiln-marker"}
+                onClick={(event) => {
+                  // the svg's own click closes notes, so keep this one from reaching it
+                  event.stopPropagation();
+                  setOpenMarkerKey(marker.key === openMarkerKey ? null : marker.key);
+                }}
+              >
                 <line x1={xFor(marker.timeMs)} x2={xFor(marker.timeMs)} y1={MARGIN_TOP_PX} y2={baselineY} />
                 <circle cx={xFor(marker.timeMs)} cy={MARGIN_TOP_PX + MARKER_RADIUS_PX} r={MARKER_RADIUS_PX} />
                 <text x={xFor(marker.timeMs)} y={MARGIN_TOP_PX + MARKER_RADIUS_PX} dy="0.35em" textAnchor="middle">
                   {marker.label}
                 </text>
+                <circle
+                  cx={xFor(marker.timeMs)}
+                  cy={MARGIN_TOP_PX + MARKER_RADIUS_PX}
+                  r={MARKER_HIT_RADIUS_PX}
+                  className="kiln-marker-hit"
+                />
               </g>
             ))}
             {hoverMs !== null && (
@@ -372,7 +409,22 @@ export default function TemperatureChart({
             )}
           </svg>
         )}
-        {hasCurve && hoverMs !== null && (
+        {hasCurve && openMarker && (
+          <div
+            className="kiln-note-pop"
+            style={{
+              top: MARGIN_TOP_PX - NOTE_POPUP_GAP_PX,
+              left: notePopupLeftPx,
+              width: NOTE_POPUP_WIDTH_PX,
+            }}
+          >
+            <div className="kiln-tooltip-time">
+              Note {openMarker.label}, {formatDateTime(openMarker.timeMs)}
+            </div>
+            <div className="kiln-note-pop-body">{openMarker.body}</div>
+          </div>
+        )}
+        {hasCurve && hoverMs !== null && !openMarker && (
           <div
             className="kiln-tooltip"
             style={{

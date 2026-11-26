@@ -235,6 +235,7 @@ export default function KilnConsole() {
         key: note.id,
         timeMs: new Date(note.noted_at as string).getTime(),
         label: String(numbers.get(note.id)),
+        body: note.body,
       }));
   }, [journal.notes]);
 
