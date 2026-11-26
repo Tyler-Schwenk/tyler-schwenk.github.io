@@ -10,8 +10,8 @@ export const metadata = pageMetadata({
 });
 
 /**
- * the live alerts page: confirms or unsubscribes from an email's link (?confirm= or
- * ?unsubscribe=), and is the signup otherwise. the frame comes from
+ * the live alerts page: unsubscribes from an email's link (?unsubscribe=), and is the
+ * signup otherwise. the frame comes from
  * app/opium-den/layout.tsx, the player from the root layout.
  *
  * @returns {JSX.Element} the alerts page.

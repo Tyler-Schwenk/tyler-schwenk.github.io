@@ -8,8 +8,9 @@ const EMAIL_INPUT_CLASS =
   "min-w-0 flex-1 border border-den-ink bg-den-raised px-3 py-2 text-base text-den-ink placeholder:text-den-faint focus:border-den-accent focus:outline-none sm:text-sm";
 
 /**
- * the live alerts signup: an email box that asks the backend to send a confirmation.
- * once it's sent, the form turns into "check your inbox" (and your spam). starts as a small mono
+ * the live alerts signup: an email box that puts the address on the list straight away.
+ * once it's in, the form turns into "you're on the list", with a nudge to check spam
+ * when the first one comes. starts as a small mono
  * link with a red underline that opens it, unless `startOpen`, so it stays out of the way on busy pages.
  * `prominent` makes that link a big ink pill instead, for when signing up is the main thing
  * to do, like the live monitor off air.
@@ -79,11 +80,11 @@ export default function AlertSignup({
     return (
       <div role="status" className={`text-sm text-den-muted ${className}`}>
         <p>
-          Check your inbox at <span className="text-den-ink">{sentTo}</span> and tap the link to confirm.
+          You&apos;re on the list. <span className="text-den-ink">{sentTo}</span> gets an email next time we go live.
         </p>
-        {/* a plain gmail address sending a link to a personal site tends to get flagged */}
+        {/* a new sender linking to a personal site tends to get flagged the first time */}
         <p className="mt-1 text-den-accent-soft">
-          Make sure to check your spam! The email has a shady looking link from me in it.
+          If it lands in spam, mark it not spam and the rest will come through.
         </p>
       </div>
     );
@@ -95,7 +96,7 @@ export default function AlertSignup({
         Get an email when we go live
       </label>
       <p className="mt-0.5 font-den-mono text-[11px] text-den-muted">
-        you&apos;ll confirm by email first, and every email has an unsubscribe link.
+        only when we&apos;re live, and every email has an unsubscribe link.
       </p>
       <div className="mt-2 flex gap-2">
         <input

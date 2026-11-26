@@ -1518,17 +1518,13 @@ Removes a picture: off whoever's standing in as it now (their next check-in aski
 
 ### Live alerts
 
-Emails telling people the stream's live, in `dj_alert_subscribers`. Anyone signs up with an address; they get a confirmation email, and only confirmed addresses get alerts. Nothing is sent automatically: the admin writes each alert on the admin page's DJ tab, or a guest DJ on their `/guest-dj` page, and sends it with `POST /dj/alerts/send`. Guests only ever see how many are signed up, never who. Mail goes out over SMTP (`SMTP_*` and `MAIL_FROM` in `.env`); with `SMTP_HOST` or `MAIL_FROM` empty, signup and send answer `503`. Setup is in `pi/docs/services/dj-stream.md#live-alerts`. Code: `app/routers/dj_alerts.py`, `app/mailer.py`.
+Emails telling people the stream's live, in `dj_alert_subscribers`. Anyone signs up with an address and is on the list straight away, no confirmation email; the admin removes anyone who shouldn't be there. Nothing is sent automatically: the admin writes each alert on the admin page's DJ tab, or a guest DJ on their `/guest-dj` page, and sends it with `POST /dj/alerts/send`. Guests only ever see how many are signed up, never who. Mail goes out over SMTP (`SMTP_*` and `MAIL_FROM` in `.env`); with `SMTP_HOST` or `MAIL_FROM` empty, signup and send answer `503`. Setup is in `pi/docs/services/dj-stream.md#live-alerts`. Code: `app/routers/dj_alerts.py`, `app/mailer.py`.
 
-Each subscriber has a random `token` that's in both their confirm and unsubscribe links. The links go to the site's `/opium-den/live/alerts?confirm=<token>` and `?unsubscribe=<token>`, and that page makes the POST below, so a mail scanner opening the link doesn't confirm or unsubscribe anyone.
+Each subscriber has a random `token` that's in their unsubscribe link. The link goes to the site's `/opium-den/live/alerts?unsubscribe=<token>`, and that page makes the POST below, so a mail scanner opening the link doesn't unsubscribe anyone.
 
 ### POST `/dj/alerts/signup`
 
-Body `{"email": "..."}`. Lowercased, must look like an address, max 254 characters. Emails a confirmation link to a new address, or again to an unconfirmed one if the last went out over 10 minutes ago (`CONFIRM_RESEND_COOLDOWN`). An already confirmed address gets nothing. The answer is the same `202` `{"email": "..."}` either way, so the form can't be used to check who's signed up. A new address is only saved once its confirmation's sent. Rate limited per IP to 5 a minute and 20 an hour (`SIGNUP_RATE_LIMIT`). `422` for a bad address, `429` past the limit, `502` if the mail server refuses the address or can't be reached, `503` when mail isn't configured.
-
-### POST `/dj/alerts/confirm?token=...`
-
-Confirms the signup with that token. `200` `{"email": "..."}`, also when it's already confirmed. `404` if no subscriber has that token (a mistyped link, or they've unsubscribed since).
+Body `{"email": "..."}`. Lowercased, must look like an address, max 254 characters. Adds a new address to the list; nothing's emailed. The answer is the same `202` `{"email": "..."}` whether it's new or already there, so the form can't be used to check who's signed up. Rate limited per IP to 5 a minute and 20 an hour (`SIGNUP_RATE_LIMIT`). `422` for a bad address, `429` past the limit, `503` when mail isn't configured (no alert could reach them).
 
 ### POST `/dj/alerts/unsubscribe?token=...`
 
@@ -1538,7 +1534,7 @@ Deletes the subscriber with that token. Also the target of each alert's `List-Un
 
 **Auth:** admin JWT.
 
-Everyone signed up, newest first: `[{"id": 3, "email": "kyle@example.com", "created_at": "2026-11-20T02:10:00", "confirmed_at": "2026-11-20T02:11:42"}]`. `confirmed_at` is null until they click the link. `200`.
+Everyone signed up, newest first: `[{"id": 3, "email": "kyle@example.com", "created_at": "2026-11-20T02:10:00"}]`. `200`.
 
 ### DELETE `/dj/alerts/subscribers/{subscriber_id}`
 
@@ -1550,17 +1546,17 @@ Takes someone off the list. `204`, or `404` if there's no subscriber with that i
 
 **Auth:** admin or guest DJ JWT.
 
-How many an alert would go to, for the send button: `{"confirmed": 11}`. `200`.
+How many an alert would go to, for the send button: `{"subscribers": 11}`. `200`.
 
 ### POST `/dj/alerts/send`
 
 **Auth:** admin or guest DJ JWT.
 
-Emails every confirmed subscriber. A guest DJ can only send while their own set's recording, and once per set (`dj_set_guests.alert_sent_at`, marked as the send starts and cleared again if the mail server can't be reached). Body `{"subject": "...", "body": "..."}`. The subject is optional (max 120, squashed onto one line; blank or missing means "Tyler's live in the den", or "<name>'s live in the den" for a guest). The body is required, max 2000, trimmed at the ends with its line breaks kept. Each subscriber gets their own plain text copy: the body, a link to the live room, and their unsubscribe link, with `List-Unsubscribe` / `List-Unsubscribe-Post` headers. They go out one at a time over one connection, 0.6 s apart (`SEND_INTERVAL_S`), and the request waits for all of them.
+Emails every subscriber. A guest DJ can only send while their own set's recording, and once per set (`dj_set_guests.alert_sent_at`, marked as the send starts and cleared again if the mail server can't be reached). Body `{"subject": "...", "body": "..."}`. The subject is optional (max 120, squashed onto one line; blank or missing means "Tyler's live in the den", or "<name>'s live in the den" for a guest). The body is required, max 2000, trimmed at the ends with its line breaks kept. Each subscriber gets their own copy as `multipart/alternative`: plain text (the body, the live room url, their unsubscribe url) and html styled like the den (the subject as a heading, the body, "Join the room here" and "Unsubscribe" as links; `app/dj_alert_email.py`), with `List-Unsubscribe` / `List-Unsubscribe-Post` headers. They go out one at a time over one connection, 0.6 s apart (`SEND_INTERVAL_S`), and the request waits for all of them.
 
 If a set's recording, the subject and body first become its title and description (a blank subject leaves the title alone), whatever happens to the emails after. They're edited like any set's afterwards (`PATCH /dj/sets/{set_id}`).
 
-`200` `{"sent": 11, "failed": ["bounced@example.com"], "failed_count": 1, "labelled_set_id": 7}`: `failed` lists addresses the mail server refused (if the connection drops partway, everyone after that is in it too), always empty for a guest, who just gets `failed_count`. `labelled_set_id` is the recording set that got the title and description, or `null` when nothing was recording. `409` with nobody confirmed, or for a guest who isn't on air or already sent one this set, `422` for a blank body or too-long field, `502` if the mail server can't be reached or logged in to (nothing was sent), `503` when mail isn't configured.
+`200` `{"sent": 11, "failed": ["bounced@example.com"], "failed_count": 1, "labelled_set_id": 7}`: `failed` lists addresses the mail server refused (if the connection drops partway, everyone after that is in it too), always empty for a guest, who just gets `failed_count`. `labelled_set_id` is the recording set that got the title and description, or `null` when nothing was recording. `409` with nobody signed up, or for a guest who isn't on air or already sent one this set, `422` for a blank body or too-long field, `502` if the mail server can't be reached or logged in to (nothing was sent), `503` when mail isn't configured.
 
 ---
 

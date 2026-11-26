@@ -1,26 +1,26 @@
 """
 DJ alerts router -- emails telling people the dj stream's live.
 
-Anyone can sign up from the live room with just an email address. They get a
-confirmation email first, and only confirmed addresses get alerts, so typing in someone
-else's address does nothing but send them one email they can ignore. Alerts never go out
-on their own: the admin writes one on the admin page's DJ tab and sends it, or a guest dj
+Anyone can sign up from the live room with just an email address, and they're on the
+list straight away, no confirmation email. The admin can see everyone on the admin page
+and take off anyone who shouldn't be there. Alerts never go out on their own: the admin writes one on the admin page's DJ tab and sends it, or a guest dj
 does from their /guest-dj page, once per set and only while they're on air. Guests never
 see who's on the list. Sending one while a set's recording also makes its subject and
 message that set's title and description, since they're usually the same thing (editable
-later like any set). Every email carries an unsubscribe link (to the site's
+later like any set). Every email is html styled like the den with a plain text fallback
+(app/dj_alert_email.py), and carries an unsubscribe link (to the site's
 /opium-den/live/alerts page) and one-click unsubscribe headers for mail apps.
 """
 
 import logging
 import secrets
-from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.dj_alert_email import alert_html, alert_text
 from app.dependencies import DjActor, require_admin, require_dj_or_admin
 from app.kiln_firings import utc_now_naive
 from app.mailer import MailNotConfiguredError, MailServerError, OutgoingEmail, mail_configured, send_emails
@@ -40,51 +40,31 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dj/alerts", tags=["DJ"])
 
-# per visitor IP. a person signs up once; this just stops a script mailing strangers
+# per visitor IP. a person signs up once; this just stops a script filling the list
 SIGNUP_RATE_LIMIT = "5/minute;20/hour"
-# signing up again while unconfirmed resends the confirmation, but not more often than
-# this, so nobody can flood an address by signing it up from lots of IPs
-CONFIRM_RESEND_COOLDOWN = timedelta(minutes=10)
-# random bytes in each subscriber's link token (43 url-safe characters)
+# random bytes in each subscriber's unsubscribe token (43 url-safe characters)
 TOKEN_BYTES = 32
 
 ALERTS_PAGE_PATH = "/opium-den/live/alerts"
 LIVE_ROOM_PATH = "/opium-den/live/room"
-CONFIRM_SUBJECT = "Confirm your live alerts from the den"
 DEFAULT_ALERT_SUBJECT = "Tyler's live in the den"
 # a guest dj's default subject, with their name in it
 GUEST_ALERT_SUBJECT = "{name}'s live in the den"
 
-CONFIRM_BODY = """Someone (hopefully you) asked for an email whenever there's a live set in the den at tyler-schwenk.com.
-
-Confirm it here:
-{confirm_url}
-
-If that wasn't you, just ignore this and you won't hear from us again."""
-
-ALERT_BODY = """{body}
-
-Join the room: {room_url}
-
---
-You're getting this because you signed up for live alerts on tyler-schwenk.com.
-Unsubscribe: {unsubscribe_url}"""
-
 MAIL_NOT_CONFIGURED_DETAIL = "live alerts aren't set up on the pi yet -- SMTP_HOST and MAIL_FROM need setting in the backend's .env"
 
 
-def alerts_page_url(action: str, token: str) -> str:
+def unsubscribe_page_url(token: str) -> str:
     """
-    A link to the site's alerts page, which confirms or unsubscribes when it opens.
+    A link to the site's alerts page, which unsubscribes when it opens.
 
     Args:
-        action: "confirm" or "unsubscribe".
         token: The subscriber's token.
 
     Returns:
-        str: Like https://tyler-schwenk.com/opium-den/live/alerts?confirm=abc.
+        str: Like https://tyler-schwenk.com/opium-den/live/alerts?unsubscribe=abc.
     """
-    return f"{settings.SITE_URL}{ALERTS_PAGE_PATH}?{action}={token}"
+    return f"{settings.SITE_URL}{ALERTS_PAGE_PATH}?unsubscribe={token}"
 
 
 def unsubscribe_headers(token: str) -> dict[str, str]:
@@ -102,44 +82,26 @@ def unsubscribe_headers(token: str) -> dict[str, str]:
     return {"List-Unsubscribe": f"<{api_url}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}
 
 
-def confirmation_email(subscriber: DjAlertSubscriber) -> OutgoingEmail:
-    """
-    The email that asks a new subscriber to confirm.
-
-    Args:
-        subscriber: The (possibly not yet saved) subscriber.
-
-    Returns:
-        OutgoingEmail: The confirmation email.
-    """
-    return OutgoingEmail(
-        to=subscriber.email,
-        subject=CONFIRM_SUBJECT,
-        body=CONFIRM_BODY.format(confirm_url=alerts_page_url("confirm", subscriber.token)),
-    )
-
-
 def alert_email(subscriber: DjAlertSubscriber, subject: str, body: str) -> OutgoingEmail:
     """
-    One subscriber's copy of an alert: the admin's words, the room link, and their own
-    unsubscribe link and headers.
+    One subscriber's copy of an alert: the dj's words, the room link, and their own
+    unsubscribe link and headers, as html with a plain text fallback.
 
     Args:
-        subscriber: A confirmed subscriber.
+        subscriber: A subscriber.
         subject: The subject line.
-        body: What the admin wrote.
+        body: What the dj wrote.
 
     Returns:
         OutgoingEmail: The alert.
     """
+    room_url = f"{settings.SITE_URL}{LIVE_ROOM_PATH}"
+    unsubscribe_url = unsubscribe_page_url(subscriber.token)
     return OutgoingEmail(
         to=subscriber.email,
         subject=subject,
-        body=ALERT_BODY.format(
-            body=body,
-            room_url=f"{settings.SITE_URL}{LIVE_ROOM_PATH}",
-            unsubscribe_url=alerts_page_url("unsubscribe", subscriber.token),
-        ),
+        body=alert_text(body, room_url, unsubscribe_url),
+        html=alert_html(subject, body, room_url, unsubscribe_url),
         headers=unsubscribe_headers(subscriber.token),
     )
 
@@ -169,28 +131,12 @@ async def send_or_raise(emails: list[OutgoingEmail]) -> list[str]:
         ) from err
 
 
-def needs_confirmation_email(subscriber: DjAlertSubscriber) -> bool:
-    """
-    Says whether signing up again should send another confirmation.
-
-    Args:
-        subscriber: An existing subscriber.
-
-    Returns:
-        bool: True if they're unconfirmed and the last one went out over
-            CONFIRM_RESEND_COOLDOWN ago.
-    """
-    if subscriber.confirmed_at is not None:
-        return False
-    return utc_now_naive() - subscriber.confirm_sent_at >= CONFIRM_RESEND_COOLDOWN
-
-
 @router.post("/signup", response_model=DjAlertSignupResult, status_code=status.HTTP_202_ACCEPTED)
 @limiter.limit(SIGNUP_RATE_LIMIT)
 async def sign_up(request: Request, signup: DjAlertSignup, db: Session = Depends(get_db)) -> DjAlertSignupResult:
     """
-    Signs an address up for live alerts by sending it a confirmation email. Answers the
-    same whether it's new, waiting on its confirmation, or already confirmed.
+    Puts an address on the live alerts list. Nothing's emailed; the next alert is the
+    first they hear. Answers the same whether it's new or already on the list.
 
     Args:
         request: Incoming request (the rate limiter keys on its IP).
@@ -201,61 +147,19 @@ async def sign_up(request: Request, signup: DjAlertSignup, db: Session = Depends
         DjAlertSignupResult: The address, as it was saved.
 
     Raises:
-        HTTPException: 503 if mail isn't configured, 502 if the confirmation couldn't be
-            sent, 422 for a bad address, 429 past the rate limit.
+        HTTPException: 503 if mail isn't configured (no alert could ever reach them),
+            422 for a bad address, 429 past the rate limit.
     """
     if not mail_configured():
         raise HTTPException(status_code=503, detail=MAIL_NOT_CONFIGURED_DETAIL)
     email = signup.email.lower()
-    subscriber = db.query(DjAlertSubscriber).filter(DjAlertSubscriber.email == email).first()
-    if subscriber is not None and not needs_confirmation_email(subscriber):
+    existing = db.query(DjAlertSubscriber).filter(DjAlertSubscriber.email == email).first()
+    if existing is not None:
         return DjAlertSignupResult(email=email)
-
-    now = utc_now_naive()
-    if subscriber is None:
-        subscriber = DjAlertSubscriber(
-            email=email, token=secrets.token_urlsafe(TOKEN_BYTES), created_at=now, confirm_sent_at=now
-        )
-    failed = await send_or_raise([confirmation_email(subscriber)])
-    if failed:
-        raise HTTPException(
-            status_code=502,
-            detail=f"the mail server wouldn't take an email for {email} -- check the address and try again",
-        )
-    # only saved once the email's gone, so a failed send leaves nothing half done
-    subscriber.confirm_sent_at = now
-    db.add(subscriber)
+    db.add(DjAlertSubscriber(email=email, token=secrets.token_urlsafe(TOKEN_BYTES), created_at=utc_now_naive()))
     db.commit()
-    logger.info(f"dj alerts: sent a confirmation to {email}")
+    logger.info(f"dj alerts: {email} signed up")
     return DjAlertSignupResult(email=email)
-
-
-@router.post("/confirm", response_model=DjAlertSignupResult)
-async def confirm(token: str, db: Session = Depends(get_db)) -> DjAlertSignupResult:
-    """
-    Confirms a signup, from the link in the confirmation email. Confirming twice is fine.
-
-    Args:
-        token: The token from the link.
-        db: Database session.
-
-    Returns:
-        DjAlertSignupResult: The confirmed address.
-
-    Raises:
-        HTTPException: 404 if no subscriber has that token (wrong link, or unsubscribed since).
-    """
-    subscriber = db.query(DjAlertSubscriber).filter(DjAlertSubscriber.token == token).first()
-    if subscriber is None:
-        raise HTTPException(
-            status_code=404,
-            detail="that link doesn't match a signup anymore -- sign up again from the live room",
-        )
-    if subscriber.confirmed_at is None:
-        subscriber.confirmed_at = utc_now_naive()
-        db.commit()
-        logger.info(f"dj alerts: {subscriber.email} confirmed")
-    return DjAlertSignupResult(email=subscriber.email)
 
 
 @router.post("/unsubscribe", status_code=status.HTTP_204_NO_CONTENT)
@@ -283,7 +187,7 @@ async def unsubscribe(token: str, db: Session = Depends(get_db)) -> None:
 @router.get("/subscribers", response_model=list[DjAlertSubscriberRead], dependencies=[Depends(require_admin)])
 async def list_subscribers(db: Session = Depends(get_db)) -> list[DjAlertSubscriber]:
     """
-    Everyone signed up, confirmed or not, newest first (admin only).
+    Everyone signed up, newest first (admin only).
 
     Args:
         db: Database session.
@@ -377,7 +281,7 @@ def label_live_set(db: Session, alert: DjAlertSend) -> int | None:
     return dj_set.id
 
 
-def confirmed_subscribers(db: Session) -> list[DjAlertSubscriber]:
+def all_subscribers(db: Session) -> list[DjAlertSubscriber]:
     """
     Everyone an alert goes to.
 
@@ -385,9 +289,9 @@ def confirmed_subscribers(db: Session) -> list[DjAlertSubscriber]:
         db: Database session.
 
     Returns:
-        list[DjAlertSubscriber]: The confirmed subscribers.
+        list[DjAlertSubscriber]: Every subscriber.
     """
-    return db.query(DjAlertSubscriber).filter(DjAlertSubscriber.confirmed_at.is_not(None)).all()
+    return db.query(DjAlertSubscriber).all()
 
 
 @router.get("/audience", response_model=DjAlertAudience)
@@ -404,9 +308,9 @@ async def get_audience(
         db: Database session.
 
     Returns:
-        DjAlertAudience: How many have confirmed.
+        DjAlertAudience: How many are signed up.
     """
-    return DjAlertAudience(confirmed=len(confirmed_subscribers(db)))
+    return DjAlertAudience(subscribers=len(all_subscribers(db)))
 
 
 @router.post("/send", response_model=DjAlertSendResult)
@@ -416,7 +320,7 @@ async def send_alert(
     db: Session = Depends(get_db),
 ) -> DjAlertSendResult:
     """
-    Emails every confirmed subscriber (the admin, or a guest dj while they're on air,
+    Emails every subscriber (the admin, or a guest dj while they're on air,
     once per set). Each gets their own copy with their own unsubscribe link. Takes about
     SEND_INTERVAL_S per subscriber, so the request stays open until they've all gone. If
     a set's recording, the subject and message become its title and description first
@@ -432,15 +336,15 @@ async def send_alert(
             count for a guest), and the set it labelled.
 
     Raises:
-        HTTPException: 409 with nobody confirmed, or for a guest who's off air or already
+        HTTPException: 409 with nobody signed up, or for a guest who's off air or already
             sent one this set, 503 if mail isn't configured, 502 if the mail server can't
             be reached.
     """
     guest_set = None if actor.is_admin else guest_alert_set(db, actor)
     labelled_set_id = label_live_set(db, alert)
-    subscribers = confirmed_subscribers(db)
+    subscribers = all_subscribers(db)
     if not subscribers:
-        raise HTTPException(status_code=409, detail="nobody's confirmed a signup yet, so there's no one to send to")
+        raise HTTPException(status_code=409, detail="nobody's signed up yet, so there's no one to send to")
     default_subject = DEFAULT_ALERT_SUBJECT if actor.is_admin else GUEST_ALERT_SUBJECT.format(name=actor.guest.name)
     subject = alert.subject or default_subject
     # marked before sending, so a guest can't send twice by clicking again while it's going out

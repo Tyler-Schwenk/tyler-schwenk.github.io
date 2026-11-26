@@ -573,10 +573,10 @@ export function leaveDjRoom(ownerKey: string): void {
   });
 }
 
-/** the live alerts endpoints: signup, confirm, unsubscribe, and the admin's list and send. */
+/** the live alerts endpoints: signup, unsubscribe, and the admin's list and send. */
 export const DJ_ALERTS_PATH = "/dj/alerts";
 
-/** the site page that confirms or unsubscribes from an email's link, and signs people up otherwise. */
+/** the site page that unsubscribes from an email's link, and signs people up otherwise. */
 export const ALERTS_PAGE_PATH = `${LIVE_SECTION_PATH}/alerts`;
 
 // match the backend (MAX_DJ_ALERT_*_LENGTH, MAX_EMAIL_LENGTH in schemas.py, and
@@ -601,8 +601,6 @@ export type DjAlertSubscriber = {
   id: number;
   email: string;
   created_at: string;
-  /** when they clicked the confirmation link. only confirmed people get alerts. */
-  confirmed_at: string | null;
 };
 
 /** how sending an alert went. */
@@ -655,27 +653,15 @@ async function postAlerts(path: string, body?: unknown): Promise<Response> {
 }
 
 /**
- * signs an address up for live alerts. the backend emails it a confirmation link, and it
- * answers the same whether the address is new or already on the list.
+ * signs an address up for live alerts. they're on the list straight away, nothing's
+ * emailed, and it answers the same whether the address is new or already on the list.
  *
  * @param {string} email - the address.
- * @returns {Promise<void>} resolves once the confirmation's on its way.
- * @throws {Error} with a readable reason (bad address, rate limited, mail down).
+ * @returns {Promise<void>} resolves once they're on the list.
+ * @throws {Error} with a readable reason (bad address, rate limited, mail not set up).
  */
 export async function signUpForDjAlerts(email: string): Promise<void> {
   await postAlerts("/signup", { email });
-}
-
-/**
- * confirms a signup, from the token in the confirmation email's link.
- *
- * @param {string} token - the token.
- * @returns {Promise<string>} the confirmed address.
- * @throws {Error} with a readable reason, like the link not matching a signup anymore.
- */
-export async function confirmDjAlerts(token: string): Promise<string> {
-  const response = await postAlerts(`/confirm?token=${encodeURIComponent(token)}`);
-  return ((await response.json()) as { email: string }).email;
 }
 
 /**

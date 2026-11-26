@@ -15,7 +15,7 @@ The opium den is the music section. It has two parts sharing one layout and look
   - `/opium-den/live/set?id=<set id>`: a past set's full view, with its waveform and its
     chat replaying as it plays.
   - `/opium-den/live/alerts`: signing up for an email when we go live (Tyler or a guest
-    DJ), and where those emails' confirm and unsubscribe links land.
+    DJ), and where those emails' unsubscribe links land.
 - `/opium-den/set?id=` is where set pages used to be. It forwards to the same set under
   `/opium-den/live/set`, since links to it were already shared.
 
@@ -250,17 +250,18 @@ are never automatic: Tyler writes and sends each one from the admin page's DJ ta
 guest DJ from their `/guest-dj` page while they're on (`website/docs/ADMIN.md`). The
 backend, the emails and the mail setup are in `pi/docs/services/dj-stream.md#live-alerts`.
 
-- **Signup** (`AlertSignup`): an email box and "Sign up", with a line saying they'll
-  confirm by email first. Once it's sent, it turns into "check your inbox at ...", with a
-  red line to check spam too. It starts as a small mono link with a red underline that opens
+- **Signup** (`AlertSignup`): an email box and "Sign up", with a line saying it's only
+  when we're live and every email can unsubscribe. There's no confirmation email: once
+  it's in, it turns into "You're on the list", with a red line saying to mark the first
+  one not spam if it lands there. It starts as a small mono link with a red underline that opens
   it (under the section's live monitor while live), as a big pill (`prominent`: the live
   monitor off air), or open (`startOpen`: the live room off air, and the alerts page).
 - **`/opium-den/live/alerts`** (`AlertsLanding`): one static page that reads its query on
-  the client. `?confirm=<token>` confirms ("You're on the list"), `?unsubscribe=<token>`
-  unsubscribes ("You're off the list", with the signup link in case they change their
-  mind). Each runs as the page opens, as a POST, not from the link itself, so mail
-  scanners that open links can't trigger them. A bad link says so and offers the signup.
-  With no query it's just the signup, so it's the link to send people.
+  the client. `?unsubscribe=<token>` unsubscribes ("You're off the list", with the signup
+  link in case they change their mind). It runs as the page opens, as a POST, not from
+  the link itself, so mail scanners that open links can't trigger it. A bad link says so
+  and offers the signup. With no query it's just the signup, so it's the link to send
+  people.
 - Errors are the backend's own sentences (a bad address, too many tries, mail not set up).
 
 ## Set Page
@@ -403,7 +404,7 @@ along the bottom of every other page.
 | `website/lib/useDjChat.ts` | Polls `/dj/chat`, sends messages, remembers the nickname and the browser's key |
 | `website/lib/useDjRoom.ts` | Keeps you in the live room (check-ins to `/dj/room`) and gets who's in it |
 | `website/components/opium-den/AlertSignup.tsx` | The live alerts signup: a link that opens an email box |
-| `website/components/opium-den/AlertsLanding.tsx` | The alerts page: confirms or unsubscribes from an email's link, or the signup |
+| `website/components/opium-den/AlertsLanding.tsx` | The alerts page: unsubscribes from an email's link, or the signup |
 | `website/app/opium-den/djApi.ts` | Types, fetchers, urls and limits for the `/dj` endpoints (chat, covers, live alerts, guest DJs), the live section's paths, and sets and the stream as player tracks (`djSetTrack`, `djLiveTrack`), shared with the admin tab |
 
 Times and lengths are formatted with `parseBackendTime`, `formatDate`, `formatDuration`

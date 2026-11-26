@@ -56,7 +56,8 @@ problem, the fallback is moving icecast to a small VPS and having the laptop sen
 | `pi/services/website-backend/app/routers/dj_chat.py` | The live room chat, `/dj/chat` (open only while live, admin can delete) |
 | `pi/services/website-backend/app/routers/dj_room.py` | Who's in the live room, `/dj/room` (check-ins and leaving, saved as visits; uploaded pictures under `DJ_SETS_DIR/room-photos`) |
 | `pi/services/website-backend/app/dj_room.py` | The live room's people, in memory: timeouts, names, characters and pictures |
-| `pi/services/website-backend/app/routers/dj_alerts.py` | Live alerts, `/dj/alerts`: signup, confirm, unsubscribe, and the admin's list and send |
+| `pi/services/website-backend/app/routers/dj_alerts.py` | Live alerts, `/dj/alerts`: signup, unsubscribe, and the admin's list and send |
+| `pi/services/website-backend/app/dj_alert_email.py` | What an alert email looks like, html and plain text |
 | `pi/services/website-backend/app/mailer.py` | Sends email over SMTP, one message per recipient |
 | `pi/services/website-backend/app/routers/dj_guests.py` | Guest DJs, `/dj/guests`: their login, profile and photo |
 | `pi/services/website-backend/scripts/create_dj_guest.py` | Makes a guest DJ's login, resets its password, turns it off or on |
@@ -185,27 +186,32 @@ admin page's DJ tab, or by a guest DJ from their page while they're on air (Gues
 
 - **Signing up**: in the live room off air (the box sits where the message box goes), the
   "Get an email when we go live" link under the live section's live row, or `/opium-den/live/alerts` on its
-  own, which is a link worth sending people. They get a confirmation email, and only
-  confirmed addresses get alerts, so typing in someone else's address does nothing but
-  send them one email they can ignore.
+  own, which is a link worth sending people. There's no confirmation email: they're on
+  the list straight away, and nothing's sent until the next alert. Anyone who shouldn't
+  be there gets removed from the admin tab.
 - **Sending**: admin page, DJ tab, "Live alerts" (or a guest's `/guest-dj`). An optional
   subject (default "Tyler's live in the den", or "<name>'s live in the den" for a guest),
-  the message, Send. Everyone gets their own plain text copy: the
-  message, the live room link, and their own unsubscribe link. One-click unsubscribe
-  headers are on it too, so Gmail and Apple Mail show their own unsubscribe button.
+  the message, Send. Everyone gets their own copy, as html dressed like the den (cream
+  background, the subject as a big heading ending in a red dot, a small red "Opium Den
+  · Live now" over it) with a plain text version alongside for mail apps that won't show
+  html. It's the message, "Join the room here" (linked), and a footer with their own
+  "Unsubscribe" link. One-click unsubscribe headers are on it too, so Gmail and Apple
+  Mail show their own unsubscribe button.
   Sent while a set's recording, the subject and message also become that set's title
   and description (a blank subject keeps the title), and the set list reloads to show
   it. Change them there any time after.
-- **Staying out of spam**: the emails say "the den", never "opium", in the subject, body
-  and sender name (`MAIL_FROM`), since drug words are a classic spam filter trigger. The
-  links still have `/opium-den/` in them, that's just the site's address. The signup also
-  tells people to check their spam, and anyone marking it "not spam" teaches their
-  provider to trust the address.
+- **Staying out of spam**: the emails say "the den" in the subject, body text and sender
+  name (`MAIL_FROM`), never "opium" on its own, since drug words are a classic spam
+  filter trigger. The small "Opium Den" label in the html is the place's name, and the
+  links have `/opium-den/` in them, that's just the site's address. The html stays
+  plain on purpose: inline styles, system fonts, no images, nothing loaded from
+  elsewhere, links only to our own site, and a matching plain text part. The signup also
+  tells people to mark it "not spam" if it lands there, which teaches their provider to
+  trust the address.
 - Emails go out one after another, 0.6 s apart, and the admin page waits for the whole
   batch: about a minute per 100 people. Cloudflare drops a request after 100 s, so past
   ~150 subscribers sending needs to move to a background job.
-- Unsubscribing deletes the address. The admin tab lists everyone (confirmed or not) and
-  can remove anyone.
+- Unsubscribing deletes the address. The admin tab lists everyone and can remove anyone.
 
 Endpoints: `pi/docs/api/website-backend-api.md#live-alerts`.
 
@@ -230,7 +236,7 @@ something like `den@tyler-schwenk.com` instead of a personal address.
    ```
 5. `cd ~/tyler-schwenk.github.io/pi/services/website-backend && docker compose up -d`
    (recreates the container with the new settings).
-6. Sign yourself up at `tyler-schwenk.com/opium-den/live/alerts`, confirm, and send a test from
+6. Sign yourself up at `tyler-schwenk.com/opium-den/live/alerts` and send a test from
    the admin tab. Check it lands in the inbox and not spam.
 
 To use Gmail instead: `SMTP_HOST=smtp.gmail.com`, `SMTP_USERNAME` your address,
@@ -240,7 +246,10 @@ verification), and `MAIL_FROM` that same address, which every subscriber will se
 The free tiers cap a day's sending (Resend's at 100). An alert to more people than that
 gets cut off partway, and the admin tab lists who it didn't reach.
 
-The `dj_alert_subscribers` table is created on startup, no migration needed.
+The `dj_alert_subscribers` table is created on startup. A database from when signups
+needed confirming still has `confirm_sent_at` and `confirmed_at` columns, which make new
+signups fail; drop them once (safe to rerun, keeps everyone on the list):
+`docker exec website-backend-api python scripts/migrate_drop_alert_confirmation.py`.
 
 ## DJ laptop setup (Windows)
 
@@ -354,7 +363,7 @@ If UFW is enabled on fart-pi, let the laptop reach 8010 from the LAN:
 - `SMTP_HOST` or `MAIL_FROM` is empty in the backend's `.env`, or the container wasn't
   recreated after setting them (`docker compose up -d`).
 
-**Signing up or sending says it couldn't reach the mail server**
+**Sending says it couldn't reach the mail server**
 - `docker logs website-backend-api | grep mailer` has the real error: a wrong
   password or api key is an authentication error, a typo in `SMTP_HOST` a name error.
 - A refused address (`failed` in the send's answer) is usually the sender: `MAIL_FROM`'s

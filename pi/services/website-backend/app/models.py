@@ -759,18 +759,16 @@ class DjAlertSubscriber(Base):
     """
     DjAlertSubscriber model: someone who wants an email when the dj stream goes live.
 
-    Signing up only sends a confirmation email; alerts go only to confirmed rows, so
-    nobody gets alerts for an address someone else typed in. The admin sends each alert
-    by hand from the admin page (routers/dj_alerts.py), nothing goes out automatically.
-    Unsubscribing deletes the row. Times are naive UTC.
+    Signing up adds the row straight away, no confirmation email; the admin page lists
+    everyone so the admin can take off anyone who shouldn't be there. Each alert is sent
+    by hand (routers/dj_alerts.py), nothing goes out automatically. Unsubscribing deletes
+    the row. Times are naive UTC.
 
     Attributes:
         id: Unique identifier
         email: The address, lowercased
-        token: Random secret in the confirm and unsubscribe links
-        created_at: When they first signed up
-        confirm_sent_at: When the last confirmation email went out
-        confirmed_at: When they clicked the confirmation link, null until then
+        token: Random secret in the unsubscribe links
+        created_at: When they signed up
     """
     __tablename__ = "dj_alert_subscribers"
 
@@ -778,8 +776,6 @@ class DjAlertSubscriber(Base):
     email = Column(String(MAX_EMAIL_LENGTH), unique=True, index=True, nullable=False)
     token = Column(String(64), unique=True, index=True, nullable=False)
     created_at = Column(DateTime, nullable=False)
-    confirm_sent_at = Column(DateTime, nullable=False)
-    confirmed_at = Column(DateTime, nullable=True)
 
 
 class DjChatName(Base):

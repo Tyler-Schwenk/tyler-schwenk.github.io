@@ -1146,8 +1146,8 @@ class DjAlertSignup(BaseModel):
 
 class DjAlertSignupResult(BaseModel):
     """
-    The same answer whether the address is new, waiting on its confirmation or already
-    signed up, so the form can't be used to check who's on the list.
+    The same answer whether the address is new or already signed up, so the form can't
+    be used to check who's on the list.
     """
     email: str
 
@@ -1157,7 +1157,6 @@ class DjAlertSubscriberRead(BaseModel):
     id: int
     email: str
     created_at: datetime
-    confirmed_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -1205,5 +1204,5 @@ class DjAlertSendResult(BaseModel):
 
 
 class DjAlertAudience(BaseModel):
-    """How many confirmed subscribers an alert would go to, for a guest dj's send button."""
-    confirmed: int
+    """How many subscribers an alert would go to, for the send button."""
+    subscribers: int

@@ -4,7 +4,9 @@ Outgoing email over SMTP, for the opium den's live alerts.
 Any provider with SMTP works (resend, gmail with an app password, ...), set through the
 SMTP_* and MAIL_FROM settings. Each email goes out on its own (never one email with
 everyone on it), so nobody sees anyone else's address and each gets its own unsubscribe
-link. smtplib blocks, so send_emails runs it in a worker thread.
+link. An email with html goes out as multipart/alternative, the plain text first, so
+mail apps that won't show html still get something readable. smtplib blocks, so
+send_emails runs it in a worker thread.
 """
 
 import logging
@@ -44,17 +46,19 @@ class MailServerError(Exception):
 @dataclass
 class OutgoingEmail:
     """
-    One plain text email.
+    One email: plain text, with an optional html version.
 
     Attributes:
         to: The recipient's address.
         subject: One line.
-        body: Plain text, line breaks kept.
+        body: Plain text, line breaks kept. Always sent, as the fallback when there's html.
+        html: A full html document to show instead of the body, or None for plain text only.
         headers: Extra headers, like List-Unsubscribe.
     """
     to: str
     subject: str
     body: str
+    html: str | None = None
     headers: dict[str, str] = field(default_factory=dict)
 
 
@@ -76,7 +80,8 @@ def build_message(email: OutgoingEmail) -> EmailMessage:
         email: The email.
 
     Returns:
-        EmailMessage: With From, To, Subject, any extra headers, and the body.
+        EmailMessage: With From, To, Subject, any extra headers, and the body (plus the
+            html as an alternative part when there is one).
     """
     message = EmailMessage(policy=MESSAGE_POLICY)
     message["From"] = settings.MAIL_FROM
@@ -85,6 +90,8 @@ def build_message(email: OutgoingEmail) -> EmailMessage:
     for name, value in email.headers.items():
         message[name] = value
     message.set_content(email.body)
+    if email.html is not None:
+        message.add_alternative(email.html, subtype="html")
     return message
 
 

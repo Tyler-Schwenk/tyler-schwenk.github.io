@@ -12,11 +12,11 @@ import {
 } from "@/app/opium-den/djApi";
 import { adminRequest, errorMessage, jsonBody, useAdminData, useAdminFetch } from "./adminApi";
 import { formatDate, plural } from "./format";
-import { Badge, Button, Card, Field, FlashMessage, INPUT_CLASS, Muted, Toolbar, useFlash } from "./ui";
+import { Button, Card, Field, FlashMessage, INPUT_CLASS, Muted, Toolbar, useFlash } from "./ui";
 
 /**
- * The live alerts panel: write an email and send it to everyone who's signed up and
- * confirmed. Nothing goes out on its own; this is the only way an alert is sent. Sending
+ * The live alerts panel: write an email and send it to everyone who's signed up.
+ * Nothing goes out on its own; this is the only way an alert is sent. Sending
  * while a set's recording also makes the subject and message that set's title and
  * description (the backend does it), editable in the set list like any set.
  *
@@ -53,18 +53,18 @@ function anyFailed(result: DjAlertSendResult): boolean {
 
 /**
  * The subject and message form, and the send button.
- * @param props.confirmed - How many it'll go to.
+ * @param props.audience - How many it'll go to.
  * @param props.defaultSubject - What a blank subject becomes.
  * @param props.blockedReason - Why it can't be sent right now, shown in place of sending; null when it can.
  * @param props.onSent - Called after a send with the backend's answer.
  */
 function AlertComposer({
-  confirmed,
+  audience,
   defaultSubject,
   blockedReason,
   onSent,
 }: {
-  confirmed: number;
+  audience: number;
   defaultSubject: string;
   blockedReason: string | null;
   onSent: (result: DjAlertSendResult) => void;
@@ -78,7 +78,7 @@ function AlertComposer({
   const send = async (event: FormEvent) => {
     event.preventDefault();
     if (!body.trim() || sending || blockedReason) return;
-    if (!window.confirm(`Email this to ${plural(confirmed, "person", "people")}? It can't be unsent.`)) return;
+    if (!window.confirm(`Email this to ${plural(audience, "person", "people")}? It can't be unsent.`)) return;
     setSending(true);
     try {
       const result = await adminRequest<DjAlertSendResult>(
@@ -128,9 +128,9 @@ function AlertComposer({
           type="submit"
           variant="primary"
           className="self-end"
-          disabled={!body.trim() || sending || confirmed === 0 || blockedReason !== null}
+          disabled={!body.trim() || sending || audience === 0 || blockedReason !== null}
         >
-          {sending ? "Sending..." : `Send to ${plural(confirmed, "person", "people")}`}
+          {sending ? "Sending..." : `Send to ${plural(audience, "person", "people")}`}
         </Button>
       </form>
       <FlashMessage flash={flash} />
@@ -139,7 +139,7 @@ function AlertComposer({
 }
 
 /**
- * Everyone signed up, with whether they've confirmed and a remove button.
+ * Everyone signed up, with when and a remove button.
  * @param props.subscribers - The list.
  * @param props.onRemove - Removes one (after confirming).
  */
@@ -157,9 +157,6 @@ function SubscriberList({
         <li key={subscriber.id} className="flex items-center gap-2 text-sm">
           <span className="min-w-0 flex-1 truncate text-slate-200">{subscriber.email}</span>
           <span className="hidden text-xs text-slate-500 sm:inline">{formatDate(subscriber.created_at)}</span>
-          <Badge tone={subscriber.confirmed_at ? "green" : "orange"}>
-            {subscriber.confirmed_at ? "confirmed" : "unconfirmed"}
-          </Badge>
           <Button size="sm" variant="danger" onClick={() => onRemove(subscriber)}>
             Remove
           </Button>
@@ -177,8 +174,7 @@ export default function DjAlertsPanel({ onLabelledSet }: { onLabelledSet: () => 
   const adminFetch = useAdminFetch();
   const subscribers = useAdminData<DjAlertSubscriber[]>(SUBSCRIBERS_PATH, "couldn't load alert signups");
   const [flash, showFlash] = useFlash();
-  const confirmed = subscribers.data?.filter((subscriber) => subscriber.confirmed_at).length ?? 0;
-  const unconfirmed = (subscribers.data?.length ?? 0) - confirmed;
+  const audience = subscribers.data?.length ?? 0;
 
   const remove = async (subscriber: DjAlertSubscriber) => {
     if (!window.confirm(`Take ${subscriber.email} off the alerts list?`)) return;
@@ -191,7 +187,7 @@ export default function DjAlertsPanel({ onLabelledSet }: { onLabelledSet: () => 
   };
 
   const summary = subscribers.data
-    ? `Live alerts: ${plural(confirmed, "person", "people")} signed up${unconfirmed ? `, ${unconfirmed} unconfirmed` : ""}`
+    ? `Live alerts: ${plural(audience, "person", "people")} signed up`
     : "Live alerts";
 
   return (
@@ -203,7 +199,7 @@ export default function DjAlertsPanel({ onLabelledSet }: { onLabelledSet: () => 
       </Toolbar>
       {subscribers.error && !subscribers.data && <Muted>{subscribers.error}</Muted>}
       <AlertComposer
-        confirmed={confirmed}
+        audience={audience}
         defaultSubject={DJ_ALERT_DEFAULT_SUBJECT}
         blockedReason={null}
         onSent={(result) => {
@@ -239,20 +235,20 @@ export function GuestAlertsPanel({
   onAir: boolean;
   onLabelledSet: () => void;
 }) {
-  const audience = useAdminData<{ confirmed: number }>(AUDIENCE_PATH, "couldn't load how many signed up");
-  const confirmed = audience.data?.confirmed ?? 0;
-  const summary = audience.data ? `Live alerts: ${plural(confirmed, "person", "people")} signed up` : "Live alerts";
+  const count = useAdminData<{ subscribers: number }>(AUDIENCE_PATH, "couldn't load how many signed up");
+  const audience = count.data?.subscribers ?? 0;
+  const summary = count.data ? `Live alerts: ${plural(audience, "person", "people")} signed up` : "Live alerts";
 
   return (
     <Card className="mb-4 p-3">
       <Toolbar summary={summary}>
-        <Button size="sm" onClick={audience.reload}>
+        <Button size="sm" onClick={count.reload}>
           Refresh
         </Button>
       </Toolbar>
-      {audience.error && !audience.data && <Muted>{audience.error}</Muted>}
+      {count.error && !count.data && <Muted>{count.error}</Muted>}
       <AlertComposer
-        confirmed={confirmed}
+        audience={audience}
         defaultSubject={djGuestAlertSubject(name)}
         blockedReason={onAir ? null : "You can send one once you're on air, one per set."}
         onSent={(result) => {
