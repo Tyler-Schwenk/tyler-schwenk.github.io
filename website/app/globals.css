@@ -28,9 +28,9 @@
   --color-den-faint: #8a8880;
   /* the chart's grid lines and the hairlines between rows */
   --color-den-line: #dcdad2;
-  --color-den-accent: #ff3d14;
+  --color-den-accent: #e5484d;
   /* the accent as text, a bit darker so it still reads on the paper */
-  --color-den-accent-soft: #d0300c;
+  --color-den-accent-soft: #c42b31;
 }
 
 /* the den's type: inter tight for everything, jetbrains mono for times, counts and labels */
@@ -552,7 +552,7 @@ body:has(.den-page) {
   --color-den-muted: #b9b7af;
   --color-den-faint: #8a8880;
   --color-den-line: rgb(255 255 255 / 0.14);
-  --color-den-accent-soft: #ff6a47;
+  --color-den-accent-soft: #ee6b6f;
 }
 
 /* the live monitor's on air dot: a hard blink, like a recorder's lamp */

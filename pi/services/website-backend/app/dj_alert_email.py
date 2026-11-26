@@ -14,7 +14,7 @@ from html import escape
 DEN_BG = "#efeee9"
 DEN_INK = "#121212"
 DEN_MUTED = "#5f5e58"
-DEN_ACCENT = "#ff3d14"
+DEN_ACCENT = "#e5484d"
 
 # system fonts only, since mail apps mostly won't load web fonts anyway
 SANS_FONTS = "'Helvetica Neue', Helvetica, Arial, sans-serif"
